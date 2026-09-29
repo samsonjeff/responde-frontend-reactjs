@@ -32,7 +32,8 @@ body {
 }
 
 /* Tactile button press feedback */
-button:not(:disabled), [role="button"] {
+button:not(:disabled),
+[role="button"] {
   transition: transform 160ms var(--ease-out), background-color 150ms ease, opacity 150ms ease;
 }
 

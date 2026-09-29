@@ -599,11 +599,10 @@ export default function ScraperFeed() {
                           <button
                             type="button"
                             onClick={() => setSelectedId(post.id)}
-                            className={`w-full text-left p-3 rounded-xl transition-all duration-150 relative group active:scale-[0.98] ${
-                              isSelected
+                            className={`w-full text-left p-3 rounded-xl transition-all duration-150 relative group active:scale-[0.98] ${isSelected
                                 ? "bg-blue-500/10 dark:bg-blue-500/20 shadow-xs border border-blue-500/25 dark:border-blue-500/30 text-slate-900 dark:text-white"
                                 : "hover:bg-slate-100/70 dark:hover:bg-slate-800/60 border border-transparent text-slate-700 dark:text-slate-300"
-                            }`}
+                              }`}
                           >
                             {/* Sliding active indicator bar */}
                             {isSelected && (

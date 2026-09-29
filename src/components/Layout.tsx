@@ -14,12 +14,14 @@ import {
   type NotificationType,
 } from '../context/NotificationContext';
 import { useBotConversations } from '../context/BotConversationsContext';
+import { useTheme } from './ThemeContent';
 
 type FilterTab = 'all' | NotificationType;
 
 export default function Layout() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { theme } = useTheme();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -54,6 +56,32 @@ export default function Layout() {
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  // Close mobile sidebar on route change
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [location.pathname]);
+
+  // Handle escape key and desktop resize
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setMobileOpen(false);
+        setNotifOpen(false);
+      }
+    };
+    const handleResize = () => {
+      if (window.innerWidth >= 1024) {
+        setMobileOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('resize', handleResize);
+    };
   }, []);
 
   const formattedTime = currentTime.toLocaleTimeString('en-US', {
@@ -94,39 +122,54 @@ export default function Layout() {
   };
 
   return (
-    <div className="relative h-screen bg-gradient-to-br from-slate-100 via-blue-50/50 to-indigo-50/40 dark:bg-none dark:bg-[#0B0F19] overflow-hidden flex">
+    <div
+      className="relative h-screen overflow-hidden flex bg-cover bg-center bg-no-repeat bg-fixed transition-colors duration-300"
+      style={{
+        backgroundImage: theme === 'dark'
+          ? "linear-gradient(rgba(11, 15, 25, 0.94), rgba(11, 15, 25, 0.94)), url('/DashboardBG.jpg')"
+          : "url('/DashboardBG.jpg')",
+      }}
+    >
       {/* Ambient background glows for frosted glass refraction */}
 
       {/* Mobile overlay */}
-      {mobileOpen && (
-        <div
-          className="fixed inset-0 bg-black/40 z-40 lg:hidden"
-          onClick={() => setMobileOpen(false)}
-        />
-      )}
+      <AnimatePresence>
+        {mobileOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 bg-slate-950/50 dark:bg-black/70 backdrop-blur-xs z-50 lg:hidden"
+            onClick={() => setMobileOpen(false)}
+          />
+        )}
+      </AnimatePresence>
 
       {/* ─── SIDEBAR (Frosted Glass) ─── */}
       <aside
+        id="app-sidebar"
         className={`
-          fixed top-4 left-4 bottom-4 z-50
-          ${mobileOpen ? 'w-60' : collapsed ? 'lg:w-[72px]' : 'lg:w-56'}
-          w-60
-          backdrop-blur-xl backdrop-saturate-[180%]
-          bg-white/45 dark:bg-slate-900/60
-          flex flex-col
-          rounded-2xl
-          border border-white/60 dark:border-white/10
+          fixed z-[60] flex flex-col
+          top-0 bottom-0 left-0 sm:top-4 sm:bottom-4 sm:left-4
+          w-64 md:w-18 ${collapsed ? 'lg:w-18' : 'lg:w-56'}
+          backdrop-blur-2xl backdrop-saturate-180
+          bg-white/95 dark:bg-slate-900/95
+          lg:bg-white/45 lg:dark:bg-slate-900/60
+          rounded-r-2xl sm:rounded-2xl
+          border-r sm:border border-white/60 dark:border-white/10
           border-r-white/80
-          shadow-[0_8px_32px_0_rgba(31,38,135,0.08),inset_0_1px_1px_0_rgba(255,255,255,0.9)]
-          dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.4),inset_0_1px_1px_0_rgba(255,255,255,0.1)]
+          shadow-[0_8px_32px_0_rgba(31,38,135,0.15),inset_0_1px_1px_0_rgba(255,255,255,0.9)]
+          dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.5),inset_0_1px_1px_0_rgba(255,255,255,0.1)]
           transition-all duration-300 ease-in-out
-          ${mobileOpen ? 'translate-x-0' : '-translate-x-[110%] lg:translate-x-0'}
+          ${mobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0 lg:translate-x-0'}
         `}
       >
         {/* Logo */}
         <div className={`
-          h-[64px] flex items-center shrink-0
-          ${collapsed && !mobileOpen ? 'lg:justify-center lg:px-0' : 'px-4 gap-3'}
+          h-16 flex items-center shrink-0
+          px-4 gap-3 md:justify-center md:px-0 md:gap-0
+          ${collapsed && !mobileOpen ? 'lg:justify-center lg:px-0 lg:gap-0' : 'lg:justify-start lg:px-4 lg:gap-3'}
         `}>
           <img
             src="/Responde_Logo.png"
@@ -136,13 +179,15 @@ export default function Layout() {
           <span className={`
             font-bold text-slate-800 dark:text-white text-base tracking-tight
             transition-all duration-300 overflow-hidden whitespace-nowrap
-            ${collapsed && !mobileOpen ? 'lg:w-0 lg:opacity-0' : 'w-auto opacity-100'}
+            block md:hidden lg:block
+            ${collapsed && !mobileOpen ? 'lg:w-0 lg:opacity-0' : 'lg:w-auto lg:opacity-100'}
           `}>
             RESPONDE
           </span>
           <button
             onClick={() => setMobileOpen(false)}
-            className="ml-auto text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 lg:hidden"
+            className="ml-auto p-1.5 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-black/5 dark:hover:bg-white/10 md:hidden transition-colors active:scale-95"
+            title="Close sidebar"
           >
             <X className="w-5 h-5" />
           </button>
@@ -163,13 +208,14 @@ export default function Layout() {
                 onClick={() => setMobileOpen(false)}
                 className={`
                   group flex items-center rounded-xl px-4 py-2.5 transition-all duration-200 active:scale-[0.98]
-                  ${isCollapsed ? 'lg:justify-center lg:px-0' : 'gap-3.5'}
+                  md:justify-center md:px-0 md:gap-0
+                  ${isCollapsed ? 'lg:justify-center lg:px-0 lg:gap-0' : 'gap-3.5 lg:justify-start lg:px-4 lg:gap-3.5'}
                   ${active
                     ? 'bg-white/80 dark:bg-white/20 shadow-sm border border-white/90 dark:border-white/10 font-semibold text-blue-700 dark:text-blue-300 backdrop-blur-sm'
                     : 'text-slate-600 dark:text-slate-300 hover:bg-white/40 dark:hover:bg-white/10 hover:text-slate-900 dark:hover:text-white border border-transparent'
                   }
                 `}
-                title={isCollapsed ? item.label : undefined}
+                title={item.label}
               >
                 <div className={`
                   relative shrink-0 flex items-center justify-center transition-colors duration-200
@@ -178,23 +224,24 @@ export default function Layout() {
                     : 'text-slate-400 dark:text-slate-500 group-hover:text-slate-700 dark:group-hover:text-slate-200'
                   }
                 `}>
-                  <item.icon className="w-[22px] h-[22px]" strokeWidth={active ? 2.5 : 1.75} />
-                  {item.path === '/messenger-bot-logs' && incompleteCount > 0 && isCollapsed && (
-                    <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-amber-500 ring-2 ring-white dark:ring-[#111827] animate-pulse" />
+                  <item.icon className="w-5.5 h-5.5" strokeWidth={active ? 2.5 : 1.75} />
+                  {item.path === '/messenger-bot-logs' && incompleteCount > 0 && (
+                    <span className={`absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-amber-500 ring-2 ring-white dark:ring-[#111827] animate-pulse md:block ${isCollapsed ? 'lg:block' : 'lg:hidden'}`} />
                   )}
                 </div>
                 <span className={`
                   text-[13px] transition-all duration-300 overflow-hidden whitespace-nowrap
+                  block md:hidden lg:block
                   ${active
                     ? 'text-blue-700 dark:text-blue-400 font-semibold'
                     : 'text-slate-600 dark:text-slate-300 group-hover:text-slate-900 dark:hover:text-white font-medium'
                   }
-                  ${isCollapsed ? 'lg:w-0 lg:opacity-0' : 'w-auto opacity-100'}
+                  ${isCollapsed ? 'lg:w-0 lg:opacity-0' : 'lg:w-auto lg:opacity-100'}
                 `}>
                   {item.label}
                 </span>
-                {item.path === '/messenger-bot-logs' && incompleteCount > 0 && !isCollapsed && (
-                  <span className="ml-auto px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 tabular-nums">
+                {item.path === '/messenger-bot-logs' && incompleteCount > 0 && (
+                  <span className={`ml-auto px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 tabular-nums block md:hidden ${isCollapsed ? 'lg:hidden' : 'lg:block'}`}>
                     {incompleteCount}
                   </span>
                 )}
@@ -212,18 +259,20 @@ export default function Layout() {
             onClick={() => navigate('/login')}
             className={`
               group flex items-center w-full rounded-xl px-4 py-2.5 transition-all duration-200 active:scale-[0.98]
-              ${collapsed && !mobileOpen ? 'lg:justify-center lg:px-0' : 'gap-3.5'}
+              md:justify-center md:px-0 md:gap-0
+              ${collapsed && !mobileOpen ? 'lg:justify-center lg:px-0 lg:gap-0' : 'gap-3.5 lg:justify-start lg:px-4 lg:gap-3.5'}
               text-slate-600 dark:text-slate-300 hover:bg-white/40 dark:hover:bg-white/10 hover:text-red-600 dark:hover:text-red-400 border border-transparent
             `}
-            title={collapsed && !mobileOpen ? 'Sign Out' : undefined}
+            title="Sign Out"
           >
             <div className="shrink-0 flex items-center justify-center text-slate-400 dark:text-slate-500 group-hover:text-red-500 transition-colors duration-200">
-              <LogOut className="w-[22px] h-[22px]" strokeWidth={1.75} />
+              <LogOut className="w-5.5 h-5.5" strokeWidth={1.75} />
             </div>
             <span className={`
               text-[13px] font-medium text-slate-600 dark:text-slate-300 group-hover:text-red-500
               transition-all duration-300 overflow-hidden whitespace-nowrap
-              ${collapsed && !mobileOpen ? 'lg:w-0 lg:opacity-0' : 'w-auto opacity-100'}
+              block md:hidden lg:block
+              ${collapsed && !mobileOpen ? 'lg:w-0 lg:opacity-0' : 'lg:w-auto lg:opacity-100'}
             `}>
               Sign Out
             </span>
@@ -236,14 +285,14 @@ export default function Layout() {
       <main
         className={`
           flex-1 flex flex-col min-w-0 transition-all duration-300
-          ${collapsed ? 'lg:ml-[calc(16px+72px+8px)]' : 'lg:ml-[calc(16px+225px+8px)]'}
+          ml-0 md:ml-[calc(16px+72px+8px)] ${collapsed ? 'lg:ml-[calc(16px+72px+8px)]' : 'lg:ml-[calc(16px+225px+8px)]'}
         `}
       >
         {/* ─── FLOATING HEADER (Frosted Glass) ─── */}
-        <div className="shrink-0 px-2 pt-4 z-[100] relative">
+        <div className="shrink-0 px-2 sm:px-4 pt-3 sm:pt-4 z-20 relative">
           <header className="
-            h-[65px] flex items-center justify-between px-4
-            backdrop-blur-xl backdrop-saturate-[180%]
+            h-16.25 flex items-center justify-between px-4
+            backdrop-blur-xl backdrop-saturate-180
             bg-white/45 dark:bg-slate-900/60
             border border-white/60 dark:border-white/10
             shadow-[0_8px_32px_0_rgba(31,38,135,0.08),inset_0_1px_1px_0_rgba(255,255,255,0.9)]
@@ -253,11 +302,13 @@ export default function Layout() {
           ">
             <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
               <button
+                id="sidebar-toggle-btn"
+                aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
                 onClick={() => {
                   if (window.innerWidth < 1024) {
-                    setMobileOpen(true);
+                    setMobileOpen((prev) => !prev);
                   } else {
-                    setCollapsed(!collapsed);
+                    setCollapsed((prev) => !prev);
                   }
                 }}
                 className="shrink-0 p-2 text-slate-500 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-white/10 rounded-xl transition-colors active:scale-95"
@@ -306,7 +357,7 @@ export default function Layout() {
                         animate={{ scale: 1 }}
                         exit={{ scale: 0 }}
                         transition={{ type: 'spring', stiffness: 500, damping: 25 }}
-                        className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center ring-2 ring-white dark:ring-[#0F1525]"
+                        className="absolute -top-0.5 -right-0.5 min-w-4.5 h-4.5 px-1 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center ring-2 ring-white dark:ring-[#0F1525]"
                       >
                         {unreadCount > 9 ? '9+' : unreadCount}
                       </motion.span>
@@ -323,7 +374,7 @@ export default function Layout() {
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: -8, scale: 0.97 }}
                       transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
-                      className="absolute right-0 top-full mt-2 w-[360px] sm:w-[400px] backdrop-blur-xl backdrop-saturate-[180%] bg-white/80 dark:bg-slate-900/85 rounded-2xl border border-white/70 dark:border-white/10 shadow-[0_16px_40px_rgba(0,0,0,0.12),inset_0_1px_1px_rgba(255,255,255,0.8)] dark:shadow-black/50 z-[60] overflow-hidden flex flex-col"
+                      className="absolute right-0 top-full mt-2 w-90 sm:w-100 backdrop-blur-xl backdrop-saturate-180 bg-white/80 dark:bg-slate-900/85 rounded-2xl border border-white/70 dark:border-white/10 shadow-[0_16px_40px_rgba(0,0,0,0.12),inset_0_1px_1px_rgba(255,255,255,0.8)] dark:shadow-black/50 z-60 overflow-hidden flex flex-col"
                     >
                       {/* ── Header ── */}
                       <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 dark:border-slate-800">
@@ -391,7 +442,7 @@ export default function Layout() {
                       </div>
 
                       {/* ── Notification List ── */}
-                      <div className="max-h-[360px] overflow-y-auto divide-y divide-slate-50 dark:divide-slate-800/60">
+                      <div className="max-h-90 overflow-y-auto divide-y divide-slate-50 dark:divide-slate-800/60">
                         <AnimatePresence initial={false}>
                           {filteredNotifications.length === 0 ? (
                             <motion.div
@@ -456,12 +507,45 @@ export default function Layout() {
           </header>
         </div>
 
-        <div className="flex-1 flex flex-col overflow-y-auto overflow-x-hidden px-4 pb-4 pt-4 sm:px-5 sm:pb-5 sm:pt-4 lg:px-6 lg:pb-6 lg:pt-4">
+        <div className="flex-1 flex flex-col overflow-y-auto overflow-x-hidden px-4 pb-20 pt-4 sm:px-5 sm:pb-20 md:pb-5 md:pt-4 lg:px-6 lg:pb-6 lg:pt-4">
           <PageTransition key={location.pathname}>
             <Outlet />
           </PageTransition>
         </div>
       </main>
+
+      {/* ── Mobile Fixed Bottom Navigation Bar (<768px) ── */}
+      <nav
+        aria-label="Mobile Navigation"
+        className="fixed bottom-0 left-0 right-0 z-50 md:hidden backdrop-blur-2xl backdrop-saturate-180 bg-white/90 dark:bg-slate-900/95 border-t border-slate-200/80 dark:border-white/10 px-3 py-2 flex items-center justify-around shadow-[0_-4px_20px_rgba(0,0,0,0.06)] dark:shadow-[0_-4px_24px_rgba(0,0,0,0.4)] transition-colors duration-300"
+      >
+        {[
+          { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+          { path: '/incident-reports', label: 'Incident Reports', icon: FileText },
+          { path: '/messenger-bot-logs', label: 'Messenger Bot', icon: MessageSquare },
+          { path: '/geospatial-map', label: 'Geospatial Map', icon: Map },
+          { path: '/settings', label: 'Settings', icon: Settings },
+        ].map((item) => {
+          const active = isActive(item.path);
+          return (
+            <Link
+              key={item.path}
+              to={item.path}
+              className={`relative flex items-center justify-center p-2.5 rounded-xl transition-all duration-150 active:scale-90 min-w-[44px] min-h-[44px] ${active
+                  ? 'text-[#0071E3] dark:text-sky-400 bg-[#0071E3]/10 dark:bg-white/10 border border-[#0071E3]/20 dark:border-white/10 shadow-xs'
+                  : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
+                }`}
+              title={item.label}
+              aria-label={item.label}
+            >
+              <item.icon className="w-5.5 h-5.5" strokeWidth={active ? 2.25 : 1.75} />
+              {item.path === '/messenger-bot-logs' && incompleteCount > 0 && (
+                <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-amber-500 ring-2 ring-white dark:ring-slate-900 animate-pulse" />
+              )}
+            </Link>
+          );
+        })}
+      </nav>
 
       {/* ── Global Toast Renderer ── */}
       <div
@@ -516,7 +600,7 @@ function NotificationRow({
     >
       {/* Left blue unread bar */}
       {!n.read && (
-        <span className="absolute left-0 top-3 bottom-3 w-[3px] bg-blue-500 rounded-r-full" />
+        <span className="absolute left-0 top-3 bottom-3 w-0.75 bg-blue-500 rounded-r-full" />
       )}
 
       {/* Icon */}
@@ -605,7 +689,7 @@ function GlobalToast({
       animate={{ opacity: 1, x: 0, scale: 1 }}
       exit={{ opacity: 0, x: 80, scale: 0.94 }}
       transition={{ duration: 0.38, ease: [0.16, 1, 0.3, 1] }}
-      className="pointer-events-auto relative flex items-start gap-3 pl-4 pr-3 pt-3.5 pb-5 rounded-2xl border shadow-xl min-w-[310px] max-w-[390px] bg-white dark:bg-[#111827] border-slate-200 dark:border-slate-700 overflow-hidden"
+      className="pointer-events-auto relative flex items-start gap-3 pl-4 pr-3 pt-3.5 pb-5 rounded-2xl border shadow-xl min-w-[310px] max-w-97.5 bg-white dark:bg-[#111827] border-slate-200 dark:border-slate-700 overflow-hidden"
     >
       {/* Accent bar */}
       <div

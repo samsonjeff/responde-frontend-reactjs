@@ -247,7 +247,7 @@ export default function Features() {
     mm.add('(max-width: 639px)', () => {
       buildTimeline({
         scaleFactor: 0.75,
-        baseY: -10,
+        baseY: 18,
         transformOrigin: '50% 50%',
         scrollPerCard: 360,
       });
@@ -257,7 +257,7 @@ export default function Features() {
     mm.add('(min-width: 640px) and (max-width: 1023px)', () => {
       buildTimeline({
         scaleFactor: 0.88,
-        baseY: -18,
+        baseY: 26,
         transformOrigin: '50% 50%',
         scrollPerCard: 480,
       });
@@ -267,7 +267,7 @@ export default function Features() {
     mm.add('(min-width: 1024px)', () => {
       buildTimeline({
         scaleFactor: 1,
-        baseY: -26,
+        baseY: 36,
         transformOrigin: '50% 50%',
         scrollPerCard: 600,
       });
@@ -359,10 +359,10 @@ export default function Features() {
         />
       </div>
 
-      {/* ── 2. Middle Playing Card Fanned Deck Stage (With Generous Bottom Clearance) ── */}
+      {/* ── 2. Middle Playing Card Fanned Deck Stage (Balanced Top & Bottom Clearance) ── */}
       <div
         ref={stackWrapperRef}
-        className="relative w-full flex-1 min-h-[380px] sm:min-h-[450px] lg:min-h-[510px] flex items-center justify-center mt-2 mb-10 sm:mb-14 lg:mb-20"
+        className="relative w-full flex-1 min-h-[380px] sm:min-h-[450px] lg:min-h-[510px] flex items-center justify-center mt-6 sm:mt-8 lg:mt-10 mb-4 sm:mb-6 lg:mb-8"
       >
         {features.map((card, index) => {
           const IconComponent = card.icon;

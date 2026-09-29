@@ -159,9 +159,9 @@ export default function DatePicker({ value, onChange, placeholder = 'Select date
       <button
         type="button"
         onClick={handleOpen}
-        className="flex items-center gap-2 px-3.5 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 transition-colors w-full sm:min-w-[150px] sm:w-auto cursor-pointer"
+        className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-1.5 sm:py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-xs sm:text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 transition-colors w-full sm:min-w-[150px] sm:w-auto cursor-pointer"
       >
-        <Calendar className="w-4 h-4 text-slate-400 dark:text-slate-400 shrink-0" />
+        <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400 dark:text-slate-400 shrink-0" />
         <span className={`truncate ${value ? 'text-slate-800 dark:text-slate-100 font-medium' : 'text-slate-400 dark:text-slate-400'}`}>
           {value ? formatDisplay(value) : placeholder}
         </span>

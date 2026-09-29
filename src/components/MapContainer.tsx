@@ -5,6 +5,9 @@
 import { useEffect, useRef, useCallback } from 'react';
 import * as maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
+
+maplibregl.setWorkerUrl(maplibreWorkerUrl);
 
 import { buildRasterStyle, DEFAULT_CENTER, DEFAULT_ZOOM, MAX_BOUNDS } from '../lib/map-styles';
 import type { BarangayFeatureCollection, MapLayerState, SelectedFeature } from '../types/geospatial';

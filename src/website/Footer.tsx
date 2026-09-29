@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { MapPin, Phone, Mail } from 'lucide-react';
+import { TALISAY_BARANGAYS } from '../data/talisay-barangays';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -32,35 +33,17 @@ export default function Footer() {
     return () => ctx.revert();
   }, []);
 
-  const barangaysCol1 = [
-    'Caloocan',
-    'Leynes',
-    'Sampaloc',
-    'Buco',
-    'Balas',
-    'Santa Maria',
-    'Banga',
-    'Poblacion',
-  ];
-
-  const barangaysCol2 = [
-    'San Guillermo',
-    'Miranda',
-    'Tumaway',
-    'Quiling',
-    'Aya',
-    'Tranca',
-    'Ambulong',
-  ];
+  const barangaysCol1 = TALISAY_BARANGAYS.slice(0, 11);
+  const barangaysCol2 = TALISAY_BARANGAYS.slice(11);
 
   return (
     <footer
       ref={footerRef}
       id="footer"
-      className="relative w-full bg-[#080B11] text-[#A1A1A6] border-t border-white/[0.08] selection:bg-slate-700 selection:text-white select-none"
+      className="relative w-full bg-[#080B11] text-[#A1A1A6] border-t border-white/8 selection:bg-slate-700 selection:text-white select-none"
     >
       {/* ── Apple Ambient Subtle Gradient Horizon ── */}
-      <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-white/[0.02] to-transparent pointer-events-none" />
+      <div className="absolute inset-x-0 top-0 h-24 bg-linear-to-b from-white/2 to-transparent pointer-events-none" />
 
       <div
         ref={contentRef}
@@ -71,7 +54,7 @@ export default function Footer() {
           {/* Column 1: Brand & Identity */}
           <div className="space-y-4">
             <div className="flex items-center gap-3">
-              <div className="relative w-9 h-9 rounded-xl ring-1 ring-white/15 bg-white/[0.04] p-1 flex items-center justify-center shadow-inner">
+              <div className="relative w-9 h-9 rounded-xl ring-1 ring-white/15 bg-white/4 p-1 flex items-center justify-center shadow-inner">
                 <img
                   src="/Responde_Logo.png"
                   alt="RESPONDE Logo"
@@ -98,7 +81,7 @@ export default function Footer() {
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="RESPONDE on Facebook"
-                className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-white/[0.05] hover:bg-white/[0.12] border border-white/[0.08] hover:border-white/20 text-[#A1A1A6] hover:text-[#F5F5F7] transition-all duration-150 shadow-sm"
+                className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-white/5 hover:bg-white/12 border border-white/8 hover:border-white/20 text-[#A1A1A6] hover:text-[#F5F5F7] transition-all duration-150 shadow-sm"
               >
                 <svg
                   className="w-4 h-4 fill-current"
@@ -213,7 +196,7 @@ export default function Footer() {
               </li>
 
               <li className="pt-1.5">
-                <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-emerald-500/[0.08] border border-emerald-500/20 text-[11px] font-medium text-emerald-400">
+                <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-emerald-500/8 border border-emerald-500/20 text-[11px] font-medium text-emerald-400">
                   <span className="relative flex h-2 w-2">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60" />
                     <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400" />

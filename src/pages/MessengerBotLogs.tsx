@@ -6,6 +6,7 @@ import FilterDropdown from "../components/DropDown";
 import { StaggerContainer, StaggerItem } from "../components/Stagger";
 import PageLoader from "../components/PageLoader";
 import { useBotConversations, type BotConversation as Conversation } from "../context/BotConversationsContext";
+import { TALISAY_BARANGAYS } from "../data/talisay-barangays";
 
 
 
@@ -259,7 +260,7 @@ export default function MessengerBotLogs() {
                 </div>
                 <FilterDropdown
                   value={filterBarangay}
-                  options={["All Barangays", "Leynes", "Poblacion", "Sampaloc", "Cawit", "Banga"]}
+                  options={["All Barangays", ...TALISAY_BARANGAYS]}
                   onChange={(val) => { setFilterBarangay(val); setSelectedId(""); }}
                 />
                 <FilterDropdown
@@ -304,8 +305,14 @@ export default function MessengerBotLogs() {
                 </span>
               </div>
 
-              {/* Scrollable Conversation List */}
-              <div className="flex-1 overflow-y-auto min-h-0 p-2 space-y-1">
+              {/* Scrollable Conversation List with Apple-grade Edge Fade */}
+              <div
+                className="flex-1 overflow-y-auto min-h-0 p-2 pb-10 space-y-1 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800"
+                style={{
+                  maskImage: 'linear-gradient(to bottom, black calc(100% - 56px), transparent 100%)',
+                  WebkitMaskImage: 'linear-gradient(to bottom, black calc(100% - 56px), transparent 100%)',
+                }}
+              >
                 {filteredConversations.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-20 text-slate-400 dark:text-slate-500 text-sm gap-2">
                     <MessageSquare className="w-8 h-8 stroke-[1.5] text-slate-300 dark:text-slate-600" />
@@ -522,8 +529,14 @@ export default function MessengerBotLogs() {
                       </div>
                     </div>
 
-                    {/* Messages — Apple Messages Thread */}
-                    <div className="flex-1 overflow-y-auto min-h-0 p-6 bg-slate-50/40 dark:bg-[#0B0F17]/40 space-y-4">
+                    {/* Messages — Apple Messages Thread with Edge Fade */}
+                    <div
+                      className="flex-1 overflow-y-auto min-h-0 p-6 pb-12 bg-slate-50/40 dark:bg-[#0B0F17]/40 space-y-4 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800"
+                      style={{
+                        maskImage: 'linear-gradient(to bottom, black calc(100% - 48px), transparent 100%)',
+                        WebkitMaskImage: 'linear-gradient(to bottom, black calc(100% - 48px), transparent 100%)',
+                      }}
+                    >
                       <StaggerContainer className="space-y-4">
                         {(selectedConversation.messages ?? []).map((msg, idx) =>
                           msg.sender === "bot" ? (
