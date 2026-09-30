@@ -1,11 +1,18 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ShieldAlert, Lock, User, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { useAuth, AuthError } from '../context/AuthContext';
 
 export default function Login() {
   const navigate = useNavigate();
-  const { login, loginWithGoogle } = useAuth();
+  const { login, loginWithGoogle, user } = useAuth();
+
+  // If already logged in, redirect straight to dashboard
+  useEffect(() => {
+    if (user) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [user, navigate]);
 
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');

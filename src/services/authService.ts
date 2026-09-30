@@ -60,15 +60,60 @@ export class AuthError extends Error {
   }
 }
 
-// Internal fetch wrapper - always sends cookies and sets Content-Type.
+// -- Local Token & User Storage Helpers --
+const SESSION_TOKEN_KEY = 'responde_session_token';
+const USER_KEY = 'responde_user';
+
+export function getStoredSessionToken(): string | null {
+  try {
+    return localStorage.getItem(SESSION_TOKEN_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function setStoredSessionToken(token: string | null): void {
+  try {
+    if (token) {
+      localStorage.setItem(SESSION_TOKEN_KEY, token);
+    } else {
+      localStorage.removeItem(SESSION_TOKEN_KEY);
+    }
+  } catch {}
+}
+
+export function getStoredUser(): AuthUser | null {
+  try {
+    const raw = localStorage.getItem(USER_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function setStoredUser(user: AuthUser | null): void {
+  try {
+    if (user) {
+      localStorage.setItem(USER_KEY, JSON.stringify(user));
+    } else {
+      localStorage.removeItem(USER_KEY);
+    }
+  } catch {}
+}
+
+// Internal fetch wrapper - sends cookies AND Authorization Bearer header if token exists
 async function apiFetch(path: string, options?: RequestInit): Promise<Response> {
+  const token = getStoredSessionToken();
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+    ...((options?.headers as Record<string, string>) ?? {}),
+  };
+
   return fetch(`${API_BASE}${path}`, {
     ...options,
     credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(options?.headers ?? {}),
-    },
+    headers,
   });
 }
 
@@ -98,7 +143,13 @@ export const authService = {
       );
     }
 
-    return (data.user ?? data) as AuthUser;
+    const token = data.token || data.session_token;
+    if (token) {
+      setStoredSessionToken(token);
+    }
+    const user = (data.user ?? data) as AuthUser;
+    setStoredUser(user);
+    return user;
   },
 
   /**
@@ -108,12 +159,18 @@ export const authService = {
   async me(): Promise<AuthUser | null> {
     try {
       const res = await apiFetch('/api/auth/me');
-      if (res.status === 401 || res.status === 403) return null;
-      if (!res.ok) return null;
+      if (res.status === 401 || res.status === 403) {
+        setStoredSessionToken(null);
+        setStoredUser(null);
+        return null;
+      }
+      if (!res.ok) return getStoredUser();
       const data = await res.json();
-      return (data.user ?? data) as AuthUser;
+      const user = (data.user ?? data) as AuthUser;
+      setStoredUser(user);
+      return user;
     } catch {
-      return null;
+      return getStoredUser();
     }
   },
 
@@ -121,7 +178,12 @@ export const authService = {
    * Sign out - revokes the session cookie on the backend.
    */
   async logout(): Promise<void> {
-    await apiFetch('/api/auth/logout', { method: 'POST' });
+    try {
+      await apiFetch('/api/auth/logout', { method: 'POST' });
+    } finally {
+      setStoredSessionToken(null);
+      setStoredUser(null);
+    }
   },
 
   /**
@@ -151,6 +213,12 @@ export const authService = {
       throw new AuthError(data.error ?? 'Failed to update user status', {
         reason: 'status_update_error'
       });
+    }
+    if (data.token || data.session_token) {
+      setStoredSessionToken(data.token || data.session_token);
+    }
+    if (data.user) {
+      setStoredUser(data.user);
     }
     return data;
   },
@@ -269,6 +337,12 @@ export const authService = {
       throw new AuthError(data.error ?? 'Google login failed', {
         reason: data.reason ?? 'google_oauth_error',
       });
+    }
+    if (data.token || data.session_token) {
+      setStoredSessionToken(data.token || data.session_token);
+    }
+    if (data.user) {
+      setStoredUser(data.user);
     }
     return data as GoogleCallbackResult;
   },

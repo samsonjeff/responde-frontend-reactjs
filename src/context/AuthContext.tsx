@@ -6,7 +6,14 @@ import {
   useCallback,
   type ReactNode,
 } from 'react';
-import { authService, type AuthUser, type UserRole, AuthError } from '../services/authService';
+import {
+  authService,
+  type AuthUser,
+  type UserRole,
+  AuthError,
+  getStoredUser,
+  setStoredUser,
+} from '../services/authService';
 
 // -- Context shape --
 interface AuthContextValue {
@@ -40,8 +47,13 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 // -- Provider --
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [user, setUserState] = useState<AuthUser | null>(() => getStoredUser());
+  const [isLoading, setIsLoading] = useState<boolean>(() => !getStoredUser());
+
+  const setUser = useCallback((newUser: AuthUser | null) => {
+    setUserState(newUser);
+    setStoredUser(newUser);
+  }, []);
 
   const refreshUser = useCallback(async () => {
     try {
@@ -52,10 +64,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(null);
       return null;
     }
-  }, []);
+  }, [setUser]);
 
-  // On app boot: try to restore session from the httpOnly cookie.
-  // If the cookie is still valid, /api/auth/me returns the user profile.
+  // On app boot: validate/refresh session with the backend.
+  // Stored user allows instant access to dashboard while validation completes in background.
   useEffect(() => {
     refreshUser().finally(() => setIsLoading(false));
   }, [refreshUser]);
@@ -64,7 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // authService.login throws AuthError on bad credentials / locked account
     const loggedInUser = await authService.login(identifier, password);
     setUser(loggedInUser);
-  }, []);
+  }, [setUser]);
 
   const loginWithGoogle = useCallback(async () => {
     await authService.loginWithGoogle();
