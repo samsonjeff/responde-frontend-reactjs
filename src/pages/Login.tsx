@@ -164,7 +164,9 @@ export default function Login() {
             <button
               id="login-google"
               type="button"
-              onClick={loginWithGoogle}
+              onClick={() => loginWithGoogle().catch((err) => {
+                setErrorMessage(err instanceof Error ? err.message : 'Google sign-in failed.')
+              })}
               className="w-full py-2 sm:py-2.5 px-4 flex items-center justify-center gap-2.5 bg-white border border-slate-300 hover:bg-slate-50/80 rounded-xl text-xs sm:text-sm font-medium text-slate-700 transition-colors min-h-[38px] sm:min-h-[40px]"
             >
               <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">

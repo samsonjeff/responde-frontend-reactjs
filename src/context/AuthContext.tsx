@@ -23,8 +23,8 @@ interface AuthContextValue {
    */
   login: (identifier: string, password: string) => Promise<void>;
 
-  /** Redirect to backend Google OAuth (pre-invited accounts only) */
-  loginWithGoogle: () => void;
+  /** Redirect to Google OAuth via Supabase (pre-invited accounts only) */
+  loginWithGoogle: () => Promise<void>;
 
   /** Sign out and clear local user state */
   logout: () => Promise<void>;
@@ -53,8 +53,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(loggedInUser);
   }, []);
 
-  const loginWithGoogle = useCallback(() => {
-    authService.loginWithGoogle();
+  const loginWithGoogle = useCallback(async () => {
+    await authService.loginWithGoogle();
   }, []);
 
   const logout = useCallback(async () => {

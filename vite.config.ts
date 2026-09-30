@@ -27,7 +27,6 @@ export default defineConfig(({ mode }) => {
           target: env.VITE_API_URL || 'https://messbot-928g.onrender.com',
           changeOrigin: true,
           secure: true,
-          cookieDomainRewrite: 'localhost',
           configure: (proxy) => {
             proxy.on('proxyRes', (proxyRes) => {
               const setCookie = proxyRes.headers['set-cookie'];
@@ -36,6 +35,8 @@ export default defineConfig(({ mode }) => {
                   cookie
                     .replace(/;\s*Secure/gi, '')
                     .replace(/;\s*SameSite=None/gi, '; SameSite=Lax')
+                    .replace(/;\s*SameSite=Strict/gi, '; SameSite=Lax')
+                    .replace(/;\s*Domain=[^;]*/gi, '')
                 );
               }
             });

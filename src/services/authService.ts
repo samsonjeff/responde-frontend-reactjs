@@ -8,6 +8,8 @@
 // `credentials: 'include'` is mandatory on every request so the browser
 //   sends and receives the httpOnly session cookie automatically.
 
+import { supabase } from '../lib/supabaseClient';
+
 // In dev, use proxy (relative path). In prod, use the full API URL.
 const API_BASE = import.meta.env.DEV
   ? ''
@@ -154,12 +156,44 @@ export const authService = {
   },
 
   /**
-   * Initiate Google OAuth login.
-   * Redirects the browser to the backend's Google OAuth endpoint.
-   * Only works for accounts that were pre-invited (email must already exist
-   * in system_users).
+   * Initiate Google OAuth login via Supabase client-side OAuth.
+   * Flow:
+   *   1. Supabase handles the Google redirect and callback
+   *   2. On return, call handleGoogleCallback() with the Supabase access_token
+   *      to create a server-side session cookie via POST /api/auth/google
+   *   3. Only works for accounts pre-invited (email must exist in system_users)
    */
-  loginWithGoogle(): void {
-    window.location.href = `${API_BASE}/api/auth/google`;
+  async loginWithGoogle(): Promise<void> {
+    const redirectTo = `${window.location.origin}/auth/callback`;
+
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo,
+        queryParams: { access_type: 'offline', prompt: 'consent' },
+      },
+    });
+
+    if (error) throw new AuthError(error.message, { reason: 'google_oauth_error' });
+    // Browser is redirected by Supabase — nothing more to do here
+  },
+
+  /**
+   * Called after the Google OAuth redirect returns to /auth/callback.
+   * Exchanges the Supabase access_token with our Express backend to create
+   * a server-side httpOnly session cookie (POST /api/auth/google).
+   */
+  async handleGoogleCallback(access_token: string): Promise<AuthUser> {
+    const res = await apiFetch('/api/auth/google', {
+      method: 'POST',
+      body: JSON.stringify({ access_token }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      throw new AuthError(data.error ?? 'Google login failed', {
+        reason: data.reason ?? 'google_oauth_error',
+      });
+    }
+    return (data.user ?? data) as AuthUser;
   },
 };

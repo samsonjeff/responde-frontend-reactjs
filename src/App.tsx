@@ -6,6 +6,7 @@ import { BotConversationsProvider } from './context/BotConversationsContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Landing from './website/Landing-Page';
 import Login from './pages/Login';
+import AuthCallback from './pages/AuthCallback';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import Settings from './pages/Settings';
@@ -38,6 +39,7 @@ function App() {
                 {/* Public routes — no login required */}
                 <Route path="/" element={<Landing />} />
                 <Route path="/login" element={<LoginRoute />} />
+                <Route path="/auth/callback" element={<AuthCallback />} />
 
                 {/* Protected admin routes — require valid session cookie */}
                 <Route element={<ProtectedRoute />}>
