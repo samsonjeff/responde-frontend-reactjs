@@ -96,7 +96,7 @@ export default function Login() {
                     type="text"
                     value={identifier}
                     onChange={(e) => setIdentifier(e.target.value)}
-                    placeholder="e.g. mddrmo@gmail.com"
+                    placeholder="e.g. mddrmo@gmail.com or username"
                     autoComplete="username"
                     className="w-full pl-9 pr-4 py-2 sm:py-2.5 bg-slate-50/80 border border-slate-300 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-xs sm:text-sm min-h-[38px] sm:min-h-[40px]"
                   />

@@ -1,9 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useTheme } from '../components/ThemeContent';
+import { useAuth } from '../context/AuthContext';
 import {
   Moon, Sun, Bell, Shield, Database, Users,
-  RefreshCw, Wifi, Trash2
+  RefreshCw, Wifi, Check, X, UserPlus, Copy,
+  CheckCircle2, AlertCircle, Clock, ShieldCheck,
+  Search, Lock, KeyRound, Loader2, UserCheck
 } from 'lucide-react';
+import { authService, type AuthUser, type UserRole, AuthError } from '../services/authService';
 
 function Toggle({ checked, onChange }: { checked: boolean; onChange: () => void }) {
   return (
@@ -55,9 +59,9 @@ function StatusBadge({ active }: { active: boolean }) {
 export default function Settings() {
   const { theme, toggleTheme } = useTheme();
   const isDark = theme === 'dark';
+  const { user: currentUser } = useAuth();
+  const canManageUsers = currentUser?.role === 'super_admin' || currentUser?.role === 'admin';
 
-  const [autoRefresh, setAutoRefresh] = useState(true);
-  const [refreshInterval, setRefreshInterval] = useState('30');
   const [pushNotif, setPushNotif] = useState(true);
   const [criticalAlerts, setCriticalAlerts] = useState(true);
   const [emailDigest, setEmailDigest] = useState(false);
@@ -65,11 +69,174 @@ export default function Settings() {
   const [sessionTimeout, setSessionTimeout] = useState('30');
   const [botConnected] = useState(true);
   const [scraperConnected] = useState(true);
-  const [users] = useState([
-    { id: 1, name: 'Admin MDRRMO', role: 'Admin', status: 'Active' },
-    { id: 2, name: 'Juan', role: 'Operator', status: 'Active' },
-    { id: 3, name: 'Maria', role: 'Viewer', status: 'Inactive' },
-  ]);
+
+  // -- User Management State --
+  const [users, setUsers] = useState<AuthUser[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [userError, setUserError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'active' | 'inactive'>('all');
+  const [actionSuccess, setActionSuccess] = useState<string | null>(null);
+
+  // Invite Modal
+  const [inviteModalOpen, setInviteModalOpen] = useState(false);
+  const [inviteRole, setInviteRole] = useState<'staff' | 'admin'>('staff');
+  const [generatedInvite, setGeneratedInvite] = useState<{ invite_url: string; expires_in: string } | null>(null);
+  const [isGeneratingInvite, setIsGeneratingInvite] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  // Role Edit Modal
+  const [roleModalUser, setRoleModalUser] = useState<AuthUser | null>(null);
+  const [selectedRole, setSelectedRole] = useState<UserRole>('staff');
+  const [rolePassword, setRolePassword] = useState('');
+  const [roleOtp, setRoleOtp] = useState('');
+  const [isUpdatingRole, setIsUpdatingRole] = useState(false);
+  const [roleError, setRoleError] = useState<string | null>(null);
+  const [otpSent, setOtpSent] = useState(false);
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
+
+  const [statusUpdatingId, setStatusUpdatingId] = useState<string | null>(null);
+
+  const fetchUsers = useCallback(async () => {
+    if (!canManageUsers) return;
+    setLoadingUsers(true);
+    setUserError(null);
+    try {
+      const data = await authService.getUsers();
+      setUsers(data);
+    } catch (err) {
+      setUserError(err instanceof Error ? err.message : 'Failed to fetch user list');
+    } finally {
+      setLoadingUsers(false);
+    }
+  }, [canManageUsers]);
+
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
+
+  const showSuccessFeedback = (msg: string) => {
+    setActionSuccess(msg);
+    setTimeout(() => setActionSuccess(null), 3500);
+  };
+
+  // Accept / Approve Pending User or Toggle Active
+  const handleToggleStatus = async (targetUser: AuthUser, newStatus: boolean) => {
+    setStatusUpdatingId(targetUser.user_id);
+    try {
+      await authService.updateUserStatus(targetUser.user_id, newStatus);
+      showSuccessFeedback(
+        newStatus
+          ? `User "${targetUser.full_name || targetUser.username}" was accepted and activated.`
+          : `User "${targetUser.full_name || targetUser.username}" was deactivated.`
+      );
+      fetchUsers();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to update user status');
+    } finally {
+      setStatusUpdatingId(null);
+    }
+  };
+
+  // Generate Invite Link
+  const handleGenerateInvite = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsGeneratingInvite(true);
+    try {
+      const res = await authService.generateInvite(inviteRole);
+      setGeneratedInvite({ invite_url: res.invite_url, expires_in: res.expires_in });
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to generate invite');
+    } finally {
+      setIsGeneratingInvite(false);
+    }
+  };
+
+  const handleCopyLink = () => {
+    if (generatedInvite?.invite_url) {
+      navigator.clipboard.writeText(generatedInvite.invite_url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  // Role Edit Handlers
+  const openRoleModal = (u: AuthUser) => {
+    setRoleModalUser(u);
+    setSelectedRole(u.role);
+    setRolePassword('');
+    setRoleOtp('');
+    setRoleError(null);
+    setOtpSent(false);
+  };
+
+  const handleSendOtp = async () => {
+    setIsSendingOtp(true);
+    setRoleError(null);
+    try {
+      await authService.requestOtp();
+      setOtpSent(true);
+    } catch (err) {
+      setRoleError(err instanceof Error ? err.message : 'Failed to send OTP code');
+    } finally {
+      setIsSendingOtp(false);
+    }
+  };
+
+  const handleSaveRole = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!roleModalUser) return;
+    if (!rolePassword) {
+      setRoleError('Please confirm your current administrator password.');
+      return;
+    }
+    if (selectedRole === 'super_admin' && !roleOtp) {
+      setRoleError('OTP code from your email is required to promote to Super Admin.');
+      return;
+    }
+
+    setIsUpdatingRole(true);
+    setRoleError(null);
+    try {
+      await authService.updateUserRole(
+        roleModalUser.user_id,
+        selectedRole,
+        rolePassword,
+        roleOtp || undefined
+      );
+      showSuccessFeedback(`Role for ${roleModalUser.full_name || roleModalUser.username} updated to ${selectedRole}.`);
+      setRoleModalUser(null);
+      fetchUsers();
+    } catch (err) {
+      if (err instanceof AuthError) {
+        setRoleError(err.message);
+      } else if (err instanceof Error) {
+        setRoleError(err.message);
+      } else {
+        setRoleError('Failed to change role.');
+      }
+    } finally {
+      setIsUpdatingRole(false);
+    }
+  };
+
+  // Filtered Users List
+  const filteredUsers = users.filter((u) => {
+    const q = searchQuery.toLowerCase();
+    const matchesSearch =
+      (u.full_name || '').toLowerCase().includes(q) ||
+      (u.email || '').toLowerCase().includes(q) ||
+      (u.username || '').toLowerCase().includes(q);
+
+    if (!matchesSearch) return false;
+
+    if (statusFilter === 'pending') return !u.is_active;
+    if (statusFilter === 'active') return u.is_active;
+    if (statusFilter === 'inactive') return !u.is_active;
+    return true;
+  });
+
+  const pendingCount = users.filter((u) => !u.is_active).length;
 
   return (
     <div className="space-y-6">
@@ -88,32 +255,6 @@ export default function Settings() {
                 </div>
               </div>
               <Toggle checked={isDark} onChange={toggleTheme} />
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-slate-700 dark:text-slate-200">Auto Refresh Data</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">Automatically fetch latest incident data</p>
-              </div>
-              <Toggle checked={autoRefresh} onChange={() => setAutoRefresh(!autoRefresh)} />
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-slate-700 dark:text-slate-200">Refresh Interval</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">How often to update data</p>
-              </div>
-              <select
-                disabled={!autoRefresh}
-                value={refreshInterval}
-                onChange={(e) => setRefreshInterval(e.target.value)}
-                className="px-3 py-1.5 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-slate-700 dark:text-slate-200 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="10">10 sec</option>
-                <option value="30">30 sec</option>
-                <option value="60">1 min</option>
-                <option value="300">5 min</option>
-              </select>
             </div>
           </div>
         </Card>
@@ -202,60 +343,547 @@ export default function Settings() {
         </Card>
       </div>
 
-      <div className="bg-white dark:bg-[#111827] rounded-xl border border-slate-200 dark:border-slate-700/60 shadow-[0_4px_24px_rgba(0,0,0,0.06)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.35)] p-6">
-        <div className="flex items-center justify-between mb-5">
-          <div className="flex items-center gap-2">
-            <Users className="w-5 h-5 text-slate-500 dark:text-slate-400" />
-            <h3 className="font-semibold text-slate-800 dark:text-slate-100">User Management</h3>
+      {/* USER MANAGEMENT SECTION (Super Admin & Admin Only) */}
+      {canManageUsers && (
+        <div className="bg-white dark:bg-[#111827] rounded-xl border border-slate-200 dark:border-slate-700/60 shadow-[0_4px_24px_rgba(0,0,0,0.06)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.35)] p-6">
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+            <div>
+              <div className="flex items-center gap-2">
+                <Users className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                <h3 className="font-semibold text-slate-800 dark:text-slate-100 text-lg">
+                  User Management &amp; Access Control
+                </h3>
+                {pendingCount > 0 && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 border border-amber-300 dark:border-amber-700/60 animate-pulse">
+                    <Clock className="w-3 h-3" />
+                    {pendingCount} Pending Approval
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                Approve new personnel registrations, generate invitation links, and manage roles.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={fetchUsers}
+                disabled={loadingUsers}
+                className="p-2 text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                title="Refresh user list"
+              >
+                <RefreshCw className={`w-4 h-4 ${loadingUsers ? 'animate-spin' : ''}`} />
+              </button>
+              <button
+                onClick={() => {
+                  setInviteModalOpen(true);
+                  setGeneratedInvite(null);
+                  setCopied(false);
+                }}
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-blue-700 to-blue-800 hover:from-blue-600 hover:to-blue-700 text-white text-xs sm:text-sm font-semibold rounded-lg shadow-sm shadow-blue-700/20 transition-all"
+              >
+                <UserPlus className="w-4 h-4" />
+                <span>Invite New User</span>
+              </button>
+            </div>
           </div>
-          <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors">
-            Add User
-          </button>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left">
-            <thead className="bg-slate-50 dark:bg-slate-700/50 border-b border-slate-200 dark:border-slate-700">
-              <tr>
-                <th className="px-4 py-3 font-semibold text-slate-700 dark:text-slate-200">Name</th>
-                <th className="px-4 py-3 font-semibold text-slate-700 dark:text-slate-200">Role</th>
-                <th className="px-4 py-3 font-semibold text-slate-700 dark:text-slate-200">Status</th>
-                <th className="px-4 py-3 font-semibold text-slate-700 dark:text-slate-200 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-              {users.map((user) => (
-                <tr key={user.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors">
-                  <td className="px-4 py-3 text-slate-700 dark:text-slate-200">{user.name}</td>
-                  <td className="px-4 py-3">
-                    <span className="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300">
-                      {user.role}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      user.status === 'Active'
-                        ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                        : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400'
-                    }`}>
-                      {user.status}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center justify-end gap-2">
-                      <button className="px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-400 dark:hover:bg-blue-900/30 rounded-lg transition-colors">
-                        Edit
-                      </button>
-                      <button className="p-1.5 text-red-600 bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/30 rounded-lg transition-colors">
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </td>
+
+          {actionSuccess && (
+            <div className="mb-4 p-3 rounded-xl bg-green-50 border border-green-200 flex items-center gap-2 text-green-700 text-xs dark:bg-green-900/30 dark:border-green-800 dark:text-green-300">
+              <CheckCircle2 className="w-4 h-4 shrink-0" />
+              <span>{actionSuccess}</span>
+            </div>
+          )}
+
+          {userError && (
+            <div className="mb-4 p-3 rounded-xl bg-red-50 border border-red-200 flex items-center gap-2 text-red-700 text-xs">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{userError}</span>
+            </div>
+          )}
+
+          {/* Search & Filter bar */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-4">
+            <div className="relative flex-1 max-w-sm">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search by name, email, or username..."
+                className="w-full pl-9 pr-4 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs sm:text-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 p-1 rounded-lg text-xs">
+              <button
+                onClick={() => setStatusFilter('all')}
+                className={`px-2.5 py-1 rounded-md font-medium transition-colors ${
+                  statusFilter === 'all'
+                    ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 shadow-sm'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-800'
+                }`}
+              >
+                All ({users.length})
+              </button>
+              <button
+                onClick={() => setStatusFilter('pending')}
+                className={`px-2.5 py-1 rounded-md font-medium transition-colors ${
+                  statusFilter === 'pending'
+                    ? 'bg-amber-500 text-white shadow-sm'
+                    : 'text-amber-700 dark:text-amber-400 hover:text-amber-800'
+                }`}
+              >
+                Pending ({pendingCount})
+              </button>
+              <button
+                onClick={() => setStatusFilter('active')}
+                className={`px-2.5 py-1 rounded-md font-medium transition-colors ${
+                  statusFilter === 'active'
+                    ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 shadow-sm'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-800'
+                }`}
+              >
+                Active ({users.filter((u) => u.is_active).length})
+              </button>
+            </div>
+          </div>
+
+          {/* Users Table */}
+          <div className="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-700/60">
+            <table className="w-full text-xs sm:text-sm text-left">
+              <thead className="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300">
+                <tr>
+                  <th className="px-4 py-3 font-semibold">User</th>
+                  <th className="px-4 py-3 font-semibold">Role</th>
+                  <th className="px-4 py-3 font-semibold">Status</th>
+                  <th className="px-4 py-3 font-semibold hidden md:table-cell">Last Login</th>
+                  <th className="px-4 py-3 font-semibold text-right">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                {loadingUsers ? (
+                  <tr>
+                    <td colSpan={5} className="py-8 text-center text-slate-500">
+                      <Loader2 className="w-6 h-6 animate-spin mx-auto text-blue-600 mb-2" />
+                      Loading system users...
+                    </td>
+                  </tr>
+                ) : filteredUsers.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="py-8 text-center text-slate-400">
+                      No users found.
+                    </td>
+                  </tr>
+                ) : (
+                  filteredUsers.map((u) => {
+                    const isPending = !u.is_active;
+                    const isSelf = u.user_id === currentUser?.user_id;
+
+                    return (
+                      <tr key={u.user_id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors">
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-3">
+                            {u.avatar_url ? (
+                              <img
+                                src={u.avatar_url}
+                                alt={u.full_name}
+                                className="w-8 h-8 rounded-full object-cover border border-slate-200"
+                              />
+                            ) : (
+                              <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 font-bold text-xs flex items-center justify-center">
+                                {(u.full_name || u.email || 'U')[0].toUpperCase()}
+                              </div>
+                            )}
+                            <div>
+                              <div className="font-semibold text-slate-800 dark:text-slate-100">
+                                {u.full_name || 'Unnamed Personnel'}
+                                {isSelf && (
+                                  <span className="ml-2 text-[10px] font-mono px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">
+                                    You
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-xs text-slate-400 flex items-center gap-1.5">
+                                <span>{u.email}</span>
+                                {u.username && (
+                                  <span className="font-mono text-[11px] text-slate-500 dark:text-slate-400">
+                                    @{u.username}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+
+                        <td className="px-4 py-3">
+                          <span
+                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                              u.role === 'super_admin'
+                                ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300 border border-purple-200 dark:border-purple-800'
+                                : u.role === 'admin'
+                                ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 border border-blue-200 dark:border-blue-800'
+                                : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
+                            }`}
+                          >
+                            {u.role === 'super_admin' ? 'Super Admin' : u.role === 'admin' ? 'Admin' : 'Staff'}
+                          </span>
+                        </td>
+
+                        <td className="px-4 py-3">
+                          {isPending ? (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300 border border-amber-300">
+                              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                              Pending Approval
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border border-green-200">
+                              <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                              Active
+                            </span>
+                          )}
+                        </td>
+
+                        <td className="px-4 py-3 text-xs text-slate-400 hidden md:table-cell">
+                          {u.last_login_at
+                            ? new Date(u.last_login_at).toLocaleString('en-US', {
+                                dateStyle: 'short',
+                                timeStyle: 'short',
+                              })
+                            : 'Never'}
+                        </td>
+
+                        <td className="px-4 py-3 text-right">
+                          <div className="flex items-center justify-end gap-1.5">
+                            {/* ACCEPT / APPROVE BUTTON for pending users */}
+                            {isPending && (
+                              <button
+                                onClick={() => handleToggleStatus(u, true)}
+                                disabled={statusUpdatingId === u.user_id}
+                                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-white bg-green-600 hover:bg-green-700 rounded-lg shadow-sm transition-all transform active:scale-95 disabled:opacity-50"
+                                title="Accept and approve this user into staff"
+                              >
+                                {statusUpdatingId === u.user_id ? (
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                ) : (
+                                  <UserCheck className="w-3.5 h-3.5" />
+                                )}
+                                <span>Accept / Approve</span>
+                              </button>
+                            )}
+
+                            {/* DEACTIVATE / ACTIVATE toggle for active users */}
+                            {!isPending && !isSelf && (
+                              <button
+                                onClick={() => handleToggleStatus(u, false)}
+                                disabled={statusUpdatingId === u.user_id}
+                                className="px-2.5 py-1.5 text-xs font-medium text-slate-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors"
+                                title="Deactivate user"
+                              >
+                                Deactivate
+                              </button>
+                            )}
+
+                            {/* CHANGE ROLE BUTTON */}
+                            {(!isSelf || currentUser.role === 'super_admin') && (
+                              <button
+                                onClick={() => openRoleModal(u)}
+                                className="px-2.5 py-1.5 text-xs font-medium text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
+                              >
+                                Edit Role
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* INVITE NEW USER MODAL */}
+      {inviteModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#111827] rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-700">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <UserPlus className="w-5 h-5 text-blue-600" />
+                <h3 className="font-bold text-slate-800 dark:text-slate-100 text-base">
+                  Generate Invitation Link
+                </h3>
+              </div>
+              <button
+                onClick={() => setInviteModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-4 leading-relaxed">
+              Generate a secure 1-hour invitation link to send directly to new command center personnel.
+              Users who register via an invite link are pre-approved.
+            </p>
+
+            {!generatedInvite ? (
+              <form onSubmit={handleGenerateInvite} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
+                    Assign Role for New User
+                  </label>
+                  <select
+                    value={inviteRole}
+                    onChange={(e) => setInviteRole(e.target.value as 'staff' | 'admin')}
+                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs sm:text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="staff">Staff (Dashboard &amp; Incident Viewer)</option>
+                    <option value="admin">Admin (Manage Data, Reports, &amp; Staff)</option>
+                  </select>
+                  {currentUser?.role === 'admin' && (
+                    <p className="text-[11px] text-slate-400 mt-1">
+                      Note: Administrators can invite Staff or fellow Admins. Only Super Admins can assign the Super Admin role.
+                    </p>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setInviteModalOpen(false)}
+                    className="px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isGeneratingInvite}
+                    className="px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-md transition-all flex items-center gap-1.5 disabled:opacity-50"
+                  >
+                    {isGeneratingInvite ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+                    <span>Generate Invite Link</span>
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <div className="space-y-4">
+                <div className="p-3 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-xl text-xs text-green-800 dark:text-green-300">
+                  <p className="font-semibold mb-1">Invite link ready!</p>
+                  <p className="text-[11px] opacity-90">
+                    Share this link with the user. It expires in {generatedInvite.expires_in}.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
+                    Invitation Link
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      readOnly
+                      value={generatedInvite.invite_url}
+                      className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-mono text-slate-700 dark:text-slate-300 focus:outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleCopyLink}
+                      className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold flex items-center gap-1 shrink-0 transition-colors shadow-sm"
+                    >
+                      {copied ? <Check className="w-4 h-4 text-green-300" /> : <Copy className="w-4 h-4" />}
+                      <span>{copied ? 'Copied!' : 'Copy'}</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex justify-end pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setGeneratedInvite(null);
+                      setInviteModalOpen(false);
+                    }}
+                    className="px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 rounded-xl"
+                  >
+                    Done
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* EDIT ROLE MODAL */}
+      {roleModalUser && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#111827] rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-700">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="w-5 h-5 text-blue-600" />
+                <h3 className="font-bold text-slate-800 dark:text-slate-100 text-base">
+                  Change User Role
+                </h3>
+              </div>
+              <button
+                onClick={() => setRoleModalUser(null)}
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
+              Changing role for: <strong className="text-slate-800 dark:text-slate-100">{roleModalUser.full_name || roleModalUser.username}</strong> ({roleModalUser.email})
+            </p>
+
+            {roleError && (
+              <div className="mb-4 p-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{roleError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleSaveRole} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+                  Select New Role
+                </label>
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2.5 p-2.5 border border-slate-200 dark:border-slate-700 rounded-xl cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800">
+                    <input
+                      type="radio"
+                      name="roleOption"
+                      value="staff"
+                      checked={selectedRole === 'staff'}
+                      onChange={() => setSelectedRole('staff')}
+                      className="text-blue-600 focus:ring-blue-500"
+                    />
+                    <div>
+                      <p className="text-xs font-semibold text-slate-800 dark:text-slate-200">Staff</p>
+                      <p className="text-[11px] text-slate-400">Dashboard &amp; Incident Viewer (read-only)</p>
+                    </div>
+                  </label>
+
+                  <label className="flex items-center gap-2.5 p-2.5 border border-slate-200 dark:border-slate-700 rounded-xl cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800">
+                    <input
+                      type="radio"
+                      name="roleOption"
+                      value="admin"
+                      checked={selectedRole === 'admin'}
+                      onChange={() => setSelectedRole('admin')}
+                      className="text-blue-600 focus:ring-blue-500"
+                    />
+                    <div>
+                      <p className="text-xs font-semibold text-slate-800 dark:text-slate-200">Admin</p>
+                      <p className="text-[11px] text-slate-400">Manage data, accept staff, and promote admins</p>
+                    </div>
+                  </label>
+
+                  <label
+                    className={`flex items-center gap-2.5 p-2.5 border border-slate-200 dark:border-slate-700 rounded-xl ${
+                      currentUser?.role === 'super_admin'
+                        ? 'cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800'
+                        : 'opacity-50 cursor-not-allowed bg-slate-50 dark:bg-slate-900'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="roleOption"
+                      value="super_admin"
+                      disabled={currentUser?.role !== 'super_admin'}
+                      checked={selectedRole === 'super_admin'}
+                      onChange={() => setSelectedRole('super_admin')}
+                      className="text-blue-600 focus:ring-blue-500"
+                    />
+                    <div>
+                      <p className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                        Super Admin {currentUser?.role !== 'super_admin' && '(Super Admin only)'}
+                      </p>
+                      <p className="text-[11px] text-slate-400">Full system access + OTP required to promote</p>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              {/* Password confirmation */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
+                  Your Password Confirmation <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                  <input
+                    type="password"
+                    value={rolePassword}
+                    onChange={(e) => setRolePassword(e.target.value)}
+                    placeholder="Enter your current password"
+                    required
+                    className="w-full pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs sm:text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+
+              {/* OTP Code if promoting to super_admin */}
+              {selectedRole === 'super_admin' && (
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                      Supabase OTP Code <span className="text-red-500">*</span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={handleSendOtp}
+                      disabled={isSendingOtp}
+                      className="text-[11px] text-blue-600 hover:underline font-medium"
+                    >
+                      {isSendingOtp ? 'Sending...' : otpSent ? 'Resend Code' : 'Send Code to Email'}
+                    </button>
+                  </div>
+                  <div className="relative">
+                    <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                    <input
+                      type="text"
+                      value={roleOtp}
+                      onChange={(e) => setRoleOtp(e.target.value)}
+                      placeholder="6-digit code"
+                      className="w-full pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs sm:text-sm text-slate-800 dark:text-slate-100 font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  {otpSent && (
+                    <p className="text-[11px] text-green-600 mt-1">
+                      OTP code has been sent to your email. Check your inbox.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setRoleModalUser(null)}
+                  className="px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isUpdatingRole}
+                  className="px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-md transition-all flex items-center gap-1.5 disabled:opacity-50"
+                >
+                  {isUpdatingRole ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+                  <span>Save Role</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

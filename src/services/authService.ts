@@ -1,11 +1,11 @@
 // -- Auth Service --
 // All calls to the Express backend (/api/auth/*).
 //
-// In development: Vite proxies /api/* → https://messbot-928g.onrender.com
+// In development: Vite proxies /api/* -> https://messbot-928g.onrender.com
 //   so we use relative paths (no base URL needed).
 // In production: We prefix with VITE_API_URL since there's no proxy.
 //
-// `credentials: 'include'` is mandatory on every request so the browser
+// credentials: 'include' is mandatory on every request so the browser
 //   sends and receives the httpOnly session cookie automatically.
 
 import { supabase } from '../lib/supabaseClient';
@@ -25,9 +25,23 @@ export interface AuthUser {
   username: string;
   email: string;
   role: UserRole;
+  is_active?: boolean;
   avatar_url: string | null;
   phone_number: string | null;
+  last_login_at?: string | null;
+  created_at?: string;
   expires_at?: string;
+}
+
+export interface GoogleCallbackResult {
+  success: boolean;
+  requires_setup?: boolean;
+  requires_approval?: boolean;
+  user?: AuthUser;
+  email?: string;
+  full_name?: string;
+  avatar_url?: string | null;
+  message?: string;
 }
 
 export interface LoginErrorDetail {
@@ -46,7 +60,7 @@ export class AuthError extends Error {
   }
 }
 
-// Internal fetch wrapper — always sends cookies and sets Content-Type.
+// Internal fetch wrapper - always sends cookies and sets Content-Type.
 async function apiFetch(path: string, options?: RequestInit): Promise<Response> {
   return fetch(`${API_BASE}${path}`, {
     ...options,
@@ -84,7 +98,6 @@ export const authService = {
       );
     }
 
-    // Backend may return { user: {...} } or the user object directly
     return (data.user ?? data) as AuthUser;
   },
 
@@ -105,21 +118,90 @@ export const authService = {
   },
 
   /**
-   * Sign out — revokes the session cookie on the backend.
+   * Sign out - revokes the session cookie on the backend.
    */
   async logout(): Promise<void> {
     await apiFetch('/api/auth/logout', { method: 'POST' });
   },
 
   /**
-   * Register a new account using a super_admin invite token.
+   * Fetch all registered system users (Super Admin & Admin only).
+   */
+  async getUsers(): Promise<AuthUser[]> {
+    const res = await apiFetch('/api/auth/users');
+    const data = await res.json();
+    if (!res.ok) {
+      throw new AuthError(data.error ?? 'Failed to load users', {
+        reason: 'users_fetch_error'
+      });
+    }
+    return (data.users ?? []) as AuthUser[];
+  },
+
+  /**
+   * Activate or deactivate a user (Approve pending users or revoke access).
+   */
+  async updateUserStatus(userId: string, is_active: boolean): Promise<{ success: boolean; message: string; is_active: boolean }> {
+    const res = await apiFetch(`/api/auth/users/${userId}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ is_active })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      throw new AuthError(data.error ?? 'Failed to update user status', {
+        reason: 'status_update_error'
+      });
+    }
+    return data;
+  },
+
+  /**
+   * Promote or change user role.
+   * Admin: can promote to admin or staff.
+   * Super Admin: can promote to staff, admin, or super_admin (with OTP).
+   */
+  async updateUserRole(
+    userId: string,
+    new_role: UserRole,
+    password: string,
+    supabase_otp?: string
+  ): Promise<{ success: boolean; message: string; old_role: UserRole; new_role: UserRole }> {
+    const res = await apiFetch(`/api/auth/users/${userId}/role`, {
+      method: 'PATCH',
+      body: JSON.stringify({ new_role, password, supabase_otp })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      throw new AuthError(data.error ?? 'Failed to change role', {
+        reason: 'role_update_error'
+      });
+    }
+    return data;
+  },
+
+  /**
+   * Request OTP for super_admin promotion.
+   */
+  async requestOtp(): Promise<{ success: boolean; message: string }> {
+    const res = await apiFetch('/api/auth/request-otp', { method: 'POST' });
+    const data = await res.json();
+    if (!res.ok) {
+      throw new AuthError(data.error ?? 'Failed to send OTP', {
+        reason: 'otp_error'
+      });
+    }
+    return data;
+  },
+
+  /**
+   * Register a new account using an invite token.
    * Used on the /register?token=... page.
    */
   async register(payload: {
     token: string;
     email: string;
     password: string;
-    username: string;
+    username?: string;
     full_name: string;
   }): Promise<AuthUser> {
     const res = await apiFetch('/api/auth/register', {
@@ -137,11 +219,11 @@ export const authService = {
 
   /**
    * Generate a 1-hour invite link for a new user.
-   * Super admin only — the backend enforces this via session check.
+   * Super Admin & Admin supported.
    */
   async generateInvite(
-    target_role: 'admin' | 'staff'
-  ): Promise<{ token: string; invite_url: string; expires_at: string }> {
+    target_role: 'admin' | 'staff' | 'super_admin'
+  ): Promise<{ token: string; invite_url: string; target_role: string; expires_in: string }> {
     const res = await apiFetch('/api/auth/invite', {
       method: 'POST',
       body: JSON.stringify({ target_role }),
@@ -157,11 +239,6 @@ export const authService = {
 
   /**
    * Initiate Google OAuth login via Supabase client-side OAuth.
-   * Flow:
-   *   1. Supabase handles the Google redirect and callback
-   *   2. On return, call handleGoogleCallback() with the Supabase access_token
-   *      to create a server-side session cookie via POST /api/auth/google
-   *   3. Only works for accounts pre-invited (email must exist in system_users)
    */
   async loginWithGoogle(): Promise<void> {
     const redirectTo = `${window.location.origin}/auth/callback`;
@@ -175,7 +252,6 @@ export const authService = {
     });
 
     if (error) throw new AuthError(error.message, { reason: 'google_oauth_error' });
-    // Browser is redirected by Supabase — nothing more to do here
   },
 
   /**
@@ -183,7 +259,7 @@ export const authService = {
    * Exchanges the Supabase access_token with our Express backend to create
    * a server-side httpOnly session cookie (POST /api/auth/google).
    */
-  async handleGoogleCallback(access_token: string): Promise<AuthUser> {
+  async handleGoogleCallback(access_token: string): Promise<GoogleCallbackResult> {
     const res = await apiFetch('/api/auth/google', {
       method: 'POST',
       body: JSON.stringify({ access_token }),
@@ -194,6 +270,29 @@ export const authService = {
         reason: data.reason ?? 'google_oauth_error',
       });
     }
-    return (data.user ?? data) as AuthUser;
+    return data as GoogleCallbackResult;
+  },
+
+  /**
+   * Complete setup for a new Google account: sets the password and optional username.
+   */
+  async completeGoogleSetup(payload: {
+    access_token: string;
+    password: string;
+    username?: string;
+    full_name?: string;
+    phone_number?: string;
+  }): Promise<{ user?: AuthUser; requires_approval?: boolean; message?: string }> {
+    const res = await apiFetch('/api/auth/google/complete-setup', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      throw new AuthError(data.error ?? 'Account setup failed', {
+        reason: data.reason ?? 'setup_error',
+      });
+    }
+    return data;
   },
 };
