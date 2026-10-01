@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useAuth } from '../context/AuthContext';
 import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -19,6 +20,7 @@ import { useTheme } from './ThemeContent';
 type FilterTab = 'all' | NotificationType;
 
 export default function Layout() {
+  const { logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const { theme } = useTheme();
@@ -256,7 +258,10 @@ export default function Layout() {
         {/* Sign Out */}
         <div className="px-2.5 py-3 shrink-0">
           <button
-            onClick={() => navigate('/login')}
+            onClick={async () => {
+            await logout();
+            navigate('/login');
+          }}
             className={`
               group flex items-center w-full rounded-xl px-4 py-2.5 transition-all duration-200 active:scale-[0.98]
               md:justify-center md:px-0 md:gap-0

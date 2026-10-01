@@ -6,13 +6,20 @@ import {
   useCallback,
   type ReactNode,
 } from 'react';
-import { authService, type AuthUser, type UserRole, AuthError } from '../services/authService';
+import {
+  authService,
+  type AuthUser,
+  type UserRole,
+  AuthError,
+  getStoredUser,
+  setStoredUser,
+} from '../services/authService';
 
 // -- Context shape --
 interface AuthContextValue {
   /** Currently authenticated user, or null if not logged in */
   user: AuthUser | null;
-  /** Shortcut to user.role — null when not authenticated */
+  /** Shortcut to user.role - null when not authenticated */
   role: UserRole | null;
   /** True while the initial session check (/api/auth/me) is in flight */
   isLoading: boolean;
@@ -23,8 +30,14 @@ interface AuthContextValue {
    */
   login: (identifier: string, password: string) => Promise<void>;
 
-  /** Redirect to backend Google OAuth (pre-invited accounts only) */
-  loginWithGoogle: () => void;
+  /** Redirect to Google OAuth via Supabase */
+  loginWithGoogle: () => Promise<void>;
+
+  /** Manually update current user state (e.g. after Google OAuth or setup) */
+  setUser: (user: AuthUser | null) => void;
+
+  /** Re-fetch session from /api/auth/me */
+  refreshUser: () => Promise<AuthUser | null>;
 
   /** Sign out and clear local user state */
   logout: () => Promise<void>;
@@ -34,27 +47,39 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 // -- Provider --
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [user, setUserState] = useState<AuthUser | null>(() => getStoredUser());
+  const [isLoading, setIsLoading] = useState<boolean>(() => !getStoredUser());
 
-  // On app boot: try to restore session from the httpOnly cookie.
-  // If the cookie is still valid, /api/auth/me returns the user profile.
-  useEffect(() => {
-    authService
-      .me()
-      .then(setUser)
-      .catch(() => setUser(null))
-      .finally(() => setIsLoading(false));
+  const setUser = useCallback((newUser: AuthUser | null) => {
+    setUserState(newUser);
+    setStoredUser(newUser);
   }, []);
+
+  const refreshUser = useCallback(async () => {
+    try {
+      const meUser = await authService.me();
+      setUser(meUser);
+      return meUser;
+    } catch {
+      setUser(null);
+      return null;
+    }
+  }, [setUser]);
+
+  // On app boot: validate/refresh session with the backend.
+  // Stored user allows instant access to dashboard while validation completes in background.
+  useEffect(() => {
+    refreshUser().finally(() => setIsLoading(false));
+  }, [refreshUser]);
 
   const login = useCallback(async (identifier: string, password: string) => {
     // authService.login throws AuthError on bad credentials / locked account
     const loggedInUser = await authService.login(identifier, password);
     setUser(loggedInUser);
-  }, []);
+  }, [setUser]);
 
-  const loginWithGoogle = useCallback(() => {
-    authService.loginWithGoogle();
+  const loginWithGoogle = useCallback(async () => {
+    await authService.loginWithGoogle();
   }, []);
 
   const logout = useCallback(async () => {
@@ -70,6 +95,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoading,
         login,
         loginWithGoogle,
+        setUser,
+        refreshUser,
         logout,
       }}
     >
