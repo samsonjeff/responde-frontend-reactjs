@@ -4,8 +4,8 @@ import { useAuth } from '../context/AuthContext';
 import {
   Moon, Sun, Bell, Shield, Database, Users,
   RefreshCw, Wifi, Check, X, UserPlus, Copy,
-  CheckCircle2, AlertCircle, Clock, ShieldCheck,
-  Search, Lock, KeyRound, Loader2, UserCheck
+  CheckCircle2, AlertCircle, ShieldCheck,
+  Search, Lock, KeyRound, Loader2
 } from 'lucide-react';
 import { authService, type AuthUser, type UserRole, AuthError } from '../services/authService';
 
@@ -64,9 +64,7 @@ export default function Settings() {
 
   const [pushNotif, setPushNotif] = useState(true);
   const [criticalAlerts, setCriticalAlerts] = useState(true);
-  const [emailDigest, setEmailDigest] = useState(false);
   const [twoFactor, setTwoFactor] = useState(false);
-  const [sessionTimeout, setSessionTimeout] = useState('30');
   const [botConnected] = useState(true);
   const [scraperConnected] = useState(true);
 
@@ -75,7 +73,6 @@ export default function Settings() {
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [userError, setUserError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'active' | 'inactive'>('all');
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
 
   // Invite Modal
@@ -94,8 +91,6 @@ export default function Settings() {
   const [roleError, setRoleError] = useState<string | null>(null);
   const [otpSent, setOtpSent] = useState(false);
   const [isSendingOtp, setIsSendingOtp] = useState(false);
-
-  const [statusUpdatingId, setStatusUpdatingId] = useState<string | null>(null);
 
   const fetchUsers = useCallback(async () => {
     if (!canManageUsers) return;
@@ -118,24 +113,6 @@ export default function Settings() {
   const showSuccessFeedback = (msg: string) => {
     setActionSuccess(msg);
     setTimeout(() => setActionSuccess(null), 3500);
-  };
-
-  // Accept / Approve Pending User or Toggle Active
-  const handleToggleStatus = async (targetUser: AuthUser, newStatus: boolean) => {
-    setStatusUpdatingId(targetUser.user_id);
-    try {
-      await authService.updateUserStatus(targetUser.user_id, newStatus);
-      showSuccessFeedback(
-        newStatus
-          ? `User "${targetUser.full_name || targetUser.username}" was accepted and activated.`
-          : `User "${targetUser.full_name || targetUser.username}" was deactivated.`
-      );
-      fetchUsers();
-    } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to update user status');
-    } finally {
-      setStatusUpdatingId(null);
-    }
   };
 
   // Generate Invite Link
@@ -223,20 +200,12 @@ export default function Settings() {
   // Filtered Users List
   const filteredUsers = users.filter((u) => {
     const q = searchQuery.toLowerCase();
-    const matchesSearch =
+    return (
       (u.full_name || '').toLowerCase().includes(q) ||
       (u.email || '').toLowerCase().includes(q) ||
-      (u.username || '').toLowerCase().includes(q);
-
-    if (!matchesSearch) return false;
-
-    if (statusFilter === 'pending') return !u.is_active;
-    if (statusFilter === 'active') return u.is_active;
-    if (statusFilter === 'inactive') return !u.is_active;
-    return true;
+      (u.username || '').toLowerCase().includes(q)
+    );
   });
-
-  const pendingCount = users.filter((u) => !u.is_active).length;
 
   return (
     <div className="space-y-6">
@@ -275,13 +244,6 @@ export default function Settings() {
               </div>
               <Toggle checked={criticalAlerts} onChange={() => setCriticalAlerts(!criticalAlerts)} />
             </div>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-slate-700 dark:text-slate-200">Email Digest</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">Periodic summary reports via email</p>
-              </div>
-              <Toggle checked={emailDigest} onChange={() => setEmailDigest(!emailDigest)} />
-            </div>
           </div>
         </Card>
 
@@ -293,22 +255,6 @@ export default function Settings() {
                 <p className="text-xs text-slate-500 dark:text-slate-400">Add extra layer of account security</p>
               </div>
               <Toggle checked={twoFactor} onChange={() => setTwoFactor(!twoFactor)} />
-            </div>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-slate-700 dark:text-slate-200">Session Timeout</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">Auto-logout after inactivity</p>
-              </div>
-              <select
-                value={sessionTimeout}
-                onChange={(e) => setSessionTimeout(e.target.value)}
-                className="px-3 py-1.5 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="15">15 mins</option>
-                <option value="30">30 mins</option>
-                <option value="60">1 hour</option>
-                <option value="120">2 hours</option>
-              </select>
             </div>
           </div>
         </Card>
@@ -354,15 +300,9 @@ export default function Settings() {
                 <h3 className="font-semibold text-slate-800 dark:text-slate-100 text-lg">
                   User Management &amp; Access Control
                 </h3>
-                {pendingCount > 0 && (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 border border-amber-300 dark:border-amber-700/60 animate-pulse">
-                    <Clock className="w-3 h-3" />
-                    {pendingCount} Pending Approval
-                  </span>
-                )}
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                Approve new personnel registrations, generate invitation links, and manage roles.
+                Manage personnel, generate invitation links, and assign administrative roles.
               </p>
             </div>
 
@@ -370,7 +310,7 @@ export default function Settings() {
               <button
                 onClick={fetchUsers}
                 disabled={loadingUsers}
-                className="p-2 text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                className="p-2 text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
                 title="Refresh user list"
               >
                 <RefreshCw className={`w-4 h-4 ${loadingUsers ? 'animate-spin' : ''}`} />
@@ -381,7 +321,7 @@ export default function Settings() {
                   setGeneratedInvite(null);
                   setCopied(false);
                 }}
-                className="inline-flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-blue-700 to-blue-800 hover:from-blue-600 hover:to-blue-700 text-white text-xs sm:text-sm font-semibold rounded-lg shadow-sm shadow-blue-700/20 transition-all"
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-blue-700 to-blue-800 hover:from-blue-600 hover:to-blue-700 text-white text-xs sm:text-sm font-semibold rounded-lg shadow-sm shadow-blue-700/20 transition-all cursor-pointer"
               >
                 <UserPlus className="w-4 h-4" />
                 <span>Invite New User</span>
@@ -403,8 +343,8 @@ export default function Settings() {
             </div>
           )}
 
-          {/* Search & Filter bar */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-4">
+          {/* Search bar */}
+          <div className="flex items-center justify-between gap-3 mb-4">
             <div className="relative flex-1 max-w-sm">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
               <input
@@ -415,39 +355,9 @@ export default function Settings() {
                 className="w-full pl-9 pr-4 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs sm:text-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
-
-            <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 p-1 rounded-lg text-xs">
-              <button
-                onClick={() => setStatusFilter('all')}
-                className={`px-2.5 py-1 rounded-md font-medium transition-colors ${
-                  statusFilter === 'all'
-                    ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 shadow-sm'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-800'
-                }`}
-              >
-                All ({users.length})
-              </button>
-              <button
-                onClick={() => setStatusFilter('pending')}
-                className={`px-2.5 py-1 rounded-md font-medium transition-colors ${
-                  statusFilter === 'pending'
-                    ? 'bg-amber-500 text-white shadow-sm'
-                    : 'text-amber-700 dark:text-amber-400 hover:text-amber-800'
-                }`}
-              >
-                Pending ({pendingCount})
-              </button>
-              <button
-                onClick={() => setStatusFilter('active')}
-                className={`px-2.5 py-1 rounded-md font-medium transition-colors ${
-                  statusFilter === 'active'
-                    ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 shadow-sm'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-800'
-                }`}
-              >
-                Active ({users.filter((u) => u.is_active).length})
-              </button>
-            </div>
+            <span className="text-xs text-slate-500 dark:text-slate-400 hidden sm:inline-block">
+              {filteredUsers.length} {filteredUsers.length === 1 ? 'personnel' : 'personnel'}
+            </span>
           </div>
 
           {/* Users Table */}
@@ -457,7 +367,6 @@ export default function Settings() {
                 <tr>
                   <th className="px-4 py-3 font-semibold">User</th>
                   <th className="px-4 py-3 font-semibold">Role</th>
-                  <th className="px-4 py-3 font-semibold">Status</th>
                   <th className="px-4 py-3 font-semibold hidden md:table-cell">Last Login</th>
                   <th className="px-4 py-3 font-semibold text-right">Actions</th>
                 </tr>
@@ -465,20 +374,19 @@ export default function Settings() {
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                 {loadingUsers ? (
                   <tr>
-                    <td colSpan={5} className="py-8 text-center text-slate-500">
+                    <td colSpan={4} className="py-8 text-center text-slate-500">
                       <Loader2 className="w-6 h-6 animate-spin mx-auto text-blue-600 mb-2" />
                       Loading system users...
                     </td>
                   </tr>
                 ) : filteredUsers.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="py-8 text-center text-slate-400">
+                    <td colSpan={4} className="py-8 text-center text-slate-400">
                       No users found.
                     </td>
                   </tr>
                 ) : (
                   filteredUsers.map((u) => {
-                    const isPending = !u.is_active;
                     const isSelf = u.user_id === currentUser?.user_id;
 
                     return (
@@ -531,20 +439,6 @@ export default function Settings() {
                           </span>
                         </td>
 
-                        <td className="px-4 py-3">
-                          {isPending ? (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300 border border-amber-300">
-                              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                              Pending Approval
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border border-green-200">
-                              <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                              Active
-                            </span>
-                          )}
-                        </td>
-
                         <td className="px-4 py-3 text-xs text-slate-400 hidden md:table-cell">
                           {u.last_login_at
                             ? new Date(u.last_login_at).toLocaleString('en-US', {
@@ -556,40 +450,10 @@ export default function Settings() {
 
                         <td className="px-4 py-3 text-right">
                           <div className="flex items-center justify-end gap-1.5">
-                            {/* ACCEPT / APPROVE BUTTON for pending users */}
-                            {isPending && (
-                              <button
-                                onClick={() => handleToggleStatus(u, true)}
-                                disabled={statusUpdatingId === u.user_id}
-                                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-white bg-green-600 hover:bg-green-700 rounded-lg shadow-sm transition-all transform active:scale-95 disabled:opacity-50"
-                                title="Accept and approve this user into staff"
-                              >
-                                {statusUpdatingId === u.user_id ? (
-                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                ) : (
-                                  <UserCheck className="w-3.5 h-3.5" />
-                                )}
-                                <span>Accept / Approve</span>
-                              </button>
-                            )}
-
-                            {/* DEACTIVATE / ACTIVATE toggle for active users */}
-                            {!isPending && !isSelf && (
-                              <button
-                                onClick={() => handleToggleStatus(u, false)}
-                                disabled={statusUpdatingId === u.user_id}
-                                className="px-2.5 py-1.5 text-xs font-medium text-slate-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors"
-                                title="Deactivate user"
-                              >
-                                Deactivate
-                              </button>
-                            )}
-
-                            {/* CHANGE ROLE BUTTON */}
                             {(!isSelf || currentUser.role === 'super_admin') && (
                               <button
                                 onClick={() => openRoleModal(u)}
-                                className="px-2.5 py-1.5 text-xs font-medium text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
+                                className="px-2.5 py-1.5 text-xs font-medium text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/30 rounded-lg transition-colors cursor-pointer"
                               >
                                 Edit Role
                               </button>
