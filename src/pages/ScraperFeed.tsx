@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+﻿import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence, type Variants } from "framer-motion";
 import {
   Filter, Globe, MessageCircle, AlertTriangle, MapPin, Clock,
@@ -219,90 +219,39 @@ export default function ScraperFeed() {
     }
   };
 
-  // -- Fetch from Supabase with self-healing table detection --
+  // -- Fetch from backend API (authenticated) --
   useEffect(() => {
     const fetchPosts = async () => {
       setLoading(true);
       setError(null);
 
       try {
-        let tableName = "fb_comments";
-        let availableTables: string[] = [];
+        const API_BASE = import.meta.env.DEV ? '' : (import.meta.env.VITE_API_URL ?? '');
+        const storedToken = (() => { try { return localStorage.getItem('responde_session_token'); } catch { return null; } })();
+        const hdrs: Record<string, string> = { 'Content-Type': 'application/json' };
+        if (storedToken) hdrs['Authorization'] = `Bearer ${storedToken}`;
 
-        try {
-          const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/`, {
-            headers: {
-              "apikey": import.meta.env.VITE_SUPABASE_ANON_KEY,
-              "Authorization": `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
-            }
-          });
-          if (res.ok) {
-            const schema = await res.json();
-            const paths = Object.keys(schema.paths || {});
-            availableTables = paths
-              .map(p => p.replace(/^\//, ""))
-              .filter(name => name && name !== "rpc");
+        const res = await fetch(`${API_BASE}/api/auth/data/fb-comments?limit=100`, {
+          credentials: 'include',
+          headers: hdrs,
+        });
 
-            setDiscoveredTables(availableTables);
-            console.log("[ScraperFeed] Discovered Supabase tables:", availableTables);
-
-            const candidates = ["fb_comments", "comments", "scraped_comments", "facebook_comments", "scraper_feed", "scraped_posts", "posts"];
-            const found = candidates.find(c => availableTables.includes(c)) ||
-              availableTables.find(t => t.includes("comment") || t.includes("scraper") || t.includes("scraped") || t.includes("fb"));
-
-            if (found) {
-              tableName = found;
-              console.log("[ScraperFeed] Selected active table:", tableName);
-            }
-          }
-        } catch (schemaErr) {
-          console.warn("[ScraperFeed] Could not list database tables via OpenAPI:", schemaErr);
+        if (!res.ok) {
+          const errJson = await res.json().catch(() => ({ error: res.statusText }));
+          setError(errJson.error || 'Failed to fetch FB comments');
+          setLoading(false);
+          return;
         }
 
-        const { data, error: sbError } = await supabase
-          .from(tableName)
-          .select("*")
-          .limit(100);
-
-        if (sbError) {
-          console.error(`[ScraperFeed] Failed to fetch from "${tableName}":`, sbError.message);
-          showToast(`Failed to load: ${sbError.message}`, "error");
-
-          let fallbackData: any[] | null = null;
-          let fallbackError: string | null = sbError.message;
-
-          if (availableTables.length === 0) {
-            const fallbacks = ["comments", "facebook_comments", "scraped_posts", "posts"].filter(f => f !== tableName);
-            for (const fbTable of fallbacks) {
-              const { data: fbData, error: fbErr } = await supabase
-                .from(fbTable)
-                .select("*")
-                .limit(100);
-
-              if (!fbErr) {
-                fallbackData = fbData;
-                tableName = fbTable;
-                fallbackError = null;
-                break;
-              }
-            }
-          }
-
-          if (fallbackError) {
-            setError(`${sbError.message} (Attempted table: "${tableName}"${availableTables.length > 0 ? `. Discovered tables: ${availableTables.join(", ")}` : ""})`);
-            setLoading(false);
-          } else {
-            setActiveTable(tableName);
-            processData(fallbackData, tableName);
-          }
-        } else {
-          setActiveTable(tableName);
-          processData(data, tableName);
-        }
+        const json = await res.json();
+        const data: any[] = json.data ?? [];
+        setActiveTable('fb_comments');
+        setDiscoveredTables(['fb_comments']);
+        processData(data, 'fb_comments');
       } catch (err: any) {
-        console.error("[ScraperFeed] Fetch error:", err);
-        setError(err.message || "An unexpected error occurred");
-        showToast(err.message || "An unexpected error occurred", "error");
+        console.error('[ScraperFeed] Fetch error:', err);
+        setError(err.message || 'An unexpected error occurred');
+        showToast(err.message || 'An unexpected error occurred', 'error');
         setLoading(false);
       }
     };
