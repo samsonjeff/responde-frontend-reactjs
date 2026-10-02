@@ -1,5 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
-import { supabase } from '../lib/supabaseClient';
+﻿import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
 
 // ── Types ──
 export interface BotMessage {
@@ -173,14 +172,37 @@ export function BotConversationsProvider({ children }: { children: ReactNode }) 
     if (isFirst) setLoading(true);
     setError(null);
 
-    const { data, error: sbError } = await supabase
-      .from('conversations')
-      .select('*')
-      .order('timestamp', { ascending: true });
+    // Use authenticated backend API instead of direct Supabase anon access
+    const API_BASE = import.meta.env.DEV ? '' : (import.meta.env.VITE_API_URL ?? '');
+    const storedToken = (() => { try { return localStorage.getItem('responde_session_token'); } catch { return null; } })();
+    const hdrs: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (storedToken) hdrs['Authorization'] = `Bearer ${storedToken}`;
 
+    let data: any[] | null = null;
+    try {
+      const res = await fetch(`${API_BASE}/api/auth/data/conversations?limit=500`, {
+        credentials: 'include',
+        headers: hdrs,
+      });
+      if (res.ok) {
+        const json = await res.json();
+        data = json.data ?? [];
+      } else {
+        const errJson = await res.json().catch(() => ({ error: res.statusText }));
+        console.error('[BotConversationsContext] API error:', errJson.error);
+        setError(errJson.error || 'Failed to fetch conversations');
+        if (isFirst) setLoading(false);
+        return;
+      }
+    } catch (netErr: any) {
+      console.error('[BotConversationsContext] Network error:', netErr.message);
+      setError(netErr.message || 'Network error');
+      if (isFirst) setLoading(false);
+      return;
+    }
+
+    const sbError = null; // kept for type compatibility below
     if (sbError) {
-      console.error('[BotConversationsContext] Supabase error:', sbError.message);
-      setError(sbError.message);
       if (isFirst) setLoading(false);
       return;
     }
