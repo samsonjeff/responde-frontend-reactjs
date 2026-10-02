@@ -6,6 +6,7 @@ import {
   useCallback,
   type ReactNode,
 } from 'react';
+import { supabase } from '../lib/supabaseClient';
 import {
   authService,
   type AuthUser,
@@ -58,6 +59,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refreshUser = useCallback(async () => {
     try {
       const meUser = await authService.me();
+      if (meUser && !meUser.avatar_url) {
+        try {
+          const { data } = await supabase.auth.getSession();
+          const metaAvatar =
+            data.session?.user?.user_metadata?.avatar_url ||
+            data.session?.user?.user_metadata?.picture;
+          if (metaAvatar) {
+            meUser.avatar_url = metaAvatar;
+          }
+        } catch {
+          // ignore
+        }
+      }
       setUser(meUser);
       return meUser;
     } catch {

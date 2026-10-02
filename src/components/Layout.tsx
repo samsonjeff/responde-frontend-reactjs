@@ -4,8 +4,9 @@ import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, FileText, MessageSquare, Globe, Map,
-  BarChart3, Settings, Search, Bell, UserCircle, LogOut, Menu, X,
+  BarChart3, Settings, Search, Bell, LogOut, Menu, X,
   Globe2, MessageCircle, CheckCheck, Trash2, BellOff, ArrowRight,
+  Sun, Moon, Copy, Check,
 } from 'lucide-react';
 import PageTransition from './Transition';
 import SignOutModal from './SignOutModal';
@@ -20,11 +21,100 @@ import { useTheme } from './ThemeContent';
 
 type FilterTab = 'all' | NotificationType;
 
+function getInitials(name?: string, username?: string): string {
+  if (name && name.trim()) {
+    const parts = name.trim().split(/\s+/);
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+    return parts[0].slice(0, 2).toUpperCase();
+  }
+  if (username && username.trim()) {
+    return username.trim().slice(0, 2).toUpperCase();
+  }
+  return 'U';
+}
+
+function getRoleBadge(role?: string) {
+  const normalized = (role || 'staff').toLowerCase();
+  if (normalized.includes('super_admin') || normalized.includes('super admin')) {
+    return {
+      label: 'Super Admin',
+      className: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20',
+    };
+  }
+  if (normalized.includes('admin')) {
+    return {
+      label: 'Admin',
+      className: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20',
+    };
+  }
+  if (normalized.includes('responder')) {
+    return {
+      label: 'Responder',
+      className: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
+    };
+  }
+  return {
+    label: role ? role.replace('_', ' ') : 'Staff',
+    className: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20',
+  };
+}
+
+function UserAvatar({
+  src,
+  name,
+  username,
+  size = 'md',
+  className = '',
+}: {
+  src?: string | null;
+  name?: string;
+  username?: string;
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+}) {
+  const [imgError, setImgError] = useState(false);
+  const initials = getInitials(name, username);
+
+  useEffect(() => {
+    setImgError(false);
+  }, [src]);
+
+  const sizeClasses = {
+    sm: 'w-7 h-7 text-[10px]',
+    md: 'w-9 h-9 text-xs',
+    lg: 'w-12 h-12 text-sm font-bold',
+  }[size];
+
+  if (src && !imgError) {
+    return (
+      <div className={`relative rounded-full overflow-hidden shrink-0 ${sizeClasses} ${className}`}>
+        <img
+          src={src}
+          alt={name || 'Profile'}
+          onError={() => setImgError(true)}
+          className="w-full h-full object-cover rounded-full"
+          referrerPolicy="no-referrer"
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={`rounded-full shrink-0 flex items-center justify-center font-bold tracking-tight select-none bg-gradient-to-tr from-blue-600 via-indigo-600 to-sky-500 text-white shadow-xs ${sizeClasses} ${className}`}
+    >
+      {initials}
+    </div>
+  );
+}
+
 export default function Layout() {
   const { logout, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const { theme } = useTheme();
+  const { theme, toggleTheme } = useTheme();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -33,6 +123,7 @@ export default function Layout() {
   const [signOutModalOpen, setSignOutModalOpen] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [activeTab, setActiveTab] = useState<FilterTab>('all');
+  const [copiedEmail, setCopiedEmail] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
 
@@ -53,6 +144,15 @@ export default function Layout() {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
+
+  const handleCopyEmail = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (user?.email) {
+      navigator.clipboard.writeText(user.email);
+      setCopiedEmail(true);
+      setTimeout(() => setCopiedEmail(false), 2000);
+    }
+  };
 
   // Close notification & profile dropdown on outside click
   useEffect(() => {
@@ -531,11 +631,16 @@ export default function Layout() {
                 <button
                   id="user-profile-menu-btn"
                   onClick={() => setProfileOpen((prev) => !prev)}
-                  className="w-9 h-9 bg-white/70 dark:bg-slate-800/80 border border-white/80 dark:border-white/10 shadow-sm rounded-full flex items-center justify-center cursor-pointer hover:ring-2 hover:ring-blue-500/30 transition-all active:scale-95"
+                  className="w-9 h-9 rounded-full ring-2 ring-white/80 dark:ring-white/10 hover:ring-blue-500/50 dark:hover:ring-blue-400/50 shadow-sm transition-all active:scale-95 cursor-pointer focus:outline-none flex items-center justify-center overflow-hidden"
                   aria-label="User profile menu"
                   aria-expanded={profileOpen}
                 >
-                  <UserCircle className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+                  <UserAvatar
+                    src={user?.avatar_url}
+                    name={user?.full_name}
+                    username={user?.username}
+                    size="md"
+                  />
                 </button>
 
                 {/* Profile Dropdown */}
@@ -547,43 +652,123 @@ export default function Layout() {
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: -8, scale: 0.97 }}
                       transition={{ duration: 0.16, ease: [0.16, 1, 0.3, 1] }}
-                      className="absolute right-0 top-full mt-2 w-60 backdrop-blur-xl backdrop-saturate-180 bg-white/95 dark:bg-slate-900/95 rounded-2xl border border-white/70 dark:border-white/10 shadow-[0_16px_40px_rgba(0,0,0,0.14)] dark:shadow-black/60 z-60 p-2 overflow-hidden flex flex-col"
+                      className="absolute right-0 top-full mt-2 w-72 backdrop-blur-xl backdrop-saturate-180 bg-white/95 dark:bg-slate-900/95 rounded-2xl border border-white/70 dark:border-white/10 shadow-[0_16px_40px_rgba(0,0,0,0.14)] dark:shadow-black/60 z-60 p-2.5 overflow-hidden flex flex-col"
                     >
-                      <div className="px-3 py-2.5 border-b border-slate-100 dark:border-slate-800/80 mb-1">
-                        <p className="text-xs font-semibold text-slate-800 dark:text-white truncate">
-                          {user?.full_name || user?.username || 'Authenticated User'}
-                        </p>
+                      {/* Identity Card */}
+                      <div className="p-3 rounded-xl bg-slate-50/80 dark:bg-white/[0.03] border border-slate-100 dark:border-white/5 mb-2">
+                        <div className="flex items-center gap-3">
+                          <UserAvatar
+                            src={user?.avatar_url}
+                            name={user?.full_name}
+                            username={user?.username}
+                            size="lg"
+                          />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-semibold text-slate-800 dark:text-white truncate leading-tight">
+                              {user?.full_name || user?.username || 'User Profile'}
+                            </p>
+                            {user?.username && (
+                              <p className="text-xs text-slate-500 dark:text-slate-400 font-mono truncate mt-0.5">
+                                @{user.username}
+                              </p>
+                            )}
+                            <div className="mt-1.5 flex items-center">
+                              {(() => {
+                                const role = getRoleBadge(user?.role);
+                                return (
+                                  <span
+                                    className={`inline-block px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded-md border ${role.className}`}
+                                  >
+                                    {role.label}
+                                  </span>
+                                );
+                              })()}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Email with 1-click copy */}
                         {user?.email && (
-                          <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
-                            {user.email}
-                          </p>
+                          <div className="mt-2.5 flex items-center justify-between gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/80 dark:bg-slate-800/60 border border-slate-200/60 dark:border-white/5">
+                            <span
+                              className="text-[11px] text-slate-600 dark:text-slate-300 truncate font-mono select-all"
+                              title={user.email}
+                            >
+                              {user.email}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={handleCopyEmail}
+                              className="shrink-0 p-1 rounded-md text-slate-400 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/60 transition-colors"
+                              title={copiedEmail ? 'Copied to clipboard!' : 'Copy email'}
+                              aria-label="Copy email address"
+                            >
+                              {copiedEmail ? (
+                                <span className="flex items-center gap-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                                  <Check className="w-3.5 h-3.5" />
+                                  <span>Copied</span>
+                                </span>
+                              ) : (
+                                <Copy className="w-3.5 h-3.5" />
+                              )}
+                            </button>
+                          </div>
                         )}
-                        <span className="inline-block mt-1.5 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded-md bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-200/60 dark:border-blue-800/60">
-                          {user?.role?.replace('_', ' ') || 'Staff'}
-                        </span>
                       </div>
 
-                      <Link
-                        to="/settings"
-                        onClick={() => setProfileOpen(false)}
-                        className="flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10 rounded-xl transition-colors"
-                      >
-                        <Settings className="w-4 h-4 text-slate-400" />
-                        <span>Settings</span>
-                      </Link>
+                      {/* Quick Actions */}
+                      <div className="space-y-0.5">
+                        <Link
+                          to="/settings"
+                          onClick={() => setProfileOpen(false)}
+                          className="flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100/80 dark:hover:bg-white/10 rounded-xl transition-colors"
+                        >
+                          <Settings className="w-4 h-4 text-slate-400" />
+                          <span>Account Settings</span>
+                        </Link>
 
-                      <button
-                        type="button"
-                        id="header-signout-btn"
-                        onClick={() => {
-                          setProfileOpen(false);
-                          setSignOutModalOpen(true);
-                        }}
-                        className="flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors cursor-pointer text-left w-full mt-0.5"
-                      >
-                        <LogOut className="w-4 h-4 text-red-500" />
-                        <span>Sign Out</span>
-                      </button>
+                        <button
+                          type="button"
+                          onClick={toggleTheme}
+                          className="w-full flex items-center justify-between px-3 py-2 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100/80 dark:hover:bg-white/10 rounded-xl transition-colors cursor-pointer"
+                        >
+                          <div className="flex items-center gap-2.5">
+                            {theme === 'dark' ? (
+                              <Moon className="w-4 h-4 text-indigo-400" />
+                            ) : (
+                              <Sun className="w-4 h-4 text-amber-500" />
+                            )}
+                            <span>{theme === 'dark' ? 'Dark Mode' : 'Light Mode'}</span>
+                          </div>
+                          <div
+                            className={`w-8 h-4.5 rounded-full p-0.5 transition-colors ${
+                              theme === 'dark' ? 'bg-blue-600' : 'bg-slate-300 dark:bg-slate-700'
+                            }`}
+                          >
+                            <div
+                              className={`w-3.5 h-3.5 rounded-full bg-white shadow-xs transition-transform ${
+                                theme === 'dark' ? 'translate-x-3.5' : 'translate-x-0'
+                              }`}
+                            />
+                          </div>
+                        </button>
+                      </div>
+
+                      {/* Sign Out */}
+                      <div className="border-t border-slate-100 dark:border-slate-800/80 mt-1 pt-1">
+                        <button
+                          type="button"
+                          id="header-signout-btn"
+                          onClick={() => {
+                            setProfileOpen(false);
+                            setSignOutModalOpen(true);
+                          }}
+                          className="flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors cursor-pointer text-left w-full"
+                        >
+                          <LogOut className="w-4 h-4 text-red-500" />
+                          <span>Sign Out</span>
+                        </button>
+                      </div>
                     </motion.div>
                   )}
                 </AnimatePresence>

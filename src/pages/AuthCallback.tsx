@@ -81,11 +81,17 @@ export default function AuthCallback() {
           // New account: prompt to set password and optional username
           setEmail(result.email || session.user.email || '');
           setFullName(result.full_name || session.user.user_metadata?.full_name || '');
-          setAvatarUrl(result.avatar_url || session.user.user_metadata?.avatar_url || null);
+          setAvatarUrl(result.avatar_url || session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture || null);
           setNeedsSetup(true);
         } else if (result.user) {
           // Existing active user: logged in seamlessly without password!
-          setUser(result.user);
+          const avatar =
+            result.user.avatar_url ||
+            result.avatar_url ||
+            session.user.user_metadata?.avatar_url ||
+            session.user.user_metadata?.picture ||
+            null;
+          setUser({ ...result.user, avatar_url: avatar });
           navigate('/dashboard', { replace: true });
         } else {
           // Fallback verify
@@ -159,7 +165,8 @@ export default function AuthCallback() {
         setNeedsSetup(false);
         setIsPendingApproval(true);
       } else if (res.user) {
-        setUser(res.user);
+        const avatar = res.user.avatar_url || avatarUrl || null;
+        setUser({ ...res.user, avatar_url: avatar });
         navigate('/dashboard', { replace: true });
       } else {
         navigate('/login', { replace: true });
