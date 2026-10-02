@@ -207,7 +207,7 @@ export default function Dashboard() {
 
   // Fetch Scraper posts (uses authenticated backend API with fallback to Supabase direct client)
   useEffect(() => {
-    let cancelled = false;
+    let isMounted = true;
 
     const fetchData = async () => {
       setLoading(true);
@@ -221,14 +221,14 @@ export default function Dashboard() {
       let fetchError: string | null = null;
 
       try {
-        const res = await fetch(`${API_BASE}/api/auth/data/fb-comments?limit=50`, {
+        const res = await fetch(`${API_BASE}/api/auth/data/fb-comments?limit=100`, {
           credentials: 'include',
           headers: hdrs,
         });
 
         if (res.ok) {
           const json = await res.json();
-          rows = json.data ?? [];
+          rows = json.data ?? (Array.isArray(json) ? json : []);
         } else {
           throw new Error(res.statusText || 'API non-200');
         }
@@ -238,7 +238,7 @@ export default function Dashboard() {
           .from('fb_comments')
           .select('*')
           .order('created_at', { ascending: false })
-          .limit(50);
+          .limit(100);
 
         if (!scraperRes.error && scraperRes.data) {
           rows = scraperRes.data;
@@ -247,16 +247,23 @@ export default function Dashboard() {
         }
       }
 
-      if (cancelled) return;
+      if (!isMounted) return;
+
+      // Sort newest first
+      const sorted = (rows || []).sort((a, b) => {
+        const timeA = new Date(a.created_at || a.timestamp || 0).getTime();
+        const timeB = new Date(b.created_at || b.timestamp || 0).getTime();
+        return timeB - timeA;
+      });
 
       // Process Scraper Posts
       const mappedScraper: ScraperItem[] = [];
-      for (const row of rows) {
-        const text = row.comment_text || row.commentText || row.text || row.raw_text || row.rawText || '';
+      for (const row of sorted) {
+        const text = row.comment_text || row.commentText || row.text || row.raw_text || row.rawText || row.message || row.content || '';
         const idVal = row.id || row.comment_id || row.post_id || Math.random().toString();
         const userName = row.user_name || row.username || row.author || 'Unknown';
         const barangay = row.barangay || row.location || 'Unknown';
-        const rawDate = row.created_at || row.timestamp;
+        const rawDate = row.created_at || row.timestamp || (row.comment_date ? `${row.comment_date}T${row.comment_time || '00:00:00'}` : null);
         const confidence = typeof row.confidence === 'number' ? row.confidence : 0;
         const status = row.status || 'Pending Review';
 
@@ -277,12 +284,9 @@ export default function Dashboard() {
       setScraperItems(mappedScraper);
       setLoading(false);
 
-      if (!hasShownInitialToast.current) {
+      if (!hasShownInitialToast.current && mappedScraper.length > 0) {
         hasShownInitialToast.current = true;
-        const total = botConversations.length + mappedScraper.length;
-        if (total > 0) {
-          showToast(`${total} items loaded — ${botConversations.length} bot, ${mappedScraper.length} scraper`, 'success');
-        }
+        showToast(`${mappedScraper.length} scraped posts loaded`, 'success');
       }
 
       if (fetchError && mappedScraper.length === 0) {
@@ -293,9 +297,9 @@ export default function Dashboard() {
     fetchData();
 
     return () => {
-      cancelled = true;
+      isMounted = false;
     };
-  }, [botConversations.length]);
+  }, []);
 
   // Stats
   const totalIncidents = botConversations.length + scraperItems.length;
