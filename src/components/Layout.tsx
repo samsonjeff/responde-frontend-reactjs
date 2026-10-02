@@ -8,6 +8,7 @@ import {
   Globe2, MessageCircle, CheckCheck, Trash2, BellOff, ArrowRight,
 } from 'lucide-react';
 import PageTransition from './Transition';
+import SignOutModal from './SignOutModal';
 import {
   useNotifications,
   type AppNotification,
@@ -20,7 +21,7 @@ import { useTheme } from './ThemeContent';
 type FilterTab = 'all' | NotificationType;
 
 export default function Layout() {
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const { theme } = useTheme();
@@ -28,8 +29,12 @@ export default function Layout() {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [signOutModalOpen, setSignOutModalOpen] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
   const [activeTab, setActiveTab] = useState<FilterTab>('all');
   const notifRef = useRef<HTMLDivElement>(null);
+  const profileRef = useRef<HTMLDivElement>(null);
 
   const {
     notifications,
@@ -49,20 +54,24 @@ export default function Layout() {
     return () => clearInterval(timer);
   }, []);
 
-  // Close notification dropdown on outside click
+  // Close notification & profile dropdown on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
         setNotifOpen(false);
+      }
+      if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
+        setProfileOpen(false);
       }
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  // Close mobile sidebar on route change
+  // Close mobile sidebar and profile dropdown on route change
   useEffect(() => {
     setMobileOpen(false);
+    setProfileOpen(false);
   }, [location.pathname]);
 
   // Handle escape key and desktop resize
@@ -71,6 +80,7 @@ export default function Layout() {
       if (e.key === 'Escape') {
         setMobileOpen(false);
         setNotifOpen(false);
+        setProfileOpen(false);
       }
     };
     const handleResize = () => {
@@ -85,6 +95,19 @@ export default function Layout() {
       window.removeEventListener('resize', handleResize);
     };
   }, []);
+
+  const handleConfirmSignOut = async () => {
+    try {
+      setIsSigningOut(true);
+      await logout();
+      setSignOutModalOpen(false);
+      navigate('/login', { replace: true });
+    } catch (err) {
+      console.error('Sign out error:', err);
+    } finally {
+      setIsSigningOut(false);
+    }
+  };
 
   const formattedTime = currentTime.toLocaleTimeString('en-US', {
     hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
@@ -258,15 +281,16 @@ export default function Layout() {
         {/* Sign Out */}
         <div className="px-2.5 py-3 shrink-0">
           <button
-            onClick={async () => {
-            await logout();
-            navigate('/login');
-          }}
+            id="sidebar-signout-btn"
+            onClick={() => {
+              setMobileOpen(false);
+              setSignOutModalOpen(true);
+            }}
             className={`
               group flex items-center w-full rounded-xl px-4 py-2.5 transition-all duration-200 active:scale-[0.98]
               md:justify-center md:px-0 md:gap-0
               ${collapsed && !mobileOpen ? 'lg:justify-center lg:px-0 lg:gap-0' : 'gap-3.5 lg:justify-start lg:px-4 lg:gap-3.5'}
-              text-slate-600 dark:text-slate-300 hover:bg-white/40 dark:hover:bg-white/10 hover:text-red-600 dark:hover:text-red-400 border border-transparent
+              text-slate-600 dark:text-slate-300 hover:bg-white/40 dark:hover:bg-white/10 hover:text-red-600 dark:hover:text-red-400 border border-transparent cursor-pointer
             `}
             title="Sign Out"
           >
@@ -499,14 +523,70 @@ export default function Layout() {
                 </AnimatePresence>
               </div>
 
-              <div className="flex items-center gap-3 pl-4 border-l border-white/60 dark:border-white/10">
+              <div ref={profileRef} className="relative flex items-center gap-3 pl-4 border-l border-white/60 dark:border-white/10">
                 <div className="text-right hidden sm:block">
                   <div className="text-sm font-mono font-semibold text-slate-700 dark:text-slate-200">{formattedTime}</div>
                   <div className="text-xs text-slate-500 dark:text-slate-400">{formattedDate}</div>
                 </div>
-                <div className="w-9 h-9 bg-white/70 dark:bg-slate-800/80 border border-white/80 dark:border-white/10 shadow-sm rounded-full flex items-center justify-center">
+                <button
+                  id="user-profile-menu-btn"
+                  onClick={() => setProfileOpen((prev) => !prev)}
+                  className="w-9 h-9 bg-white/70 dark:bg-slate-800/80 border border-white/80 dark:border-white/10 shadow-sm rounded-full flex items-center justify-center cursor-pointer hover:ring-2 hover:ring-blue-500/30 transition-all active:scale-95"
+                  aria-label="User profile menu"
+                  aria-expanded={profileOpen}
+                >
                   <UserCircle className="w-5 h-5 text-slate-600 dark:text-slate-400" />
-                </div>
+                </button>
+
+                {/* Profile Dropdown */}
+                <AnimatePresence>
+                  {profileOpen && (
+                    <motion.div
+                      id="profile-dropdown-menu"
+                      initial={{ opacity: 0, y: -8, scale: 0.97 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -8, scale: 0.97 }}
+                      transition={{ duration: 0.16, ease: [0.16, 1, 0.3, 1] }}
+                      className="absolute right-0 top-full mt-2 w-60 backdrop-blur-xl backdrop-saturate-180 bg-white/95 dark:bg-slate-900/95 rounded-2xl border border-white/70 dark:border-white/10 shadow-[0_16px_40px_rgba(0,0,0,0.14)] dark:shadow-black/60 z-60 p-2 overflow-hidden flex flex-col"
+                    >
+                      <div className="px-3 py-2.5 border-b border-slate-100 dark:border-slate-800/80 mb-1">
+                        <p className="text-xs font-semibold text-slate-800 dark:text-white truncate">
+                          {user?.full_name || user?.username || 'Authenticated User'}
+                        </p>
+                        {user?.email && (
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
+                            {user.email}
+                          </p>
+                        )}
+                        <span className="inline-block mt-1.5 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded-md bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-200/60 dark:border-blue-800/60">
+                          {user?.role?.replace('_', ' ') || 'Staff'}
+                        </span>
+                      </div>
+
+                      <Link
+                        to="/settings"
+                        onClick={() => setProfileOpen(false)}
+                        className="flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10 rounded-xl transition-colors"
+                      >
+                        <Settings className="w-4 h-4 text-slate-400" />
+                        <span>Settings</span>
+                      </Link>
+
+                      <button
+                        type="button"
+                        id="header-signout-btn"
+                        onClick={() => {
+                          setProfileOpen(false);
+                          setSignOutModalOpen(true);
+                        }}
+                        className="flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors cursor-pointer text-left w-full mt-0.5"
+                      >
+                        <LogOut className="w-4 h-4 text-red-500" />
+                        <span>Sign Out</span>
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </div>
           </header>
@@ -571,6 +651,17 @@ export default function Layout() {
           ))}
         </AnimatePresence>
       </div>
+
+      {/* ── Sign Out Confirmation Modal ── */}
+      <SignOutModal
+        isOpen={signOutModalOpen}
+        onClose={() => {
+          if (!isSigningOut) setSignOutModalOpen(false);
+        }}
+        onConfirm={handleConfirmSignOut}
+        isLoading={isSigningOut}
+        user={user}
+      />
     </div>
   );
 }
