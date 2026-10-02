@@ -53,6 +53,9 @@ interface NotificationContextValue {
   dismissToast: (id: number) => void;
 }
 
+// ── Storage Key ─────────────────────────────────────────────────────────────
+const NOTIFS_STORAGE_KEY = 'responde_notifications_v2';
+
 // ── Context ───────────────────────────────────────────────────────────────────
 
 const NotificationContext = createContext<NotificationContextValue | null>(null);
@@ -60,9 +63,36 @@ const NotificationContext = createContext<NotificationContextValue | null>(null)
 // ── Provider ──────────────────────────────────────────────────────────────────
 
 export function NotificationProvider({ children }: { children: ReactNode }) {
-  const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  // 1. Initialize from localStorage so notifications persist across refresh/logout/login
+  const [notifications, setNotifications] = useState<AppNotification[]>(() => {
+    try {
+      const raw = localStorage.getItem(NOTIFS_STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          return parsed.map((item: any) => ({
+            ...item,
+            timestamp: new Date(item.timestamp),
+          }));
+        }
+      }
+    } catch (err) {
+      console.warn('[NotificationContext] Failed to parse stored notifications:', err);
+    }
+    return [];
+  });
+
   const [toasts, setToasts] = useState<ToastNotification[]>([]);
   const toastIdRef = useRef(0);
+
+  // 2. Persist to localStorage whenever notifications change
+  useEffect(() => {
+    try {
+      localStorage.setItem(NOTIFS_STORAGE_KEY, JSON.stringify(notifications));
+    } catch (err) {
+      console.warn('[NotificationContext] Failed to persist notifications:', err);
+    }
+  }, [notifications]);
 
   const addNotification = useCallback(
     (
@@ -70,9 +100,9 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       title: string,
       message: string,
       targetPath: string,
-      extra?: { barangay?: string; sender?: string }
+      extra?: { barangay?: string; sender?: string; id?: string; timestamp?: Date; read?: boolean }
     ) => {
-      const id = crypto.randomUUID();
+      const id = extra?.id || crypto.randomUUID();
       const newNotif: AppNotification = {
         id,
         type,
@@ -81,16 +111,22 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         targetPath,
         barangay: extra?.barangay,
         sender: extra?.sender,
-        timestamp: new Date(),
-        read: false,
+        timestamp: extra?.timestamp || new Date(),
+        read: extra?.read ?? false,
       };
-      setNotifications((prev) => [newNotif, ...prev].slice(0, 50));
 
-      const toastId = ++toastIdRef.current;
-      setToasts((prev) => [
-        ...prev,
-        { id: toastId, type, title, message, targetPath },
-      ]);
+      setNotifications((prev) => {
+        const filtered = prev.filter((n) => n.id !== id);
+        return [newNotif, ...filtered].slice(0, 50);
+      });
+
+      if (!extra?.read) {
+        const toastId = ++toastIdRef.current;
+        setToasts((prev) => [
+          ...prev,
+          { id: toastId, type, title, message, targetPath },
+        ]);
+      }
     },
     []
   );
@@ -117,6 +153,110 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     setNotifications([]);
   }, []);
 
+  // ── Fetch Recent Records on Mount & Merge with Stored ────────────────────────
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadRecentHistory() {
+      try {
+        const [commentsRes, convosRes] = await Promise.allSettled([
+          supabase
+            .from('fb_comments')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(25),
+          supabase
+            .from('conversations')
+            .select('*')
+            .order('timestamp', { ascending: false })
+            .limit(25),
+        ]);
+
+        const fetchedItems: AppNotification[] = [];
+
+        if (commentsRes.status === 'fulfilled' && commentsRes.value.data) {
+          commentsRes.value.data.forEach((row: any) => {
+            const rawId = row.id || row.comment_id;
+            const barangay = row.barangay || row.location || 'Unknown Barangay';
+            const preview =
+              row.comment_text || row.commentText || row.raw_text || row.text || 'New comment scraped';
+            const time = row.created_at || row.timestamp || new Date().toISOString();
+            fetchedItems.push({
+              id: `scraper-${rawId || crypto.randomUUID()}`,
+              type: 'scraper',
+              title: 'New Scraped Comment',
+              message:
+                String(preview).slice(0, 70) +
+                (String(preview).length > 70 ? '...' : ''),
+              barangay,
+              targetPath: '/scraper-feed',
+              timestamp: new Date(time),
+              read: true, // Existing records from database start as read unless new
+            });
+          });
+        }
+
+        if (convosRes.status === 'fulfilled' && convosRes.value.data) {
+          convosRes.value.data.forEach((row: any) => {
+            const rawId = row.id || row.conversation_id;
+            const sender =
+              row.sender_name && row.sender_name !== 'Unknown User'
+                ? row.sender_name
+                : row.name || (row.sender_psid ? `PSID ...${String(row.sender_psid).slice(-6)}` : 'Unknown User');
+            const preview =
+              row.user_message ||
+              (row.messages && row.messages[0]?.text) ||
+              'New message received';
+            const time = row.created_at || row.timestamp || row.time || new Date().toISOString();
+            fetchedItems.push({
+              id: `messenger-${rawId || crypto.randomUUID()}`,
+              type: 'messenger',
+              title: 'New Messenger Message',
+              message:
+                String(preview).slice(0, 70) +
+                (String(preview).length > 70 ? '...' : ''),
+              sender,
+              targetPath: '/messenger-bot-logs',
+              timestamp: new Date(time),
+              read: true,
+            });
+          });
+        }
+
+        if (cancelled) return;
+
+        setNotifications((prev) => {
+          const map = new Map<string, AppNotification>();
+          
+          // Add all fetched history items first
+          fetchedItems.forEach((item) => {
+            map.set(item.id, item);
+          });
+
+          // Overlay stored user notifications (preserving read status & realtime events)
+          prev.forEach((stored) => {
+            map.set(stored.id, stored);
+          });
+
+          // Sort by timestamp descending and keep up to 50
+          return Array.from(map.values())
+            .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
+            .slice(0, 50);
+        });
+      } catch (err) {
+        if (import.meta.env.DEV) {
+          console.warn('[NotificationContext] Failed to load history:', err);
+        }
+      }
+    }
+
+    loadRecentHistory();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   // ── Supabase Realtime Subscriptions ──────────────────────────────────────────
 
   useEffect(() => {
@@ -128,6 +268,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         { event: 'INSERT', schema: 'public', table: 'fb_comments' },
         (payload) => {
           const row = payload.new as Record<string, any>;
+          const rawId = row.id || row.comment_id;
           const barangay = row.barangay || 'Unknown Barangay';
           const preview = row.comment_text
             ? String(row.comment_text).slice(0, 70) +
@@ -135,6 +276,8 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
             : 'New comment scraped';
           addNotification('scraper', 'New Scraped Comment', preview, '/scraper-feed', {
             barangay,
+            id: `scraper-${rawId || crypto.randomUUID()}`,
+            read: false,
           });
         }
       )
@@ -150,6 +293,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         { event: 'INSERT', schema: 'public', table: 'conversations' },
         (payload) => {
           const row = payload.new as Record<string, any>;
+          const rawId = row.id || row.conversation_id;
           const sender =
             row.sender_name && row.sender_name !== 'Unknown User'
               ? row.sender_name
@@ -165,7 +309,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
             'New Messenger Message',
             preview,
             '/messenger-bot-logs',
-            { sender }
+            { sender, id: `messenger-${rawId || crypto.randomUUID()}`, read: false }
           );
         }
       )

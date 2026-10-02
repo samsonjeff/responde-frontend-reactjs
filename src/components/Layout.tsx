@@ -418,7 +418,7 @@ export default function Layout() {
         `}
       >
         {/* ─── FLOATING HEADER (Frosted Glass) ─── */}
-        <div className="shrink-0 px-2 sm:px-4 pt-3 sm:pt-4 z-20 relative">
+        <div className="shrink-0 px-2 sm:px-4 pt-3 sm:pt-4 z-[100] relative">
           <header className="
             h-16.25 flex items-center justify-between px-4
             backdrop-blur-xl backdrop-saturate-180
@@ -470,7 +470,7 @@ export default function Layout() {
 
             <div className="flex items-center gap-4">
               {/* ── Notification Bell ── */}
-              <div ref={notifRef} className="relative">
+              <div ref={notifRef} className="relative z-10">
                 <button
                   id="notification-bell-btn"
                   onClick={handleBellClick}
@@ -503,7 +503,7 @@ export default function Layout() {
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: -8, scale: 0.97 }}
                       transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
-                      className="absolute right-0 top-full mt-2 w-90 sm:w-100 backdrop-blur-xl backdrop-saturate-180 bg-white/80 dark:bg-slate-900/85 rounded-2xl border border-white/70 dark:border-white/10 shadow-[0_16px_40px_rgba(0,0,0,0.12),inset_0_1px_1px_rgba(255,255,255,0.8)] dark:shadow-black/50 z-60 overflow-hidden flex flex-col"
+                      className="absolute right-0 top-full mt-2 w-90 sm:w-100 backdrop-blur-2xl backdrop-saturate-180 bg-white/95 dark:bg-slate-900/95 rounded-2xl border border-white/70 dark:border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.18),inset_0_1px_1px_rgba(255,255,255,0.8)] dark:shadow-black/70 z-[110] overflow-hidden flex flex-col"
                     >
                       {/* ── Header ── */}
                       <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 dark:border-slate-800">
@@ -623,7 +623,7 @@ export default function Layout() {
                 </AnimatePresence>
               </div>
 
-              <div ref={profileRef} className="relative flex items-center gap-3 pl-4 border-l border-white/60 dark:border-white/10">
+              <div ref={profileRef} className="relative flex items-center gap-3 pl-4 border-l border-white/60 dark:border-white/10 z-10">
                 <div className="text-right hidden sm:block">
                   <div className="text-sm font-mono font-semibold text-slate-700 dark:text-slate-200">{formattedTime}</div>
                   <div className="text-xs text-slate-500 dark:text-slate-400">{formattedDate}</div>
@@ -652,7 +652,7 @@ export default function Layout() {
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: -8, scale: 0.97 }}
                       transition={{ duration: 0.16, ease: [0.16, 1, 0.3, 1] }}
-                      className="absolute right-0 top-full mt-2 w-72 backdrop-blur-xl backdrop-saturate-180 bg-white/95 dark:bg-slate-900/95 rounded-2xl border border-white/70 dark:border-white/10 shadow-[0_16px_40px_rgba(0,0,0,0.14)] dark:shadow-black/60 z-60 p-2.5 overflow-hidden flex flex-col"
+                      className="absolute right-0 top-full mt-2 w-72 backdrop-blur-2xl backdrop-saturate-180 bg-white/95 dark:bg-slate-900/95 rounded-2xl border border-white/70 dark:border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.18)] dark:shadow-black/70 z-[110] p-2.5 overflow-hidden flex flex-col"
                     >
                       {/* Identity Card */}
                       <div className="p-3 rounded-xl bg-slate-50/80 dark:bg-white/[0.03] border border-slate-100 dark:border-white/5 mb-2">
