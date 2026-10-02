@@ -89,6 +89,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(async (identifier: string, password: string) => {
     // authService.login throws AuthError on bad credentials / locked account
     const loggedInUser = await authService.login(identifier, password);
+    if (!loggedInUser.avatar_url) {
+      try {
+        const { data } = await supabase.auth.getSession();
+        const metaAvatar =
+          data.session?.user?.user_metadata?.avatar_url ||
+          data.session?.user?.user_metadata?.picture;
+        if (metaAvatar) {
+          loggedInUser.avatar_url = metaAvatar;
+        }
+      } catch {
+        // ignore
+      }
+    }
     setUser(loggedInUser);
   }, [setUser]);
 

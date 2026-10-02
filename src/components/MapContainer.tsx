@@ -391,12 +391,18 @@ export default function MapContainer({ theme, layers, barangayCounts, pinReports
             const handleResize = () => map.resize();
             window.addEventListener('resize', handleResize);
 
+            let resizeRaf: number | null = null;
             const resizeObserver = new ResizeObserver(() => {
-                map.resize();
+                if (resizeRaf !== null) return;
+                resizeRaf = requestAnimationFrame(() => {
+                    resizeRaf = null;
+                    map.resize();
+                });
             });
             resizeObserver.observe(mapContainerRef.current);
 
             return () => {
+                if (resizeRaf !== null) cancelAnimationFrame(resizeRaf);
                 window.removeEventListener('resize', handleResize);
                 window.removeEventListener('map-fly-to', handleFlyTo);
                 resizeObserver.disconnect();

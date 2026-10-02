@@ -8,7 +8,6 @@ import {
   Globe2, MessageCircle, CheckCheck, Trash2, BellOff, ArrowRight,
   Sun, Moon, Copy, Check,
 } from 'lucide-react';
-import PageTransition from './Transition';
 import SignOutModal from './SignOutModal';
 import {
   useNotifications,
@@ -778,9 +777,7 @@ export default function Layout() {
         </div>
 
         <div className="flex-1 flex flex-col overflow-y-auto overflow-x-hidden px-4 pb-20 pt-4 sm:px-5 sm:pb-20 md:pb-5 md:pt-4 lg:px-6 lg:pb-6 lg:pt-4">
-          <PageTransition key={location.pathname}>
-            <Outlet />
-          </PageTransition>
+          <Outlet />
         </div>
       </main>
 

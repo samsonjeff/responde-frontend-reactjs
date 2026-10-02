@@ -7,7 +7,7 @@ import {
   Siren, HeartPulse, Droplets, HardHat, ShieldCheck,
   FileText, User, Phone, Clock, Layers, MapPin,
 } from 'lucide-react';
-import { StaggerContainer, StaggerItem } from '../components/Stagger';
+
 import { useTheme } from '../components/ThemeContent';
 import FilterDropdown from '../components/DropDown';
 import MapContainer from '../components/MapContainer';
@@ -23,8 +23,9 @@ const INITIAL_LAYERS: MapLayerState = {
   boundaries: true,
 };
 
-// -- Apple Design Spring Physics (critically damped, zero overshoot) --
+// -- Apple Design Spring & Smooth Easing Curves --
 const APPLE_SPRING = { type: 'spring', stiffness: 340, damping: 34, mass: 0.8 } as const;
+const PANEL_TRANSITION = { duration: 0.28, ease: [0.16, 1, 0.3, 1] } as const;
 
 // Type icons
 const TYPE_ICONS: Record<string, React.ReactNode> = {
@@ -269,6 +270,85 @@ function IncidentDetailCard({ report, onClose, onViewInReports }: {
   );
 }
 
+function IncidentSidebarContent({
+  count,
+  drawerReports,
+  onClose,
+  onFlyToReport,
+}: {
+  count: number;
+  drawerReports: Report[];
+  onClose: () => void;
+  onFlyToReport: (report: Report) => void;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: -14 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -28 }}
+      transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+      className="w-[320px] h-full flex flex-col overflow-hidden min-h-0"
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-3.5 border-b border-slate-100 dark:border-white/5 shrink-0 bg-slate-50/50 dark:bg-slate-900/30">
+        <div className="flex items-center gap-2">
+          <Navigation className="w-4 h-4 text-[#0071E3]" />
+          <span className="text-sm font-semibold tracking-tight text-slate-800 dark:text-slate-100">Live Incidents</span>
+          <span className="text-[11px] px-2 py-0.5 rounded-full bg-slate-200/70 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-semibold tabular-nums">
+            {count}
+          </span>
+        </div>
+        <button
+          onClick={onClose}
+          className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-800 transition-colors active:scale-90 cursor-pointer"
+          title="Collapse sidebar"
+        >
+          <ChevronLeft className="w-4 h-4" />
+        </button>
+      </div>
+
+      {/* Apple HIG Severity Dot Legend */}
+      <div className="flex items-center gap-3 px-4 py-2 border-b border-slate-100/60 dark:border-white/5 shrink-0 bg-white/40 dark:bg-[#111827]/40 text-[11px] text-slate-500 dark:text-slate-400">
+        <span className="font-semibold text-slate-400 uppercase tracking-wider text-[10px]">Priority:</span>
+        <div className="flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-emerald-500/20" />
+          <span>Low</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-amber-500 ring-2 ring-amber-500/20" />
+          <span>Mod</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-red-500 ring-2 ring-red-500/20 animate-pulse" />
+          <span>High</span>
+        </div>
+      </div>
+
+      {/* Incident List */}
+      <div className="flex-1 overflow-y-auto px-2.5 py-2.5 space-y-1.5 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800">
+        {drawerReports.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 text-center px-4">
+            <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 mb-2">
+              <MapPin className="w-5 h-5 opacity-60" />
+            </div>
+            <p className="text-xs font-semibold text-slate-600 dark:text-slate-300">No matching incidents</p>
+            <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">Try loosening the filters above</p>
+          </div>
+        ) : (
+          drawerReports.map((report, i) => (
+            <IncidentListItem
+              key={report.id}
+              report={report}
+              index={i}
+              onClick={() => onFlyToReport(report)}
+            />
+          ))
+        )}
+      </div>
+    </motion.div>
+  );
+}
+
 // ── Apple Segmented Layer Toggle ──
 function LayerToggle({ active, label, activeDot, onClick }: {
   active: boolean;
@@ -401,162 +481,151 @@ export default function GeospatialMap() {
 
   return (
     <PageTransition>
-      <StaggerContainer className="flex flex-col flex-1 min-h-0 gap-4">
+      <div className="flex flex-col flex-1 min-h-0 gap-4">
 
-      {/* ── Toolbar Row ── */}
-      <StaggerItem>
-        <div className="relative z-30 bg-white/80 dark:bg-[#111827]/80 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)] px-5 py-3 transition-all">
-          <div className="relative flex flex-col md:flex-row items-center justify-between gap-4">
+        {/* ── Toolbar Row ── */}
+        <div className="shrink-0">
+          <div className="relative z-30 bg-white/80 dark:bg-[#111827]/80 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)] px-5 py-3 transition-all">
+            <div className="relative flex flex-col md:flex-row items-center justify-between gap-4">
 
-            {/* Left: Filter Controls Capsule */}
-            <div className="flex items-center gap-3 flex-wrap justify-start w-full md:w-auto relative z-20">
-              <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mr-1">
-                <Filter className="w-3.5 h-3.5" />
-                <span>Filters</span>
-              </div>
-              <FilterDropdown
-                value={filterUrgency}
-                options={['All Urgency', 'High', 'Moderate', 'Low']}
-                onChange={setFilterUrgency}
-              />
-
-              <FilterDropdown
-                value={filterType}
-                options={['All Types', 'Search & Rescue', 'Medical', 'Food & Water', 'Infrastructure']}
-                onChange={setFilterType}
-              />
-            </div>
-
-            {/* Center: Apple Segmented Layer Toggle Capsule (Heatmap, Pins, Borders) */}
-            <div className="md:absolute md:left-1/2 md:-translate-x-1/2 flex items-center justify-center relative z-10 w-full md:w-auto">
-              <div className="inline-flex items-center gap-1 p-1 bg-slate-100/80 dark:bg-slate-800/80 backdrop-blur-md rounded-2xl border border-slate-200/60 dark:border-white/5 shadow-inner">
-                <div className="flex items-center gap-1 px-2 py-1 text-slate-400 dark:text-slate-500">
-                  <Layers className="w-3.5 h-3.5" />
-                  <span className="text-[11px] font-semibold uppercase tracking-wider hidden sm:inline">Layers</span>
+              {/* Left: Filter Controls Capsule */}
+              <div className="flex items-center gap-3 flex-wrap justify-start w-full md:w-auto relative z-20">
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mr-1">
+                  <Filter className="w-3.5 h-3.5" />
+                  <span>Filters</span>
                 </div>
-                <LayerToggle
-                  active={layers.choropleth}
-                  label="Heatmap"
-                  activeDot="bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.7)]"
-                  onClick={() => toggleLayer('choropleth')}
+                <FilterDropdown
+                  value={filterUrgency}
+                  options={['All Urgency', 'High', 'Moderate', 'Low']}
+                  onChange={setFilterUrgency}
                 />
-                <LayerToggle
-                  active={layers.pins}
-                  label="Pins"
-                  activeDot="bg-violet-500 shadow-[0_0_8px_rgba(139,92,246,0.7)]"
-                  onClick={() => toggleLayer('pins')}
-                />
-                <LayerToggle
-                  active={layers.boundaries}
-                  label="Borders"
-                  activeDot="bg-sky-500 shadow-[0_0_8px_rgba(14,165,233,0.7)]"
-                  onClick={() => toggleLayer('boundaries')}
+
+                <FilterDropdown
+                  value={filterType}
+                  options={['All Types', 'Search & Rescue', 'Medical', 'Food & Water', 'Infrastructure']}
+                  onChange={setFilterType}
                 />
               </div>
-            </div>
 
-            {/* Right: Plotted count chip for balanced symmetry */}
-            <div className="hidden md:flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400">
-              <span className="px-2.5 py-1 rounded-xl bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200/50 dark:border-slate-700/50 tabular-nums">
-                <strong className="text-slate-800 dark:text-slate-200">{pinReports.length}</strong> Plotted
-              </span>
+              {/* Center: Apple Segmented Layer Toggle Capsule (Heatmap, Pins, Borders) */}
+              <div className="md:absolute md:left-1/2 md:-translate-x-1/2 flex items-center justify-center relative z-10 w-full md:w-auto">
+                <div className="inline-flex items-center gap-1 p-1 bg-slate-100/80 dark:bg-slate-800/80 backdrop-blur-md rounded-2xl border border-slate-200/60 dark:border-white/5 shadow-inner">
+                  <div className="flex items-center gap-1 px-2 py-1 text-slate-400 dark:text-slate-500">
+                    <Layers className="w-3.5 h-3.5" />
+                    <span className="text-[11px] font-semibold uppercase tracking-wider hidden sm:inline">Layers</span>
+                  </div>
+                  <LayerToggle
+                    active={layers.choropleth}
+                    label="Heatmap"
+                    activeDot="bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.7)]"
+                    onClick={() => toggleLayer('choropleth')}
+                  />
+                  <LayerToggle
+                    active={layers.pins}
+                    label="Pins"
+                    activeDot="bg-violet-500 shadow-[0_0_8px_rgba(139,92,246,0.7)]"
+                    onClick={() => toggleLayer('pins')}
+                  />
+                  <LayerToggle
+                    active={layers.boundaries}
+                    label="Borders"
+                    activeDot="bg-sky-500 shadow-[0_0_8px_rgba(14,165,233,0.7)]"
+                    onClick={() => toggleLayer('boundaries')}
+                  />
+                </div>
+              </div>
+
+              {/* Right: Plotted count chip for balanced symmetry */}
+              <div className="hidden md:flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                <span className="px-2.5 py-1 rounded-xl bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200/50 dark:border-slate-700/50 tabular-nums">
+                  <strong className="text-slate-800 dark:text-slate-200">{pinReports.length}</strong> Plotted
+                </span>
+              </div>
             </div>
           </div>
         </div>
-      </StaggerItem>
 
-      {/* ── Map + Side Panel ── */}
-      <StaggerItem className="flex-1 min-h-0">
-        <div className="grid grid-cols-12 gap-4 h-full">
+        {/* ── Map + Side Panel ── */}
+        <div className="flex-1 min-h-0 flex flex-row relative h-full">
 
-          {/* Left Incident List Panel - macOS Sidebar Style */}
-          <AnimatePresence mode="wait">
+          {/* Desktop Sidebar (inline, animated width & margin) */}
+          <AnimatePresence initial={false}>
             {drawerOpen && (
               <motion.div
-                initial={{ opacity: 0, x: -16 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -16 }}
-                transition={APPLE_SPRING}
-                className="col-span-12 lg:col-span-3 bg-white/80 dark:bg-[#111827]/80 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] flex flex-col overflow-hidden min-h-0 transform-gpu will-change-transform"
+                initial={{ width: 0, opacity: 0, marginRight: 0 }}
+                animate={{ width: 320, opacity: 1, marginRight: 16 }}
+                exit={{ width: 0, opacity: 0, marginRight: 0 }}
+                transition={{
+                  width: PANEL_TRANSITION,
+                  marginRight: PANEL_TRANSITION,
+                  opacity: { duration: 0.18, ease: 'easeOut' },
+                }}
+                className="shrink-0 h-full overflow-hidden hidden lg:flex flex-col rounded-2xl border border-slate-200/80 dark:border-white/10 bg-white/80 dark:bg-[#111827]/80 backdrop-blur-xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] transform-gpu will-change-[width,opacity]"
               >
-                {/* Header */}
-                <div className="flex items-center justify-between px-4 py-3.5 border-b border-slate-100 dark:border-white/5 shrink-0 bg-slate-50/50 dark:bg-slate-900/30">
-                  <div className="flex items-center gap-2">
-                    <Navigation className="w-4 h-4 text-[#0071E3]" />
-                    <span className="text-sm font-semibold tracking-tight text-slate-800 dark:text-slate-100">Live Incidents</span>
-                    <span className="text-[11px] px-2 py-0.5 rounded-full bg-slate-200/70 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-semibold tabular-nums">
-                      {drawerReports.length}
-                    </span>
-                  </div>
-                  <button
-                    onClick={() => setDrawerOpen(false)}
-                    className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-800 transition-colors active:scale-90"
-                    title="Collapse sidebar"
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                  </button>
-                </div>
-
-                {/* Apple HIG Severity Dot Legend */}
-                <div className="flex items-center gap-3 px-4 py-2 border-b border-slate-100/60 dark:border-white/5 shrink-0 bg-white/40 dark:bg-[#111827]/40 text-[11px] text-slate-500 dark:text-slate-400">
-                  <span className="font-semibold text-slate-400 uppercase tracking-wider text-[10px]">Priority:</span>
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-emerald-500/20" />
-                    <span>Low</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-amber-500 ring-2 ring-amber-500/20" />
-                    <span>Mod</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-red-500 ring-2 ring-red-500/20 animate-pulse" />
-                    <span>High</span>
-                  </div>
-                </div>
-
-                {/* Incident List */}
-                <div className="flex-1 overflow-y-auto px-2.5 py-2.5 space-y-1.5 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800">
-                  {drawerReports.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-16 text-center px-4">
-                      <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 mb-2">
-                        <MapPin className="w-5 h-5 opacity-60" />
-                      </div>
-                      <p className="text-xs font-semibold text-slate-600 dark:text-slate-300">No matching incidents</p>
-                      <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">Try loosening the filters above</p>
-                    </div>
-                  ) : (
-                    drawerReports.map((report, i) => (
-                      <IncidentListItem
-                        key={report.id}
-                        report={report}
-                        index={i}
-                        onClick={() => handleFlyToReport(report)}
-                      />
-                    ))
-                  )}
-                </div>
+                <IncidentSidebarContent
+                  count={drawerReports.length}
+                  drawerReports={drawerReports}
+                  onClose={() => setDrawerOpen(false)}
+                  onFlyToReport={handleFlyToReport}
+                />
               </motion.div>
             )}
           </AnimatePresence>
 
+          {/* Mobile / Tablet Slide-Over Drawer (< lg) */}
+          <AnimatePresence>
+            {drawerOpen && (
+              <div className="lg:hidden">
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2, ease: 'easeOut' }}
+                  onClick={() => setDrawerOpen(false)}
+                  className="fixed inset-0 z-40 bg-black/40 backdrop-blur-xs"
+                />
+                <motion.div
+                  initial={{ x: '-100%' }}
+                  animate={{ x: 0 }}
+                  exit={{ x: '-100%' }}
+                  transition={PANEL_TRANSITION}
+                  className="fixed inset-y-0 left-0 z-50 w-[min(320px,85vw)] bg-white/95 dark:bg-[#111827]/95 backdrop-blur-2xl shadow-2xl border-r border-slate-200/80 dark:border-white/10 flex flex-col overflow-hidden"
+                >
+                  <IncidentSidebarContent
+                    count={drawerReports.length}
+                    drawerReports={drawerReports}
+                    onClose={() => setDrawerOpen(false)}
+                    onFlyToReport={(report) => {
+                      handleFlyToReport(report);
+                      setDrawerOpen(false);
+                    }}
+                  />
+                </motion.div>
+              </div>
+            )}
+          </AnimatePresence>
+
           {/* Map Shell Container — White Card Shell with Framed Placeholder */}
-          <div className={`bg-white/80 dark:bg-[#111827]/80 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] p-3 sm:p-3.5 flex flex-col overflow-hidden min-h-[500px] lg:min-h-0 ${drawerOpen ? 'col-span-12 lg:col-span-9' : 'col-span-12'}`}>
+          <div className="flex-1 min-w-0 h-full bg-white/80 dark:bg-[#111827]/80 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] p-3 sm:p-3.5 flex flex-col overflow-hidden min-h-0 relative transform-gpu">
             <div className="relative flex-1 min-h-0 w-full rounded-xl overflow-hidden border border-slate-200/70 dark:border-white/10 shadow-inner bg-slate-100 dark:bg-slate-900">
 
               {/* Drawer re-open button (Apple Floating Capsule) */}
-              {!drawerOpen && (
-                <motion.button
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={APPLE_SPRING}
-                  onClick={() => setDrawerOpen(true)}
-                  className="absolute left-3 top-3 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/95 dark:bg-[#111827]/95 backdrop-blur-xl shadow-md border border-slate-200/80 dark:border-white/10 text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-800 transition-all active:scale-[0.95] text-xs font-semibold"
-                  title="Show incident list"
-                >
-                  <ChevronRight className="w-4 h-4 text-[#0071E3]" />
-                  <span>Show Incidents</span>
-                </motion.button>
-              )}
+              <AnimatePresence>
+                {!drawerOpen && (
+                  <motion.button
+                    initial={{ opacity: 0, scale: 0.92, x: -8 }}
+                    animate={{ opacity: 1, scale: 1, x: 0 }}
+                    exit={{ opacity: 0, scale: 0.92, x: -8 }}
+                    transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                    onClick={() => setDrawerOpen(true)}
+                    className="absolute left-3 top-3 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/95 dark:bg-[#111827]/95 backdrop-blur-xl shadow-md border border-slate-200/80 dark:border-white/10 text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-800 transition-all active:scale-[0.95] text-xs font-semibold cursor-pointer"
+                    title="Show incident list"
+                  >
+                    <ChevronRight className="w-4 h-4 text-[#0071E3]" />
+                    <span>Show Incidents</span>
+                  </motion.button>
+                )}
+              </AnimatePresence>
 
               {/* Detail Cards (Inspector Sheets overlaid on map) */}
               <AnimatePresence>
@@ -588,8 +657,7 @@ export default function GeospatialMap() {
             </div>
           </div>
         </div>
-      </StaggerItem>
-      </StaggerContainer>
+      </div>
     </PageTransition>
   );
-}
+} 
