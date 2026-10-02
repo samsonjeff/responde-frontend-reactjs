@@ -205,35 +205,73 @@ export default function Dashboard() {
     }
   };
 
-  // Fetch Scraper posts from Supabase (Bot conversations are fetched & maintained via BotConversationsContext)
+  // Fetch Scraper posts (uses authenticated backend API with fallback to Supabase direct client)
   useEffect(() => {
+    let cancelled = false;
+
     const fetchData = async () => {
       setLoading(true);
 
-      const scraperRes = await supabase
-        .from('fb_comments')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(50);
+      const API_BASE = import.meta.env.DEV ? '' : (import.meta.env.VITE_API_URL ?? '');
+      const storedToken = (() => { try { return localStorage.getItem('responde_session_token'); } catch { return null; } })();
+      const hdrs: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (storedToken) hdrs['Authorization'] = `Bearer ${storedToken}`;
+
+      let rows: any[] = [];
+      let fetchError: string | null = null;
+
+      try {
+        const res = await fetch(`${API_BASE}/api/auth/data/fb-comments?limit=50`, {
+          credentials: 'include',
+          headers: hdrs,
+        });
+
+        if (res.ok) {
+          const json = await res.json();
+          rows = json.data ?? [];
+        } else {
+          throw new Error(res.statusText || 'API non-200');
+        }
+      } catch (apiErr: any) {
+        // Fallback to direct Supabase query
+        const scraperRes = await supabase
+          .from('fb_comments')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(50);
+
+        if (!scraperRes.error && scraperRes.data) {
+          rows = scraperRes.data;
+        } else if (scraperRes.error) {
+          fetchError = scraperRes.error.message;
+        }
+      }
+
+      if (cancelled) return;
 
       // Process Scraper Posts
       const mappedScraper: ScraperItem[] = [];
-      if (!scraperRes.error && scraperRes.data) {
-        for (const row of scraperRes.data) {
-          const text = row.comment_text || '';
-          mappedScraper.push({
-            id: String(row.id),
-            text,
-            barangay: row.barangay || 'Unknown',
-            type: inferType(row.incident_type, text),
-            urgency: inferUrgency(row.incident_type, text),
-            source: 'Facebook Comment',
-            time: formatTimestamp(row.created_at),
-            status: 'Pending Review',
-            reporter: row.user_name || 'Unknown',
-            confidence: 0,
-          });
-        }
+      for (const row of rows) {
+        const text = row.comment_text || row.commentText || row.text || row.raw_text || row.rawText || '';
+        const idVal = row.id || row.comment_id || row.post_id || Math.random().toString();
+        const userName = row.user_name || row.username || row.author || 'Unknown';
+        const barangay = row.barangay || row.location || 'Unknown';
+        const rawDate = row.created_at || row.timestamp;
+        const confidence = typeof row.confidence === 'number' ? row.confidence : 0;
+        const status = row.status || 'Pending Review';
+
+        mappedScraper.push({
+          id: String(idVal),
+          text,
+          barangay,
+          type: inferType(row.incident_type || row.type, text),
+          urgency: inferUrgency(row.incident_type || row.type, text),
+          source: row.source || 'Facebook Comment',
+          time: formatTimestamp(rawDate),
+          status,
+          reporter: userName,
+          confidence,
+        });
       }
 
       setScraperItems(mappedScraper);
@@ -247,12 +285,16 @@ export default function Dashboard() {
         }
       }
 
-      if (scraperRes.error) {
-        showToast(`Scraper data error: ${scraperRes.error.message}`, 'error');
+      if (fetchError && mappedScraper.length === 0) {
+        console.warn('[Dashboard] Could not fetch scraper data:', fetchError);
       }
     };
 
     fetchData();
+
+    return () => {
+      cancelled = true;
+    };
   }, [botConversations.length]);
 
   // Stats
