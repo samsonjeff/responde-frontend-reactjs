@@ -8,7 +8,6 @@ import {
   Search, Lock, Loader2
 } from 'lucide-react';
 import { authService, type AuthUser, type UserRole, AuthError } from '../services/authService';
-import { EmailVerificationModal } from '../components/EmailVerificationModal';
 
 function Toggle({ checked, onChange }: { checked: boolean; onChange: () => void }) {
   return (
@@ -89,12 +88,6 @@ export default function Settings() {
   const [rolePassword, setRolePassword] = useState('');
   const [isUpdatingRole, setIsUpdatingRole] = useState(false);
   const [roleError, setRoleError] = useState<string | null>(null);
-
-  // Email delivery test modal
-  const [verifyModalOpen, setVerifyModalOpen] = useState(false);
-  const [testChallengeToken, setTestChallengeToken] = useState<string>('');
-  const [testMaskedEmail, setTestMaskedEmail] = useState<string>('');
-  const [isTestingEmail, setIsTestingEmail] = useState(false);
 
   const fetchUsers = useCallback(async () => {
     if (!canViewUsers) return;
@@ -192,34 +185,6 @@ export default function Settings() {
     }
   };
 
-  // Email delivery test handlers
-  const handleStartEmailTest = async () => {
-    if (isTestingEmail) return;
-    setIsTestingEmail(true);
-    try {
-      const res = await authService.sendVerificationCode('settings_change');
-      setTestChallengeToken(res.challenge_token);
-      setTestMaskedEmail(res.masked_email || currentUser?.email || '');
-      setVerifyModalOpen(true);
-    } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to send verification code.');
-    } finally {
-      setIsTestingEmail(false);
-    }
-  };
-
-  const handleVerifyTestCode = async (code: string) => {
-    await authService.verifyCode(testChallengeToken, code, 'settings_change');
-    showSuccessFeedback('Email verification succeeded. Code delivery is working.');
-    setVerifyModalOpen(false);
-  };
-
-  const handleResendTestCode = async () => {
-    const res = await authService.sendVerificationCode('settings_change');
-    setTestChallengeToken(res.challenge_token);
-    setTestMaskedEmail(res.masked_email || currentUser?.email || '');
-  };
-
   // Filtered Users List
   const selfUser = users.find((u) => u.user_id === currentUser?.user_id);
   const effectiveRole = (selfUser?.role || currentUser?.role || userRole || '').toLowerCase().trim();
@@ -286,28 +251,32 @@ export default function Settings() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-slate-700 dark:text-slate-200">Two-Factor Authentication</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">6-digit email code on manual sign-in and role changes</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">6-digit email code on manual sign-in and password resets</p>
               </div>
               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
                 <ShieldCheck className="w-3.5 h-3.5" />
                 Active
               </span>
             </div>
-            <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
-              <div>
-                <p className="text-sm font-medium text-slate-700 dark:text-slate-200">Email Code Delivery Test</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">Send a test code to {currentUser?.email}</p>
+            {canViewUsers && (
+              <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
+                <div>
+                  <p className="text-sm font-medium text-slate-700 dark:text-slate-200">Generate Invitation Link</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Create a secure registration link for new personnel (expires in 15 minutes)</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setGeneratedInvite(null);
+                    setInviteModalOpen(true);
+                  }}
+                  className="px-3 py-1.5 text-xs font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-lg border border-blue-200 dark:border-blue-800 transition-colors cursor-pointer flex items-center gap-1.5"
+                >
+                  <UserPlus className="w-3.5 h-3.5" />
+                  <span>Generate Link</span>
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={handleStartEmailTest}
-                disabled={isTestingEmail}
-                className="px-3 py-1.5 text-xs font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-lg border border-blue-200 dark:border-blue-800 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
-              >
-                {isTestingEmail && <Loader2 className="w-3 h-3 animate-spin" />}
-                <span>{isTestingEmail ? 'Sending...' : 'Test'}</span>
-              </button>
-            </div>
+            )}
           </div>
         </Card>
 
@@ -577,8 +546,8 @@ export default function Settings() {
             </div>
 
             <p className="text-xs text-slate-500 dark:text-slate-400 mb-4 leading-relaxed">
-              Generate a secure 1-hour invitation link to send directly to new command center personnel.
-              Users who register via an invite link are pre-approved.
+              Generate a secure 15-minute invitation link to send directly to new command center personnel.
+              Only personnel with an authorized invitation link can create an account.
             </p>
 
             {!generatedInvite ? (
@@ -867,17 +836,7 @@ export default function Settings() {
         </div>
       )}
 
-      {/* EMAIL CODE DELIVERY TEST MODAL */}
-      <EmailVerificationModal
-        isOpen={verifyModalOpen}
-        onClose={() => setVerifyModalOpen(false)}
-        onVerify={handleVerifyTestCode}
-        onResend={handleResendTestCode}
-        title="Email Code Delivery Test"
-        subtitle="We sent a 6-digit code to confirm email delivery is working."
-        maskedEmail={testMaskedEmail}
-        actionButtonText="Confirm"
-      />
+
     </div>
   );
 }
