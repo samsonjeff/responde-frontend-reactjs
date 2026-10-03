@@ -14,7 +14,7 @@ import { useReports } from '../context/ReportsContext';
 import { useBotConversations, type BotConversation } from '../context/BotConversationsContext';
 import type { MapLayerState } from '../types/geospatial';
 import PageLoader from '../components/PageLoader';
-import { BarangayBarChart } from './Analytics';
+import { BarangayBarChart } from '../components/BarangayBarChart';
 
 // ── Types ──
 interface ScraperItem {
