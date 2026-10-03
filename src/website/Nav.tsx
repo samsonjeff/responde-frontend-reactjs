@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import gsap from 'gsap';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { Home, Info, Sparkles, LogIn, Menu, X, ChevronRight } from 'lucide-react';
 
 interface NavItem {
@@ -18,8 +18,10 @@ const NAV_ITEMS: NavItem[] = [
 ];
 
 export default function Nav() {
+  const shouldReduceMotion = useReducedMotion();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
   const [activeSection, setActiveSection] = useState<string>('hero');
   const [hoveredTab, setHoveredTab] = useState<string | null>(null);
 
@@ -47,7 +49,7 @@ export default function Nav() {
           y: 0,
           duration: 0.5,
           ease: 'power3.out',
-          clearProps: 'transform',
+          clearProps: 'transform,opacity',
         }
       );
 
@@ -109,14 +111,79 @@ export default function Nav() {
     return () => ctx.revert();
   }, []);
 
-  // Handle scroll depth for dynamic island elevation
+  // Handle scroll depth for elevation and directional scroll for smooth hide/show
   useEffect(() => {
+    let ticking = false;
+    let lastY = Math.max(0, window.scrollY);
+    let accumulatedDelta = 0;
+
     const handleScroll = () => {
-      setScrolled(window.scrollY > 15);
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const currentY = Math.max(0, window.scrollY);
+
+          // Update elevation backdrop blur & shadow
+          setScrolled(currentY > 15);
+
+          // Always stay visible if mobile menu is open
+          if (isMenuOpen) {
+            setIsVisible(true);
+            lastY = currentY;
+            accumulatedDelta = 0;
+            ticking = false;
+            return;
+          }
+
+          // Always visible in the hero / top zone of the page
+          if (currentY <= 60) {
+            setIsVisible(true);
+            lastY = currentY;
+            accumulatedDelta = 0;
+            ticking = false;
+            return;
+          }
+
+          // Prevent micro-jitter on page boundaries / overscroll bounce
+          const isNearBottom =
+            window.innerHeight + currentY >=
+            document.documentElement.scrollHeight - 25;
+          if (isNearBottom) {
+            lastY = currentY;
+            ticking = false;
+            return;
+          }
+
+          const delta = currentY - lastY;
+
+          // If scroll direction reversed, reset accumulated delta counter
+          if (
+            (delta > 0 && accumulatedDelta < 0) ||
+            (delta < 0 && accumulatedDelta > 0)
+          ) {
+            accumulatedDelta = 0;
+          }
+
+          accumulatedDelta += delta;
+
+          // Deliberate downward scroll: hide with smooth fade-out and upward glide
+          if (accumulatedDelta > 20) {
+            setIsVisible(false);
+          }
+          // Deliberate upward scroll: reveal with smooth fade-in and cushioned drop
+          else if (accumulatedDelta < -16) {
+            setIsVisible(true);
+          }
+
+          lastY = currentY;
+          ticking = false;
+        });
+        ticking = true;
+      }
     };
+
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  }, [isMenuOpen]);
 
   // Track active section via IntersectionObserver when on landing page
   useEffect(() => {
@@ -162,29 +229,90 @@ export default function Nav() {
 
   const closeMenu = () => setIsMenuOpen(false);
 
-  // Close on Escape key
+  // Close on Escape key and on resize to desktop
   useEffect(() => {
     const handleEscapeKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isMenuOpen) closeMenu();
     };
+    const handleResize = () => {
+      if (window.innerWidth >= 768 && isMenuOpen) closeMenu();
+    };
     document.addEventListener('keydown', handleEscapeKey);
-    return () => document.removeEventListener('keydown', handleEscapeKey);
+    window.addEventListener('resize', handleResize);
+    return () => {
+      document.removeEventListener('keydown', handleEscapeKey);
+      window.removeEventListener('resize', handleResize);
+    };
   }, [isMenuOpen]);
 
   return (
-    <header className="fixed top-3.5 sm:top-5 left-0 right-0 z-50 flex justify-center px-4 pointer-events-none">
+    <motion.header
+      aria-hidden={!isVisible}
+      initial={false}
+      animate={
+        shouldReduceMotion
+          ? { opacity: isVisible ? 1 : 0 }
+          : {
+              y: isVisible ? 0 : -32,
+              opacity: isVisible ? 1 : 0,
+              scale: isVisible ? 1 : 0.985,
+            }
+      }
+      transition={
+        shouldReduceMotion
+          ? { duration: 0.2, ease: 'easeInOut' }
+          : {
+              y: isVisible
+                ? {
+                    type: 'spring',
+                    stiffness: 240,
+                    damping: 26,
+                    mass: 0.8,
+                  }
+                : {
+                    duration: 0.3,
+                    ease: [0.32, 0.72, 0, 1], // Apple iOS drawer/retract curve
+                  },
+              scale: isVisible
+                ? {
+                    type: 'spring',
+                    stiffness: 240,
+                    damping: 26,
+                    mass: 0.8,
+                  }
+                : {
+                    duration: 0.3,
+                    ease: [0.32, 0.72, 0, 1],
+                  },
+              opacity: isVisible
+                ? {
+                    duration: 0.32,
+                    ease: [0.16, 1, 0.3, 1], // Natural quick ramp up, smooth settle
+                  }
+                : {
+                    duration: 0.28,
+                    ease: [0.32, 0.72, 0, 1], // Coordinated smooth fade out along with the slide
+                  },
+            }
+      }
+      style={{
+        transformOrigin: 'top center',
+        willChange: 'transform, opacity',
+      }}
+      className="fixed top-3.5 sm:top-5 left-0 right-0 z-50 flex justify-center px-4 pointer-events-none"
+    >
       <nav
         ref={navRef}
         aria-label="Main navigation"
         className={`
-          pointer-events-auto
+          ${isVisible ? 'pointer-events-auto' : 'pointer-events-none select-none'}
           w-full max-w-4xl
           flex items-center justify-between
           px-3 sm:px-4 py-2 sm:py-2.5
           rounded-full
           bg-black/15 backdrop-blur-2xl backdrop-saturate-150
           border border-white/10
-          transition-all duration-300
+          transition-[background-color,box-shadow,border-color] duration-300
           ${scrolled
             ? 'shadow-[0_8px_32px_rgba(0,0,0,0.3)] bg-black/30'
             : 'shadow-[0_4px_20px_rgba(0,0,0,0.15)]'
@@ -392,6 +520,6 @@ export default function Nav() {
           </motion.div>
         )}
       </AnimatePresence>
-    </header>
+    </motion.header>
   );
 }
