@@ -258,25 +258,7 @@ export default function Settings() {
                 Active
               </span>
             </div>
-            {canViewUsers && (
-              <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
-                <div>
-                  <p className="text-sm font-medium text-slate-700 dark:text-slate-200">Generate Invitation Link</p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">Create a secure registration link for new personnel (expires in 15 minutes)</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setGeneratedInvite(null);
-                    setInviteModalOpen(true);
-                  }}
-                  className="px-3 py-1.5 text-xs font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-lg border border-blue-200 dark:border-blue-800 transition-colors cursor-pointer flex items-center gap-1.5"
-                >
-                  <UserPlus className="w-3.5 h-3.5" />
-                  <span>Generate Link</span>
-                </button>
-              </div>
-            )}
+
           </div>
         </Card>
 
