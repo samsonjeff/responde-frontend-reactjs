@@ -200,6 +200,71 @@ export const authService = {
   },
 
   /**
+   * Request password reset code via Brevo OTP.
+   */
+  async requestPasswordReset(identifier: string): Promise<{
+    success: boolean;
+    challenge_token: string;
+    masked_email: string;
+    message: string;
+  }> {
+    const res = await apiFetch('/api/auth/forgot-password/request', {
+      method: 'POST',
+      body: JSON.stringify({ identifier })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      throw new AuthError(data.error ?? 'Failed to request password reset', {
+        reason: 'forgot_password_request_error'
+      });
+    }
+    return data;
+  },
+
+  /**
+   * Resend password reset OTP code.
+   */
+  async resendPasswordResetOtp(payload: { challenge_token?: string; identifier?: string }): Promise<{
+    success: boolean;
+    challenge_token: string;
+    masked_email: string;
+    message: string;
+  }> {
+    const res = await apiFetch('/api/auth/forgot-password/resend', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      throw new AuthError(data.error ?? 'Failed to resend reset code', {
+        reason: 'forgot_password_resend_error'
+      });
+    }
+    return data;
+  },
+
+  /**
+   * Reset password using OTP verification code.
+   */
+  async resetPassword(payload: {
+    challenge_token: string;
+    code: string;
+    new_password: string;
+  }): Promise<{ success: boolean; message: string }> {
+    const res = await apiFetch('/api/auth/forgot-password/reset', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      throw new AuthError(data.error ?? 'Failed to reset password', {
+        reason: 'forgot_password_reset_error'
+      });
+    }
+    return data;
+  },
+
+  /**
    * Restore session from httpOnly cookie on app boot.
    * Returns the current user, or null if no valid session exists.
    */
@@ -276,23 +341,18 @@ export const authService = {
 
   /**
    * Promote or change user role.
-   * Requires caller password AND email verification OTP code.
+   * Requires caller password confirmation.
    */
   async updateUserRole(
     userId: string,
     new_role: UserRole,
-    password: string,
-    verification_code?: string,
-    challenge_token?: string
+    password: string
   ): Promise<{ success: boolean; message: string; old_role: UserRole; new_role: UserRole }> {
     const res = await apiFetch(`/api/auth/users/${userId}/role`, {
       method: 'PATCH',
       body: JSON.stringify({
         new_role,
         password,
-        verification_code,
-        challenge_token,
-        supabase_otp: verification_code
       })
     });
     const data = await res.json();
@@ -305,7 +365,7 @@ export const authService = {
   },
 
   /**
-   * Request OTP code via Brevo SMTP (required before any role change).
+   * Request OTP code via Brevo SMTP (optional diagnostic/legacy).
    * Accessible by: super_admin and admin.
    */
   async requestOtp(): Promise<{ success: boolean; message: string; challenge_token?: string; masked_email?: string }> {
