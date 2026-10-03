@@ -60,7 +60,8 @@ export default function Settings() {
   const { theme, toggleTheme } = useTheme();
   const isDark = theme === 'dark';
   const { user: currentUser } = useAuth();
-  const canViewUsers = currentUser?.role === 'super_admin' || currentUser?.role === 'admin' || currentUser?.role === 'staff';
+  const userRole = (currentUser?.role || '').toLowerCase().trim();
+  const canViewUsers = userRole === 'super_admin' || userRole === 'admin';
 
   const [pushNotif, setPushNotif] = useState(true);
   const [criticalAlerts, setCriticalAlerts] = useState(true);
@@ -209,7 +210,18 @@ export default function Settings() {
   };
 
   // Filtered Users List
+  const selfUser = users.find((u) => u.user_id === currentUser?.user_id);
+  const effectiveRole = (selfUser?.role || currentUser?.role || userRole || '').toLowerCase().trim();
+
   const filteredUsers = users.filter((u) => {
+    const targetRole = (u.role || '').toLowerCase().trim();
+    const isTargetSuperAdmin = targetRole === 'super_admin' || targetRole.includes('super_admin') || targetRole.includes('super admin');
+
+    // When the logged-in user is an Admin (not a Super Admin), filter out Super Admin users completely
+    if (effectiveRole !== 'super_admin' && isTargetSuperAdmin) {
+      return false;
+    }
+
     const q = searchQuery.toLowerCase();
     return (
       (u.full_name || '').toLowerCase().includes(q) ||
@@ -435,14 +447,13 @@ export default function Settings() {
                                   </span>
                                 )}
                               </div>
-                              <div className="text-xs text-slate-400 flex items-center gap-1.5">
-                                <span>{u.email}</span>
-                                {u.username && (
+                              {u.username && (
+                                <div className="text-xs text-slate-400 flex items-center gap-1.5">
                                   <span className="font-mono text-[11px] text-slate-500 dark:text-slate-400">
                                     @{u.username}
                                   </span>
-                                )}
-                              </div>
+                                </div>
+                              )}
                             </div>
                           </div>
                         </td>
@@ -518,7 +529,7 @@ export default function Settings() {
       )}
 
       {/* INVITE NEW USER MODAL */}
-      {inviteModalOpen && (
+      {canViewUsers && inviteModalOpen && (
         <div className="fixed inset-0 z-[200] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white dark:bg-[#111827] rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-700">
             <div className="flex items-center justify-between mb-4">
@@ -630,7 +641,7 @@ export default function Settings() {
       )}
 
       {/* EDIT ROLE MODAL */}
-      {roleModalUser && (
+      {canViewUsers && roleModalUser && (
         <div className="fixed inset-0 z-[200] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white dark:bg-[#111827] rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-700">
             <div className="flex items-center justify-between mb-4">
