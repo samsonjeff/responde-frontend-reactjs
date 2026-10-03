@@ -521,4 +521,25 @@ export const authService = {
     }
     return data;
   },
+
+  /**
+   * Update triage status of a scraped Facebook comment.
+   * Requires: staff, admin, or super_admin.
+   */
+  async updateFbCommentStatus(
+    commentId: string,
+    status: 'New' | 'Verified' | 'Flagged' | 'Resolved'
+  ): Promise<{ success: boolean; message: string; data?: any }> {
+    const res = await apiFetch('/api/auth/data/fb-comments/' + encodeURIComponent(commentId) + '/status', {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      throw new AuthError(data.error ?? data.message ?? 'Failed to update status', {
+        reason: 'comment_status_update_error',
+      });
+    }
+    return data;
+  },
 };

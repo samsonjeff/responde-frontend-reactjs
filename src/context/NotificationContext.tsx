@@ -184,24 +184,6 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
           // Backend API fetch failed, proceed to Supabase fallback
         }
 
-        if (commentsData.length === 0 || convosData.length === 0) {
-          const [commentsRes, convosRes] = await Promise.allSettled([
-            commentsData.length === 0
-              ? supabase.from('fb_comments').select('*').order('created_at', { ascending: false }).limit(25)
-              : Promise.resolve({ data: commentsData, error: null }),
-            convosData.length === 0
-              ? supabase.from('conversations').select('*').order('timestamp', { ascending: false }).limit(25)
-              : Promise.resolve({ data: convosData, error: null }),
-          ]);
-
-          if (commentsData.length === 0 && commentsRes.status === 'fulfilled' && (commentsRes.value as any)?.data) {
-            commentsData = (commentsRes.value as any).data;
-          }
-          if (convosData.length === 0 && convosRes.status === 'fulfilled' && (convosRes.value as any)?.data) {
-            convosData = (convosRes.value as any).data;
-          }
-        }
-
         const fetchedItems: AppNotification[] = [];
 
         if (commentsData && commentsData.length > 0) {
