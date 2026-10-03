@@ -6,11 +6,11 @@ import {
   useCallback,
   type ReactNode,
 } from 'react';
-import { supabase } from '../lib/supabaseClient';
 import {
   authService,
   type AuthUser,
   type UserRole,
+  type LoginResponse,
   AuthError,
   getStoredUser,
   setStoredUser,
@@ -27,9 +27,20 @@ interface AuthContextValue {
 
   /**
    * Sign in with email or username + password.
-   * Throws AuthError on failure (wrong_password, account_locked, etc.)
+   * If 2FA is required, returns LoginChallengeResponse.
+   * If completed directly, returns AuthUser.
    */
-  login: (identifier: string, password: string) => Promise<void>;
+  login: (identifier: string, password: string) => Promise<LoginResponse>;
+
+  /**
+   * Complete 2FA sign in with the 6-digit email verification code.
+   */
+  verifyLoginOtp: (challengeToken: string, code: string) => Promise<AuthUser>;
+
+  /**
+   * Resend a fresh 6-digit code for the current login challenge.
+   */
+  resendLoginOtp: (challengeToken: string) => Promise<{ challenge_token: string; masked_email: string; message: string }>;
 
   /** Redirect to Google OAuth via Supabase */
   loginWithGoogle: () => Promise<void>;
@@ -59,19 +70,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refreshUser = useCallback(async () => {
     try {
       const meUser = await authService.me();
-      if (meUser && !meUser.avatar_url) {
-        try {
-          const { data } = await supabase.auth.getSession();
-          const metaAvatar =
-            data.session?.user?.user_metadata?.avatar_url ||
-            data.session?.user?.user_metadata?.picture;
-          if (metaAvatar) {
-            meUser.avatar_url = metaAvatar;
-          }
-        } catch {
-          // ignore
-        }
-      }
       setUser(meUser);
       return meUser;
     } catch {
@@ -81,29 +79,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [setUser]);
 
   // On app boot: validate/refresh session with the backend.
-  // Stored user allows instant access to dashboard while validation completes in background.
   useEffect(() => {
     refreshUser().finally(() => setIsLoading(false));
   }, [refreshUser]);
 
-  const login = useCallback(async (identifier: string, password: string) => {
-    // authService.login throws AuthError on bad credentials / locked account
-    const loggedInUser = await authService.login(identifier, password);
-    if (!loggedInUser.avatar_url) {
-      try {
-        const { data } = await supabase.auth.getSession();
-        const metaAvatar =
-          data.session?.user?.user_metadata?.avatar_url ||
-          data.session?.user?.user_metadata?.picture;
-        if (metaAvatar) {
-          loggedInUser.avatar_url = metaAvatar;
-        }
-      } catch {
-        // ignore
-      }
+  const login = useCallback(async (identifier: string, password: string): Promise<LoginResponse> => {
+    const res = await authService.login(identifier, password);
+    if ('user_id' in res) {
+      setUser(res as AuthUser);
     }
-    setUser(loggedInUser);
+    return res;
   }, [setUser]);
+
+  const verifyLoginOtp = useCallback(async (challengeToken: string, code: string): Promise<AuthUser> => {
+    const loggedInUser = await authService.verifyLoginOtp(challengeToken, code);
+    setUser(loggedInUser);
+    return loggedInUser;
+  }, [setUser]);
+
+  const resendLoginOtp = useCallback(async (challengeToken: string) => {
+    return await authService.resendLoginOtp(challengeToken);
+  }, []);
 
   const loginWithGoogle = useCallback(async () => {
     await authService.loginWithGoogle();
@@ -121,6 +117,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         role: user?.role ?? null,
         isLoading,
         login,
+        verifyLoginOtp,
+        resendLoginOtp,
         loginWithGoogle,
         setUser,
         refreshUser,
@@ -141,5 +139,5 @@ export function useAuth(): AuthContextValue {
   return ctx;
 }
 
-// Re-export AuthError so consumers can import from one place
 export { AuthError };
+export type { LoginResponse };
