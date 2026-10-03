@@ -1,48 +1,44 @@
-// -- Auth Service --
-// All calls to the Express backend (/api/auth/*).
-//
-// In development: Vite proxies /api/* -> https://messbot-928g.onrender.com
-//   so we use relative paths (no base URL needed).
-// In production: We prefix with VITE_API_URL since there's no proxy.
-//
-// credentials: 'include' is mandatory on every request so the browser
-//   sends and receives the httpOnly session cookie automatically.
-
 import { supabase } from '../lib/supabaseClient';
 
-// In dev, use proxy (relative path). In prod, use the full API URL.
-const API_BASE = import.meta.env.DEV
-  ? ''
-  : (import.meta.env.VITE_API_URL ?? '');
+const API_BASE = import.meta.env.VITE_API_URL || '';
 
-// -- Types --
-export type UserRole = 'super_admin' | 'admin' | 'staff';
+export type UserRole = 'staff' | 'admin' | 'super_admin';
 
 export interface AuthUser {
   user_id: string;
-  auth_user_id?: string;
-  full_name: string;
   username: string;
   email: string;
+  full_name?: string;
   role: UserRole;
   is_active?: boolean;
-  avatar_url: string | null;
-  phone_number: string | null;
-  last_login_at?: string | null;
+  avatar_url?: string | null;
+  phone_number?: string | null;
   created_at?: string;
-  expires_at?: string;
+  last_login_at?: string;
 }
 
 export interface GoogleCallbackResult {
-  success: boolean;
   requires_setup?: boolean;
-  requires_approval?: boolean;
   user?: AuthUser;
+  temp_user?: {
+    email: string;
+    full_name?: string;
+    avatar_url?: string | null;
+  };
   email?: string;
   full_name?: string;
   avatar_url?: string | null;
   message?: string;
 }
+
+export interface LoginChallengeResponse {
+  requires_verification: true;
+  challenge_token: string;
+  masked_email: string;
+  message: string;
+}
+
+export type LoginResponse = AuthUser | LoginChallengeResponse;
 
 export interface LoginErrorDetail {
   reason: 'wrong_password' | 'account_locked' | 'user_not_found' | string;
@@ -122,12 +118,13 @@ export const authService = {
 
   /**
    * Sign in with email/username + password.
-   * Throws AuthError with detail on failure (wrong password, locked, etc.).
+   * If 2FA is required, returns LoginChallengeResponse ({ requires_verification: true, challenge_token, masked_email }).
+   * If verified directly, returns AuthUser.
    */
-  async login(identifier: string, password: string): Promise<AuthUser> {
+  async login(identifier: string, password: string, code?: string, challenge_token?: string): Promise<LoginResponse> {
     const res = await apiFetch('/api/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ identifier, password }),
+      body: JSON.stringify({ identifier, password, code, challenge_token }),
     });
     const data = await res.json();
 
@@ -143,6 +140,15 @@ export const authService = {
       );
     }
 
+    if (data.requires_verification) {
+      return {
+        requires_verification: true,
+        challenge_token: data.challenge_token,
+        masked_email: data.masked_email,
+        message: data.message,
+      };
+    }
+
     const token = data.token || data.session_token;
     if (token) {
       setStoredSessionToken(token);
@@ -150,6 +156,47 @@ export const authService = {
     const user = (data.user ?? data) as AuthUser;
     setStoredUser(user);
     return user;
+  },
+
+  /**
+   * Verify the 6-digit one-time code during manual sign-in.
+   */
+  async verifyLoginOtp(challenge_token: string, code: string): Promise<AuthUser> {
+    const res = await apiFetch('/api/auth/login/verify-otp', {
+      method: 'POST',
+      body: JSON.stringify({ challenge_token, code }),
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new AuthError(
+        data.error ?? 'Verification failed',
+        { reason: 'otp_failed' }
+      );
+    }
+
+    const token = data.token || data.session_token;
+    if (token) {
+      setStoredSessionToken(token);
+    }
+    const user = (data.user ?? data) as AuthUser;
+    setStoredUser(user);
+    return user;
+  },
+
+  /**
+   * Resend the 6-digit verification code for manual sign-in.
+   */
+  async resendLoginOtp(challenge_token: string): Promise<{ success: boolean; challenge_token: string; masked_email: string; message: string }> {
+    const res = await apiFetch('/api/auth/login/resend-otp', {
+      method: 'POST',
+      body: JSON.stringify({ challenge_token }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      throw new AuthError(data.error ?? 'Failed to resend code', { reason: 'resend_error' });
+    }
+    return data;
   },
 
   /**
@@ -225,18 +272,24 @@ export const authService = {
 
   /**
    * Promote or change user role.
-   * Admin: can promote to admin or staff.
-   * Super Admin: can promote to staff, admin, or super_admin (with OTP).
+   * Requires caller password AND email verification OTP code.
    */
   async updateUserRole(
     userId: string,
     new_role: UserRole,
     password: string,
-    supabase_otp?: string
+    verification_code?: string,
+    challenge_token?: string
   ): Promise<{ success: boolean; message: string; old_role: UserRole; new_role: UserRole }> {
     const res = await apiFetch(`/api/auth/users/${userId}/role`, {
       method: 'PATCH',
-      body: JSON.stringify({ new_role, password, supabase_otp })
+      body: JSON.stringify({
+        new_role,
+        password,
+        verification_code,
+        challenge_token,
+        supabase_otp: verification_code
+      })
     });
     const data = await res.json();
     if (!res.ok) {
@@ -248,14 +301,49 @@ export const authService = {
   },
 
   /**
-   * Request OTP for super_admin promotion.
+   * Request OTP code via Brevo SMTP (required before any role change).
+   * Accessible by: super_admin and admin.
    */
-  async requestOtp(): Promise<{ success: boolean; message: string }> {
+  async requestOtp(): Promise<{ success: boolean; message: string; challenge_token?: string; masked_email?: string }> {
     const res = await apiFetch('/api/auth/request-otp', { method: 'POST' });
     const data = await res.json();
     if (!res.ok) {
       throw new AuthError(data.error ?? 'Failed to send OTP', {
         reason: 'otp_error'
+      });
+    }
+    return data;
+  },
+
+  /**
+   * Send a verification code for user settings changes.
+   */
+  async sendVerificationCode(purpose = 'settings_change'): Promise<{ success: boolean; message: string; challenge_token: string; masked_email: string }> {
+    const res = await apiFetch('/api/auth/send-verification-code', {
+      method: 'POST',
+      body: JSON.stringify({ purpose })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      throw new AuthError(data.error ?? 'Failed to send verification code', {
+        reason: 'code_send_error'
+      });
+    }
+    return data;
+  },
+
+  /**
+   * Validate a verification code for user settings.
+   */
+  async verifyCode(challenge_token: string, code: string, purpose = 'settings_change'): Promise<{ success: boolean; message: string }> {
+    const res = await apiFetch('/api/auth/verify-code', {
+      method: 'POST',
+      body: JSON.stringify({ challenge_token, code, purpose })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      throw new AuthError(data.error ?? 'Verification failed', {
+        reason: 'code_verify_error'
       });
     }
     return data;
