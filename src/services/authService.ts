@@ -214,6 +214,10 @@ export const authService = {
       if (!res.ok) return getStoredUser();
       const data = await res.json();
       const user = (data.user ?? data) as AuthUser;
+      const existing = getStoredUser();
+      if (!user.avatar_url && existing?.avatar_url && (existing.user_id === user.user_id || existing.email === user.email)) {
+        user.avatar_url = existing.avatar_url;
+      }
       setStoredUser(user);
       return user;
     } catch {

@@ -6,6 +6,7 @@ import {
   useCallback,
   type ReactNode,
 } from 'react';
+import { supabase } from '../lib/supabaseClient';
 import {
   authService,
   type AuthUser,
@@ -70,6 +71,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refreshUser = useCallback(async () => {
     try {
       const meUser = await authService.me();
+      if (meUser && !meUser.avatar_url) {
+        try {
+          const { data } = await supabase.auth.getSession();
+          const metaAvatar =
+            data.session?.user?.user_metadata?.avatar_url ||
+            data.session?.user?.user_metadata?.picture;
+          if (metaAvatar) {
+            meUser.avatar_url = metaAvatar;
+          }
+        } catch {
+          // ignore
+        }
+      }
       setUser(meUser);
       return meUser;
     } catch {
@@ -93,6 +107,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const verifyLoginOtp = useCallback(async (challengeToken: string, code: string): Promise<AuthUser> => {
     const loggedInUser = await authService.verifyLoginOtp(challengeToken, code);
+    if (!loggedInUser.avatar_url) {
+      try {
+        const { data } = await supabase.auth.getSession();
+        const metaAvatar =
+          data.session?.user?.user_metadata?.avatar_url ||
+          data.session?.user?.user_metadata?.picture;
+        if (metaAvatar) {
+          loggedInUser.avatar_url = metaAvatar;
+        }
+      } catch {
+        // ignore
+      }
+    }
     setUser(loggedInUser);
     return loggedInUser;
   }, [setUser]);
