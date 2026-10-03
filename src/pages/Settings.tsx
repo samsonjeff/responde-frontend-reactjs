@@ -100,6 +100,7 @@ export default function Settings() {
   const [verifyModalOpen, setVerifyModalOpen] = useState(false);
   const [testChallengeToken, setTestChallengeToken] = useState<string>('');
   const [testMaskedEmail, setTestMaskedEmail] = useState<string>('');
+  const [isTestingEmail, setIsTestingEmail] = useState(false);
 
   // Cooldown countdown for role OTP resend
   useEffect(() => {
@@ -237,6 +238,8 @@ export default function Settings() {
 
   // Email delivery test handlers
   const handleStartEmailTest = async () => {
+    if (isTestingEmail) return;
+    setIsTestingEmail(true);
     try {
       const res = await authService.sendVerificationCode('settings_change');
       setTestChallengeToken(res.challenge_token);
@@ -244,6 +247,8 @@ export default function Settings() {
       setVerifyModalOpen(true);
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Failed to send verification code.');
+    } finally {
+      setIsTestingEmail(false);
     }
   };
 
@@ -340,9 +345,11 @@ export default function Settings() {
               <button
                 type="button"
                 onClick={handleStartEmailTest}
-                className="px-3 py-1.5 text-xs font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-lg border border-blue-200 dark:border-blue-800 transition-colors cursor-pointer"
+                disabled={isTestingEmail}
+                className="px-3 py-1.5 text-xs font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-lg border border-blue-200 dark:border-blue-800 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
               >
-                Test
+                {isTestingEmail && <Loader2 className="w-3 h-3 animate-spin" />}
+                <span>{isTestingEmail ? 'Sending...' : 'Test'}</span>
               </button>
             </div>
           </div>
