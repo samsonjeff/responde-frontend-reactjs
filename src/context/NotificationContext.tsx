@@ -159,23 +159,53 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 
     async function loadRecentHistory() {
       try {
-        const [commentsRes, convosRes] = await Promise.allSettled([
-          supabase
-            .from('fb_comments')
-            .select('*')
-            .order('created_at', { ascending: false })
-            .limit(25),
-          supabase
-            .from('conversations')
-            .select('*')
-            .order('timestamp', { ascending: false })
-            .limit(25),
-        ]);
+        const API_BASE = import.meta.env.DEV ? '' : (import.meta.env.VITE_API_URL ?? '');
+        const storedToken = (() => { try { return localStorage.getItem('responde_session_token'); } catch { return null; } })();
+        const hdrs: Record<string, string> = { 'Content-Type': 'application/json' };
+        if (storedToken) hdrs['Authorization'] = `Bearer ${storedToken}`;
+
+        let commentsData: any[] = [];
+        let convosData: any[] = [];
+
+        try {
+          const [cRes, mRes] = await Promise.all([
+            fetch(`${API_BASE}/api/auth/data/fb-comments?limit=25`, { credentials: 'include', headers: hdrs }),
+            fetch(`${API_BASE}/api/auth/data/conversations?limit=25`, { credentials: 'include', headers: hdrs }),
+          ]);
+          if (cRes.ok) {
+            const j = await cRes.json();
+            commentsData = j.data ?? [];
+          }
+          if (mRes.ok) {
+            const j = await mRes.json();
+            convosData = j.data ?? [];
+          }
+        } catch {
+          // Backend API fetch failed, proceed to Supabase fallback
+        }
+
+        if (commentsData.length === 0 || convosData.length === 0) {
+          const [commentsRes, convosRes] = await Promise.allSettled([
+            commentsData.length === 0
+              ? supabase.from('fb_comments').select('*').order('created_at', { ascending: false }).limit(25)
+              : Promise.resolve({ data: commentsData, error: null }),
+            convosData.length === 0
+              ? supabase.from('conversations').select('*').order('timestamp', { ascending: false }).limit(25)
+              : Promise.resolve({ data: convosData, error: null }),
+          ]);
+
+          if (commentsData.length === 0 && commentsRes.status === 'fulfilled' && (commentsRes.value as any)?.data) {
+            commentsData = (commentsRes.value as any).data;
+          }
+          if (convosData.length === 0 && convosRes.status === 'fulfilled' && (convosRes.value as any)?.data) {
+            convosData = (convosRes.value as any).data;
+          }
+        }
 
         const fetchedItems: AppNotification[] = [];
 
-        if (commentsRes.status === 'fulfilled' && commentsRes.value.data) {
-          commentsRes.value.data.forEach((row: any) => {
+        if (commentsData && commentsData.length > 0) {
+          commentsData.forEach((row: any) => {
             const rawId = row.id || row.comment_id;
             const barangay = row.barangay || row.location || 'Unknown Barangay';
             const preview =
@@ -196,8 +226,8 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
           });
         }
 
-        if (convosRes.status === 'fulfilled' && convosRes.value.data) {
-          convosRes.value.data.forEach((row: any) => {
+        if (convosData && convosData.length > 0) {
+          convosData.forEach((row: any) => {
             const rawId = row.id || row.conversation_id;
             const sender =
               row.sender_name && row.sender_name !== 'Unknown User'

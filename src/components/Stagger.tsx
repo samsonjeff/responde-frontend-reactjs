@@ -21,6 +21,14 @@ const itemVariants: Variants = {
       ease: [0.25, 0.46, 0.45, 0.94] as [number, number, number, number],
     },
   },
+  exit: {
+    opacity: 0,
+    y: 0,
+    transition: {
+      duration: 0.2,
+      ease: [0.25, 0.46, 0.45, 0.94] as [number, number, number, number],
+    },
+  },
 };
 
 export function StaggerContainer({ children, className = '' }: { children: React.ReactNode; className?: string }) {

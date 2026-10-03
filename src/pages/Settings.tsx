@@ -60,7 +60,8 @@ export default function Settings() {
   const { theme, toggleTheme } = useTheme();
   const isDark = theme === 'dark';
   const { user: currentUser } = useAuth();
-  const canManageUsers = currentUser?.role === 'super_admin' || currentUser?.role === 'admin';
+  const userRole = (currentUser?.role || '').toLowerCase().trim();
+  const canViewUsers = userRole === 'super_admin' || userRole === 'admin';
 
   const [pushNotif, setPushNotif] = useState(true);
   const [criticalAlerts, setCriticalAlerts] = useState(true);
@@ -93,7 +94,7 @@ export default function Settings() {
   const [isSendingOtp, setIsSendingOtp] = useState(false);
 
   const fetchUsers = useCallback(async () => {
-    if (!canManageUsers) return;
+    if (!canViewUsers) return;
     setLoadingUsers(true);
     setUserError(null);
     try {
@@ -104,7 +105,7 @@ export default function Settings() {
     } finally {
       setLoadingUsers(false);
     }
-  }, [canManageUsers]);
+  }, [canViewUsers]);
 
   useEffect(() => {
     fetchUsers();
@@ -139,6 +140,8 @@ export default function Settings() {
 
   // Role Edit Handlers
   const openRoleModal = (u: AuthUser) => {
+    if (currentUser?.role === 'staff') return;
+
     setRoleModalUser(u);
     setSelectedRole(u.role);
     setRolePassword('');
@@ -163,6 +166,15 @@ export default function Settings() {
   const handleSaveRole = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!roleModalUser) return;
+    if (currentUser?.role === 'staff') return;
+    if (roleModalUser.user_id === currentUser?.user_id) {
+      setRoleError('You cannot edit your own role.');
+      return;
+    }
+    if (currentUser?.role === 'admin' && roleModalUser.role === 'super_admin') {
+      setRoleError('Insufficient permissions.');
+      return;
+    }
     if (!rolePassword) {
       setRoleError('Please confirm your current administrator password.');
       return;
@@ -198,7 +210,18 @@ export default function Settings() {
   };
 
   // Filtered Users List
+  const selfUser = users.find((u) => u.user_id === currentUser?.user_id);
+  const effectiveRole = (selfUser?.role || currentUser?.role || userRole || '').toLowerCase().trim();
+
   const filteredUsers = users.filter((u) => {
+    const targetRole = (u.role || '').toLowerCase().trim();
+    const isTargetSuperAdmin = targetRole === 'super_admin' || targetRole.includes('super_admin') || targetRole.includes('super admin');
+
+    // When the logged-in user is an Admin (not a Super Admin), filter out Super Admin users completely
+    if (effectiveRole !== 'super_admin' && isTargetSuperAdmin) {
+      return false;
+    }
+
     const q = searchQuery.toLowerCase();
     return (
       (u.full_name || '').toLowerCase().includes(q) ||
@@ -289,8 +312,8 @@ export default function Settings() {
         </Card>
       </div>
 
-      {/* USER MANAGEMENT SECTION (Super Admin & Admin Only) */}
-      {canManageUsers && (
+      {/* USER MANAGEMENT SECTION */}
+      {canViewUsers && (
         <div className="bg-white dark:bg-[#111827] rounded-xl border border-slate-200 dark:border-slate-700/60 shadow-[0_4px_24px_rgba(0,0,0,0.06)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.35)] p-6">
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
@@ -315,17 +338,19 @@ export default function Settings() {
               >
                 <RefreshCw className={`w-4 h-4 ${loadingUsers ? 'animate-spin' : ''}`} />
               </button>
-              <button
-                onClick={() => {
-                  setInviteModalOpen(true);
-                  setGeneratedInvite(null);
-                  setCopied(false);
-                }}
-                className="inline-flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-blue-700 to-blue-800 hover:from-blue-600 hover:to-blue-700 text-white text-xs sm:text-sm font-semibold rounded-lg shadow-sm shadow-blue-700/20 transition-all cursor-pointer"
-              >
-                <UserPlus className="w-4 h-4" />
-                <span>Invite New User</span>
-              </button>
+              {currentUser?.role === 'super_admin' && (
+                <button
+                  onClick={() => {
+                    setInviteModalOpen(true);
+                    setGeneratedInvite(null);
+                    setCopied(false);
+                  }}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-blue-700 to-blue-800 hover:from-blue-600 hover:to-blue-700 text-white text-xs sm:text-sm font-semibold rounded-lg shadow-sm shadow-blue-700/20 transition-all cursor-pointer"
+                >
+                  <UserPlus className="w-4 h-4" />
+                  <span>Invite New User</span>
+                </button>
+              )}
             </div>
           </div>
 
@@ -388,6 +413,15 @@ export default function Settings() {
                 ) : (
                   filteredUsers.map((u) => {
                     const isSelf = u.user_id === currentUser?.user_id;
+                    const isStaff = currentUser?.role === 'staff';
+
+                    let isEditDisabled = false;
+                    let disabledReason: string | undefined = undefined;
+
+                    if (isStaff) {
+                      isEditDisabled = true;
+                      disabledReason = 'Read-only view';
+                    }
 
                     return (
                       <tr key={u.user_id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors">
@@ -413,14 +447,13 @@ export default function Settings() {
                                   </span>
                                 )}
                               </div>
-                              <div className="text-xs text-slate-400 flex items-center gap-1.5">
-                                <span>{u.email}</span>
-                                {u.username && (
+                              {u.username && (
+                                <div className="text-xs text-slate-400 flex items-center gap-1.5">
                                   <span className="font-mono text-[11px] text-slate-500 dark:text-slate-400">
                                     @{u.username}
                                   </span>
-                                )}
-                              </div>
+                                </div>
+                              )}
                             </div>
                           </div>
                         </td>
@@ -450,9 +483,34 @@ export default function Settings() {
 
                         <td className="px-4 py-3 text-right">
                           <div className="flex items-center justify-end gap-1.5">
-                            {(!isSelf || currentUser.role === 'super_admin') && (
+                            {isEditDisabled ? (
+                              <div
+                                className="inline-flex items-center gap-1.5"
+                                title={disabledReason}
+                              >
+                                <button
+                                  type="button"
+                                  disabled
+                                  title={disabledReason}
+                                  className="px-2.5 py-1.5 text-xs font-medium text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800/60 rounded-lg cursor-not-allowed opacity-60"
+                                >
+                                  Edit Role
+                                </button>
+                                <span className="text-[11px] text-slate-400 dark:text-slate-500 italic">
+                                  ({disabledReason})
+                                </span>
+                              </div>
+                            ) : (
                               <button
+                                type="button"
                                 onClick={() => openRoleModal(u)}
+                                title={
+                                  isSelf
+                                    ? 'You cannot edit your own role'
+                                    : currentUser?.role === 'admin' && u.role === 'super_admin'
+                                    ? 'Insufficient permissions'
+                                    : 'Edit Role'
+                                }
                                 className="px-2.5 py-1.5 text-xs font-medium text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/30 rounded-lg transition-colors cursor-pointer"
                               >
                                 Edit Role
@@ -471,7 +529,7 @@ export default function Settings() {
       )}
 
       {/* INVITE NEW USER MODAL */}
-      {inviteModalOpen && (
+      {canViewUsers && inviteModalOpen && (
         <div className="fixed inset-0 z-[200] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white dark:bg-[#111827] rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-700">
             <div className="flex items-center justify-between mb-4">
@@ -583,7 +641,7 @@ export default function Settings() {
       )}
 
       {/* EDIT ROLE MODAL */}
-      {roleModalUser && (
+      {canViewUsers && roleModalUser && (
         <div className="fixed inset-0 z-[200] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white dark:bg-[#111827] rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-700">
             <div className="flex items-center justify-between mb-4">
@@ -612,138 +670,204 @@ export default function Settings() {
               </div>
             )}
 
-            <form onSubmit={handleSaveRole} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
-                  Select New Role
-                </label>
-                <div className="space-y-2">
-                  <label className="flex items-center gap-2.5 p-2.5 border border-slate-200 dark:border-slate-700 rounded-xl cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800">
-                    <input
-                      type="radio"
-                      name="roleOption"
-                      value="staff"
-                      checked={selectedRole === 'staff'}
-                      onChange={() => setSelectedRole('staff')}
-                      className="text-blue-600 focus:ring-blue-500"
-                    />
-                    <div>
-                      <p className="text-xs font-semibold text-slate-800 dark:text-slate-200">Staff</p>
-                      <p className="text-[11px] text-slate-400">Dashboard &amp; Incident Viewer (read-only)</p>
+            {(() => {
+              const isModalTargetSuperAdmin = roleModalUser.role === 'super_admin';
+              const isAdminEditingSuperAdmin = currentUser?.role === 'admin' && isModalTargetSuperAdmin;
+              const isModalSelf = roleModalUser.user_id === currentUser?.user_id;
+              const isStaffViewer = currentUser?.role === 'staff';
+
+              const isRoleSelectionDisabled = isAdminEditingSuperAdmin || isModalSelf || isStaffViewer;
+              const roleDisabledTooltip = isAdminEditingSuperAdmin
+                ? 'Insufficient permissions'
+                : isModalSelf
+                ? 'You cannot edit your own role'
+                : isStaffViewer
+                ? 'Read-only view'
+                : undefined;
+
+              return (
+                <form onSubmit={handleSaveRole} className="space-y-4">
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                        Select New Role
+                      </label>
+                      {isAdminEditingSuperAdmin && (
+                        <span
+                          className="text-[11px] text-amber-600 dark:text-amber-400 font-medium italic"
+                          title="Insufficient permissions"
+                        >
+                          Insufficient permissions
+                        </span>
+                      )}
+                      {isModalSelf && (
+                        <span
+                          className="text-[11px] text-slate-400 dark:text-slate-500 italic"
+                          title="You cannot edit your own role"
+                        >
+                          You cannot edit your own role
+                        </span>
+                      )}
+                      {isStaffViewer && (
+                        <span
+                          className="text-[11px] text-slate-400 dark:text-slate-500 italic"
+                          title="Read-only view"
+                        >
+                          Read-only view
+                        </span>
+                      )}
                     </div>
-                  </label>
+                    <div
+                      className="space-y-2"
+                      title={roleDisabledTooltip}
+                    >
+                      <label
+                        title={roleDisabledTooltip}
+                        className={`flex items-center gap-2.5 p-2.5 border border-slate-200 dark:border-slate-700 rounded-xl ${
+                          isRoleSelectionDisabled
+                            ? 'opacity-50 cursor-not-allowed bg-slate-50 dark:bg-slate-900'
+                            : 'cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800'
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="roleOption"
+                          value="staff"
+                          disabled={isRoleSelectionDisabled}
+                          checked={selectedRole === 'staff'}
+                          onChange={() => !isRoleSelectionDisabled && setSelectedRole('staff')}
+                          className="text-blue-600 focus:ring-blue-500 disabled:cursor-not-allowed"
+                        />
+                        <div>
+                          <p className="text-xs font-semibold text-slate-800 dark:text-slate-200">Staff</p>
+                          <p className="text-[11px] text-slate-400">Dashboard &amp; Incident Viewer (read-only)</p>
+                        </div>
+                      </label>
 
-                  <label className="flex items-center gap-2.5 p-2.5 border border-slate-200 dark:border-slate-700 rounded-xl cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800">
-                    <input
-                      type="radio"
-                      name="roleOption"
-                      value="admin"
-                      checked={selectedRole === 'admin'}
-                      onChange={() => setSelectedRole('admin')}
-                      className="text-blue-600 focus:ring-blue-500"
-                    />
-                    <div>
-                      <p className="text-xs font-semibold text-slate-800 dark:text-slate-200">Admin</p>
-                      <p className="text-[11px] text-slate-400">Manage data, accept staff, and promote admins</p>
+                      <label
+                        title={roleDisabledTooltip}
+                        className={`flex items-center gap-2.5 p-2.5 border border-slate-200 dark:border-slate-700 rounded-xl ${
+                          isRoleSelectionDisabled
+                            ? 'opacity-50 cursor-not-allowed bg-slate-50 dark:bg-slate-900'
+                            : 'cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800'
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="roleOption"
+                          value="admin"
+                          disabled={isRoleSelectionDisabled}
+                          checked={selectedRole === 'admin'}
+                          onChange={() => !isRoleSelectionDisabled && setSelectedRole('admin')}
+                          className="text-blue-600 focus:ring-blue-500 disabled:cursor-not-allowed"
+                        />
+                        <div>
+                          <p className="text-xs font-semibold text-slate-800 dark:text-slate-200">Admin</p>
+                          <p className="text-[11px] text-slate-400">Manage data, accept staff, and promote admins</p>
+                        </div>
+                      </label>
+
+                      <label
+                        title={roleDisabledTooltip}
+                        className={`flex items-center gap-2.5 p-2.5 border border-slate-200 dark:border-slate-700 rounded-xl ${
+                          !isRoleSelectionDisabled && currentUser?.role === 'super_admin'
+                            ? 'cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800'
+                            : 'opacity-50 cursor-not-allowed bg-slate-50 dark:bg-slate-900'
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="roleOption"
+                          value="super_admin"
+                          disabled={isRoleSelectionDisabled || currentUser?.role !== 'super_admin'}
+                          checked={selectedRole === 'super_admin'}
+                          onChange={() => !isRoleSelectionDisabled && setSelectedRole('super_admin')}
+                          className="text-blue-600 focus:ring-blue-500 disabled:cursor-not-allowed"
+                        />
+                        <div>
+                          <p className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                            Super Admin {currentUser?.role !== 'super_admin' && '(Super Admin only)'}
+                          </p>
+                          <p className="text-[11px] text-slate-400">Full system access + OTP required to promote</p>
+                        </div>
+                      </label>
                     </div>
-                  </label>
+                  </div>
 
-                  <label
-                    className={`flex items-center gap-2.5 p-2.5 border border-slate-200 dark:border-slate-700 rounded-xl ${
-                      currentUser?.role === 'super_admin'
-                        ? 'cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800'
-                        : 'opacity-50 cursor-not-allowed bg-slate-50 dark:bg-slate-900'
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="roleOption"
-                      value="super_admin"
-                      disabled={currentUser?.role !== 'super_admin'}
-                      checked={selectedRole === 'super_admin'}
-                      onChange={() => setSelectedRole('super_admin')}
-                      className="text-blue-600 focus:ring-blue-500"
-                    />
-                    <div>
-                      <p className="text-xs font-semibold text-slate-800 dark:text-slate-200">
-                        Super Admin {currentUser?.role !== 'super_admin' && '(Super Admin only)'}
-                      </p>
-                      <p className="text-[11px] text-slate-400">Full system access + OTP required to promote</p>
-                    </div>
-                  </label>
-                </div>
-              </div>
-
-              {/* Password confirmation */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
-                  Your Password Confirmation <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-                  <input
-                    type="password"
-                    value={rolePassword}
-                    onChange={(e) => setRolePassword(e.target.value)}
-                    placeholder="Enter your current password"
-                    required
-                    className="w-full pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs sm:text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-
-              {/* OTP Code if promoting to super_admin */}
-              {selectedRole === 'super_admin' && (
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                      Supabase OTP Code <span className="text-red-500">*</span>
+                  {/* Password confirmation */}
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
+                      Your Password Confirmation <span className="text-red-500">*</span>
                     </label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                      <input
+                        type="password"
+                        value={rolePassword}
+                        onChange={(e) => setRolePassword(e.target.value)}
+                        placeholder="Enter your current password"
+                        disabled={isRoleSelectionDisabled}
+                        required
+                        className="w-full pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs sm:text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                      />
+                    </div>
+                  </div>
+
+                  {/* OTP Code if promoting to super_admin */}
+                  {selectedRole === 'super_admin' && !isRoleSelectionDisabled && (
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                          Supabase OTP Code <span className="text-red-500">*</span>
+                        </label>
+                        <button
+                          type="button"
+                          onClick={handleSendOtp}
+                          disabled={isSendingOtp}
+                          className="text-[11px] text-blue-600 hover:underline font-medium"
+                        >
+                          {isSendingOtp ? 'Sending...' : otpSent ? 'Resend Code' : 'Send Code to Email'}
+                        </button>
+                      </div>
+                      <div className="relative">
+                        <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                        <input
+                          type="text"
+                          value={roleOtp}
+                          onChange={(e) => setRoleOtp(e.target.value)}
+                          placeholder="6-digit code"
+                          className="w-full pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs sm:text-sm text-slate-800 dark:text-slate-100 font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      {otpSent && (
+                        <p className="text-[11px] text-green-600 mt-1">
+                          OTP code has been sent to your email. Check your inbox.
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-end gap-2 pt-2">
                     <button
                       type="button"
-                      onClick={handleSendOtp}
-                      disabled={isSendingOtp}
-                      className="text-[11px] text-blue-600 hover:underline font-medium"
+                      onClick={() => setRoleModalUser(null)}
+                      className="px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl cursor-pointer"
                     >
-                      {isSendingOtp ? 'Sending...' : otpSent ? 'Resend Code' : 'Send Code to Email'}
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isRoleSelectionDisabled || isUpdatingRole}
+                      title={roleDisabledTooltip}
+                      className="px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-md transition-all flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                    >
+                      {isUpdatingRole ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+                      <span>Save Role</span>
                     </button>
                   </div>
-                  <div className="relative">
-                    <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-                    <input
-                      type="text"
-                      value={roleOtp}
-                      onChange={(e) => setRoleOtp(e.target.value)}
-                      placeholder="6-digit code"
-                      className="w-full pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs sm:text-sm text-slate-800 dark:text-slate-100 font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  {otpSent && (
-                    <p className="text-[11px] text-green-600 mt-1">
-                      OTP code has been sent to your email. Check your inbox.
-                    </p>
-                  )}
-                </div>
-              )}
-
-              <div className="flex items-center justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setRoleModalUser(null)}
-                  className="px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isUpdatingRole}
-                  className="px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-md transition-all flex items-center gap-1.5 disabled:opacity-50"
-                >
-                  {isUpdatingRole ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
-                  <span>Save Role</span>
-                </button>
-              </div>
-            </form>
+                </form>
+              );
+            })()}
           </div>
         </div>
       )}

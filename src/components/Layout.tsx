@@ -8,7 +8,6 @@ import {
   Globe2, MessageCircle, CheckCheck, Trash2, BellOff, ArrowRight,
   Sun, Moon, Copy, Check,
 } from 'lucide-react';
-import PageTransition from './Transition';
 import SignOutModal from './SignOutModal';
 import {
   useNotifications,
@@ -20,6 +19,31 @@ import { useBotConversations } from '../context/BotConversationsContext';
 import { useTheme } from './ThemeContent';
 
 type FilterTab = 'all' | NotificationType;
+
+// Prefetch map for lazy page chunks — loaded on demand when user hovers or presses navigation buttons
+const ROUTE_PRELOADERS: Record<string, () => Promise<unknown>> = {
+  '/dashboard': () => import('../pages/Dashboard'),
+  '/incident-reports': () => import('../pages/IncidentReports'),
+  '/messenger-bot-logs': () => import('../pages/MessengerBotLogs'),
+  '/scraper-feed': () => import('../pages/ScraperFeed'),
+  '/geospatial-map': () => import('../pages/GeospatialMap'),
+  '/geospatial': () => import('../pages/GeospatialMap'),
+  '/analytics': () => import('../pages/Analytics'),
+  '/settings': () => import('../pages/Settings'),
+};
+
+const prefetchedRoutes = new Set<string>();
+
+export function prefetchRoute(path: string) {
+  if (!path || prefetchedRoutes.has(path)) return;
+  const loader = ROUTE_PRELOADERS[path];
+  if (loader) {
+    prefetchedRoutes.add(path);
+    loader().catch(() => {
+      prefetchedRoutes.delete(path);
+    });
+  }
+}
 
 function getInitials(name?: string, username?: string): string {
   if (name && name.trim()) {
@@ -124,6 +148,7 @@ export default function Layout() {
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [activeTab, setActiveTab] = useState<FilterTab>('all');
   const [copiedEmail, setCopiedEmail] = useState(false);
+  const [hoveredNav, setHoveredNav] = useState<string | null>(null);
   const notifRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
 
@@ -322,28 +347,67 @@ export default function Layout() {
         <div className="mx-3 h-px bg-white/60 dark:bg-white/10 shrink-0 shadow-[0_1px_0_rgba(0,0,0,0.03)]" />
 
         {/* Navigation */}
-        <nav className="flex-1 py-4 px-2.5 space-y-1.5 overflow-y-auto">
+        <nav
+          className="flex-1 py-4 px-2.5 space-y-1.5 overflow-y-auto"
+          onMouseLeave={() => setHoveredNav(null)}
+        >
           {navItems.map((item) => {
             const active = isActive(item.path);
             const isCollapsed = collapsed && !mobileOpen;
+            const isHovered = hoveredNav === item.path && !active;
             return (
               <Link
                 key={item.path}
                 to={item.path}
                 onClick={() => setMobileOpen(false)}
+                onMouseEnter={() => {
+                  setHoveredNav(item.path);
+                  prefetchRoute(item.path);
+                }}
+                onPointerDown={() => prefetchRoute(item.path)}
                 className={`
-                  group flex items-center rounded-xl px-4 py-2.5 transition-all duration-200 active:scale-[0.98]
-                  md:justify-center md:px-0 md:gap-0
+                  relative group flex items-center rounded-xl px-4 py-2.5 transition-colors duration-150 active:scale-[0.97]
+                  md:justify-center md:px-0 md:gap-0 select-none
                   ${isCollapsed ? 'lg:justify-center lg:px-0 lg:gap-0' : 'gap-3.5 lg:justify-start lg:px-4 lg:gap-3.5'}
                   ${active
-                    ? 'bg-white/80 dark:bg-white/20 shadow-sm border border-white/90 dark:border-white/10 font-semibold text-blue-700 dark:text-blue-300 backdrop-blur-sm'
-                    : 'text-slate-600 dark:text-slate-300 hover:bg-white/40 dark:hover:bg-white/10 hover:text-slate-900 dark:hover:text-white border border-transparent'
+                    ? 'font-semibold text-blue-700 dark:text-blue-300'
+                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
                   }
                 `}
                 title={item.label}
               >
-                <div className={`
-                  relative shrink-0 flex items-center justify-center transition-colors duration-200
+                {/* Active Sliding Pill with Apple Spring Physics */}
+                {active && (
+                  <motion.div
+                    layoutId="activeSidebarPill"
+                    className="absolute inset-0 rounded-xl bg-white/85 dark:bg-white/15 shadow-[0_2px_10px_rgba(0,0,0,0.06),inset_0_1px_1px_rgba(255,255,255,0.8)] dark:shadow-[0_2px_12px_rgba(0,0,0,0.4),inset_0_1px_1px_rgba(255,255,255,0.12)] border border-white/90 dark:border-white/10 backdrop-blur-md"
+                    transition={{
+                      type: 'spring',
+                      stiffness: 380,
+                      damping: 32,
+                      mass: 0.8,
+                    }}
+                  />
+                )}
+
+                {/* Smooth Hover Highlight */}
+                {isHovered && (
+                  <motion.div
+                    layoutId="hoverSidebarPill"
+                    className="absolute inset-0 rounded-xl bg-white/45 dark:bg-white/8 border border-white/40 dark:border-white/5"
+                    transition={{
+                      type: 'spring',
+                      stiffness: 420,
+                      damping: 34,
+                    }}
+                  />
+                )}
+
+                <motion.div
+                  animate={{ scale: active ? 1.08 : 1 }}
+                  transition={{ type: 'spring', stiffness: 420, damping: 26 }}
+                  className={`
+                  relative z-10 shrink-0 flex items-center justify-center transition-colors duration-200
                   ${active
                     ? 'text-blue-700 dark:text-blue-400'
                     : 'text-slate-400 dark:text-slate-500 group-hover:text-slate-700 dark:group-hover:text-slate-200'
@@ -353,9 +417,9 @@ export default function Layout() {
                   {item.path === '/messenger-bot-logs' && incompleteCount > 0 && (
                     <span className={`absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-amber-500 ring-2 ring-white dark:ring-[#111827] animate-pulse md:block ${isCollapsed ? 'lg:block' : 'lg:hidden'}`} />
                   )}
-                </div>
+                </motion.div>
                 <span className={`
-                  text-[13px] transition-all duration-300 overflow-hidden whitespace-nowrap
+                  relative z-10 text-[13px] transition-all duration-300 overflow-hidden whitespace-nowrap
                   block md:hidden lg:block
                   ${active
                     ? 'text-blue-700 dark:text-blue-400 font-semibold'
@@ -366,7 +430,7 @@ export default function Layout() {
                   {item.label}
                 </span>
                 {item.path === '/messenger-bot-logs' && incompleteCount > 0 && (
-                  <span className={`ml-auto px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 tabular-nums block md:hidden ${isCollapsed ? 'lg:hidden' : 'lg:block'}`}>
+                  <span className={`relative z-10 ml-auto px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 tabular-nums block md:hidden ${isCollapsed ? 'lg:hidden' : 'lg:block'}`}>
                     {incompleteCount}
                   </span>
                 )}
@@ -387,10 +451,10 @@ export default function Layout() {
               setSignOutModalOpen(true);
             }}
             className={`
-              group flex items-center w-full rounded-xl px-4 py-2.5 transition-all duration-200 active:scale-[0.98]
+              group relative flex items-center w-full rounded-xl px-4 py-2.5 transition-colors duration-150 active:scale-[0.97] select-none
               md:justify-center md:px-0 md:gap-0
               ${collapsed && !mobileOpen ? 'lg:justify-center lg:px-0 lg:gap-0' : 'gap-3.5 lg:justify-start lg:px-4 lg:gap-3.5'}
-              text-slate-600 dark:text-slate-300 hover:bg-white/40 dark:hover:bg-white/10 hover:text-red-600 dark:hover:text-red-400 border border-transparent cursor-pointer
+              text-slate-600 dark:text-slate-300 hover:bg-red-500/10 dark:hover:bg-red-500/15 hover:text-red-600 dark:hover:text-red-400 border border-transparent cursor-pointer
             `}
             title="Sign Out"
           >
@@ -611,6 +675,8 @@ export default function Layout() {
                               setNotifOpen(false);
                               navigate(activeTab === 'messenger' ? '/messenger-bot-logs' : '/scraper-feed');
                             }}
+                            onMouseEnter={() => prefetchRoute(activeTab === 'messenger' ? '/messenger-bot-logs' : '/scraper-feed')}
+                            onPointerDown={() => prefetchRoute(activeTab === 'messenger' ? '/messenger-bot-logs' : '/scraper-feed')}
                             className="flex items-center gap-1 text-xs text-blue-500 hover:text-blue-600 font-medium transition-colors"
                           >
                             View feed
@@ -721,6 +787,8 @@ export default function Layout() {
                         <Link
                           to="/settings"
                           onClick={() => setProfileOpen(false)}
+                          onMouseEnter={() => prefetchRoute('/settings')}
+                          onPointerDown={() => prefetchRoute('/settings')}
                           className="flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100/80 dark:hover:bg-white/10 rounded-xl transition-colors"
                         >
                           <Settings className="w-4 h-4 text-slate-400" />
@@ -778,9 +846,21 @@ export default function Layout() {
         </div>
 
         <div className="flex-1 flex flex-col overflow-y-auto overflow-x-hidden px-4 pb-20 pt-4 sm:px-5 sm:pb-20 md:pb-5 md:pt-4 lg:px-6 lg:pb-6 lg:pt-4">
-          <PageTransition key={location.pathname}>
-            <Outlet />
-          </PageTransition>
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={location.pathname}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4, transition: { duration: 0.12, ease: [0.4, 0, 1, 1] } }}
+              transition={{
+                duration: 0.22,
+                ease: [0.23, 1, 0.32, 1],
+              }}
+              className="flex flex-col flex-1 min-h-0 w-full"
+            >
+              <Outlet />
+            </motion.div>
+          </AnimatePresence>
         </div>
       </main>
 
@@ -801,16 +881,27 @@ export default function Layout() {
             <Link
               key={item.path}
               to={item.path}
-              className={`relative flex items-center justify-center p-2.5 rounded-xl transition-all duration-150 active:scale-90 min-w-[44px] min-h-[44px] ${active
-                  ? 'text-[#0071E3] dark:text-sky-400 bg-[#0071E3]/10 dark:bg-white/10 border border-[#0071E3]/20 dark:border-white/10 shadow-xs'
+              onMouseEnter={() => prefetchRoute(item.path)}
+              onPointerDown={() => prefetchRoute(item.path)}
+              onTouchStart={() => prefetchRoute(item.path)}
+              className={`relative flex items-center justify-center p-2.5 rounded-xl transition-colors duration-150 active:scale-90 min-w-[44px] min-h-[44px] select-none ${
+                active
+                  ? 'text-[#0071E3] dark:text-sky-400 font-semibold'
                   : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
-                }`}
+              }`}
               title={item.label}
               aria-label={item.label}
             >
-              <item.icon className="w-5.5 h-5.5" strokeWidth={active ? 2.25 : 1.75} />
+              {active && (
+                <motion.div
+                  layoutId="mobileActivePill"
+                  className="absolute inset-0 rounded-xl bg-[#0071E3]/10 dark:bg-white/10 border border-[#0071E3]/20 dark:border-white/10 shadow-xs"
+                  transition={{ type: 'spring', stiffness: 380, damping: 32, mass: 0.8 }}
+                />
+              )}
+              <item.icon className="w-5.5 h-5.5 relative z-10" strokeWidth={active ? 2.25 : 1.75} />
               {item.path === '/messenger-bot-logs' && incompleteCount > 0 && (
-                <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-amber-500 ring-2 ring-white dark:ring-slate-900 animate-pulse" />
+                <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-amber-500 ring-2 ring-white dark:ring-slate-900 animate-pulse z-10" />
               )}
             </Link>
           );
@@ -878,6 +969,8 @@ function NotificationRow({
         'hover:bg-slate-50 dark:hover:bg-slate-800/40'
       }
       onClick={onClick}
+      onMouseEnter={() => prefetchRoute(n.targetPath)}
+      onPointerDown={() => prefetchRoute(n.targetPath)}
     >
       {/* Left blue unread bar */}
       {!n.read && (
@@ -1001,6 +1094,8 @@ function GlobalToast({
         {/* View button */}
         <button
           onClick={() => onView(toast.targetPath)}
+          onMouseEnter={() => prefetchRoute(toast.targetPath)}
+          onPointerDown={() => prefetchRoute(toast.targetPath)}
           className={`mt-2 flex items-center gap-1 text-xs font-semibold transition-colors ${isMessenger
             ? 'text-purple-500 hover:text-purple-600'
             : 'text-blue-500 hover:text-blue-600'

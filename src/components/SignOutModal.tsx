@@ -1,7 +1,9 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { motion, AnimatePresence, type Transition } from 'framer-motion';
 import { LogOut, X, Loader2 } from 'lucide-react';
 import type { AuthUser } from '../services/authService';
+import { useAuth } from '../context/AuthContext';
+import { supabase } from '../lib/supabaseClient';
 
 interface SignOutModalProps {
   isOpen: boolean;
@@ -42,8 +44,41 @@ export default function SignOutModal({
   onClose,
   onConfirm,
   isLoading = false,
-  user,
+  user: propUser,
 }: SignOutModalProps) {
+  const { user: authUser } = useAuth();
+  const user = propUser !== undefined ? propUser : authUser;
+  const [imgError, setImgError] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(
+    user?.avatar_url || (user as { avatar?: string | null })?.avatar || (user as { picture?: string | null })?.picture || null
+  );
+
+  useEffect(() => {
+    const direct = user?.avatar_url || (user as { avatar?: string | null })?.avatar || (user as { picture?: string | null })?.picture || null;
+    if (direct) {
+      setAvatarUrl(direct);
+      return;
+    }
+
+    let isMounted = true;
+    supabase.auth.getSession().then(({ data }) => {
+      if (!isMounted) return;
+      const meta = data.session?.user?.user_metadata;
+      const metaAvatar = meta?.avatar_url || meta?.picture || meta?.avatar || null;
+      if (metaAvatar) {
+        setAvatarUrl(metaAvatar);
+      }
+    }).catch(() => {});
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user]);
+
+  useEffect(() => {
+    setImgError(false);
+  }, [avatarUrl]);
+
   // Lock background scrolling while modal is open
   useEffect(() => {
     if (isOpen) {
@@ -138,9 +173,21 @@ export default function SignOutModal({
               {/* Current user card summary */}
               {user && (
                 <div className="w-full mt-4 p-3 rounded-xl bg-slate-50/80 dark:bg-slate-800/60 border border-slate-200/60 dark:border-white/5 flex items-center gap-3 text-left">
-                  <div className="w-9 h-9 rounded-full bg-blue-600 dark:bg-blue-500 text-white font-semibold text-xs flex items-center justify-center shadow-xs shrink-0 ring-2 ring-white dark:ring-slate-800">
-                    {initial}
-                  </div>
+                  {avatarUrl && !imgError ? (
+                    <div className="w-9 h-9 rounded-full overflow-hidden shrink-0 ring-2 ring-white dark:ring-slate-800 shadow-xs">
+                      <img
+                        src={avatarUrl}
+                        alt={displayName}
+                        onError={() => setImgError(true)}
+                        className="w-full h-full object-cover rounded-full"
+                        referrerPolicy="no-referrer"
+                      />
+                    </div>
+                  ) : (
+                    <div className="w-9 h-9 rounded-full bg-blue-600 dark:bg-blue-500 text-white font-semibold text-xs flex items-center justify-center shadow-xs shrink-0 ring-2 ring-white dark:ring-slate-800">
+                      {initial}
+                    </div>
+                  )}
                   <div className="min-w-0 flex-1">
                     <p className="text-xs font-semibold text-slate-800 dark:text-slate-100 truncate">
                       {displayName}
