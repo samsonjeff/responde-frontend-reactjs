@@ -8,7 +8,7 @@ import {
 import DatePicker from "../components/DatePicker";
 import FilterDropdown from "../components/DropDown";
 import { StaggerContainer, StaggerItem } from "../components/Stagger";
-import { supabase } from "../lib/supabaseClient";
+import { authService } from "../services/authService";
 import PageLoader from "../components/PageLoader";
 
 interface ScrapedPost {
@@ -268,24 +268,11 @@ export default function ScraperFeed() {
     );
 
     try {
-      const { error: updateError } = await supabase
-        .from(activeTable)
-        .update({ status: newStatus })
-        .eq("id", postId);
-
-      if (updateError) {
-        console.error(`[ScraperFeed] Failed to update status in Supabase table "${activeTable}":`, updateError.message);
-        showToast(`Update failed: ${updateError.message}`, "error");
-        // Revert on error
-        setPosts((prev) =>
-          prev.map((p) => (p.id === postId ? { ...p, status: prevStatus || p.status } : p))
-        );
-      } else {
-        showToast(`Post marked as ${newStatus.toLowerCase()}`, "success");
-      }
+      await authService.updateFbCommentStatus(postId, newStatus);
+      showToast(`Post marked as ${newStatus.toLowerCase()}`, "success");
     } catch (err: any) {
       console.error("[ScraperFeed] Status update error:", err);
-      showToast(`Update failed: ${err.message}`, "error");
+      showToast(`Update failed: ${err.message || "Failed to update status"}`, "error");
       // Revert on error
       setPosts((prev) =>
         prev.map((p) => (p.id === postId ? { ...p, status: prevStatus || p.status } : p))
