@@ -5,10 +5,9 @@ import {
   Moon, Sun, Bell, Shield, Database, Users,
   RefreshCw, Wifi, Check, X, UserPlus, Copy,
   CheckCircle2, AlertCircle, ShieldCheck,
-  Search, Lock, KeyRound, Loader2
+  Search, Lock, Loader2
 } from 'lucide-react';
 import { authService, type AuthUser, type UserRole, AuthError } from '../services/authService';
-import { EmailVerificationModal } from '../components/EmailVerificationModal';
 
 function Toggle({ checked, onChange }: { checked: boolean; onChange: () => void }) {
   return (
@@ -83,32 +82,12 @@ export default function Settings() {
   const [isGeneratingInvite, setIsGeneratingInvite] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  // Role Edit Modal (Email OTP required for all role changes)
+  // Role Edit Modal (Password confirmation required)
   const [roleModalUser, setRoleModalUser] = useState<AuthUser | null>(null);
   const [selectedRole, setSelectedRole] = useState<UserRole>('staff');
   const [rolePassword, setRolePassword] = useState('');
-  const [roleOtp, setRoleOtp] = useState('');
-  const [roleChallengeToken, setRoleChallengeToken] = useState<string>('');
-  const [roleMaskedEmail, setRoleMaskedEmail] = useState<string>('');
   const [isUpdatingRole, setIsUpdatingRole] = useState(false);
   const [roleError, setRoleError] = useState<string | null>(null);
-  const [otpSent, setOtpSent] = useState(false);
-  const [isSendingOtp, setIsSendingOtp] = useState(false);
-  const [otpCooldown, setOtpCooldown] = useState(0);
-
-  // Email delivery test modal
-  const [verifyModalOpen, setVerifyModalOpen] = useState(false);
-  const [testChallengeToken, setTestChallengeToken] = useState<string>('');
-  const [testMaskedEmail, setTestMaskedEmail] = useState<string>('');
-
-  // Cooldown countdown for role OTP resend
-  useEffect(() => {
-    if (otpCooldown <= 0) return;
-    const timer = setInterval(() => {
-      setOtpCooldown((prev) => (prev <= 1 ? 0 : prev - 1));
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [otpCooldown]);
 
   const fetchUsers = useCallback(async () => {
     if (!canViewUsers) return;
@@ -162,30 +141,7 @@ export default function Settings() {
     setRoleModalUser(u);
     setSelectedRole(u.role);
     setRolePassword('');
-    setRoleOtp('');
-    setRoleChallengeToken('');
-    setRoleMaskedEmail('');
     setRoleError(null);
-    setOtpSent(false);
-    setOtpCooldown(0);
-  };
-
-  const handleSendOtp = async () => {
-    setIsSendingOtp(true);
-    setRoleError(null);
-    try {
-      const res = await authService.requestOtp();
-      setOtpSent(true);
-      if (res.challenge_token) {
-        setRoleChallengeToken(res.challenge_token);
-      }
-      setRoleMaskedEmail(res.masked_email || currentUser?.email || '');
-      setOtpCooldown(60);
-    } catch (err) {
-      setRoleError(err instanceof Error ? err.message : 'Failed to send OTP code');
-    } finally {
-      setIsSendingOtp(false);
-    }
   };
 
   const handleSaveRole = async (e: React.FormEvent) => {
@@ -204,10 +160,6 @@ export default function Settings() {
       setRoleError('Please confirm your current administrator password.');
       return;
     }
-    if (!roleOtp.trim()) {
-      setRoleError('Email verification code is required. Click "Send Code to Email" and enter the 6-digit code.');
-      return;
-    }
 
     setIsUpdatingRole(true);
     setRoleError(null);
@@ -215,9 +167,7 @@ export default function Settings() {
       await authService.updateUserRole(
         roleModalUser.user_id,
         selectedRole,
-        rolePassword,
-        roleOtp.trim(),
-        roleChallengeToken || undefined
+        rolePassword
       );
       showSuccessFeedback(`Role for ${roleModalUser.full_name || roleModalUser.username} updated to ${selectedRole}.`);
       setRoleModalUser(null);
@@ -233,30 +183,6 @@ export default function Settings() {
     } finally {
       setIsUpdatingRole(false);
     }
-  };
-
-  // Email delivery test handlers
-  const handleStartEmailTest = async () => {
-    try {
-      const res = await authService.sendVerificationCode('settings_change');
-      setTestChallengeToken(res.challenge_token);
-      setTestMaskedEmail(res.masked_email || currentUser?.email || '');
-      setVerifyModalOpen(true);
-    } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to send verification code.');
-    }
-  };
-
-  const handleVerifyTestCode = async (code: string) => {
-    await authService.verifyCode(testChallengeToken, code, 'settings_change');
-    showSuccessFeedback('Email verification succeeded. Code delivery is working.');
-    setVerifyModalOpen(false);
-  };
-
-  const handleResendTestCode = async () => {
-    const res = await authService.sendVerificationCode('settings_change');
-    setTestChallengeToken(res.challenge_token);
-    setTestMaskedEmail(res.masked_email || currentUser?.email || '');
   };
 
   // Filtered Users List
@@ -325,26 +251,14 @@ export default function Settings() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-slate-700 dark:text-slate-200">Two-Factor Authentication</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">6-digit email code on manual sign-in and role changes</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">6-digit email code on manual sign-in and password resets</p>
               </div>
               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
                 <ShieldCheck className="w-3.5 h-3.5" />
                 Active
               </span>
             </div>
-            <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
-              <div>
-                <p className="text-sm font-medium text-slate-700 dark:text-slate-200">Email Code Delivery Test</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">Send a test code to {currentUser?.email}</p>
-              </div>
-              <button
-                type="button"
-                onClick={handleStartEmailTest}
-                className="px-3 py-1.5 text-xs font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-lg border border-blue-200 dark:border-blue-800 transition-colors cursor-pointer"
-              >
-                Test
-              </button>
-            </div>
+
           </div>
         </Card>
 
@@ -614,8 +528,8 @@ export default function Settings() {
             </div>
 
             <p className="text-xs text-slate-500 dark:text-slate-400 mb-4 leading-relaxed">
-              Generate a secure 1-hour invitation link to send directly to new command center personnel.
-              Users who register via an invite link are pre-approved.
+              Generate a secure 15-minute invitation link to send directly to new command center personnel.
+              Only personnel with an authorized invitation link can create an account.
             </p>
 
             {!generatedInvite ? (
@@ -854,7 +768,7 @@ export default function Settings() {
                           <p className="text-xs font-semibold text-slate-800 dark:text-slate-200">
                             Super Admin {currentUser?.role !== 'super_admin' && '(Super Admin only)'}
                           </p>
-                          <p className="text-[11px] text-slate-400">Full system access + OTP required to promote</p>
+                          <p className="text-[11px] text-slate-400">Full system access</p>
                         </div>
                       </label>
                     </div>
@@ -878,45 +792,6 @@ export default function Settings() {
                       />
                     </div>
                   </div>
-
-                  {/* Email verification code (required for ALL role changes) */}
-                  {!isRoleSelectionDisabled && (
-                    <div className="p-3 bg-blue-50/70 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/60 rounded-xl space-y-2.5">
-                      <div className="flex items-center justify-between">
-                        <label className="block text-xs font-semibold text-blue-900 dark:text-blue-200 uppercase tracking-wider">
-                          Email Verification Code <span className="text-red-500">*</span>
-                        </label>
-                        <button
-                          type="button"
-                          onClick={handleSendOtp}
-                          disabled={isSendingOtp || otpCooldown > 0}
-                          className="text-xs text-blue-600 dark:text-blue-400 hover:underline font-semibold flex items-center gap-1 disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
-                        >
-                          <RefreshCw className={`w-3 h-3 ${isSendingOtp ? 'animate-spin' : ''}`} />
-                          {isSendingOtp ? 'Sending...' : otpCooldown > 0 ? `Resend (${otpCooldown}s)` : otpSent ? 'Resend Code' : 'Send Code to Email'}
-                        </button>
-                      </div>
-                      <div className="relative">
-                        <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-                        <input
-                          type="text"
-                          inputMode="numeric"
-                          value={roleOtp}
-                          onChange={(e) => setRoleOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                          placeholder="Enter 6-digit code"
-                          maxLength={6}
-                          required
-                          className="w-full pl-9 pr-4 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs sm:text-sm text-slate-800 dark:text-slate-100 font-mono tracking-widest focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                      </div>
-                      {otpSent && (
-                        <p className="text-[11px] text-green-700 dark:text-green-400 flex items-center gap-1">
-                          <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
-                          <span>Code sent to {roleMaskedEmail || currentUser?.email}. Valid for 10 minutes.</span>
-                        </p>
-                      )}
-                    </div>
-                  )}
 
                   <div className="flex items-center justify-end gap-2 pt-2">
                     <button
@@ -943,17 +818,7 @@ export default function Settings() {
         </div>
       )}
 
-      {/* EMAIL CODE DELIVERY TEST MODAL */}
-      <EmailVerificationModal
-        isOpen={verifyModalOpen}
-        onClose={() => setVerifyModalOpen(false)}
-        onVerify={handleVerifyTestCode}
-        onResend={handleResendTestCode}
-        title="Email Code Delivery Test"
-        subtitle="We sent a 6-digit code to confirm email delivery is working."
-        maskedEmail={testMaskedEmail}
-        actionButtonText="Confirm"
-      />
+
     </div>
   );
 }

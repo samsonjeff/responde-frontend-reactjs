@@ -8,7 +8,6 @@ import {
 } from 'lucide-react';
 import { StaggerContainer, StaggerItem } from '../components/Stagger';
 import { useTheme } from '../components/ThemeContent';
-import { supabase } from '../lib/supabaseClient';
 import MapContainer from '../components/MapContainer';
 import { useReports } from '../context/ReportsContext';
 import { useBotConversations, type BotConversation } from '../context/BotConversationsContext';
@@ -233,18 +232,8 @@ export default function Dashboard() {
           throw new Error(res.statusText || 'API non-200');
         }
       } catch (apiErr: any) {
-        // Fallback to direct Supabase query
-        const scraperRes = await supabase
-          .from('fb_comments')
-          .select('*')
-          .order('created_at', { ascending: false })
-          .limit(100);
-
-        if (!scraperRes.error && scraperRes.data) {
-          rows = scraperRes.data;
-        } else if (scraperRes.error) {
-          fetchError = scraperRes.error.message;
-        }
+        console.warn('[Dashboard] Failed to fetch FB comments from backend:', apiErr?.message);
+        fetchError = apiErr?.message || 'Failed to load comments';
       }
 
       if (!isMounted) return;
