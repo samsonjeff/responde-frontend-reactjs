@@ -13,57 +13,7 @@ import { StaggerContainer, StaggerItem } from '../components/Stagger';
 import PageLoader from '../components/PageLoader';
 import PageTransition from '../components/Transition';
 
-// ── Status Type ──
-type ReportStatus = 'pending' | 'under_review' | 'verified' | 'rejected' | 'resolved';
-
-// ── Type Definition ──
-interface Report {
-  id: string;
-  barangay: string;
-  type: string;
-  urgency: string;
-  source: string;
-  time: string;
-  status: ReportStatus;
-  description: string;
-  originalText: string;
-  reporter: string;
-  contact: string;
-  coordinates: string;
-  landmark: string;
-  verifiedBy: string | null;
-  verifiedAt: string | null;
-  rejectionReason: string | null;
-  possibleDuplicateOf: string | null;
-}
-
-const sampleReports: Report[] = [
-  { id: '011', barangay: 'Leynes', type: 'Search & Rescue', urgency: 'Low', source: 'Scraper', time: '10/24 10:57', status: 'pending', description: 'Missing person reported near the riverbank. Last seen wearing a red shirt.', originalText: 'May nawawala daw malapit sa ilog, naka pula daw ang damit.', reporter: 'Juan Dela Cruz', contact: '0912-345-6789', coordinates: '14.0951, 121.0203', landmark: 'Near riverbank', verifiedBy: null, verifiedAt: null, rejectionReason: null, possibleDuplicateOf: null },
-  { id: '012', barangay: 'Poblacion', type: 'Medical', urgency: 'High', source: 'Bot', time: '10/24 10:57', status: 'under_review', description: 'Elderly resident collapsed at the market. Needs immediate medical attention.', originalText: 'May matandang natumba sa palengke, kailangan ng tulong medikal.', reporter: 'Maria Santos', contact: '0918-234-5678', coordinates: '14.0923, 121.0187', landmark: 'Public market', verifiedBy: null, verifiedAt: null, rejectionReason: null, possibleDuplicateOf: null },
-  { id: '013', barangay: 'Leynes', type: 'Food & Water', urgency: 'Low', source: 'Scraper', time: '10/24 10:57', status: 'verified', description: 'Request for water supply delivery due to pipe maintenance.', originalText: 'Kailangan ng tubig dito, sira daw ang tubo.', reporter: 'Pedro Reyes', contact: '0917-876-5432', coordinates: '14.0945, 121.0210', landmark: 'Barangay hall', verifiedBy: 'Officer Cruz', verifiedAt: '10/24 11:15', rejectionReason: null, possibleDuplicateOf: null },
-  { id: '014', barangay: 'Cawit', type: 'Infrastructure', urgency: 'Moderate', source: 'Scraper', time: '10/24 10:57', status: 'resolved', description: 'Road partially blocked by fallen tree after heavy rains.', originalText: 'May punong bumagsak sa daan, hindi makadaan ang mga sasakyan.', reporter: 'Ana Lim', contact: '0919-123-4567', coordinates: '14.0987, 121.0156', landmark: 'Main road Cawit', verifiedBy: 'Officer Cruz', verifiedAt: '10/24 11:00', rejectionReason: null, possibleDuplicateOf: null },
-  { id: '015', barangay: 'Leynes', type: 'Search & Rescue', urgency: 'Low', source: 'Scraper', time: '10/24 10:57', status: 'rejected', description: 'Stranded dog on rooftop during flooding. Owner requesting assistance.', originalText: 'May aso na stranded sa bubong, tulungan nyo po.', reporter: 'Carlos Tan', contact: '0915-987-6543', coordinates: '14.0934, 121.0221', landmark: 'Rooftop', verifiedBy: null, verifiedAt: null, rejectionReason: 'not_disaster_related', possibleDuplicateOf: null },
-  { id: '016', barangay: 'San Isidro', type: 'Medical', urgency: 'Low', source: 'Bot', time: '10/24 10:57', status: 'pending', description: 'Child with high fever, parents requesting transport to health center.', originalText: 'Anak ko may lagnat, paabot po sa health center.', reporter: 'Elena Cruz', contact: '0916-456-7890', coordinates: '14.0912, 121.0254', landmark: 'Health center', verifiedBy: null, verifiedAt: null, rejectionReason: null, possibleDuplicateOf: null },
-  { id: '017', barangay: 'Leynes', type: 'Search & Rescue', urgency: 'Low', source: 'Scraper', time: '10/24 10:57', status: 'pending', description: 'Boat capsized near the shore. Two fishermen accounted for, one missing.', originalText: 'May bumagsak na bangka, may nawawalang isda.', reporter: 'Ramon Garcia', contact: '0913-222-3333', coordinates: '14.0967, 121.0198', landmark: 'Shoreline', verifiedBy: null, verifiedAt: null, rejectionReason: null, possibleDuplicateOf: '011' },
-  { id: '018', barangay: 'Leynes', type: 'Food & Water', urgency: 'Low', source: 'Bot', time: '10/24 10:57', status: 'under_review', description: 'Relief goods distribution needed for 15 families affected by flash flood.', originalText: 'Kailangan ng relief goods para sa 15 pamilya.', reporter: 'Liza Mendoza', contact: '0914-555-6666', coordinates: '14.0941, 121.0234', landmark: 'Evacuation center', verifiedBy: null, verifiedAt: null, rejectionReason: null, possibleDuplicateOf: null },
-  { id: '019', barangay: 'Banga', type: 'Medical', urgency: 'High', source: 'Bot', time: '10/24 11:15', status: 'verified', description: 'Pregnant woman in labor needing immediate transport to hospital.', originalText: 'Manganganak na po, kailangan ng ambulansya papuntang ospital.', reporter: 'Josefina Reyes', contact: '0920-111-2222', coordinates: '14.0891, 121.0284', landmark: 'Banga health center', verifiedBy: 'Officer Samson', verifiedAt: '10/24 11:20', rejectionReason: null, possibleDuplicateOf: null },
-  { id: '020', barangay: 'Banadero', type: 'Infrastructure', urgency: 'High', source: 'Scraper', time: '10/24 11:30', status: 'pending', description: 'Bridge collapsed due to heavy rainfall. Alternative route needed.', originalText: 'Bumagsak ang tulay, kailangan ng ibang daanan.', reporter: 'Miguel Santos', contact: '0921-333-4444', coordinates: '14.1012, 121.0123', landmark: 'Banadero bridge', verifiedBy: null, verifiedAt: null, rejectionReason: null, possibleDuplicateOf: null },
-  { id: '021', barangay: 'Sampaloc', type: 'Search & Rescue', urgency: 'Moderate', source: 'Bot', time: '10/24 11:45', status: 'under_review', description: 'Family trapped on second floor due to flash flooding.', originalText: 'May pamilyang nakaipit sa second floor, baha na po.', reporter: 'Carmen Villanueva', contact: '0922-555-6666', coordinates: '14.0876, 121.0312', landmark: 'Residential area', verifiedBy: null, verifiedAt: null, rejectionReason: null, possibleDuplicateOf: null },
-  { id: '022', barangay: 'Poblacion', type: 'Food & Water', urgency: 'Moderate', source: 'Scraper', time: '10/24 12:00', status: 'verified', description: 'Evacuation center needs 50 food packs and clean drinking water.', originalText: 'Kailangan ng pagkain at tubig sa evacuation center, 50 pamilya.', reporter: 'Antonio dela Cruz', contact: '0923-777-8888', coordinates: '14.0925, 121.0190', landmark: 'Poblacion gym', verifiedBy: 'Officer Cruz', verifiedAt: '10/24 12:10', rejectionReason: null, possibleDuplicateOf: null },
-  { id: '023', barangay: 'Banga', type: 'Search & Rescue', urgency: 'Moderate', source: 'Scraper', time: '10/24 12:15', status: 'rejected', description: 'Trapped residents on rooftop after sudden rise in water level.', originalText: 'Nakaipit sa bubong, tumataas na ang tubig.', reporter: 'Rodelio Cruz', contact: '0924-888-9999', coordinates: '14.0885, 121.0295', landmark: 'Rooftop', verifiedBy: null, verifiedAt: null, rejectionReason: 'duplicate', possibleDuplicateOf: '021' },
-  { id: '024', barangay: 'Banadero', type: 'Medical', urgency: 'Low', source: 'Bot', time: '10/24 12:30', status: 'resolved', description: 'Senior citizen with hypertension needs maintenance medication.', originalText: 'Matandang may high blood, kailangan ng gamot.', reporter: 'Lourdes Reyes', contact: '0925-111-2223', coordinates: '14.1005, 121.0135', landmark: 'Barangay health station', verifiedBy: 'Officer Samson', verifiedAt: '10/24 12:35', rejectionReason: null, possibleDuplicateOf: null },
-  { id: '025', barangay: 'Sampaloc', type: 'Infrastructure', urgency: 'High', source: 'Scraper', time: '10/24 12:45', status: 'pending', description: 'Power lines down near elementary school. Area needs immediate clearing.', originalText: 'May poste ng kuryenteng bumagsak malapit sa school.', reporter: 'Fernando Lim', contact: '0926-444-5555', coordinates: '14.0865, 121.0325', landmark: 'Sampaloc elementary', verifiedBy: null, verifiedAt: null, rejectionReason: null, possibleDuplicateOf: null },
-  { id: '026', barangay: 'Poblacion', type: 'Search & Rescue', urgency: 'High', source: 'Bot', time: '10/24 13:00', status: 'verified', description: 'Vehicle swept away by flash flood near the bridge. Driver still inside.', originalText: 'May sasakyang inanod, may tao pa loob, kailangan ng rescue.', reporter: 'Gloria Santos', contact: '0927-666-7777', coordinates: '14.0915, 121.0205', landmark: 'Poblacion bridge', verifiedBy: 'Officer Cruz', verifiedAt: '10/24 13:05', rejectionReason: null, possibleDuplicateOf: null },
-  { id: '027', barangay: 'Cawit', type: 'Food & Water', urgency: 'Low', source: 'Scraper', time: '10/24 13:15', status: 'pending', description: 'Barangay hall requesting additional water containers for evacuation center.', originalText: 'Kailangan ng lagayan ng tubig sa evacuation.', reporter: 'Ricardo Tan', contact: '0928-888-9990', coordinates: '14.0995, 121.0145', landmark: 'Cawit barangay hall', verifiedBy: null, verifiedAt: null, rejectionReason: null, possibleDuplicateOf: null },
-  { id: '028', barangay: 'San Isidro', type: 'Infrastructure', urgency: 'Moderate', source: 'Bot', time: '10/24 13:30', status: 'under_review', description: 'Barangay road eroded after continuous rain. Motorcycles can no longer pass.', originalText: 'Nasira ang daan, hindi na makadaan ang motor.', reporter: 'Marites Garcia', contact: '0929-000-1111', coordinates: '14.0905, 121.0265', landmark: 'San Isidro road', verifiedBy: null, verifiedAt: null, rejectionReason: null, possibleDuplicateOf: null },
-  { id: '029', barangay: 'Leynes', type: 'Medical', urgency: 'High', source: 'Scraper', time: '10/24 13:45', status: 'pending', description: 'Multiple residents showing symptoms of leptospirosis after wading through floodwater.', originalText: 'Maraming may sakit sa leptospirosis, lumusong sa baha.', reporter: 'Dr. Emmanuel Cruz', contact: '0930-222-3334', coordinates: '14.0955, 121.0215', landmark: 'Leynes clinic', verifiedBy: null, verifiedAt: null, rejectionReason: null, possibleDuplicateOf: null },
-  { id: '030', barangay: 'Banga', type: 'Food & Water', urgency: 'Moderate', source: 'Bot', time: '10/24 14:00', status: 'verified', description: '20 families in temporary shelter need hot meals and blankets.', originalText: '20 pamilya sa temporary shelter, kailangan ng pagkain at kumot.', reporter: 'Helena Mendoza', contact: '0931-444-5556', coordinates: '14.0895, 121.0275', landmark: 'Banga shelter', verifiedBy: 'Officer Samson', verifiedAt: '10/24 14:10', rejectionReason: null, possibleDuplicateOf: null },
-  { id: '031', barangay: 'Banadero', type: 'Search & Rescue', urgency: 'Low', source: 'Scraper', time: '10/24 14:15', status: 'rejected', description: 'Livestock stranded in flooded pasture.', originalText: 'Naiwan ang mga hayop sa baha, tulungan nyo po.', reporter: 'Domingo Reyes', contact: '0932-666-7778', coordinates: '14.1025, 121.0115', landmark: 'Pasture', verifiedBy: null, verifiedAt: null, rejectionReason: 'not_disaster_related', possibleDuplicateOf: null },
-  { id: '032', barangay: 'Sampaloc', type: 'Medical', urgency: 'Moderate', source: 'Bot', time: '10/24 14:30', status: 'resolved', description: 'Child with asthma attack, inhaler supply depleted.', originalText: 'Anak ko hinika, wala nang inhaler.', reporter: 'Cecilia Villanueva', contact: '0933-888-9991', coordinates: '14.0875, 121.0305', landmark: 'Sampaloc health center', verifiedBy: 'Officer Cruz', verifiedAt: '10/24 14:40', rejectionReason: null, possibleDuplicateOf: null },
-  { id: '033', barangay: 'Poblacion', type: 'Infrastructure', urgency: 'Low', source: 'Scraper', time: '10/24 14:45', status: 'pending', description: 'Drainage system clogged with debris causing minor flooding.', originalText: 'Barado ang kanal, bumabaha sa kalsada.', reporter: 'Alberto dela Cruz', contact: '0934-000-1112', coordinates: '14.0935, 121.0185', landmark: 'Main street', verifiedBy: null, verifiedAt: null, rejectionReason: null, possibleDuplicateOf: null },
-  { id: '034', barangay: 'Cawit', type: 'Search & Rescue', urgency: 'High', source: 'Bot', time: '10/24 15:00', status: 'under_review', description: 'Landslide reported near hillside residences. Three houses affected.', originalText: 'May landslide, tatlong bahay naapektuhan.', reporter: 'Patricia Lim', contact: '0935-222-3335', coordinates: '14.0975, 121.0165', landmark: 'Hillside Cawit', verifiedBy: null, verifiedAt: null, rejectionReason: null, possibleDuplicateOf: null },
-  { id: '035', barangay: 'San Isidro', type: 'Food & Water', urgency: 'Low', source: 'Scraper', time: '10/24 15:15', status: 'pending', description: 'Request for hygiene kits and potable water for 30 families.', originalText: 'Kailangan ng hygiene kits at tubig para sa 30 pamilya.', reporter: 'Roberto Garcia', contact: '0936-444-5557', coordinates: '14.0925, 121.0245', landmark: 'San Isidro tent area', verifiedBy: null, verifiedAt: null, rejectionReason: null, possibleDuplicateOf: null },
-];
+import { fetchReports, subscribeToReports, type Report, type ReportStatus } from '../services/incidentService';
 
 // ── Apple Design Spring Physics & Ease curves ──
 const APPLE_SPRING = { type: 'spring', stiffness: 340, damping: 34, mass: 0.8 } as const;
@@ -210,7 +160,7 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: number)
 
 export default function IncidentReports() {
   const navigate = useNavigate();
-  const [reports, setReports] = useState<Report[]>(sampleReports);
+  const [reports, setReports] = useState<Report[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<ReportStatus>('under_review');
   const [reviewingReport, setReviewingReport] = useState<Report | null>(null);
@@ -219,11 +169,35 @@ export default function IncidentReports() {
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
 
+  const [loadError, setLoadError] = useState('');
+
+  // ── Load reports from Supabase (+ realtime refresh) ──
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 280);
-    return () => clearTimeout(timer);
+    let cancelled = false;
+
+    const load = async (initial: boolean) => {
+      try {
+        const data = await fetchReports();
+        if (cancelled) return;
+        setReports((prev) => {
+          // keep local review state (status edits) for rows we already have
+          const local = new Map(prev.map((r) => [r.id, r]));
+          return data.map((r) => local.get(r.id) ?? r);
+        });
+        setLoadError('');
+      } catch (err) {
+        if (!cancelled) setLoadError(err instanceof Error ? err.message : 'Failed to load reports.');
+      } finally {
+        if (!cancelled && initial) setLoading(false);
+      }
+    };
+
+    load(true);
+    const unsubscribe = subscribeToReports(() => load(false));
+    return () => {
+      cancelled = true;
+      unsubscribe();
+    };
   }, []);
 
   // ── Toast State ──
@@ -476,6 +450,12 @@ export default function IncidentReports() {
   return (
     <PageTransition>
       <div className="flex flex-col flex-1 min-h-0 gap-6 relative">
+        {loadError && (
+          <div role="alert" className="px-4 py-3 rounded-xl border border-red-500/20 bg-red-50 dark:bg-red-900/20 text-xs font-medium text-red-700 dark:text-red-300">
+            Could not load reports: {loadError}
+          </div>
+        )}
+
         {/* Toast Notifications */}
         <div className="fixed top-4 right-4 z-250 flex flex-col gap-2 pointer-events-none">
           <AnimatePresence>
@@ -539,13 +519,13 @@ export default function IncidentReports() {
 
                 <FilterDropdown
                   value={filterBarangay}
-                  options={['All Barangays', 'Leynes', 'Poblacion', 'Cawit', 'San Isidro', 'Sampaloc', 'Banga', 'Banadero']}
+                  options={['All Barangays', ...Array.from(new Set(reports.map(r => r.barangay))).sort()]}
                   onChange={setFilterBarangay}
                 />
 
                 <FilterDropdown
                   value={filterType}
-                  options={['All Types', 'Search & Rescue', 'Medical', 'Food & Water', 'Infrastructure']}
+                  options={['All Types', ...Array.from(new Set(reports.map(r => r.type))).sort()]}
                   onChange={setFilterType}
                 />
 
