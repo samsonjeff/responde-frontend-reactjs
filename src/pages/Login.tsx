@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ShieldAlert, Lock, User, Eye, EyeOff, AlertCircle, Mail, ArrowLeft, ArrowRight, RefreshCw, CheckCircle2, KeyRound } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
+import { Lock, User, Eye, EyeOff, AlertCircle, Mail, ArrowLeft, ArrowRight, RefreshCw, CheckCircle2, KeyRound } from 'lucide-react';
 import { useAuth, AuthError } from '../context/AuthContext';
 import { authService } from '../services/authService';
 
@@ -436,12 +436,22 @@ export default function Login() {
           {/* LEFT SIDE --- Form */}
           <div className="p-4 sm:p-6 md:p-6 lg:p-8 xl:p-9 flex flex-col justify-center min-h-[460px]">
             <div className="flex flex-col items-center text-center mb-3 sm:mb-4 lg:mb-5">
-              <div className="w-10 h-10 sm:w-11 sm:h-11 bg-blue-50 border border-blue-200/80 rounded-xl flex items-center justify-center mb-2 sm:mb-2.5 shadow-sm">
-                <ShieldAlert className="w-5 h-5 sm:w-5.5 sm:h-5.5 text-blue-700" />
-              </div>
-              <h1 className="text-xl sm:text-2xl font-extrabold text-blue-800 tracking-wider">
-                RESPONDE
-              </h1>
+              <Link
+                to="/"
+                title="Return to Landing Page"
+                className="group flex flex-col items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 rounded-2xl p-1 transition-all"
+              >
+                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full overflow-hidden shadow-md ring-2 ring-blue-500/20 group-hover:ring-blue-500/50 group-hover:shadow-lg group-hover:scale-105 active:scale-95 transition-all duration-200 bg-white flex items-center justify-center mb-2 sm:mb-2.5">
+                  <img
+                    src="/Responde_Logo.png"
+                    alt="RESPONDE Logo"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <h1 className="text-xl sm:text-2xl font-extrabold text-blue-800 tracking-wider group-hover:text-blue-600 transition-colors">
+                  RESPONDE
+                </h1>
+              </Link>
               <p className="text-[10px] font-semibold uppercase tracking-widest text-blue-600 mt-0.5">
                 Talisay MDRRMO Command Center
               </p>

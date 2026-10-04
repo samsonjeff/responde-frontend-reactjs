@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import {
-  ShieldAlert,
   Lock,
   User,
   Mail,
@@ -132,12 +131,22 @@ export default function Register() {
       <div className="max-w-md w-full bg-white rounded-2xl sm:rounded-3xl shadow-2xl border border-slate-200/80 overflow-hidden">
         {/* Header */}
         <div className="bg-gradient-to-r from-blue-900 via-blue-800 to-blue-700 p-6 sm:p-7 text-white text-center">
-          <div className="w-11 h-11 bg-white/10 rounded-2xl flex items-center justify-center mx-auto mb-3 border border-white/20 shadow-inner">
-            <ShieldAlert className="w-6 h-6 text-white" />
-          </div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-wide">
-            Personnel Registration
-          </h1>
+          <Link
+            to="/"
+            title="Return to Landing Page"
+            className="group inline-flex flex-col items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60 rounded-2xl p-1 transition-all"
+          >
+            <div className="w-14 h-14 rounded-full overflow-hidden shadow-lg ring-2 ring-white/30 group-hover:ring-white/60 group-hover:scale-105 active:scale-95 transition-all duration-200 bg-white flex items-center justify-center mx-auto mb-2.5">
+              <img
+                src="/Responde_Logo.png"
+                alt="RESPONDE Logo"
+                className="w-full h-full object-cover"
+              />
+            </div>
+            <h1 className="text-xl sm:text-2xl font-bold tracking-wide group-hover:text-blue-100 transition-colors">
+              Personnel Registration
+            </h1>
+          </Link>
           <p className="text-blue-100 text-xs sm:text-sm mt-1 max-w-xs mx-auto">
             Talisay MDRRMO Command Center Invitation
           </p>
