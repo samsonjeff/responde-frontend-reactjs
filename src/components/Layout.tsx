@@ -145,6 +145,9 @@ export default function Layout() {
   const [notifOpen, setNotifOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [signOutModalOpen, setSignOutModalOpen] = useState(false);
+  const [confirmDeleteTarget, setConfirmDeleteTarget] = useState<'all' | string | null>(null);
+  const confirmDeleteTargetRef = useRef<'all' | string | null>(null);
+  confirmDeleteTargetRef.current = confirmDeleteTarget;
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [activeTab, setActiveTab] = useState<FilterTab>('all');
   const [copiedEmail, setCopiedEmail] = useState(false);
@@ -179,9 +182,19 @@ export default function Layout() {
     }
   };
 
+  const handleConfirmDelete = () => {
+    if (confirmDeleteTarget === 'all') {
+      clearAll();
+    } else if (confirmDeleteTarget) {
+      deleteNotification(confirmDeleteTarget);
+    }
+    setConfirmDeleteTarget(null);
+  };
+
   // Close notification & profile dropdown on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
+      if (confirmDeleteTargetRef.current) return;
       if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
         setNotifOpen(false);
       }
@@ -203,6 +216,10 @@ export default function Layout() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
+        if (confirmDeleteTargetRef.current) {
+          setConfirmDeleteTarget(null);
+          return;
+        }
         setMobileOpen(false);
         setNotifOpen(false);
         setProfileOpen(false);
@@ -244,13 +261,13 @@ export default function Layout() {
   const isActive = (p: string) => location.pathname === p;
 
   const navItems = [
-    { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { path: '/incident-reports', label: 'Incident Reports', icon: FileText },
-    { path: '/messenger-bot-logs', label: 'Messenger Logs', icon: MessageSquare },
-    { path: '/scraper-feed', label: 'Scraper Feed', icon: Globe },
-    { path: '/geospatial-map', label: 'Geospatial Map', icon: Map },
-    { path: '/analytics', label: 'Analytics', icon: BarChart3 },
-    { path: '/settings', label: 'Settings', icon: Settings },
+    { path: '/dashboard', label: 'Dashboard', shortLabel: 'Dashboard', icon: LayoutDashboard },
+    { path: '/incident-reports', label: 'Incident Reports', shortLabel: 'Reports', icon: FileText },
+    { path: '/messenger-bot-logs', label: 'Messenger Logs', shortLabel: 'Messenger', icon: MessageSquare },
+    { path: '/scraper-feed', label: 'Scraper Feed', shortLabel: 'Scraper', icon: Globe },
+    { path: '/geospatial-map', label: 'Geospatial Map', shortLabel: 'Map', icon: Map },
+    { path: '/analytics', label: 'Analytics', shortLabel: 'Analytics', icon: BarChart3 },
+    { path: '/settings', label: 'Settings', shortLabel: 'Settings', icon: Settings },
   ];
 
   const filteredNotifications =
@@ -282,44 +299,29 @@ export default function Layout() {
     >
       {/* Ambient background glows for frosted glass refraction */}
 
-      {/* Mobile overlay */}
-      <AnimatePresence>
-        {mobileOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="fixed inset-0 bg-slate-950/50 dark:bg-black/70 backdrop-blur-xs z-50 lg:hidden"
-            onClick={() => setMobileOpen(false)}
-          />
-        )}
-      </AnimatePresence>
-
-      {/* ─── SIDEBAR (Frosted Glass) ─── */}
+      {/* ─── SIDEBAR (Frosted Glass — Visible on Tablet/Desktop, Hidden on Cellphone) ─── */}
       <aside
         id="app-sidebar"
         className={`
           fixed z-[60] flex flex-col
-          top-0 bottom-0 left-0 sm:top-4 sm:bottom-4 sm:left-4
-          w-64 md:w-18 ${collapsed ? 'lg:w-18' : 'lg:w-56'}
+          hidden md:flex
+          top-4 bottom-4 left-4
+          w-18 ${collapsed ? 'lg:w-18' : 'lg:w-56'}
           backdrop-blur-2xl backdrop-saturate-180
           bg-white/95 dark:bg-slate-900/95
           lg:bg-white/45 lg:dark:bg-slate-900/60
-          rounded-r-2xl sm:rounded-2xl
-          border-r sm:border border-white/60 dark:border-white/10
-          border-r-white/80
+          rounded-2xl
+          border border-white/60 dark:border-white/10
           shadow-[0_8px_32px_0_rgba(31,38,135,0.15),inset_0_1px_1px_0_rgba(255,255,255,0.9)]
           dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.5),inset_0_1px_1px_0_rgba(255,255,255,0.1)]
           transition-all duration-300 ease-in-out
-          ${mobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0 lg:translate-x-0'}
         `}
       >
         {/* Logo */}
         <div className={`
           h-16 flex items-center shrink-0
-          px-4 gap-3 md:justify-center md:px-0 md:gap-0
-          ${collapsed && !mobileOpen ? 'lg:justify-center lg:px-0 lg:gap-0' : 'lg:justify-start lg:px-4 lg:gap-3'}
+          md:justify-center md:px-0 md:gap-0
+          ${collapsed ? 'lg:justify-center lg:px-0 lg:gap-0' : 'lg:justify-start lg:px-4 lg:gap-3'}
         `}>
           <img
             src="/Responde_Logo.png"
@@ -329,18 +331,11 @@ export default function Layout() {
           <span className={`
             font-bold text-slate-800 dark:text-white text-base tracking-tight
             transition-all duration-300 overflow-hidden whitespace-nowrap
-            block md:hidden lg:block
-            ${collapsed && !mobileOpen ? 'lg:w-0 lg:opacity-0' : 'lg:w-auto lg:opacity-100'}
+            hidden lg:block
+            ${collapsed ? 'lg:w-0 lg:opacity-0' : 'lg:w-auto lg:opacity-100'}
           `}>
             RESPONDE
           </span>
-          <button
-            onClick={() => setMobileOpen(false)}
-            className="ml-auto p-1.5 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-black/5 dark:hover:bg-white/10 md:hidden transition-colors active:scale-95"
-            title="Close sidebar"
-          >
-            <X className="w-5 h-5" />
-          </button>
         </div>
 
         {/* thin divider */}
@@ -477,7 +472,7 @@ export default function Layout() {
       {/* left margin accounts for: 16px gap-left + sidebar width + 16px gap-right */}
       <main
         className={`
-          flex-1 flex flex-col min-w-0 transition-all duration-300
+          flex-1 flex flex-col min-w-0 min-h-0 h-full transition-all duration-300
           ml-0 md:ml-[calc(16px+72px+8px)] ${collapsed ? 'lg:ml-[calc(16px+72px+8px)]' : 'lg:ml-[calc(16px+225px+8px)]'}
         `}
       >
@@ -494,17 +489,24 @@ export default function Layout() {
             transition-all duration-300
           ">
             <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+              {/* Mobile Brand Logo (< md) — visible since sidebar is hidden on cellphone */}
+              <Link to="/dashboard" className="flex items-center gap-2 md:hidden shrink-0 select-none">
+                <img
+                  src="/Responde_Logo.png"
+                  alt="Responde"
+                  className="w-7 h-7 rounded-lg object-cover shrink-0"
+                />
+                <span className="font-bold text-slate-800 dark:text-white text-sm tracking-tight">
+                  RESPONDE
+                </span>
+              </Link>
+
+              {/* Desktop/Tablet Sidebar Collapse Toggle (>= md) */}
               <button
                 id="sidebar-toggle-btn"
                 aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-                onClick={() => {
-                  if (window.innerWidth < 1024) {
-                    setMobileOpen((prev) => !prev);
-                  } else {
-                    setCollapsed((prev) => !prev);
-                  }
-                }}
-                className="shrink-0 p-2 text-slate-500 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-white/10 rounded-xl transition-colors active:scale-95"
+                onClick={() => setCollapsed((prev) => !prev)}
+                className="hidden md:flex shrink-0 p-2 text-slate-500 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-white/10 rounded-xl transition-colors active:scale-95 cursor-pointer"
               >
                 <Menu className="w-5 h-5" />
               </button>
@@ -567,7 +569,7 @@ export default function Layout() {
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: -8, scale: 0.97 }}
                       transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
-                      className="absolute right-0 top-full mt-2 w-90 sm:w-100 backdrop-blur-2xl backdrop-saturate-180 bg-white/95 dark:bg-slate-900/95 rounded-2xl border border-white/70 dark:border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.18),inset_0_1px_1px_rgba(255,255,255,0.8)] dark:shadow-black/70 z-[110] overflow-hidden flex flex-col"
+                      className="fixed sm:absolute left-3 right-3 sm:left-auto sm:right-0 top-20 sm:top-full mt-0 sm:mt-2 w-auto sm:w-100 max-w-[calc(100vw-1.5rem)] sm:max-w-none backdrop-blur-2xl backdrop-saturate-180 bg-white/95 dark:bg-slate-900/95 rounded-2xl border border-white/70 dark:border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.18),inset_0_1px_1px_rgba(255,255,255,0.8)] dark:shadow-black/70 z-[110] overflow-hidden flex flex-col"
                     >
                       {/* ── Header ── */}
                       <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 dark:border-slate-800">
@@ -587,15 +589,17 @@ export default function Layout() {
                             <>
                               <button
                                 onClick={markAllRead}
-                                className="p-1.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                                className="p-1.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors cursor-pointer"
                                 title="Mark all as read"
+                                aria-label="Mark all as read"
                               >
                                 <CheckCheck className="w-3.5 h-3.5" />
                               </button>
                               <button
-                                onClick={clearAll}
-                                className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                                title="Clear all"
+                                onClick={() => setConfirmDeleteTarget('all')}
+                                className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors cursor-pointer"
+                                title="Clear all notifications"
+                                aria-label="Clear all notifications"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
                               </button>
@@ -614,7 +618,7 @@ export default function Layout() {
                           <button
                             key={tab.key}
                             onClick={() => setActiveTab(tab.key)}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-150
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-150 cursor-pointer
                             ${activeTab === tab.key
                                 ? 'bg-blue-600 text-white shadow-sm'
                                 : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
@@ -635,7 +639,7 @@ export default function Layout() {
                       </div>
 
                       {/* ── Notification List ── */}
-                      <div className="max-h-90 overflow-y-auto divide-y divide-slate-50 dark:divide-slate-800/60">
+                      <div className="max-h-[min(24rem,calc(100dvh-16rem))] sm:max-h-90 overflow-y-auto divide-y divide-slate-50 dark:divide-slate-800/60 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700">
                         <AnimatePresence initial={false}>
                           {filteredNotifications.length === 0 ? (
                             <motion.div
@@ -656,7 +660,7 @@ export default function Layout() {
                                 key={n.id}
                                 notification={n}
                                 onClick={() => handleNotifClick(n)}
-                                onDelete={() => deleteNotification(n.id)}
+                                onDelete={() => setConfirmDeleteTarget(n.id)}
                               />
                             ))
                           )}
@@ -670,18 +674,6 @@ export default function Layout() {
                             {filteredNotifications.length} notification
                             {filteredNotifications.length !== 1 ? 's' : ''}
                           </span>
-                          <button
-                            onClick={() => {
-                              setNotifOpen(false);
-                              navigate(activeTab === 'messenger' ? '/messenger-bot-logs' : '/scraper-feed');
-                            }}
-                            onMouseEnter={() => prefetchRoute(activeTab === 'messenger' ? '/messenger-bot-logs' : '/scraper-feed')}
-                            onPointerDown={() => prefetchRoute(activeTab === 'messenger' ? '/messenger-bot-logs' : '/scraper-feed')}
-                            className="flex items-center gap-1 text-xs text-blue-500 hover:text-blue-600 font-medium transition-colors"
-                          >
-                            View feed
-                            <ArrowRight className="w-3 h-3" />
-                          </button>
                         </div>
                       )}
                     </motion.div>
@@ -845,7 +837,7 @@ export default function Layout() {
           </header>
         </div>
 
-        <div className="flex-1 flex flex-col overflow-y-auto overflow-x-hidden px-4 pb-20 pt-4 sm:px-5 sm:pb-20 md:pb-5 md:pt-4 lg:px-6 lg:pb-6 lg:pt-4">
+        <div className="flex-1 flex flex-col overflow-y-auto overflow-x-hidden px-3.5 pb-[calc(7.5rem+env(safe-area-inset-bottom,0px))] pt-3 sm:px-5 sm:pb-[calc(7.5rem+env(safe-area-inset-bottom,0px))] md:pb-5 md:pt-4 lg:px-6 lg:pb-6 lg:pt-4">
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
               key={location.pathname}
@@ -856,7 +848,7 @@ export default function Layout() {
                 duration: 0.22,
                 ease: [0.23, 1, 0.32, 1],
               }}
-              className="flex flex-col flex-1 min-h-0 w-full"
+              className="flex flex-col min-h-full w-full"
             >
               <Outlet />
             </motion.div>
@@ -864,48 +856,62 @@ export default function Layout() {
         </div>
       </main>
 
-      {/* ── Mobile Fixed Bottom Navigation Bar (<768px) ── */}
+      {/* ── Mobile Floating Bottom Navigation Bar (<768px) ── */}
       <nav
         aria-label="Mobile Navigation"
-        className="fixed bottom-0 left-0 right-0 z-50 md:hidden backdrop-blur-2xl backdrop-saturate-180 bg-white/90 dark:bg-slate-900/95 border-t border-slate-200/80 dark:border-white/10 px-3 py-2 flex items-center justify-around shadow-[0_-4px_20px_rgba(0,0,0,0.06)] dark:shadow-[0_-4px_24px_rgba(0,0,0,0.4)] transition-colors duration-300"
+        className="fixed bottom-[calc(0.75rem+env(safe-area-inset-bottom,0px))] left-3 right-3 z-50 md:hidden max-w-lg mx-auto backdrop-blur-2xl backdrop-saturate-180 bg-white/90 dark:bg-slate-900/90 border border-white/70 dark:border-white/10 px-1.5 py-1.5 rounded-2xl shadow-[0_12px_36px_rgba(0,0,0,0.16),inset_0_1px_1px_rgba(255,255,255,0.8)] dark:shadow-[0_12px_40px_rgba(0,0,0,0.6),inset_0_1px_1px_rgba(255,255,255,0.08)] transition-all duration-300"
       >
-        {[
-          { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-          { path: '/incident-reports', label: 'Incident Reports', icon: FileText },
-          { path: '/messenger-bot-logs', label: 'Messenger Bot', icon: MessageSquare },
-          { path: '/geospatial-map', label: 'Geospatial Map', icon: Map },
-          { path: '/settings', label: 'Settings', icon: Settings },
-        ].map((item) => {
-          const active = isActive(item.path);
-          return (
-            <Link
-              key={item.path}
-              to={item.path}
-              onMouseEnter={() => prefetchRoute(item.path)}
-              onPointerDown={() => prefetchRoute(item.path)}
-              onTouchStart={() => prefetchRoute(item.path)}
-              className={`relative flex items-center justify-center p-2.5 rounded-xl transition-colors duration-150 active:scale-90 min-w-[44px] min-h-[44px] select-none ${
-                active
-                  ? 'text-[#0071E3] dark:text-sky-400 font-semibold'
-                  : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
-              }`}
-              title={item.label}
-              aria-label={item.label}
-            >
-              {active && (
-                <motion.div
-                  layoutId="mobileActivePill"
-                  className="absolute inset-0 rounded-xl bg-[#0071E3]/10 dark:bg-white/10 border border-[#0071E3]/20 dark:border-white/10 shadow-xs"
-                  transition={{ type: 'spring', stiffness: 380, damping: 32, mass: 0.8 }}
-                />
-              )}
-              <item.icon className="w-5.5 h-5.5 relative z-10" strokeWidth={active ? 2.25 : 1.75} />
-              {item.path === '/messenger-bot-logs' && incompleteCount > 0 && (
-                <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-amber-500 ring-2 ring-white dark:ring-slate-900 animate-pulse z-10" />
-              )}
-            </Link>
-          );
-        })}
+        <div className="flex items-center justify-between w-full">
+          {navItems.map((item) => {
+            const active = isActive(item.path);
+            const isMessenger = item.path === '/messenger-bot-logs';
+            const isScraper = item.path === '/scraper-feed';
+            const hasMessengerBadge = isMessenger && incompleteCount > 0;
+            const hasScraperBadge = isScraper && scraperUnread > 0;
+
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                onMouseEnter={() => prefetchRoute(item.path)}
+                onPointerDown={() => prefetchRoute(item.path)}
+                onTouchStart={() => prefetchRoute(item.path)}
+                className={`relative flex flex-col items-center justify-center py-1 px-1 flex-1 rounded-xl transition-all duration-150 active:scale-90 min-h-[46px] select-none ${
+                  active
+                    ? 'text-blue-600 dark:text-sky-400 font-semibold'
+                    : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+                }`}
+                title={item.label}
+                aria-label={item.label}
+              >
+                {/* Active Sliding Pill with Apple Spring Physics */}
+                {active && (
+                  <motion.div
+                    layoutId="floatingMobileActivePill"
+                    className="absolute inset-0 rounded-xl bg-blue-500/10 dark:bg-white/10 border border-blue-500/20 dark:border-white/10 shadow-xs"
+                    transition={{ type: 'spring', stiffness: 420, damping: 32, mass: 0.8 }}
+                  />
+                )}
+
+                <div className="relative">
+                  <item.icon className="w-5 h-5 relative z-10" strokeWidth={active ? 2.4 : 1.8} />
+
+                  {hasMessengerBadge && (
+                    <span className="absolute -top-1 -right-1.5 w-2 h-2 rounded-full bg-amber-500 ring-2 ring-white dark:ring-slate-900 animate-pulse z-10" />
+                  )}
+
+                  {hasScraperBadge && (
+                    <span className="absolute -top-1 -right-1.5 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white dark:ring-slate-900 animate-pulse z-10" />
+                  )}
+                </div>
+
+                <span className="relative z-10 text-[9px] tracking-tight leading-tight mt-0.5 truncate max-w-[46px]">
+                  {item.shortLabel || item.label}
+                </span>
+              </Link>
+            );
+          })}
+        </div>
       </nav>
 
       {/* ── Global Toast Renderer ── */}
@@ -937,6 +943,19 @@ export default function Layout() {
         onConfirm={handleConfirmSignOut}
         isLoading={isSigningOut}
         user={user}
+      />
+
+      {/* ── Delete Notification Confirmation Modal ── */}
+      <DeleteNotificationModal
+        isOpen={confirmDeleteTarget !== null}
+        target={confirmDeleteTarget}
+        notification={
+          typeof confirmDeleteTarget === 'string'
+            ? notifications.find((n) => n.id === confirmDeleteTarget)
+            : null
+        }
+        onClose={() => setConfirmDeleteTarget(null)}
+        onConfirm={handleConfirmDelete}
       />
     </div>
   );
@@ -1024,16 +1043,18 @@ function NotificationRow({
         <p className="text-[10px] text-slate-400 dark:text-slate-600 mt-1">{timeAgo}</p>
       </div>
 
-      {/* Hover dismiss button */}
+      {/* Dismiss / Delete button */}
       <button
+        type="button"
         onClick={(e) => {
           e.stopPropagation();
           onDelete();
         }}
-        className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 p-1 text-slate-300 hover:text-slate-500 dark:hover:text-slate-300 rounded-lg transition-all"
-        title="Dismiss"
+        className="absolute top-3 right-3 opacity-60 hover:opacity-100 sm:opacity-0 sm:group-hover:opacity-100 p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all cursor-pointer active:scale-90"
+        title="Delete notification"
+        aria-label="Delete notification"
       >
-        <X className="w-3.5 h-3.5" />
+        <Trash2 className="w-3.5 h-3.5" />
       </button>
     </motion.div>
   );
@@ -1136,4 +1157,115 @@ function formatTimeAgo(date: Date): string {
   const hours = Math.floor(minutes / 60);
   if (hours < 24) return `${hours}h ago`;
   return `${Math.floor(hours / 24)}d ago`;
+}
+
+// ── Delete Notification Confirmation Modal ─────────────────────────────────────
+
+function DeleteNotificationModal({
+  isOpen,
+  target,
+  notification,
+  onClose,
+  onConfirm,
+}: {
+  isOpen: boolean;
+  target: 'all' | string | null;
+  notification?: AppNotification | null;
+  onClose: () => void;
+  onConfirm: () => void;
+}) {
+  const isAll = target === 'all';
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          key="delete-notification-backdrop"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.16 }}
+          className="fixed inset-0 z-[220] bg-black/50 backdrop-blur-xs flex items-center justify-center p-4"
+          onClick={onClose}
+        >
+          <motion.div
+            key="delete-notification-dialog"
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="delete-notification-title"
+            aria-describedby="delete-notification-desc"
+            initial={{ scale: 0.94, opacity: 0, y: 8 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.94, opacity: 0, y: 8 }}
+            transition={{ type: 'spring', stiffness: 420, damping: 30 }}
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-sm bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl rounded-2xl sm:rounded-3xl border border-white/80 dark:border-white/10 shadow-[0_24px_50px_rgba(0,0,0,0.25)] p-5 sm:p-6 text-center relative overflow-hidden"
+          >
+            {/* Ambient Red Glow */}
+            <div className="absolute -top-10 -right-10 w-28 h-28 bg-red-500/10 dark:bg-red-500/15 rounded-full blur-xl pointer-events-none" />
+
+            {/* Icon */}
+            <div className="w-12 h-12 rounded-2xl bg-red-500/10 dark:bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/20 flex items-center justify-center mx-auto mb-3.5 shadow-xs">
+              <Trash2 className="w-5 h-5" />
+            </div>
+
+            {/* Title */}
+            <h3
+              id="delete-notification-title"
+              className="text-base sm:text-lg font-bold text-slate-800 dark:text-white tracking-tight"
+            >
+              {isAll ? 'Clear All Notifications?' : 'Delete Notification?'}
+            </h3>
+
+            {/* Description */}
+            <p
+              id="delete-notification-desc"
+              className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed"
+            >
+              {isAll
+                ? 'Are you sure you want to clear all notifications? This action cannot be undone.'
+                : notification
+                  ? `Are you sure you want to delete "${notification.title}"?`
+                  : 'Are you sure you want to delete this notification?'}
+            </p>
+
+            {/* Preview snippet for single item */}
+            {!isAll && notification && (
+              <div className="mt-3 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-white/5 text-left flex items-start gap-2.5">
+                <span className="shrink-0 mt-0.5 text-xs">
+                  {notification.type === 'messenger' ? '💬' : '🌐'}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-semibold text-slate-700 dark:text-slate-200 truncate">
+                    {notification.title}
+                  </p>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-1 mt-0.5">
+                    {notification.message}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="w-full mt-5 grid grid-cols-2 gap-2.5">
+              <button
+                type="button"
+                onClick={onClose}
+                className="w-full py-2.5 px-3 rounded-xl text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/10 border border-slate-200 dark:border-slate-700/80 transition-all active:scale-[0.98] cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={onConfirm}
+                className="w-full py-2.5 px-3 rounded-xl text-xs sm:text-sm font-semibold text-white bg-red-600 hover:bg-red-700 active:scale-[0.98] transition-all shadow-[0_2px_10px_rgba(220,38,38,0.3)] cursor-pointer"
+              >
+                {isAll ? 'Clear All' : 'Delete'}
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
 }
