@@ -5,23 +5,52 @@ import {
   Moon, Sun, Bell, Shield, Database, Users,
   RefreshCw, Wifi, Check, X, UserPlus, Copy,
   CheckCircle2, AlertCircle, ShieldCheck,
-  Search, Lock, Loader2, Eye, EyeOff, KeyRound
+  Search, Lock, Loader2, Eye, EyeOff, KeyRound,
+  Trash2, AlertTriangle, UserCircle, Pencil, Phone, Briefcase, Mail,
+  History
 } from 'lucide-react';
 import { authService, type AuthUser, type UserRole, AuthError } from '../services/authService';
+
+type AuditAction = 'invite' | 'signup' | 'role_change' | 'user_deleted' | 'password_change' | 'login';
+
+type AuditEntry = {
+  id: string;
+  actor: string;
+  action: AuditAction;
+  target: string;
+  timestamp: string;
+};
+
+const AUDIT_META: Record<AuditAction, { label: string; className: string }> = {
+  invite: { label: 'Invite Generated', className: 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300' },
+  signup: { label: 'Personnel Sign Up', className: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300' },
+  role_change: { label: 'Role Change', className: 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300' },
+  user_deleted: { label: 'User Deleted', className: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300' },
+  password_change: { label: 'Password Changed', className: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-300' },
+  login: { label: 'Sign In', className: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300' },
+};
+
+const minutesAgo = (m: number) => new Date(Date.now() - m * 60_000).toISOString();
+
+const formatRelative = (iso: string) => {
+  const diff = Math.round((Date.now() - new Date(iso).getTime()) / 60_000);
+  if (diff < 1) return 'Just now';
+  if (diff < 60) return `${diff} min ago`;
+  if (diff < 1440) return `${Math.floor(diff / 60)} hr ago`;
+  return new Date(iso).toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' });
+};
 
 function Toggle({ checked, onChange }: { checked: boolean; onChange: () => void }) {
   return (
     <button
       type="button"
       onClick={onChange}
-      className={`relative w-11 h-6 rounded-full transition-colors ${
-        checked ? 'bg-blue-600' : 'bg-slate-300 dark:bg-slate-600'
-      }`}
+      className={`relative w-11 h-6 rounded-full transition-colors ${checked ? 'bg-blue-600' : 'bg-slate-300 dark:bg-slate-600'
+        }`}
     >
       <span
-        className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${
-          checked ? 'translate-x-5' : 'translate-x-0'
-        }`}
+        className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${checked ? 'translate-x-5' : 'translate-x-0'
+          }`}
       />
     </button>
   );
@@ -45,11 +74,10 @@ function Card({ icon: Icon, title, children }: {
 
 function StatusBadge({ active }: { active: boolean }) {
   return (
-    <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium border ${
-      active
+    <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium border ${active
         ? 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800'
         : 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800'
-    }`}>
+      }`}>
       <Wifi className="w-3 h-3" />
       {active ? 'Connected' : 'Disconnected'}
     </span>
@@ -88,6 +116,68 @@ export default function Settings() {
   const [rolePassword, setRolePassword] = useState('');
   const [isUpdatingRole, setIsUpdatingRole] = useState(false);
   const [roleError, setRoleError] = useState<string | null>(null);
+
+  // Profile State (local only)
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [profile, setProfile] = useState({
+    fullName: currentUser?.full_name || '',
+    phone: '',
+    position: 'MDRRMO Personnel',
+  });
+  const [profileDraft, setProfileDraft] = useState(profile);
+
+  const handleSaveProfile = (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSavingProfile(true);
+    setTimeout(() => {
+      setProfile(profileDraft);
+      setIsSavingProfile(false);
+      setIsEditingProfile(false);
+      showSuccessFeedback('Profile updated successfully.');
+    }, 600);
+  };
+
+  // Audit Log (mock, Super Admin only)
+  const [auditLogs, setAuditLogs] = useState<AuditEntry[]>([
+    { id: 'a1', actor: currentUser?.full_name || 'Super Admin', action: 'login', target: 'Authenticated via 2FA from Windows PC (Chrome)', timestamp: minutesAgo(4) },
+    { id: 'a2', actor: 'Sedrick Amote', action: 'signup', target: 'Completed registration via Staff invite token', timestamp: minutesAgo(35) },
+    { id: 'a3', actor: currentUser?.full_name || 'Super Admin', action: 'role_change', target: 'Promoted Juan Dela Cruz: Staff → Admin', timestamp: minutesAgo(110) },
+    { id: 'a4', actor: currentUser?.full_name || 'Super Admin', action: 'invite', target: 'Generated 24-hr Staff invite URL', timestamp: minutesAgo(60 * 3) },
+    { id: 'a5', actor: 'Maria Santos', action: 'password_change', target: 'Account password updated securely', timestamp: minutesAgo(60 * 8) },
+    { id: 'a6', actor: currentUser?.full_name || 'Super Admin', action: 'invite', target: 'Generated 24-hr Admin invite URL', timestamp: minutesAgo(60 * 28) },
+  ]);
+  const [auditFilter, setAuditFilter] = useState<AuditAction | 'all'>('all');
+  const visibleAuditLogs = auditFilter === 'all' ? auditLogs : auditLogs.filter(l => l.action === auditFilter);
+
+  // Delete User Modal State (Super Admin Only)
+  const [deleteModalUser, setDeleteModalUser] = useState<AuthUser | null>(null);
+  const [isDeletingUser, setIsDeletingUser] = useState(false);
+
+  const handleDeleteUser = () => {
+    if (!deleteModalUser) return;
+    if (deleteModalUser.role === 'super_admin') {
+      alert('Super Admin accounts are protected and cannot be deleted.');
+      return;
+    }
+
+    setIsDeletingUser(true);
+    // Client-side simulation as requested (no backend logic)
+    setTimeout(() => {
+      const deletedName = deleteModalUser.full_name || deleteModalUser.username || 'Personnel';
+      setUsers(prev => prev.filter(u => u.user_id !== deleteModalUser.user_id));
+      setAuditLogs(prev => [{
+        id: `a${Date.now()}`,
+        actor: currentUser?.full_name || 'Super Admin',
+        action: 'user_deleted',
+        target: `${deletedName} (${deleteModalUser.role === 'admin' ? 'Admin' : 'Staff'})`,
+        timestamp: new Date().toISOString(),
+      }, ...prev]);
+      setIsDeletingUser(false);
+      setDeleteModalUser(null);
+      showSuccessFeedback(`${deletedName} has been deleted successfully.`);
+    }, 600);
+  };
 
   // Change Password Modal State
   const [passwordModalOpen, setPasswordModalOpen] = useState(false);
@@ -144,6 +234,13 @@ export default function Settings() {
     setTimeout(() => {
       setIsSubmittingPassword(false);
       setPasswordSuccess('Password successfully updated! Your credentials have been saved.');
+      setAuditLogs(prev => [{
+        id: `a${Date.now()}`,
+        actor: currentUser?.full_name || 'Super Admin',
+        action: 'password_change',
+        target: 'User changed account password',
+        timestamp: new Date().toISOString(),
+      }, ...prev]);
       showSuccessFeedback('Password changed successfully');
       setTimeout(() => {
         resetPasswordModal();
@@ -232,6 +329,13 @@ export default function Settings() {
         rolePassword
       );
       showSuccessFeedback(`Role for ${roleModalUser.full_name || roleModalUser.username} updated to ${selectedRole}.`);
+      setAuditLogs(prev => [{
+        id: `a${Date.now()}`,
+        actor: currentUser?.full_name || 'Super Admin',
+        action: 'role_change',
+        target: `${roleModalUser.full_name || roleModalUser.username}: role updated to ${selectedRole}`,
+        timestamp: new Date().toISOString(),
+      }, ...prev]);
       setRoleModalUser(null);
       fetchUsers();
     } catch (err) {
@@ -270,6 +374,136 @@ export default function Settings() {
 
   return (
     <div className="space-y-6">
+
+      {/* PROFILE CARD */}
+      <div className="bg-white dark:bg-[#111827] rounded-xl border border-slate-200 dark:border-slate-700/60 shadow-[0_4px_24px_rgba(0,0,0,0.06)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.35)] p-6">
+        <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center gap-2">
+            <UserCircle className="w-5 h-5 text-slate-500 dark:text-slate-400" />
+            <h3 className="font-semibold text-slate-800 dark:text-slate-100">Profile</h3>
+          </div>
+          {!isEditingProfile && (
+            <button
+              type="button"
+              onClick={() => { setProfileDraft(profile); setIsEditingProfile(true); }}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors cursor-pointer"
+            >
+              <Pencil className="w-3.5 h-3.5" />
+              Edit Profile
+            </button>
+          )}
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-5">
+          <div className="flex sm:flex-col items-center gap-3 sm:w-36 shrink-0">
+            {currentUser?.avatar_url ? (
+              <img
+                src={currentUser.avatar_url}
+                alt={profile.fullName || 'Profile'}
+                className="w-20 h-20 rounded-full object-cover border-2 border-white dark:border-slate-800 shadow-md"
+              />
+            ) : (
+              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-600 to-blue-800 text-white font-bold text-2xl flex items-center justify-center shadow-md">
+                {(profile.fullName || currentUser?.email || 'U')[0].toUpperCase()}
+              </div>
+            )}
+            <span
+              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${userRole === 'super_admin'
+                  ? 'bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/40 dark:text-purple-300 dark:border-purple-800'
+                  : userRole === 'admin'
+                    ? 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-800'
+                    : 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'
+                }`}
+            >
+              {userRole === 'super_admin' ? 'Super Admin' : userRole === 'admin' ? 'Admin' : 'Staff'}
+            </span>
+          </div>
+
+          {isEditingProfile ? (
+            <form onSubmit={handleSaveProfile} className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">Full Name</label>
+                <input
+                  type="text"
+                  value={profileDraft.fullName}
+                  onChange={(e) => setProfileDraft({ ...profileDraft, fullName: e.target.value })}
+                  required
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700 rounded-xl text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">Email</label>
+                <input
+                  type="email"
+                  value={currentUser?.email || ''}
+                  disabled
+                  title="Email cannot be changed here"
+                  className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-500 cursor-not-allowed"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">Contact Number</label>
+                <input
+                  type="tel"
+                  value={profileDraft.phone}
+                  onChange={(e) => setProfileDraft({ ...profileDraft, phone: e.target.value })}
+                  placeholder="09XX-XXX-XXXX"
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700 rounded-xl text-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">Position</label>
+                <input
+                  type="text"
+                  value={profileDraft.position}
+                  onChange={(e) => setProfileDraft({ ...profileDraft, position: e.target.value })}
+                  placeholder="e.g. Dispatcher, MDRRMO"
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700 rounded-xl text-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div className="sm:col-span-2 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsEditingProfile(false)}
+                  disabled={isSavingProfile}
+                  className="px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl cursor-pointer transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSavingProfile}
+                  className="px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-md transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                >
+                  {isSavingProfile && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          ) : (
+            <dl className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
+              {[
+                { icon: UserCircle, label: 'Full Name', value: profile.fullName || 'Not set' },
+                { icon: Mail, label: 'Email', value: currentUser?.email || 'Not set' },
+                { icon: Phone, label: 'Contact Number', value: profile.phone || 'Not set' },
+                { icon: Briefcase, label: 'Position', value: profile.position || 'Not set' },
+              ].map(({ icon: Icon, label, value }) => (
+                <div key={label} className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-800/60 flex items-center justify-center shrink-0">
+                    <Icon className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                  </div>
+                  <div className="min-w-0">
+                    <dt className="text-[11px] uppercase tracking-wider font-semibold text-slate-400">{label}</dt>
+                    <dd className={`text-sm truncate ${value === 'Not set' ? 'text-slate-400 italic' : 'text-slate-800 dark:text-slate-100 font-medium'}`}>
+                      {value}
+                    </dd>
+                  </div>
+                </div>
+              ))}
+            </dl>
+          )}
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card icon={isDark ? Moon : Sun} title="System Preferences">
@@ -409,13 +643,6 @@ export default function Settings() {
             </div>
           </div>
 
-          {actionSuccess && (
-            <div className="mb-4 p-3 rounded-xl bg-green-50 border border-green-200 flex items-center gap-2 text-green-700 text-xs dark:bg-green-900/30 dark:border-green-800 dark:text-green-300">
-              <CheckCircle2 className="w-4 h-4 shrink-0" />
-              <span>{actionSuccess}</span>
-            </div>
-          )}
-
           {userError && (
             <div className="mb-4 p-3 rounded-xl bg-red-50 border border-red-200 flex items-center gap-2 text-red-700 text-xs">
               <AlertCircle className="w-4 h-4 shrink-0" />
@@ -515,13 +742,12 @@ export default function Settings() {
 
                         <td className="px-4 py-3">
                           <span
-                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                              u.role === 'super_admin'
+                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${u.role === 'super_admin'
                                 ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300 border border-purple-200 dark:border-purple-800'
                                 : u.role === 'admin'
-                                ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 border border-blue-200 dark:border-blue-800'
-                                : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
-                            }`}
+                                  ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 border border-blue-200 dark:border-blue-800'
+                                  : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
+                              }`}
                           >
                             {u.role === 'super_admin' ? 'Super Admin' : u.role === 'admin' ? 'Admin' : 'Staff'}
                           </span>
@@ -530,9 +756,9 @@ export default function Settings() {
                         <td className="px-4 py-3 text-xs text-slate-400 hidden md:table-cell">
                           {u.last_login_at
                             ? new Date(u.last_login_at).toLocaleString('en-US', {
-                                dateStyle: 'short',
-                                timeStyle: 'short',
-                              })
+                              dateStyle: 'short',
+                              timeStyle: 'short',
+                            })
                             : 'Never'}
                         </td>
 
@@ -563,13 +789,38 @@ export default function Settings() {
                                   isSelf
                                     ? 'You cannot edit your own role'
                                     : currentUser?.role === 'admin' && u.role === 'super_admin'
-                                    ? 'Insufficient permissions'
-                                    : 'Edit Role'
+                                      ? 'Insufficient permissions'
+                                      : 'Edit Role'
                                 }
                                 className="px-2.5 py-1.5 text-xs font-medium text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/30 rounded-lg transition-colors cursor-pointer"
                               >
                                 Edit Role
                               </button>
+                            )}
+
+                            {/* Super Admin Delete Action */}
+                            {currentUser?.role === 'super_admin' && (
+                              u.role === 'super_admin' ? (
+                                <button
+                                  type="button"
+                                  disabled
+                                  title="Super Admin accounts are protected and cannot be deleted"
+                                  className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-slate-300 dark:text-slate-600 bg-slate-100/50 dark:bg-slate-800/30 rounded-lg cursor-not-allowed opacity-50"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                  <span>Delete</span>
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => setDeleteModalUser(u)}
+                                  title={`Delete ${u.role === 'admin' ? 'Admin' : 'Staff'} ${u.full_name || u.username}`}
+                                  className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition-colors cursor-pointer border border-transparent hover:border-red-200 dark:hover:border-red-900/50"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                  <span>Delete</span>
+                                </button>
+                              )
                             )}
                           </div>
                         </td>
@@ -580,6 +831,77 @@ export default function Settings() {
               </tbody>
             </table>
           </div>
+        </div>
+      )}
+
+      {/* AUDIT LOG (Super Admin Only) */}
+      {userRole === 'super_admin' && (
+        <div className="bg-white dark:bg-[#111827] rounded-xl border border-slate-200 dark:border-slate-700/60 shadow-[0_4px_24px_rgba(0,0,0,0.06)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.35)] p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
+            <div>
+              <div className="flex items-center gap-2">
+                <History className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                <h3 className="font-semibold text-slate-800 dark:text-slate-100 text-lg">Audit Log</h3>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+                  Super Admin
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                Record of security, authentication, and access control events across the system.
+              </p>
+            </div>
+            <select
+              value={auditFilter}
+              onChange={(e) => setAuditFilter(e.target.value as AuditAction | 'all')}
+              className="px-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs sm:text-sm text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+            >
+              <option value="all">All actions</option>
+              {(Object.keys(AUDIT_META) as AuditAction[]).map((key) => (
+                <option key={key} value={key}>{AUDIT_META[key].label}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-700/60">
+            <table className="w-full text-xs sm:text-sm text-left">
+              <thead className="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300">
+                <tr>
+                  <th className="px-4 py-3 font-semibold">Action</th>
+                  <th className="px-4 py-3 font-semibold">Details</th>
+                  <th className="px-4 py-3 font-semibold hidden sm:table-cell">Performed By</th>
+                  <th className="px-4 py-3 font-semibold text-right">When</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                {visibleAuditLogs.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="py-8 text-center text-slate-400">No activity for this filter.</td>
+                  </tr>
+                ) : (
+                  visibleAuditLogs.map((log) => (
+                    <tr key={log.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors">
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${AUDIT_META[log.action].className}`}>
+                          {AUDIT_META[log.action].label}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-slate-700 dark:text-slate-200">{log.target}</td>
+                      <td className="px-4 py-3 text-slate-500 dark:text-slate-400 hidden sm:table-cell">{log.actor}</td>
+                      <td className="px-4 py-3 text-right text-xs text-slate-400 whitespace-nowrap">{formatRelative(log.timestamp)}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* SUCCESS TOAST */}
+      {actionSuccess && (
+        <div className="fixed bottom-6 right-6 z-[250] px-4 py-3 rounded-xl bg-white dark:bg-[#111827] border border-green-200 dark:border-green-800 shadow-xl flex items-center gap-2 text-green-700 dark:text-green-300 text-xs sm:text-sm font-medium">
+          <CheckCircle2 className="w-4 h-4 shrink-0" />
+          <span>{actionSuccess}</span>
         </div>
       )}
 
@@ -735,10 +1057,10 @@ export default function Settings() {
               const roleDisabledTooltip = isAdminEditingSuperAdmin
                 ? 'Insufficient permissions'
                 : isModalSelf
-                ? 'You cannot edit your own role'
-                : isStaffViewer
-                ? 'Read-only view'
-                : undefined;
+                  ? 'You cannot edit your own role'
+                  : isStaffViewer
+                    ? 'Read-only view'
+                    : undefined;
 
               return (
                 <form onSubmit={handleSaveRole} className="space-y-4">
@@ -778,11 +1100,10 @@ export default function Settings() {
                     >
                       <label
                         title={roleDisabledTooltip}
-                        className={`flex items-center gap-2.5 p-2.5 border border-slate-200 dark:border-slate-700 rounded-xl ${
-                          isRoleSelectionDisabled
+                        className={`flex items-center gap-2.5 p-2.5 border border-slate-200 dark:border-slate-700 rounded-xl ${isRoleSelectionDisabled
                             ? 'opacity-50 cursor-not-allowed bg-slate-50 dark:bg-slate-900'
                             : 'cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800'
-                        }`}
+                          }`}
                       >
                         <input
                           type="radio"
@@ -801,11 +1122,10 @@ export default function Settings() {
 
                       <label
                         title={roleDisabledTooltip}
-                        className={`flex items-center gap-2.5 p-2.5 border border-slate-200 dark:border-slate-700 rounded-xl ${
-                          isRoleSelectionDisabled
+                        className={`flex items-center gap-2.5 p-2.5 border border-slate-200 dark:border-slate-700 rounded-xl ${isRoleSelectionDisabled
                             ? 'opacity-50 cursor-not-allowed bg-slate-50 dark:bg-slate-900'
                             : 'cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800'
-                        }`}
+                          }`}
                       >
                         <input
                           type="radio"
@@ -824,11 +1144,10 @@ export default function Settings() {
 
                       <label
                         title={roleDisabledTooltip}
-                        className={`flex items-center gap-2.5 p-2.5 border border-slate-200 dark:border-slate-700 rounded-xl ${
-                          !isRoleSelectionDisabled && currentUser?.role === 'super_admin'
+                        className={`flex items-center gap-2.5 p-2.5 border border-slate-200 dark:border-slate-700 rounded-xl ${!isRoleSelectionDisabled && currentUser?.role === 'super_admin'
                             ? 'cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800'
                             : 'opacity-50 cursor-not-allowed bg-slate-50 dark:bg-slate-900'
-                        }`}
+                          }`}
                       >
                         <input
                           type="radio"
@@ -1007,13 +1326,12 @@ export default function Settings() {
                     <div className="mt-2.5 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/60 space-y-2">
                       <div className="flex items-center justify-between text-[11px]">
                         <span className="text-slate-500 dark:text-slate-400">Password Strength:</span>
-                        <span className={`font-semibold ${
-                          newPassword.length >= 8 && (/\d/.test(newPassword) || /[^A-Za-z0-9]/.test(newPassword))
+                        <span className={`font-semibold ${newPassword.length >= 8 && (/\d/.test(newPassword) || /[^A-Za-z0-9]/.test(newPassword))
                             ? (newPassword.length >= 10 && /\d/.test(newPassword) && /[^A-Za-z0-9]/.test(newPassword)
                               ? 'text-emerald-600 dark:text-emerald-400'
                               : 'text-amber-600 dark:text-amber-400')
                             : 'text-rose-500 dark:text-rose-400'
-                        }`}>
+                          }`}>
                           {newPassword.length >= 8 && (/\d/.test(newPassword) || /[^A-Za-z0-9]/.test(newPassword))
                             ? (newPassword.length >= 10 && /\d/.test(newPassword) && /[^A-Za-z0-9]/.test(newPassword)
                               ? 'Strong'
@@ -1023,13 +1341,12 @@ export default function Settings() {
                       </div>
                       <div className="w-full bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden">
                         <div
-                          className={`h-full transition-all duration-300 rounded-full ${
-                            newPassword.length >= 10 && /\d/.test(newPassword) && /[^A-Za-z0-9]/.test(newPassword)
+                          className={`h-full transition-all duration-300 rounded-full ${newPassword.length >= 10 && /\d/.test(newPassword) && /[^A-Za-z0-9]/.test(newPassword)
                               ? 'w-full bg-emerald-500'
                               : newPassword.length >= 8 && (/\d/.test(newPassword) || /[^A-Za-z0-9]/.test(newPassword))
-                              ? 'w-2/3 bg-amber-500'
-                              : 'w-1/3 bg-rose-500'
-                          }`}
+                                ? 'w-2/3 bg-amber-500'
+                                : 'w-1/3 bg-rose-500'
+                            }`}
                         />
                       </div>
                       <div className="grid grid-cols-2 gap-1.5 text-[11px] pt-1">
@@ -1105,6 +1422,103 @@ export default function Settings() {
                 </div>
               </form>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* DELETE USER CONFIRMATION MODAL (Super Admin Only) */}
+      {currentUser?.role === 'super_admin' && deleteModalUser && (
+        <div className="fixed inset-0 z-[200] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#111827] rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-700 transition-all">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400">
+                  <AlertTriangle className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-800 dark:text-slate-100 text-base">
+                    Delete Personnel Account
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Super Admin exclusive action
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => !isDeletingUser && setDeleteModalUser(null)}
+                disabled={isDeletingUser}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer disabled:opacity-50"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                Are you sure you want to permanently delete this user account? This action will revoke their access to the Responde portal immediately.
+              </p>
+
+              {/* Target User Info Card */}
+              <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 flex items-center gap-3">
+                {deleteModalUser.avatar_url ? (
+                  <img
+                    src={deleteModalUser.avatar_url}
+                    alt={deleteModalUser.full_name}
+                    className="w-10 h-10 rounded-full object-cover border border-slate-200"
+                  />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 font-bold text-sm flex items-center justify-center shrink-0">
+                    {(deleteModalUser.full_name || deleteModalUser.email || 'U')[0].toUpperCase()}
+                  </div>
+                )}
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-slate-800 dark:text-slate-100 text-xs sm:text-sm truncate">
+                      {deleteModalUser.full_name || 'Unnamed Personnel'}
+                    </span>
+                    <span
+                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${deleteModalUser.role === 'admin'
+                          ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 border border-blue-200 dark:border-blue-800'
+                          : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
+                        }`}
+                    >
+                      {deleteModalUser.role === 'admin' ? 'Admin' : 'Staff'}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-400 truncate mt-0.5">
+                    {deleteModalUser.email}
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 text-amber-800 dark:text-amber-300 text-xs flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
+                <span>
+                  This is a local demonstration action. The user will be removed from your active personnel directory.
+                </span>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setDeleteModalUser(null)}
+                  disabled={isDeletingUser}
+                  className="px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl cursor-pointer transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDeleteUser}
+                  disabled={isDeletingUser}
+                  className="px-4 py-2 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl shadow-md shadow-red-600/20 transition-all flex items-center gap-1.5 cursor-pointer"
+                >
+                  {isDeletingUser ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                  <span>{isDeletingUser ? 'Deleting...' : 'Delete User'}</span>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
