@@ -1,9 +1,10 @@
-﻿import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
 
 // ── Types ──
 export interface BotMessage {
   sender: 'bot' | 'user';
   text: string;
+  timestamp?: string;
 }
 
 export interface BotConversation {
@@ -252,8 +253,8 @@ export function BotConversationsProvider({ children }: { children: ReactNode }) 
         }
       }
 
-      if (row.user_message) session.messages.push({ sender: 'user', text: row.user_message });
-      if (row.ai_reply) session.messages.push({ sender: 'bot', text: row.ai_reply });
+      if (row.user_message) session.messages.push({ sender: 'user', text: row.user_message, timestamp: row.timestamp });
+      if (row.ai_reply) session.messages.push({ sender: 'bot', text: row.ai_reply, timestamp: row.timestamp });
     }
 
     if (sessions.length > 0) {
