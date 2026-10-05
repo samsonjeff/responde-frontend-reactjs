@@ -407,7 +407,7 @@ export default function Dashboard() {
         </AnimatePresence>
       </div>
 
-      <StaggerContainer className="grid grid-cols-12 gap-4 sm:gap-5 lg:gap-6 pb-20 md:pb-8 overflow-x-hidden w-full">
+      <StaggerContainer className="grid grid-cols-12 gap-4 sm:gap-5 lg:gap-6 pb-6 md:pb-8 w-full">
 
         {/* ── 1. Row 1: 4 Stat Cards (2x2 on mobile, 4-col on tablet and desktop) ── */}
         <StaggerItem className="col-span-12">
@@ -484,7 +484,7 @@ export default function Dashboard() {
         </StaggerItem>
 
         {/* ── 2. Row 2: Messenger Bot Activities (Col 4 on tablet/desktop) & Bar Chart (Col 8 on tablet/desktop) ── */}
-        <StaggerItem className="col-span-12 md:col-span-4 lg:col-span-4 h-auto md:h-[480px] lg:h-[480px] flex flex-col">
+        <StaggerItem className="col-span-12 md:col-span-4 lg:col-span-4 h-[360px] sm:h-[420px] md:h-[480px] lg:h-[480px] flex flex-col">
           {/* Messenger Bot Activities — Apple System Card */}
           <div className="bg-white/85 dark:bg-[#111827]/85 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)] flex-1 flex flex-col min-h-0 overflow-hidden relative">
             {/* Header Row */}
@@ -518,9 +518,9 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Scrollable Conversation List with Apple-grade Edge Fade (max 3 rows on mobile) */}
+            {/* Scrollable Conversation List with Apple-grade Edge Fade */}
             <div
-              className="flex-1 overflow-hidden md:overflow-y-auto min-h-0 p-2 sm:p-2.5 pb-2 md:pb-10 space-y-1.5 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800"
+              className="flex-1 overflow-y-auto min-h-0 p-2 sm:p-2.5 pb-8 space-y-1.5 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800"
               style={{
                 maskImage: 'linear-gradient(to bottom, black calc(100% - 56px), transparent 100%)',
                 WebkitMaskImage: 'linear-gradient(to bottom, black calc(100% - 56px), transparent 100%)',
@@ -541,7 +541,7 @@ export default function Dashboard() {
                       key={convo.id}
                       type="button"
                       onClick={() => openConversation(convo)}
-                      className={`w-full ${index >= 3 ? 'hidden md:flex' : 'flex'} items-center gap-2.5 sm:gap-3 p-2.5 sm:p-3 rounded-xl transition-all duration-150 text-left relative group active:scale-[0.985] ${isIncomplete
+                      className={`w-full flex items-center gap-2.5 sm:gap-3 p-2.5 sm:p-3 rounded-xl transition-all duration-150 text-left relative group active:scale-[0.985] ${isIncomplete
                           ? "bg-amber-500/[0.04] dark:bg-amber-500/[0.08] hover:bg-amber-500/[0.08] dark:hover:bg-amber-500/[0.13] border border-amber-500/20 dark:border-amber-500/30"
                           : "hover:bg-slate-100/70 dark:hover:bg-white/[0.04] border border-transparent hover:border-slate-200/50 dark:hover:border-white/[0.05]"
                         }`}
@@ -602,14 +602,14 @@ export default function Dashboard() {
           </div>
         </StaggerItem>
 
-        {/* Right Incident Frequency Bar Chart (Col 8 on tablet and desktop, internal horizontal scroll on mobile) */}
-        <StaggerItem className="col-span-12 md:col-span-8 lg:col-span-8 h-[380px] sm:h-[420px] md:h-[480px] lg:h-[480px] flex flex-col">
+        {/* Right Incident Frequency Bar Chart — Fully responsive across all devices */}
+        <StaggerItem className="col-span-12 md:col-span-8 lg:col-span-8 h-[360px] sm:h-[420px] md:h-[480px] lg:h-[480px] flex flex-col">
           <BarangayBarChart interactive={false} className="h-full flex-1" />
         </StaggerItem>
 
         {/* ── 3. Row 3: Talisay Geospatial Map & Scraper Activities (Full width on tablet, 7/5 on desktop) ── */}
-        {/* Talisay Geospatial Map — Fixed 250px on mobile, full width on tablet, 7-col on desktop */}
-        <StaggerItem className="col-span-12 md:col-span-12 lg:col-span-7 h-[250px] md:h-[480px] lg:h-[580px] bg-white/85 dark:bg-[#111827]/85 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)] p-3 sm:p-4 flex flex-col min-h-0 overflow-hidden">
+        {/* Talisay Geospatial Map — Expanded size across mobile, tablet, and desktop */}
+        <StaggerItem className="col-span-12 md:col-span-12 lg:col-span-7 h-[380px] sm:h-[440px] md:h-[520px] lg:h-[640px] bg-white/85 dark:bg-[#111827]/85 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)] p-3 sm:p-4 flex flex-col min-h-0 overflow-hidden">
           {/* Header Row */}
           <div className="flex items-center justify-between pb-3 shrink-0 gap-2">
             <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
@@ -663,8 +663,8 @@ export default function Dashboard() {
           </div>
         </StaggerItem>
 
-        {/* Scraper Activities — Limit 2 on mobile, full width on tablet, 5-col on desktop */}
-        <StaggerItem className="col-span-12 md:col-span-12 lg:col-span-5 h-auto md:h-[480px] lg:h-[580px] flex flex-col">
+        {/* Scraper Activities — Full width on mobile/tablet, 5-col on desktop */}
+        <StaggerItem className="col-span-12 md:col-span-12 lg:col-span-5 h-[360px] sm:h-[420px] md:h-[480px] lg:h-[640px] flex flex-col">
           <div className="bg-white/80 dark:bg-[#111827]/80 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)] flex-1 flex flex-col min-h-0 overflow-hidden relative">
             <div className="px-3.5 sm:px-5 py-3 sm:py-3.5 border-b border-slate-200/60 dark:border-white/5 flex items-center justify-between bg-slate-50/40 dark:bg-white/[0.02] shrink-0 gap-2">
               <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
@@ -686,7 +686,7 @@ export default function Dashboard() {
               </button>
             </div>
             <div
-              className="p-2.5 sm:p-3 pb-2 md:pb-10 space-y-2 overflow-hidden md:overflow-y-auto flex-1 min-h-0 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800"
+              className="p-2.5 sm:p-3 pb-8 space-y-2 overflow-y-auto flex-1 min-h-0 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800"
               style={{
                 maskImage: 'linear-gradient(to bottom, black calc(100% - 56px), transparent 100%)',
                 WebkitMaskImage: 'linear-gradient(to bottom, black calc(100% - 56px), transparent 100%)',
@@ -698,11 +698,11 @@ export default function Dashboard() {
                   <span>No scraped comments yet.</span>
                 </div>
               ) : (
-                scraperItems.map((item, index) => (
+                scraperItems.map((item) => (
                   <button
                     key={item.id}
                     onClick={() => setActiveScraper(item)}
-                    className={`w-full ${index >= 2 ? 'hidden md:block' : 'block'} text-left p-3 sm:p-3.5 bg-slate-50/70 dark:bg-white/[0.03] rounded-xl border border-slate-200/60 dark:border-white/[0.06] hover:bg-slate-100/80 dark:hover:bg-white/[0.06] hover:shadow-xs transition-all duration-150 group active:scale-[0.985]`}
+                    className="w-full block text-left p-3 sm:p-3.5 bg-slate-50/70 dark:bg-white/[0.03] rounded-xl border border-slate-200/60 dark:border-white/[0.06] hover:bg-slate-100/80 dark:hover:bg-white/[0.06] hover:shadow-xs transition-all duration-150 group active:scale-[0.985]"
                   >
                     <div className="flex items-start justify-between gap-2">
                       <p className="text-xs text-slate-700 dark:text-slate-200 line-clamp-2 leading-relaxed flex-1 font-normal">
