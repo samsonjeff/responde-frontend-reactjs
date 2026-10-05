@@ -507,12 +507,23 @@ export default function Login() {
   };
 
   return (
-    <main className="h-screen h-[100dvh] w-full flex items-center justify-center bg-slate-50/80 p-3 sm:p-4 md:p-6 overflow-y-auto select-none">
+    <main className="relative h-screen h-[100dvh] w-full flex items-center justify-center p-3 sm:p-4 md:p-6 overflow-y-auto select-none">
+      {/* Background Image with Soft Blur & Bright Overlay */}
+      <div className="fixed inset-0 z-0 pointer-events-none select-none overflow-hidden">
+        <img
+          src="/SignupBG.jpg"
+          alt="Command Center Background"
+          className="w-full h-full object-cover object-center blur-[5px] scale-105"
+        />
+        {/* Subtle light tint to keep the image bright and natural */}
+        <div className="absolute inset-0 bg-black/20" />
+      </div>
+
       <motion.div
         variants={cardVariants}
         initial="hidden"
         animate="visible"
-        className="w-full max-w-md sm:max-w-lg md:max-w-3xl lg:max-w-4xl xl:max-w-5xl border border-slate-200/80 bg-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] rounded-2xl sm:rounded-3xl overflow-hidden my-auto"
+        className="relative z-10 w-full max-w-md sm:max-w-lg md:max-w-3xl lg:max-w-4xl xl:max-w-5xl border border-white/60 bg-white/95 backdrop-blur-md shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3),0_0_30px_rgba(0,0,0,0.1)] rounded-2xl sm:rounded-3xl overflow-hidden my-auto"
       >
         <div className="grid grid-cols-1 md:grid-cols-2 items-stretch gap-0">
 
