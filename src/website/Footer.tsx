@@ -6,6 +6,8 @@ import { TALISAY_BARANGAYS } from '../data/talisay-barangays';
 
 gsap.registerPlugin(ScrollTrigger);
 
+const formatBarangayName = (name: string) => name.replace('Poblacion Barangay ', 'Poblacion ');
+
 export default function Footer() {
   const footerRef = useRef<HTMLElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -33,8 +35,9 @@ export default function Footer() {
     return () => ctx.revert();
   }, []);
 
-  const barangaysCol1 = TALISAY_BARANGAYS.slice(0, 11);
-  const barangaysCol2 = TALISAY_BARANGAYS.slice(11);
+  const barangaysCol1 = TALISAY_BARANGAYS.slice(0, 7);
+  const barangaysCol2 = TALISAY_BARANGAYS.slice(7, 14);
+  const barangaysCol3 = TALISAY_BARANGAYS.slice(14, 21);
 
   return (
     <footer
@@ -47,12 +50,12 @@ export default function Footer() {
 
       <div
         ref={contentRef}
-        className="relative max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 pt-16 pb-12 sm:pt-20 sm:pb-16"
+        className="relative max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 pt-12 pb-10 sm:pt-16 sm:pb-12"
       >
-        {/* ── Four Column Layout ── */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 lg:gap-14">
+        {/* ── Responsive Multi-Column Layout ── */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-8 lg:gap-10">
           {/* Column 1: Brand & Identity */}
-          <div className="space-y-4">
+          <div className="space-y-4 lg:col-span-3">
             <div className="flex items-center gap-3">
               <div className="relative w-9 h-9 rounded-xl ring-1 ring-white/15 bg-white/4 p-1 flex items-center justify-center shadow-inner">
                 <img
@@ -95,7 +98,7 @@ export default function Footer() {
           </div>
 
           {/* Column 2: Quick Navigation */}
-          <div>
+          <div className="lg:col-span-2">
             <h4 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#F5F5F7] mb-4">
               Quick Links
             </h4>
@@ -135,29 +138,42 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Column 3: Barangays Directory (Two Sub-Columns) */}
-          <div>
+          {/* Column 3: Barangays Directory (Three Compact Sub-Columns) */}
+          <div className="md:col-span-2 lg:col-span-4">
             <h4 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#F5F5F7] mb-4">
               Barangays
             </h4>
-            <div className="grid grid-cols-2 gap-x-5 text-[12.5px]">
-              <ul className="space-y-2">
+            <div className="grid grid-cols-3 gap-x-3 text-[11.5px]">
+              <ul className="space-y-1.5">
                 {barangaysCol1.map((bgry) => (
                   <li
                     key={bgry}
-                    className="text-[#A1A1A6] hover:text-[#F5F5F7] transition-colors duration-150 cursor-default select-none"
+                    className="text-[#A1A1A6] hover:text-[#F5F5F7] transition-colors duration-150 cursor-default select-none truncate"
+                    title={bgry}
                   >
-                    {bgry}
+                    {formatBarangayName(bgry)}
                   </li>
                 ))}
               </ul>
-              <ul className="space-y-2">
+              <ul className="space-y-1.5">
                 {barangaysCol2.map((bgry) => (
                   <li
                     key={bgry}
-                    className="text-[#A1A1A6] hover:text-[#F5F5F7] transition-colors duration-150 cursor-default select-none"
+                    className="text-[#A1A1A6] hover:text-[#F5F5F7] transition-colors duration-150 cursor-default select-none truncate"
+                    title={bgry}
                   >
-                    {bgry}
+                    {formatBarangayName(bgry)}
+                  </li>
+                ))}
+              </ul>
+              <ul className="space-y-1.5">
+                {barangaysCol3.map((bgry) => (
+                  <li
+                    key={bgry}
+                    className="text-[#A1A1A6] hover:text-[#F5F5F7] transition-colors duration-150 cursor-default select-none truncate"
+                    title={bgry}
+                  >
+                    {formatBarangayName(bgry)}
                   </li>
                 ))}
               </ul>
@@ -165,7 +181,7 @@ export default function Footer() {
           </div>
 
           {/* Column 4: Contact & Monitoring */}
-          <div>
+          <div className="lg:col-span-3">
             <h4 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#F5F5F7] mb-4">
               Contact Us
             </h4>
@@ -209,7 +225,7 @@ export default function Footer() {
         </div>
 
         {/* ── Hairline Divider ── */}
-        <div className="border-t border-white/[0.07] my-10 sm:my-12" />
+        <div className="border-t border-white/[0.07] my-8 sm:my-9" />
 
         {/* ── Bottom Bar ── */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-[12px] text-[#86868B]">
