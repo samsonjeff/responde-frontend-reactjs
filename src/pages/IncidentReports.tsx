@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Filter, X, Eye, ChevronLeft, ChevronRight,
+  Filter, X, Eye, ChevronLeft, ChevronRight, ChevronDown,
   Clock, User, Phone, MessageSquare,
   CheckCircle2, AlertTriangle, RotateCcw, Send,
   ShieldCheck, FileText, AlertOctagon, MapPinned, Bot,
@@ -66,36 +66,37 @@ interface Toast {
 
 // ── Pagination Component (Apple Pager Style) ──
 function Pagination({ currentPage, totalPages, onPageChange }: { currentPage: number; totalPages: number; onPageChange: (page: number) => void }) {
+  const safeTotal = Math.max(totalPages, 1);
   const getPages = () => {
     const pages: (number | string)[] = [];
-    if (totalPages <= 7) {
-      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    if (safeTotal <= 7) {
+      for (let i = 1; i <= safeTotal; i++) pages.push(i);
     } else {
       if (currentPage <= 3) {
-        pages.push(1, 2, 3, 4, '...', totalPages - 1, totalPages);
-      } else if (currentPage >= totalPages - 2) {
-        pages.push(1, 2, '...', totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+        pages.push(1, 2, 3, 4, '...', safeTotal - 1, safeTotal);
+      } else if (currentPage >= safeTotal - 2) {
+        pages.push(1, 2, '...', safeTotal - 3, safeTotal - 2, safeTotal - 1, safeTotal);
       } else {
-        pages.push(1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages);
+        pages.push(1, '...', currentPage - 1, currentPage, currentPage + 1, '...', safeTotal);
       }
     }
     return pages;
   };
 
-  if (totalPages <= 1) return null;
+  // Always render pagination so controls remain accessible on all filter states
 
   return (
-    <div className="flex items-center justify-center gap-1.5 py-3 shrink-0">
+    <div className="flex items-center justify-between sm:justify-end gap-2 shrink-0 w-full sm:w-auto">
       <button
         type="button"
         onClick={() => onPageChange(currentPage - 1)}
         disabled={currentPage === 1}
-        className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-slate-700 rounded-xl hover:bg-slate-100/70 dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition-all bg-white/80 dark:bg-slate-800/80 backdrop-blur-md active:scale-[0.96] shadow-2xs"
+        className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-slate-700 rounded-xl hover:bg-slate-100/70 dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition-all bg-white/80 dark:bg-slate-800/80 backdrop-blur-md active:scale-[0.96] shadow-2xs cursor-pointer"
       >
-        <ChevronLeft className="w-3.5 h-3.5" /> Previous
+        <ChevronLeft className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Previous</span><span className="sm:hidden">Prev</span>
       </button>
 
-      <div className="flex items-center gap-1 bg-slate-100/80 dark:bg-slate-800/80 p-1 rounded-xl border border-slate-200/60 dark:border-slate-700/60 backdrop-blur-md">
+      <div className="hidden sm:flex items-center gap-1 bg-slate-100/80 dark:bg-slate-800/80 p-1 rounded-xl border border-slate-200/60 dark:border-slate-700/60 backdrop-blur-md">
         {getPages().map((page, i) =>
           page === '...' ? (
             <span key={`dots-${i}`} className="w-7 h-7 flex items-center justify-center text-xs text-slate-400 dark:text-slate-500">...</span>
@@ -104,7 +105,7 @@ function Pagination({ currentPage, totalPages, onPageChange }: { currentPage: nu
               key={page}
               type="button"
               onClick={() => onPageChange(page as number)}
-              className={`w-7 h-7 flex items-center justify-center rounded-lg text-xs font-semibold transition-all active:scale-[0.94] ${currentPage === page
+              className={`w-7 h-7 flex items-center justify-center rounded-lg text-xs font-semibold transition-all active:scale-[0.94] cursor-pointer ${currentPage === page
                 ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                 }`}
@@ -115,13 +116,17 @@ function Pagination({ currentPage, totalPages, onPageChange }: { currentPage: nu
         )}
       </div>
 
+      <span className="sm:hidden px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white/80 dark:bg-slate-800/80 backdrop-blur-md border border-slate-200/80 dark:border-slate-700 rounded-xl tabular-nums shadow-2xs">
+        Page {currentPage} of {safeTotal}
+      </span>
+
       <button
         type="button"
         onClick={() => onPageChange(currentPage + 1)}
-        disabled={currentPage === totalPages}
-        className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-slate-700 rounded-xl hover:bg-slate-100/70 dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition-all bg-white/80 dark:bg-slate-800/80 backdrop-blur-md active:scale-[0.96] shadow-2xs"
+        disabled={currentPage >= safeTotal}
+        className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-slate-700 rounded-xl hover:bg-slate-100/70 dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition-all bg-white/80 dark:bg-slate-800/80 backdrop-blur-md active:scale-[0.96] shadow-2xs cursor-pointer"
       >
-        Next <ChevronRight className="w-3.5 h-3.5" />
+        <span className="hidden sm:inline">Next</span><span className="sm:hidden">Next</span> <ChevronRight className="w-3.5 h-3.5" />
       </button>
     </div>
   );
@@ -224,6 +229,21 @@ export default function IncidentReports() {
   const [filterBarangay, setFilterBarangay] = useState('All Barangays');
   const [filterType, setFilterType] = useState('All Types');
   const [filterUrgency, setFilterUrgency] = useState('All Urgency');
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+
+  const hasActiveFilters =
+    filterBarangay !== 'All Barangays' ||
+    filterType !== 'All Types' ||
+    filterUrgency !== 'All Urgency' ||
+    Boolean(fromDate) ||
+    Boolean(toDate);
+
+  const activeFilterCount =
+    (filterBarangay !== 'All Barangays' ? 1 : 0) +
+    (filterType !== 'All Types' ? 1 : 0) +
+    (filterUrgency !== 'All Urgency' ? 1 : 0) +
+    (fromDate ? 1 : 0) +
+    (toDate ? 1 : 0);
 
   // Edit form state inside modal
   const [editForm, setEditForm] = useState<Partial<Report>>({});
@@ -498,82 +518,130 @@ export default function IncidentReports() {
           </AnimatePresence>
         </div>
 
-        <StaggerContainer className="flex flex-col flex-1 min-h-0 gap-6">
+        <StaggerContainer className="flex flex-col gap-4 sm:gap-6 pb-20 sm:pb-24 md:pb-8 w-full">
           {/* Tabs — Apple macOS Segmented Control */}
           <StaggerItem>
-            <div className="p-1 bg-slate-200/60 dark:bg-slate-800/60 backdrop-blur-md rounded-2xl border border-slate-200/60 dark:border-white/5 inline-flex items-center gap-1 shrink-0 self-start shadow-[inset_0_1px_2px_rgba(0,0,0,0.06)]">
-              {tabs.map((tab) => {
-                const isActive = activeTab === tab.key;
-                return (
-                  <button
-                    key={tab.key}
-                    type="button"
-                    onClick={() => setActiveTab(tab.key)}
-                    className={`relative px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-colors duration-150 flex items-center gap-2 select-none active:scale-[0.98] ${isActive
-                      ? 'text-slate-900 dark:text-white'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                      }`}
-                  >
-                    {isActive && (
-                      <motion.div
-                        layoutId="activeTabPill"
-                        transition={APPLE_SLIDE_SPRING}
-                        className="absolute inset-0 bg-white dark:bg-slate-700/90 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)] border border-black/4 dark:border-white/10"
-                      />
-                    )}
-                    <span className="relative z-10">{tab.label}</span>
-                    <span
-                      className={`relative z-10 text-[11px] font-bold px-2 py-0.5 rounded-full transition-colors ${isActive
-                        ? 'bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400'
-                        : 'bg-slate-300/60 dark:bg-slate-700/60 text-slate-600 dark:text-slate-400'
+            <div className="w-full">
+              <div className="p-1 bg-slate-200/60 dark:bg-slate-800/60 backdrop-blur-md rounded-2xl border border-slate-200/60 dark:border-white/5 grid grid-cols-2 sm:inline-flex sm:items-center gap-1 shadow-[inset_0_1px_2px_rgba(0,0,0,0.06)] w-full sm:w-auto">
+                {tabs.map((tab) => {
+                  const isActive = activeTab === tab.key;
+                  return (
+                    <button
+                      key={tab.key}
+                      type="button"
+                      onClick={() => setActiveTab(tab.key)}
+                      className={`relative px-3 py-2 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-semibold transition-colors duration-150 flex items-center justify-between sm:justify-center gap-2 select-none active:scale-[0.98] cursor-pointer ${isActive
+                        ? 'text-slate-900 dark:text-white'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                         }`}
                     >
-                      {tab.count}
-                    </span>
-                  </button>
-                );
-              })}
+                      {isActive && (
+                        <motion.div
+                          layoutId="activeTabPill"
+                          transition={APPLE_SLIDE_SPRING}
+                          className="absolute inset-0 bg-white dark:bg-slate-700/90 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)] border border-black/4 dark:border-white/10"
+                        />
+                      )}
+                      <span className="relative z-10 truncate">{tab.label}</span>
+                      <span
+                        className={`relative z-10 text-[10px] sm:text-[11px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full transition-colors shrink-0 ${isActive
+                          ? 'bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400'
+                          : 'bg-slate-300/60 dark:bg-slate-700/60 text-slate-600 dark:text-slate-400'
+                          }`}
+                      >
+                        {tab.count}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </StaggerItem>
 
           {/* Filter Bar & Bulk Selection */}
           <StaggerItem className="relative z-30 flex flex-col gap-3">
             {/* Filter Bar — Apple Frosted Glass Toolbar */}
-            <div className="relative z-30 backdrop-blur-xl bg-white/80 dark:bg-[#111827]/80 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-[0_4px_20px_rgba(0,0,0,0.03)] p-4 shrink-0 border-t border-t-white/80 dark:border-t-white/10">
-              <div className="flex flex-col lg:flex-row lg:items-center gap-3">
-                <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300 text-xs font-semibold shrink-0 uppercase tracking-wider">
+            <div className="relative z-30 backdrop-blur-xl bg-white/80 dark:bg-[#111827]/80 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-[0_4px_20px_rgba(0,0,0,0.03)] p-3 sm:p-4 shrink-0 border-t border-t-white/80 dark:border-t-white/10">
+              {/* Mobile Filter Header Toggle */}
+              <div className="flex lg:hidden items-center justify-between w-full">
+                <button
+                  type="button"
+                  onClick={() => setMobileFiltersOpen(!mobileFiltersOpen)}
+                  className="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-200 cursor-pointer select-none"
+                >
+                  <div className="w-7 h-7 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                    <Filter className="w-3.5 h-3.5" />
+                  </div>
+                  <span>Filters</span>
+                  {activeFilterCount > 0 && (
+                    <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-600 text-white">
+                      {activeFilterCount}
+                    </span>
+                  )}
+                  <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${mobileFiltersOpen ? 'rotate-180' : ''}`} />
+                </button>
+                {hasActiveFilters && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFilterBarangay('All Barangays');
+                      setFilterType('All Types');
+                      setFilterUrgency('All Urgency');
+                      setFromDate('');
+                      setToDate('');
+                    }}
+                    className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                  >
+                    Reset
+                  </button>
+                )}
+              </div>
+
+              {/* Filter Controls — 2-column compact grid on mobile, flex row on desktop */}
+              <div className={`${mobileFiltersOpen ? 'grid' : 'hidden'} lg:flex grid-cols-2 gap-2 lg:gap-3 lg:items-center pt-2.5 lg:pt-0`}>
+                <div className="hidden lg:flex items-center gap-2 text-slate-600 dark:text-slate-300 text-xs font-semibold shrink-0 uppercase tracking-wider">
                   <div className="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500">
                     <Filter className="w-3.5 h-3.5" />
                   </div>
                   <span>Filters</span>
                 </div>
 
-                <FilterDropdown
-                  value={filterBarangay}
-                  options={['All Barangays', ...Array.from(new Set(reports.map(r => r.barangay))).sort()]}
-                  onChange={setFilterBarangay}
-                />
+                <div className="col-span-1 lg:col-span-auto">
+                  <FilterDropdown
+                    value={filterBarangay}
+                    options={['All Barangays', ...Array.from(new Set(reports.map(r => r.barangay))).sort()]}
+                    onChange={setFilterBarangay}
+                  />
+                </div>
 
-                <FilterDropdown
-                  value={filterType}
-                  options={['All Types', ...Array.from(new Set(reports.map(r => r.type))).sort()]}
-                  onChange={setFilterType}
-                />
+                <div className="col-span-1 lg:col-span-auto">
+                  <FilterDropdown
+                    value={filterType}
+                    options={['All Types', ...Array.from(new Set(reports.map(r => r.type))).sort()]}
+                    onChange={setFilterType}
+                  />
+                </div>
 
-                <FilterDropdown
-                  value={filterUrgency}
-                  options={['All Urgency', 'High', 'Moderate', 'Low']}
-                  onChange={setFilterUrgency}
-                />
+                <div className="col-span-2 sm:col-span-1 lg:col-span-auto">
+                  <FilterDropdown
+                    value={filterUrgency}
+                    options={['All Urgency', 'High', 'Moderate', 'Low']}
+                    onChange={setFilterUrgency}
+                  />
+                </div>
 
-                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 lg:ml-auto w-full lg:w-auto">
-                  <div className="flex items-center gap-2 w-full sm:w-auto">
-                    <span className="text-xs font-medium text-slate-500 dark:text-slate-400 whitespace-nowrap">From:</span>
-                    <DatePicker value={fromDate} onChange={setFromDate} placeholder="Select Date" />
+                <div className="col-span-2 lg:col-span-auto flex items-center gap-2 lg:ml-auto w-full lg:w-auto">
+                  <div className="flex items-center gap-1.5 flex-1 sm:flex-initial">
+                    <span className="text-[11px] sm:text-xs font-medium text-slate-500 dark:text-slate-400 shrink-0">From:</span>
+                    <div className="flex-1 sm:w-36">
+                      <DatePicker value={fromDate} onChange={setFromDate} placeholder="Select Date" />
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 w-full sm:w-auto">
-                    <span className="text-xs font-medium text-slate-500 dark:text-slate-400 whitespace-nowrap">To:</span>
-                    <DatePicker value={toDate} onChange={setToDate} placeholder="Select Date" />
+                  <div className="flex items-center gap-1.5 flex-1 sm:flex-initial">
+                    <span className="text-[11px] sm:text-xs font-medium text-slate-500 dark:text-slate-400 shrink-0">To:</span>
+                    <div className="flex-1 sm:w-36">
+                      <DatePicker value={toDate} onChange={setToDate} placeholder="Select Date" />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -589,12 +657,12 @@ export default function IncidentReports() {
                   animate="visible"
                   exit="exit"
                   transition={APPLE_SPRING}
-                  className="relative z-20 flex items-center justify-between gap-3 bg-blue-50/90 dark:bg-blue-950/40 backdrop-blur-md border border-blue-200/80 dark:border-blue-800/60 rounded-2xl px-5 py-3 shrink-0 shadow-sm"
+                  className="relative z-20 flex flex-wrap items-center justify-between gap-2.5 bg-blue-50/90 dark:bg-blue-950/40 backdrop-blur-md border border-blue-200/80 dark:border-blue-800/60 rounded-2xl px-4 sm:px-5 py-2.5 sm:py-3 shrink-0 shadow-sm"
                 >
                   <span className="text-xs font-semibold text-blue-800 dark:text-blue-300">
                     {selectedIds.length} report{selectedIds.length > 1 ? 's' : ''} selected
                   </span>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     {activeTab === 'pending' && (
                       <button
                         type="button"
@@ -629,10 +697,10 @@ export default function IncidentReports() {
           </StaggerItem>
 
           {/* Table — Apple Pro Data Table */}
-          <StaggerItem className="flex flex-col flex-1 min-h-0">
+          <StaggerItem className="flex flex-col flex-1 min-h-0 w-full">
             <div className="relative z-10 bg-white/90 dark:bg-[#111827]/90 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-[0_4px_24px_rgba(0,0,0,0.04)] overflow-hidden flex flex-col flex-1 min-h-0">
-              <div className="overflow-auto flex-1">
-                <table className="w-full min-w-200 text-sm text-left">
+              <div className="overflow-x-auto w-full flex-1">
+                <table className="w-full min-w-[720px] text-sm text-left">
                   <thead className="bg-slate-50/90 dark:bg-slate-800/60 backdrop-blur-md border-b border-slate-200/70 dark:border-slate-800 sticky top-0 z-10">
                     <tr>
                       <th className="px-4 py-3.5 w-10">
@@ -732,7 +800,7 @@ export default function IncidentReports() {
                                 <button
                                   type="button"
                                   onClick={() => openReview(report)}
-                                  className="px-3 py-1.5 text-xs font-semibold text-amber-700 dark:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 rounded-xl transition-all flex items-center gap-1.5 active:scale-[0.96] shadow-2xs"
+                                  className="px-3 py-1.5 text-xs font-semibold text-amber-700 dark:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 rounded-xl transition-all flex items-center gap-1.5 active:scale-[0.96] shadow-2xs cursor-pointer"
                                 >
                                   <ShieldCheck className="w-3.5 h-3.5" /> Review
                                 </button>
@@ -743,14 +811,14 @@ export default function IncidentReports() {
                                   <button
                                     type="button"
                                     onClick={() => openReview(report)}
-                                    className="px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200/60 dark:border-slate-700 rounded-xl transition-all flex items-center gap-1.5 active:scale-[0.96] shadow-2xs"
+                                    className="px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200/60 dark:border-slate-700 rounded-xl transition-all flex items-center gap-1.5 active:scale-[0.96] shadow-2xs cursor-pointer"
                                   >
                                     <Eye className="w-3.5 h-3.5" /> View
                                   </button>
                                   <button
                                     type="button"
                                     onClick={() => navigate(`/geospatial?focus=${report.id}`)}
-                                    className="px-3 py-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 rounded-xl transition-all flex items-center gap-1.5 active:scale-[0.96] shadow-2xs"
+                                    className="px-3 py-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 rounded-xl transition-all flex items-center gap-1.5 active:scale-[0.96] shadow-2xs cursor-pointer"
                                   >
                                     <MapPinned className="w-3.5 h-3.5" /> Map
                                   </button>
@@ -761,7 +829,7 @@ export default function IncidentReports() {
                                 <button
                                   type="button"
                                   onClick={() => openReview(report)}
-                                  className="px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200/60 dark:border-slate-700 rounded-xl transition-all flex items-center gap-1.5 active:scale-[0.96] shadow-2xs"
+                                  className="px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200/60 dark:border-slate-700 rounded-xl transition-all flex items-center gap-1.5 active:scale-[0.96] shadow-2xs cursor-pointer"
                                 >
                                   <Eye className="w-3.5 h-3.5" /> View
                                 </button>
@@ -771,7 +839,7 @@ export default function IncidentReports() {
                                 <button
                                   type="button"
                                   onClick={() => handleRestore(report.id)}
-                                  className="px-3 py-1.5 text-xs font-semibold text-blue-700 dark:text-blue-300 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 rounded-xl transition-all flex items-center gap-1.5 active:scale-[0.96] shadow-2xs"
+                                  className="px-3 py-1.5 text-xs font-semibold text-blue-700 dark:text-blue-300 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 rounded-xl transition-all flex items-center gap-1.5 active:scale-[0.96] shadow-2xs cursor-pointer"
                                 >
                                   <RotateCcw className="w-3.5 h-3.5" /> Restore
                                 </button>
@@ -784,15 +852,22 @@ export default function IncidentReports() {
                   </tbody>
                 </table>
               </div>
-            </div>
-          </StaggerItem>
 
-          <StaggerItem>
-            <Pagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={setCurrentPage}
-            />
+              {/* Table Bottom Footer: Pagination right in the bottom of the table! */}
+              <div className="border-t border-slate-100 dark:border-slate-800/80 px-4 sm:px-6 py-3 bg-slate-50/70 dark:bg-slate-900/60 backdrop-blur-md flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
+                <div className="text-xs text-slate-500 dark:text-slate-400 font-medium whitespace-nowrap shrink-0">
+                  {filteredReports.length === 0
+                    ? 'No reports to display'
+                    : `Showing ${(currentPage - 1) * itemsPerPage + 1}–${Math.min(currentPage * itemsPerPage, filteredReports.length)} of ${filteredReports.length} reports`}
+                </div>
+
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={setCurrentPage}
+                />
+              </div>
+            </div>
           </StaggerItem>
         </StaggerContainer>
 
@@ -806,7 +881,7 @@ export default function IncidentReports() {
               animate="visible"
               exit="exit"
               transition={{ duration: 0.2 }}
-              className="fixed inset-0 z-200 flex items-center justify-center p-4 sm:p-6 bg-black/40 backdrop-blur-md"
+              className="fixed inset-0 z-[200] flex items-center justify-center p-2.5 sm:p-6 bg-black/40 backdrop-blur-md"
               onClick={closeReview}
             >
               <motion.div
@@ -815,12 +890,12 @@ export default function IncidentReports() {
                 animate="visible"
                 exit="exit"
                 transition={APPLE_SPRING}
-                className="bg-white/95 dark:bg-[#111827]/95 backdrop-blur-2xl rounded-3xl border border-slate-200/80 dark:border-white/10 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.3)] w-full max-w-3xl max-h-[88vh] overflow-hidden flex flex-col transform-gpu will-change-transform"
+                className="bg-white/95 dark:bg-[#111827]/95 backdrop-blur-2xl rounded-2xl sm:rounded-3xl border border-slate-200/80 dark:border-white/10 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.3)] w-full max-w-3xl max-h-[92vh] sm:max-h-[88vh] overflow-hidden flex flex-col transform-gpu will-change-transform"
                 onClick={(e) => e.stopPropagation()}
               >
                 {/* Header */}
-                <div className="flex items-center justify-between px-6 py-4.5 border-b border-slate-100 dark:border-slate-800/80 bg-white/80 dark:bg-[#111827]/80 backdrop-blur-md shrink-0 rounded-t-3xl z-10">
-                  <div className="flex items-center gap-3">
+                <div className="flex items-center justify-between gap-2 px-4 sm:px-6 py-3.5 sm:py-4.5 border-b border-slate-100 dark:border-slate-800/80 bg-white/80 dark:bg-[#111827]/80 backdrop-blur-md shrink-0 rounded-t-2xl sm:rounded-t-3xl z-10">
+                  <div className="flex items-center flex-wrap gap-2 sm:gap-3 min-w-0">
                     <span className="font-mono text-xs font-semibold px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200/60 dark:border-slate-700">
                       #{reviewingReport.id}
                     </span>
@@ -837,14 +912,14 @@ export default function IncidentReports() {
                   <button
                     type="button"
                     onClick={closeReview}
-                    className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-all active:scale-90"
+                    className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-all active:scale-90 shrink-0"
                   >
                     <X className="w-4 h-4" />
                   </button>
                 </div>
 
                 {/* Body */}
-                <div className="px-6 py-5 space-y-6 overflow-y-auto" style={{ maxHeight: 'calc(88vh - 140px)' }}>
+                <div className="px-4 sm:px-6 py-4 sm:py-5 space-y-5 sm:space-y-6 overflow-y-auto" style={{ maxHeight: 'calc(92vh - 130px)' }}>
                   <StaggerContainer className="space-y-6">
                     <StaggerItem>
                       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -1153,21 +1228,21 @@ export default function IncidentReports() {
                 </div>
 
                 {/* Footer Actions */}
-                <div className="flex items-center justify-between px-6 py-4 border-t border-slate-100 dark:border-slate-800/80 bg-slate-50/70 dark:bg-slate-900/60 backdrop-blur-md shrink-0 rounded-b-3xl">
-                  <div className="flex items-center gap-2">
+                <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-2.5 sm:gap-2 px-4 sm:px-6 py-3.5 sm:py-4 border-t border-slate-100 dark:border-slate-800/80 bg-slate-50/70 dark:bg-slate-900/60 backdrop-blur-md shrink-0 rounded-b-2xl sm:rounded-b-3xl">
+                  <div className="flex items-center justify-between sm:justify-start gap-2 flex-wrap">
                     {(reviewingReport.status === 'pending' || reviewingReport.status === 'under_review') && (
                       <>
                         <button
                           type="button"
                           onClick={handleSaveDraft}
-                          className="px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-700 rounded-xl transition-all active:scale-[0.97]"
+                          className="flex-1 sm:flex-none justify-center px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-700 rounded-xl transition-all active:scale-[0.97] flex items-center"
                         >
                           Save Draft
                         </button>
                         <button
                           type="button"
                           onClick={() => setShowRejectPanel(true)}
-                          className="px-4 py-2 text-xs font-semibold text-rose-700 dark:text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 rounded-xl transition-all flex items-center gap-1.5 active:scale-[0.97]"
+                          className="flex-1 sm:flex-none justify-center px-4 py-2 text-xs font-semibold text-rose-700 dark:text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 rounded-xl transition-all flex items-center gap-1.5 active:scale-[0.97]"
                         >
                           <AlertOctagon className="w-3.5 h-3.5" /> Reject
                         </button>
@@ -1178,7 +1253,7 @@ export default function IncidentReports() {
                       <button
                         type="button"
                         onClick={handleResolve}
-                        className="px-4 py-2 text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 rounded-xl transition-all flex items-center gap-1.5 active:scale-[0.97]"
+                        className="flex-1 sm:flex-none justify-center px-4 py-2 text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 rounded-xl transition-all flex items-center gap-1.5 active:scale-[0.97]"
                       >
                         <CheckCircle2 className="w-3.5 h-3.5" /> Mark Resolved
                       </button>
@@ -1192,18 +1267,18 @@ export default function IncidentReports() {
                           showToast(`Report #${reviewingReport.id} restored to pending`, 'info');
                           closeReview();
                         }}
-                        className="px-4 py-2 text-xs font-semibold text-blue-700 dark:text-blue-300 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 rounded-xl transition-all flex items-center gap-1.5 active:scale-[0.97]"
+                        className="flex-1 sm:flex-none justify-center px-4 py-2 text-xs font-semibold text-blue-700 dark:text-blue-300 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 rounded-xl transition-all flex items-center gap-1.5 active:scale-[0.97]"
                       >
                         <RotateCcw className="w-3.5 h-3.5" /> Restore to Pending
                       </button>
                     )}
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-end gap-2">
                     <button
                       type="button"
                       onClick={closeReview}
-                      className="px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-700 rounded-xl transition-all active:scale-[0.97]"
+                      className="flex-1 sm:flex-none justify-center px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-700 rounded-xl transition-all active:scale-[0.97] flex items-center"
                     >
                       Close
                     </button>
@@ -1214,7 +1289,7 @@ export default function IncidentReports() {
                         onClick={handleVerify}
                         disabled={!allChecklistChecked}
                         title={!allChecklistChecked ? 'Complete the checklist first' : ''}
-                        className="px-5 py-2 text-xs font-semibold text-white bg-[#0071E3] hover:bg-[#0077ED] disabled:opacity-40 disabled:cursor-not-allowed rounded-xl transition-all shadow-[0_2px_8px_rgba(0,113,227,0.25)] flex items-center gap-1.5 active:scale-[0.97]"
+                        className="flex-1 sm:flex-none justify-center px-5 py-2 text-xs font-semibold text-white bg-[#0071E3] hover:bg-[#0077ED] disabled:opacity-40 disabled:cursor-not-allowed rounded-xl transition-all shadow-[0_2px_8px_rgba(0,113,227,0.25)] flex items-center gap-1.5 active:scale-[0.97]"
                       >
                         <Send className="w-3.5 h-3.5" /> Verify & Plot
                       </button>
