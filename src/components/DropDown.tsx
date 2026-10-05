@@ -5,9 +5,10 @@ interface FilterDropdownProps {
   value: string;
   options: string[];
   onChange: (value: string) => void;
+  className?: string;
 }
 
-export default function FilterDropdown({ value, options, onChange }: FilterDropdownProps) {
+export default function FilterDropdown({ value, options, onChange, className }: FilterDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const toggleRef = useRef<HTMLButtonElement>(null);
@@ -69,18 +70,18 @@ export default function FilterDropdown({ value, options, onChange }: FilterDropd
         type="button"
         aria-haspopup="listbox"
         aria-expanded={isOpen}
-        className="w-full lg:w-auto px-3.5 py-2 text-sm font-medium rounded-lg flex items-center justify-between gap-3 cursor-pointer bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 transition-colors hover:bg-slate-50 dark:hover:bg-slate-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 min-w-37.5"
+        className={`w-full lg:w-auto px-3 py-1.5 sm:px-3 sm:py-2 text-xs font-medium rounded-xl flex items-center justify-between gap-2 cursor-pointer bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 transition-colors hover:bg-slate-50 dark:hover:bg-slate-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 min-w-0 sm:min-w-32.5 ${className || ''}`}
       >
         <span className="truncate">{value}</span>
         <ChevronDown
-          className={`w-4 h-4 text-slate-500 dark:text-slate-400 transition-transform duration-200 shrink-0 ${isOpen ? 'rotate-180' : ''}`}
+          className={`w-3.5 h-3.5 text-slate-500 dark:text-slate-400 transition-transform duration-200 shrink-0 ${isOpen ? 'rotate-180' : ''}`}
         />
       </button>
 
       {isOpen && (
         <div
           ref={menuRef}
-          className="dropdown-scroll absolute left-0 mt-2 py-1.5 min-w-full max-h-60 overflow-y-auto bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-xl shadow-xl z-50"
+          className="dropdown-scroll absolute left-0 mt-1.5 py-1 min-w-full sm:min-w-[140px] max-w-[min(260px,calc(100vw-2rem))] max-h-44 sm:max-h-52 overflow-y-auto bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-xl shadow-xl z-50 text-xs scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700"
           role="listbox"
         >
           {options.map((option) => (
@@ -89,7 +90,8 @@ export default function FilterDropdown({ value, options, onChange }: FilterDropd
               onClick={() => handleSelect(option)}
               role="option"
               aria-selected={value === option}
-              className={`w-full text-left px-3.5 py-2 text-sm transition-colors cursor-pointer whitespace-nowrap ${value === option
+              title={option}
+              className={`w-full text-left px-3 py-1.5 sm:py-2 text-xs transition-colors cursor-pointer truncate ${value === option
                 ? 'bg-slate-100 dark:bg-slate-600 text-slate-900 dark:text-white font-semibold'
                 : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700'
                 }`}

@@ -216,7 +216,7 @@ function ScraperSkeleton() {
         </div>
 
         {/* Right: post detail */}
-        <div className="lg:col-span-7 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col overflow-hidden min-h-[400px] lg:min-h-0">
+        <div className="hidden lg:flex lg:col-span-7 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex-col overflow-hidden min-h-[400px] lg:min-h-0">
           <div className="p-4 border-b border-slate-100 dark:border-slate-700 shrink-0">
             <Bone className="h-4 w-32" />
           </div>
@@ -327,19 +327,18 @@ function GeospatialSkeleton() {
     >
       {/* Top Toolbar Row */}
       <div className="bg-white/80 dark:bg-[#111827]/80 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-white/10 p-3.5 shrink-0">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-2.5 sm:gap-4">
           {/* Left: Filter Controls */}
-          <div className="flex items-center gap-2.5">
-            <Bone className="h-4 w-16" />
-            <Bone className="h-8 w-28 rounded-xl" />
-            <Bone className="h-8 w-32 rounded-xl" />
+          <div className="grid grid-cols-2 gap-2 w-full md:w-auto md:flex md:items-center md:gap-2.5">
+            <Bone className="h-8 w-full md:w-28 rounded-xl" />
+            <Bone className="h-8 w-full md:w-32 rounded-xl" />
           </div>
 
           {/* Center: Layer Toggles */}
-          <div className="flex items-center gap-1 p-1 bg-slate-100/80 dark:bg-slate-800/80 rounded-2xl">
-            <Bone className="h-7 w-20 rounded-xl" />
-            <Bone className="h-7 w-16 rounded-xl" />
-            <Bone className="h-7 w-18 rounded-xl" />
+          <div className="flex items-center gap-1 p-1 bg-slate-100/80 dark:bg-slate-800/80 rounded-2xl w-full md:w-auto justify-center">
+            <Bone className="h-7 w-16 sm:w-20 rounded-xl" />
+            <Bone className="h-7 w-14 sm:w-16 rounded-xl" />
+            <Bone className="h-7 w-14 sm:w-18 rounded-xl" />
           </div>
 
           {/* Right: Plotted chip */}
@@ -349,8 +348,8 @@ function GeospatialSkeleton() {
 
       {/* Map + Side Panel Grid */}
       <div className="grid grid-cols-12 gap-4 flex-1 min-h-0">
-        {/* Left Sidebar Skeleton (3 cols) */}
-        <div className="col-span-12 lg:col-span-3 bg-white/80 dark:bg-[#111827]/80 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-white/10 flex flex-col overflow-hidden min-h-0">
+        {/* Left Sidebar Skeleton (3 cols, hidden on mobile) */}
+        <div className="hidden lg:flex lg:col-span-3 bg-white/80 dark:bg-[#111827]/80 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-white/10 flex-col overflow-hidden min-h-0">
           {/* Sidebar Header */}
           <div className="flex items-center justify-between px-4 py-3.5 border-b border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-slate-900/30">
             <div className="flex items-center gap-2">

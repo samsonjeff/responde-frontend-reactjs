@@ -34,7 +34,7 @@ const SplitText: React.FC<SplitTextProps> = ({
   threshold = 0.1,
   rootMargin = '-100px',
   tag = 'p',
-  textAlign = 'center',
+  textAlign,
   onLetterAnimationComplete
 }) => {
   const ref = useRef<HTMLParagraphElement>(null);
@@ -157,11 +157,12 @@ const SplitText: React.FC<SplitTextProps> = ({
 
   const renderTag = () => {
     const style: React.CSSProperties = {
-      textAlign,
+      ...(textAlign ? { textAlign } : {}),
       wordWrap: 'break-word',
       willChange: 'transform, opacity'
     };
-    const classes = `split-parent overflow-hidden inline-block whitespace-normal ${className}`;
+    const displayClass = className.includes('block') || className.includes('flex') ? '' : 'inline-block';
+    const classes = `split-parent overflow-hidden ${displayClass} whitespace-normal ${className}`.trim();
     const Tag = tag || 'p';
 
     return (

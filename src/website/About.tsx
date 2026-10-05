@@ -165,7 +165,7 @@ export default function About() {
     <section
       ref={sectionRef}
       id="about"
-      className="relative pt-10 sm:pt-14 lg:pt-16 pb-24 sm:pb-32 px-6 bg-white border-b border-[#E5E5EA] text-[#1D1D1F] overflow-hidden"
+      className="relative pt-10 sm:pt-14 lg:pt-16 pb-16 sm:pb-24 px-6 bg-white border-b border-[#E5E5EA] text-[#1D1D1F] overflow-hidden"
     >
       {/* ── Apple-style Ambient Background Accents ── */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -174,9 +174,9 @@ export default function About() {
         <div className="absolute bottom-1/4 -left-48 w-96 h-96 bg-[#F5F5F7] rounded-full blur-3xl" />
       </div>
 
-      <div className="relative z-10 max-w-6xl mx-auto space-y-28 sm:space-y-36">
+      <div className="relative z-10 max-w-6xl mx-auto space-y-6 sm:space-y-8 lg:space-y-10">
         {/* ── Top Section Header ── */}
-        <div ref={headerRef} className="text-center max-w-3xl mx-auto space-y-3 sm:space-y-4">
+        <div ref={headerRef} className="text-center max-w-3xl mx-auto space-y-2.5 sm:space-y-3">
           <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-[11px] sm:text-xs font-semibold tracking-[0.14em] uppercase text-[#6E6E73] bg-[#F5F5F7] border border-[#E5E5EA] shadow-[0_1px_2px_rgba(0,0,0,0.02)] backdrop-blur-sm">
             <Compass className="w-3.5 h-3.5 text-[#6E6E73]" />
             <span>About</span>
@@ -191,8 +191,8 @@ export default function About() {
             duration={0.8}
             delay={80}
             ease="power3.out"
-            textAlign="left"
-            className="text-3xl sm:text-5xl lg:text-[54px] font-semibold tracking-[-0.03em] text-[#1D1D1F] leading-[1.12]"
+            textAlign="center"
+            className="block w-full text-center text-3xl sm:text-5xl lg:text-[54px] font-semibold tracking-[-0.03em] text-[#1D1D1F] leading-[1.12]"
           />
 
           <p className="text-base sm:text-lg lg:text-[19px] text-[#6E6E73] max-w-2xl mx-auto font-normal leading-relaxed tracking-[-0.01em]">
@@ -201,7 +201,7 @@ export default function About() {
         </div>
 
         {/* ── Row 1: Image Left, Text Right ── */}
-        <div ref={row1Ref} className="flex flex-col md:flex-row items-center gap-12 lg:gap-16">
+        <div ref={row1Ref} className="flex flex-col md:flex-row items-center gap-8 sm:gap-10 lg:gap-14">
           {/* Card Mockup */}
           <div ref={row1ImageRef} className="w-full md:w-1/2">
             <div className="group relative rounded-[28px] p-2.5 sm:p-3 bg-gradient-to-b from-[#F5F5F7] via-[#FAFAFC] to-[#F5F5F7] border border-[#E5E5EA] shadow-[0_20px_45px_-12px_rgba(0,0,0,0.08),0_4px_16px_rgba(0,0,0,0.02)] hover:shadow-[0_28px_56px_-12px_rgba(0,0,0,0.12)] transition-all duration-500 ease-out">
@@ -288,10 +288,12 @@ export default function About() {
           </div>
 
           {/* Text Content */}
-          <div ref={row1TextRef} className="w-full md:w-1/2 space-y-4 sm:space-y-5">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold tracking-[0.12em] uppercase text-[#0071E3] bg-[#0071E3]/[0.08] border border-[#0071E3]/20">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#0071E3]" />
-              Overview
+          <div ref={row1TextRef} className="w-full md:w-1/2 space-y-4 sm:space-y-5 text-center md:text-left">
+            <div className="flex justify-center md:justify-start">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold tracking-[0.12em] uppercase text-[#0071E3] bg-[#0071E3]/[0.08] border border-[#0071E3]/20">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#0071E3]" />
+                Overview
+              </div>
             </div>
 
             <SplitText
@@ -303,8 +305,7 @@ export default function About() {
               duration={0.7}
               delay={60}
               ease="power3.out"
-              textAlign="left"
-              className="text-2xl sm:text-3xl lg:text-4xl font-semibold text-[#1D1D1F] tracking-[-0.028em] leading-[1.2]"
+              className="block w-full text-center md:text-left text-2xl sm:text-3xl lg:text-4xl font-semibold text-[#1D1D1F] tracking-[-0.028em] leading-[1.2]"
             />
 
             <SplitText
@@ -316,12 +317,11 @@ export default function About() {
               duration={0.6}
               delay={30}
               ease="power3.out"
-              textAlign="left"
-              className="text-[15px] sm:text-[16px] text-[#515154] leading-[1.65] font-normal tracking-[-0.008em]"
+              className="block w-full text-center md:text-left text-[15px] sm:text-[16px] text-[#515154] leading-[1.65] font-normal tracking-[-0.008em]"
             />
 
             {/* Apple-style Micro Highlights */}
-            <div className="pt-2 space-y-2.5">
+            <div className="pt-2 space-y-2.5 max-w-lg mx-auto md:mx-0 text-left">
               <div className="flex items-start gap-3">
                 <div className="mt-0.5 w-4 h-4 rounded-full bg-blue-50 flex items-center justify-center text-[#0071E3] shrink-0">
                   <CheckCircle2 className="w-3.5 h-3.5" />
@@ -343,7 +343,7 @@ export default function About() {
         </div>
 
         {/* ── Row 2: Text Left, Image Right (flex-row-reverse) ── */}
-        <div ref={row2Ref} className="flex flex-col md:flex-row-reverse items-center gap-12 lg:gap-16">
+        <div ref={row2Ref} className="flex flex-col md:flex-row-reverse items-center gap-8 sm:gap-10 lg:gap-14">
           {/* Card Mockup */}
           <div ref={row2ImageRef} className="w-full md:w-1/2">
             <div className="group relative rounded-[28px] p-2.5 sm:p-3 bg-gradient-to-b from-[#F5F5F7] via-[#FAFAFC] to-[#F5F5F7] border border-[#E5E5EA] shadow-[0_20px_45px_-12px_rgba(0,0,0,0.08),0_4px_16px_rgba(0,0,0,0.02)] hover:shadow-[0_28px_56px_-12px_rgba(0,0,0,0.12)] transition-all duration-500 ease-out">
@@ -430,10 +430,12 @@ export default function About() {
           </div>
 
           {/* Text Content */}
-          <div ref={row2TextRef} className="w-full md:w-1/2 space-y-4 sm:space-y-5">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold tracking-[0.12em] uppercase text-[#0071E3] bg-[#0071E3]/[0.08] border border-[#0071E3]/20">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#0071E3]" />
-              Workflow
+          <div ref={row2TextRef} className="w-full md:w-1/2 space-y-4 sm:space-y-5 text-center md:text-left">
+            <div className="flex justify-center md:justify-start">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold tracking-[0.12em] uppercase text-[#0071E3] bg-[#0071E3]/[0.08] border border-[#0071E3]/20">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#0071E3]" />
+                Workflow
+              </div>
             </div>
 
             <SplitText
@@ -445,8 +447,7 @@ export default function About() {
               duration={0.7}
               delay={60}
               ease="power3.out"
-              textAlign="left"
-              className="text-2xl sm:text-3xl lg:text-4xl font-semibold text-[#1D1D1F] tracking-[-0.028em] leading-[1.2]"
+              className="block w-full text-center md:text-left text-2xl sm:text-3xl lg:text-4xl font-semibold text-[#1D1D1F] tracking-[-0.028em] leading-[1.2]"
             />
 
             <SplitText
@@ -458,12 +459,11 @@ export default function About() {
               duration={0.6}
               delay={30}
               ease="power3.out"
-              textAlign="left"
-              className="text-[15px] sm:text-[16px] text-[#515154] leading-[1.65] font-normal tracking-[-0.008em]"
+              className="block w-full text-center md:text-left text-[15px] sm:text-[16px] text-[#515154] leading-[1.65] font-normal tracking-[-0.008em]"
             />
 
             {/* Apple-style Micro Highlights */}
-            <div className="pt-2 space-y-2.5">
+            <div className="pt-2 space-y-2.5 max-w-lg mx-auto md:mx-0 text-left">
               <div className="flex items-start gap-3">
                 <div className="mt-0.5 w-4 h-4 rounded-full bg-sky-50 flex items-center justify-center text-[#0071E3] shrink-0">
                   <CheckCircle2 className="w-3.5 h-3.5" />
@@ -485,7 +485,7 @@ export default function About() {
         </div>
 
         {/* ── Row 3: Image Left, Text Right ── */}
-        <div ref={row3Ref} className="flex flex-col md:flex-row items-center gap-12 lg:gap-16">
+        <div ref={row3Ref} className="flex flex-col md:flex-row items-center gap-8 sm:gap-10 lg:gap-14">
           {/* Card Mockup */}
           <div ref={row3ImageRef} className="w-full md:w-1/2">
             <div className="group relative rounded-[28px] p-2.5 sm:p-3 bg-gradient-to-b from-[#F5F5F7] via-[#FAFAFC] to-[#F5F5F7] border border-[#E5E5EA] shadow-[0_20px_45px_-12px_rgba(0,0,0,0.08),0_4px_16px_rgba(0,0,0,0.02)] hover:shadow-[0_28px_56px_-12px_rgba(0,0,0,0.12)] transition-all duration-500 ease-out">
@@ -549,10 +549,12 @@ export default function About() {
           </div>
 
           {/* Text Content */}
-          <div ref={row3TextRef} className="w-full md:w-1/2 space-y-4 sm:space-y-5">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold tracking-[0.12em] uppercase text-[#10B981] bg-[#10B981]/[0.08] border border-[#10B981]/20">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#10B981]" />
-              Impact
+          <div ref={row3TextRef} className="w-full md:w-1/2 space-y-4 sm:space-y-5 text-center md:text-left">
+            <div className="flex justify-center md:justify-start">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold tracking-[0.12em] uppercase text-[#10B981] bg-[#10B981]/[0.08] border border-[#10B981]/20">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#10B981]" />
+                Impact
+              </div>
             </div>
 
             <SplitText
@@ -564,8 +566,7 @@ export default function About() {
               duration={0.7}
               delay={60}
               ease="power3.out"
-              textAlign="left"
-              className="text-2xl sm:text-3xl lg:text-4xl font-semibold text-[#1D1D1F] tracking-[-0.028em] leading-[1.2]"
+              className="block w-full text-center md:text-left text-2xl sm:text-3xl lg:text-4xl font-semibold text-[#1D1D1F] tracking-[-0.028em] leading-[1.2]"
             />
 
             <SplitText
@@ -577,12 +578,11 @@ export default function About() {
               duration={0.6}
               delay={30}
               ease="power3.out"
-              textAlign="left"
-              className="text-[15px] sm:text-[16px] text-[#515154] leading-[1.65] font-normal tracking-[-0.008em]"
+              className="block w-full text-center md:text-left text-[15px] sm:text-[16px] text-[#515154] leading-[1.65] font-normal tracking-[-0.008em]"
             />
 
             {/* Apple-style Micro Highlights */}
-            <div className="pt-2 space-y-2.5">
+            <div className="pt-2 space-y-2.5 max-w-lg mx-auto md:mx-0 text-left">
               <div className="flex items-start gap-3">
                 <div className="mt-0.5 w-4 h-4 rounded-full bg-emerald-50 flex items-center justify-center text-[#10B981] shrink-0">
                   <CheckCircle2 className="w-3.5 h-3.5" />

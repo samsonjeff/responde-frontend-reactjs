@@ -162,66 +162,78 @@ export default function Register() {
   };
 
   return (
-    <main className="min-h-screen w-full flex items-center justify-center bg-slate-50/80 p-4 py-8">
-      <AnimatePresence mode="wait">
-        {!token ? (
-          <motion.div
-            key="invalid-token"
-            variants={cardVariants}
-            initial="hidden"
-            animate="visible"
-            exit="exit"
-            className="max-w-md w-full bg-white rounded-2xl shadow-xl border border-red-100 p-8 text-center"
-          >
+    <main className="relative min-h-screen w-full flex items-center justify-center p-4 py-8 overflow-y-auto select-none">
+      {/* Background Image with Soft Blur & Bright Overlay */}
+      <div className="fixed inset-0 z-0 pointer-events-none select-none overflow-hidden">
+        <img
+          src="/SignupBG.jpg"
+          alt="Command Center Background"
+          className="w-full h-full object-cover object-center blur-[5px] scale-105"
+        />
+        {/* Subtle light tint to keep the image bright and natural */}
+        <div className="absolute inset-0 bg-black/20" />
+      </div>
+
+      <div className="relative z-10 w-full flex items-center justify-center my-auto">
+        <AnimatePresence mode="wait">
+          {!token ? (
             <motion.div
-              variants={iconSpringVariants}
-              className="w-14 h-14 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-red-100 shadow-sm"
+              key="invalid-token"
+              variants={cardVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              className="max-w-md w-full bg-white/95 backdrop-blur-md rounded-2xl shadow-[0_25px_80px_rgba(0,0,0,0.55),0_0_50px_rgba(0,113,227,0.12)] border border-white/30 p-8 text-center"
             >
-              <AlertCircle className="w-7 h-7 text-red-600" />
-            </motion.div>
-            <h2 className="text-slate-800 font-bold text-xl mb-2">Invalid Invite Link</h2>
-            <p className="text-slate-600 text-sm mb-6 leading-relaxed">
-              No invitation token was found in this link. Please ask your System Administrator for a valid invite link.
-            </p>
-            <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.985 }}>
-              <Link
-                to="/login"
-                className="block w-full py-3 px-4 bg-gradient-to-r from-blue-700 to-blue-800 hover:from-blue-600 hover:to-blue-700 text-white font-semibold rounded-xl transition-all shadow-md shadow-blue-700/20 text-sm"
+              <motion.div
+                variants={iconSpringVariants}
+                className="w-14 h-14 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-red-100 shadow-sm"
               >
-                Go to Login
-              </Link>
+                <AlertCircle className="w-7 h-7 text-red-600" />
+              </motion.div>
+              <h2 className="text-slate-800 font-bold text-xl mb-2">Invalid Invite Link</h2>
+              <p className="text-slate-600 text-sm mb-6 leading-relaxed">
+                No invitation token was found in this link. Please ask your System Administrator for a valid invite link.
+              </p>
+              <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.985 }}>
+                <Link
+                  to="/login"
+                  className="block w-full py-3 px-4 bg-gradient-to-r from-blue-700 to-blue-800 hover:from-blue-600 hover:to-blue-700 text-white font-semibold rounded-xl transition-all shadow-md shadow-blue-700/20 text-sm"
+                >
+                  Go to Login
+                </Link>
+              </motion.div>
             </motion.div>
-          </motion.div>
-        ) : success ? (
-          <motion.div
-            key="success-screen"
-            variants={cardVariants}
-            initial="hidden"
-            animate="visible"
-            exit="exit"
-            className="max-w-md w-full bg-white rounded-2xl shadow-xl border border-green-100 p-8 text-center"
-          >
+          ) : success ? (
             <motion.div
-              variants={iconSpringVariants}
-              className="w-14 h-14 bg-green-50 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-green-200 shadow-sm"
+              key="success-screen"
+              variants={cardVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              className="max-w-md w-full bg-white/95 backdrop-blur-md rounded-2xl shadow-[0_25px_80px_rgba(0,0,0,0.55),0_0_50px_rgba(0,113,227,0.12)] border border-white/30 p-8 text-center"
             >
-              <CheckCircle2 className="w-8 h-8 text-green-600" />
+              <motion.div
+                variants={iconSpringVariants}
+                className="w-14 h-14 bg-green-50 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-green-200 shadow-sm"
+              >
+                <CheckCircle2 className="w-8 h-8 text-green-600" />
+              </motion.div>
+              <h2 className="text-slate-800 font-bold text-xl mb-2">Account Created!</h2>
+              <p className="text-slate-600 text-sm mb-4 leading-relaxed">
+                Your invitation was accepted and your account has been created.
+              </p>
+              <p className="text-xs text-slate-400">Redirecting to login page...</p>
             </motion.div>
-            <h2 className="text-slate-800 font-bold text-xl mb-2">Account Created!</h2>
-            <p className="text-slate-600 text-sm mb-4 leading-relaxed">
-              Your invitation was accepted and your account has been created.
-            </p>
-            <p className="text-xs text-slate-400">Redirecting to login page...</p>
-          </motion.div>
-        ) : (
-          <motion.div
-            key="register-form"
-            variants={cardVariants}
-            initial="hidden"
-            animate="visible"
-            exit="exit"
-            className="max-w-md w-full bg-white rounded-2xl sm:rounded-3xl shadow-2xl border border-slate-200/80 overflow-hidden"
-          >
+          ) : (
+            <motion.div
+              key="register-form"
+              variants={cardVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              className="max-w-md w-full bg-white/95 backdrop-blur-md rounded-2xl sm:rounded-3xl shadow-[0_25px_80px_rgba(0,0,0,0.55),0_0_50px_rgba(0,113,227,0.12)] border border-white/30 overflow-hidden"
+            >
             {/* Header */}
             <div className="bg-gradient-to-r from-blue-900 via-blue-800 to-blue-700 p-6 sm:p-7 text-white text-center">
               <Link
@@ -422,6 +434,7 @@ export default function Register() {
           </motion.div>
         )}
       </AnimatePresence>
+      </div>
     </main>
   );
 }

@@ -1,4 +1,4 @@
-import { useMemo, type ReactNode } from 'react';
+import { useState, useEffect, useMemo, type ReactNode } from 'react';
 import {
   ResponsiveContainer,
   BarChart,
@@ -31,6 +31,31 @@ const URGENCY_BAR_COLOR: Record<string, string> = {
   Moderate: '#F59E0B',
   Low: '#10B981',
 };
+
+function useIsMobile(breakpoint = 640) {
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth < breakpoint : false
+  );
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < breakpoint);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [breakpoint]);
+
+  return isMobile;
+}
+
+function formatBarangayLabel(name: string, isMobile: boolean) {
+  if (!name) return '';
+  if (!isMobile) return name;
+  const cleaned = name
+    .replace(/^Poblacion\s+Barangay\s+/i, 'Brgy ')
+    .replace(/^Barangay\s+/i, 'Brgy ')
+    .replace(/^Sta\.\s+/i, 'Sta. ')
+    .replace(/^Santa\s+/i, 'Sta. ');
+  return cleaned.length > 8 ? `${cleaned.slice(0, 7)}…` : cleaned;
+}
 
 function AppleCard({
   children,
@@ -68,10 +93,10 @@ function SectionHeader({
   iconBg?: string;
 }) {
   return (
-    <div className="flex items-start justify-between gap-3 mb-5">
-      <div className="flex items-start gap-3">
+    <div className="flex items-start justify-between gap-2.5 sm:gap-3 mb-2.5 sm:mb-4 shrink-0">
+      <div className="flex items-start gap-2.5 sm:gap-3 min-w-0">
         <div
-          className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border shadow-2xs"
+          className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center shrink-0 border shadow-2xs"
           style={{
             background: iconBg ?? `${iconColor}14`,
             borderColor: `${iconColor}24`,
@@ -80,12 +105,12 @@ function SectionHeader({
         >
           <Icon className="w-4 h-4" />
         </div>
-        <div>
-          <h2 className="text-sm font-semibold tracking-tight text-slate-900 dark:text-white">
+        <div className="min-w-0">
+          <h2 className="text-xs sm:text-sm font-semibold tracking-tight text-slate-900 dark:text-white truncate">
             {title}
           </h2>
           {description && (
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-1 sm:line-clamp-none">
               {description}
             </p>
           )}
@@ -145,6 +170,7 @@ export function BarangayBarChart({
   className = '',
 }: BarangayBarChartProps) {
   const { reports: contextReports } = useReports();
+  const isMobile = useIsMobile();
   const rawReports = propReports ?? (contextReports as unknown as AnalyticsReport[]);
 
   const chartData = useMemo(() => {
@@ -166,7 +192,7 @@ export function BarangayBarChart({
   }, [rawReports]);
 
   return (
-    <AppleCard className={`p-4 sm:p-5 lg:p-6 flex flex-col ${className}`}>
+    <AppleCard className={`p-3 sm:p-5 lg:p-6 flex flex-col min-h-0 ${className}`}>
       <SectionHeader
         icon={MapPin}
         title="Incident Frequency per Barangay"
@@ -192,57 +218,66 @@ export function BarangayBarChart({
       />
 
       {chartData.length ? (
-        <div className="w-full flex-1 overflow-x-auto scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800">
-          <div className="min-w-[500px] md:min-w-0 w-full h-full" style={{ minHeight: 280 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData} margin={{ top: 10, right: 16, left: -14, bottom: 44 }}>
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  vertical={false}
-                  stroke="currentColor"
-                  className="text-slate-200/50 dark:text-slate-800/60"
-                />
-                <XAxis
-                  dataKey="name"
-                  tick={{ fontSize: 11, fill: '#94a3b8' }}
-                  axisLine={{ stroke: '#94a3b8', strokeOpacity: 0.2 }}
-                  tickLine={false}
-                  angle={-30}
-                  textAnchor="end"
-                  interval={0}
-                />
-                <YAxis
-                  allowDecimals={false}
-                  tick={{ fontSize: 11, fill: '#94a3b8' }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <Tooltip content={<BarangayTooltip />} cursor={{ fill: 'rgba(0,113,227,0.06)' }} />
-                <Bar
-                  dataKey="count"
-                  radius={[6, 6, 0, 0]}
-                  barSize={26}
-                  cursor={interactive ? 'pointer' : 'default'}
-                  onClick={
-                    interactive
-                      ? (d: { name?: string }) => {
-                          if (!d?.name) return;
-                          onSelectBarangay?.(activeBarangay === d.name ? null : (d.name ?? null));
-                        }
-                      : undefined
-                  }
-                >
-                  {chartData.map((entry) => (
-                    <Cell
-                      key={entry.name}
-                      fill={URGENCY_BAR_COLOR[entry.dominantUrgency] ?? ACCENT_BLUE}
-                      opacity={interactive && activeBarangay && activeBarangay !== entry.name ? 0.35 : 1}
-                    />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+        <div className="w-full flex-1 min-w-0 min-h-0 relative">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart
+              data={chartData}
+              margin={{
+                top: 8,
+                right: 8,
+                left: isMobile ? -26 : -14,
+                bottom: isMobile ? 44 : 36,
+              }}
+            >
+              <CartesianGrid
+                strokeDasharray="3 3"
+                vertical={false}
+                stroke="currentColor"
+                className="text-slate-200/50 dark:text-slate-800/60"
+              />
+              <XAxis
+                dataKey="name"
+                tick={{ fontSize: isMobile ? 9.5 : 11, fill: '#94a3b8' }}
+                axisLine={{ stroke: '#94a3b8', strokeOpacity: 0.2 }}
+                tickLine={false}
+                angle={isMobile ? -40 : -30}
+                textAnchor="end"
+                interval={0}
+                tickFormatter={(val) => formatBarangayLabel(val, isMobile)}
+              />
+              <YAxis
+                allowDecimals={false}
+                tick={{ fontSize: isMobile ? 9.5 : 11, fill: '#94a3b8' }}
+                axisLine={false}
+                tickLine={false}
+                width={isMobile ? 24 : 32}
+              />
+              <Tooltip content={<BarangayTooltip />} cursor={{ fill: 'rgba(0,113,227,0.06)' }} />
+              <Bar
+                dataKey="count"
+                radius={[5, 5, 0, 0]}
+                barSize={isMobile ? 16 : 24}
+                maxBarSize={isMobile ? 18 : 28}
+                cursor={interactive ? 'pointer' : 'default'}
+                onClick={
+                  interactive
+                    ? (d: { name?: string }) => {
+                        if (!d?.name) return;
+                        onSelectBarangay?.(activeBarangay === d.name ? null : (d.name ?? null));
+                      }
+                    : undefined
+                }
+              >
+                {chartData.map((entry) => (
+                  <Cell
+                    key={entry.name}
+                    fill={URGENCY_BAR_COLOR[entry.dominantUrgency] ?? ACCENT_BLUE}
+                    opacity={interactive && activeBarangay && activeBarangay !== entry.name ? 0.35 : 1}
+                  />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
         </div>
       ) : (
         <div className="flex flex-col items-center justify-center py-16 text-slate-400 dark:text-slate-500 text-xs gap-2 flex-1">
@@ -252,15 +287,15 @@ export function BarangayBarChart({
       )}
 
       {/* Urgency Color Legend */}
-      <div className="flex items-center justify-between gap-4 mt-4 pt-3.5 border-t border-slate-100 dark:border-white/5">
-        <span className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+      <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-4 mt-2 sm:mt-4 pt-2 sm:pt-3.5 border-t border-slate-100 dark:border-white/5 shrink-0">
+        <span className="text-[10px] sm:text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
           Urgency Legend
         </span>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-2.5 sm:gap-4">
           {Object.entries(URGENCY_BAR_COLOR).map(([level, color]) => (
             <div key={level} className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full" style={{ background: color }} />
-              <span className="text-xs text-slate-600 dark:text-slate-400 font-medium">{level}</span>
+              <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full shrink-0" style={{ background: color }} />
+              <span className="text-[11px] sm:text-xs text-slate-600 dark:text-slate-400 font-medium">{level}</span>
             </div>
           ))}
         </div>

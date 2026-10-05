@@ -245,6 +245,12 @@ export default function MapContainer({ theme, layers, barangayCounts, pinReports
             map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right');
             map.addControl(new maplibregl.NavigationControl(), 'bottom-right');
 
+            // Responsive auto-resize observer for smooth layout transitions
+            const ro = new ResizeObserver(() => {
+                map.resize();
+            });
+            ro.observe(mapContainerRef.current);
+
             mapRef.current = map;
 
             map.on('load', () => {
@@ -418,6 +424,7 @@ export default function MapContainer({ theme, layers, barangayCounts, pinReports
                 poblacionDetailMarkersRef.current.forEach((m) => m.remove());
                 poblacionDetailMarkersRef.current = [];
 
+                ro.disconnect();
                 map.remove();
                 mapRef.current = null;
             };
