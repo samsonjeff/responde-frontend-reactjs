@@ -22,6 +22,9 @@ export default defineConfig(({ mode }) => {
     // The configure handler below strips `Secure` and `SameSite=None` from
     // Set-Cookie headers so the browser actually stores the session cookie.
     server: {
+      watch: {
+        ignored: ['**/public/**', '**/*.jpg', '**/*.png', '**/*.jpeg'],
+      },
       proxy: {
         '/api': {
           target: env.VITE_API_URL || 'https://messbot-928g.onrender.com',
