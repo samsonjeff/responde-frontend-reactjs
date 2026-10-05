@@ -3,7 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X,
-  ChevronLeft, ChevronRight, Filter, Navigation,
+  Filter, Navigation,
   Siren, HeartPulse, Droplets, HardHat, ShieldCheck,
   FileText, User, Phone, Clock, Layers, MapPin,
 } from 'lucide-react';
@@ -104,38 +104,41 @@ function BarangayDetailCard({ name, reports, onClose, onViewList }: {
 
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.98, y: 10 }}
+      initial={{ opacity: 0, scale: 0.98, y: 12 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.98, y: 10 }}
+      exit={{ opacity: 0, scale: 0.98, y: 12 }}
       transition={APPLE_SPRING}
-      className="absolute top-4 right-4 z-30 w-[min(340px,calc(100vw-2rem))] max-w-[340px] max-h-[75vh] overflow-y-auto rounded-2xl backdrop-blur-2xl bg-white/95 dark:bg-[#111827]/95 shadow-[0_16px_50px_rgba(0,0,0,0.15)] border border-slate-200/80 dark:border-white/10 border-t border-t-white/80 dark:border-t-white/20 transform-gpu will-change-transform"
+      className="absolute bottom-2 left-2 right-2 sm:bottom-auto sm:top-4 sm:right-4 sm:left-auto sm:w-[min(340px,calc(100vw-2rem))] sm:max-w-[340px] max-h-[calc(100%-3.5rem)] sm:max-h-[75vh] z-30 overflow-y-auto rounded-2xl backdrop-blur-2xl bg-white/95 dark:bg-[#111827]/95 shadow-[0_16px_50px_rgba(0,0,0,0.2)] border border-slate-200/80 dark:border-white/10 border-t border-t-white/80 dark:border-t-white/20 transform-gpu will-change-transform scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800"
     >
-      <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200/60 dark:border-slate-800/60 bg-white/60 dark:bg-[#111827]/60 backdrop-blur-md sticky top-0 z-10">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-blue-500/10 text-[#0071E3] dark:text-blue-400 flex items-center justify-center border border-blue-500/15">
+      {/* Mobile sheet grab handle */}
+      <div className="w-10 h-1 rounded-full bg-slate-300/80 dark:bg-slate-600/80 mx-auto mt-2 -mb-1 sm:hidden shrink-0" />
+
+      <div className="flex items-center justify-between px-4 sm:px-5 py-3 sm:py-4 border-b border-slate-200/60 dark:border-slate-800/60 bg-white/60 dark:bg-[#111827]/60 backdrop-blur-md sticky top-0 z-10">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="w-8 h-8 rounded-xl bg-blue-500/10 text-[#0071E3] dark:text-blue-400 flex items-center justify-center border border-blue-500/15 shrink-0">
             <Navigation className="w-4 h-4" />
           </div>
-          <div>
-            <h3 className="text-sm font-semibold text-slate-900 dark:text-white tracking-tight">{name}</h3>
+          <div className="min-w-0">
+            <h3 className="text-sm font-semibold text-slate-900 dark:text-white tracking-tight truncate">{name}</h3>
             <span className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Barangay Details</span>
           </div>
         </div>
         <button
           onClick={onClose}
-          className="w-7 h-7 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all active:scale-90"
+          className="w-7 h-7 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all active:scale-90 cursor-pointer shrink-0"
         >
           <X className="w-4 h-4" />
         </button>
       </div>
 
-      <div className="p-5 space-y-4">
-        <div className="bg-slate-50/80 dark:bg-slate-800/50 rounded-2xl p-4 border border-slate-200/60 dark:border-slate-700/60 flex items-center justify-between">
+      <div className="p-3.5 sm:p-5 space-y-2.5 sm:space-y-4">
+        <div className="bg-slate-50/80 dark:bg-slate-800/50 rounded-2xl p-3.5 sm:p-4 border border-slate-200/60 dark:border-slate-700/60 flex items-center justify-between">
           <div>
-            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total Incidents</p>
-            <p className="text-2xl font-bold text-slate-900 dark:text-white mt-0.5">{reports.length}</p>
+            <p className="text-[11px] sm:text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total Incidents</p>
+            <p className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white mt-0.5">{reports.length}</p>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-[#0071E3] flex items-center justify-center">
-            <Layers className="w-5 h-5" />
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-blue-500/10 text-[#0071E3] flex items-center justify-center">
+            <Layers className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
         </div>
 
@@ -144,11 +147,11 @@ function BarangayDetailCard({ name, reports, onClose, onViewList }: {
           <div className="space-y-1.5">
             {Object.entries(typeCounts).map(([type, count]) => (
               <div key={type} className="flex items-center justify-between text-xs px-3 py-2 rounded-xl bg-slate-50/60 dark:bg-slate-800/40 border border-slate-200/40 dark:border-slate-700/40">
-                <span className="flex items-center gap-2 text-slate-700 dark:text-slate-300 font-medium">
-                  <span className="text-slate-400 dark:text-slate-500">{TYPE_ICONS[type]}</span>
-                  {type}
+                <span className="flex items-center gap-2 text-slate-700 dark:text-slate-300 font-medium truncate">
+                  <span className="text-slate-400 dark:text-slate-500 shrink-0">{TYPE_ICONS[type]}</span>
+                  <span className="truncate">{type}</span>
                 </span>
-                <span className="font-semibold text-slate-900 dark:text-white tabular-nums">{count}</span>
+                <span className="font-semibold text-slate-900 dark:text-white tabular-nums ml-2">{count}</span>
               </div>
             ))}
           </div>
@@ -174,7 +177,7 @@ function BarangayDetailCard({ name, reports, onClose, onViewList }: {
 
         <button
           onClick={onViewList}
-          className="w-full py-2.5 px-4 text-xs font-semibold text-white bg-[#0071E3] hover:bg-[#0077ED] rounded-xl transition-all flex items-center justify-center gap-2 shadow-[0_2px_8px_rgba(0,113,227,0.25)] active:scale-[0.97]"
+          className="w-full py-2.5 px-4 text-xs font-semibold text-white bg-[#0071E3] hover:bg-[#0077ED] rounded-xl transition-all flex items-center justify-center gap-2 shadow-[0_2px_8px_rgba(0,113,227,0.25)] active:scale-[0.97] cursor-pointer"
         >
           <FileText className="w-3.5 h-3.5" /> View in Incident Reports
         </button>
@@ -192,47 +195,50 @@ function IncidentDetailCard({ report, onClose, onViewInReports }: {
 
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.98, y: 10 }}
+      initial={{ opacity: 0, scale: 0.98, y: 12 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.98, y: 10 }}
+      exit={{ opacity: 0, scale: 0.98, y: 12 }}
       transition={APPLE_SPRING}
-      className="absolute top-4 right-4 z-30 w-[min(340px,calc(100vw-2rem))] max-w-[340px] max-h-[75vh] overflow-y-auto rounded-2xl backdrop-blur-2xl bg-white/95 dark:bg-[#111827]/95 shadow-[0_16px_50px_rgba(0,0,0,0.15)] border border-slate-200/80 dark:border-white/10 border-t border-t-white/80 dark:border-t-white/20 transform-gpu will-change-transform"
+      className="absolute bottom-2 left-2 right-2 sm:bottom-auto sm:top-4 sm:right-4 sm:left-auto sm:w-[min(340px,calc(100vw-2rem))] sm:max-w-[340px] max-h-[calc(100%-3.5rem)] sm:max-h-[75vh] z-30 overflow-y-auto rounded-2xl backdrop-blur-2xl bg-white/95 dark:bg-[#111827]/95 shadow-[0_16px_50px_rgba(0,0,0,0.2)] border border-slate-200/80 dark:border-white/10 border-t border-t-white/80 dark:border-t-white/20 transform-gpu will-change-transform scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800"
     >
-      <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200/60 dark:border-slate-800/60 bg-white/60 dark:bg-[#111827]/60 backdrop-blur-md sticky top-0 z-10">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-blue-500/10 text-[#0071E3] dark:text-blue-400 flex items-center justify-center border border-blue-500/15">
+      {/* Mobile sheet grab handle */}
+      <div className="w-10 h-1 rounded-full bg-slate-300/80 dark:bg-slate-600/80 mx-auto mt-2 -mb-1 sm:hidden shrink-0" />
+
+      <div className="flex items-center justify-between px-4 sm:px-5 py-3 sm:py-4 border-b border-slate-200/60 dark:border-slate-800/60 bg-white/60 dark:bg-[#111827]/60 backdrop-blur-md sticky top-0 z-10">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="w-8 h-8 rounded-xl bg-blue-500/10 text-[#0071E3] dark:text-blue-400 flex items-center justify-center border border-blue-500/15 shrink-0">
             {TYPE_ICONS[report.type] || <Siren className="w-4 h-4" />}
           </div>
-          <div>
-            <h3 className="text-sm font-semibold text-slate-900 dark:text-white tracking-tight">{report.type}</h3>
+          <div className="min-w-0">
+            <h3 className="text-sm font-semibold text-slate-900 dark:text-white tracking-tight truncate">{report.type}</h3>
             <span className="text-[10px] font-mono text-slate-400">ID: #{report.id}</span>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2.5 py-0.5 rounded-full border ${badge.bg} ${badge.text} ${badge.border}`}>
+        <div className="flex items-center gap-2 shrink-0">
+          <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 sm:px-2.5 py-0.5 rounded-full border ${badge.bg} ${badge.text} ${badge.border}`}>
             <span className={`w-1.5 h-1.5 rounded-full ${badge.dot}`} />
             {report.urgency}
           </span>
           <button
             onClick={onClose}
-            className="w-7 h-7 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all active:scale-90"
+            className="w-7 h-7 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all active:scale-90 cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
       </div>
 
-      <div className="p-5 space-y-4">
+      <div className="p-3.5 sm:p-5 space-y-2.5 sm:space-y-4">
         <div className="bg-slate-50/80 dark:bg-slate-800/50 rounded-xl p-3 border border-slate-200/60 dark:border-slate-700/60">
-          <p className="text-xs font-semibold text-slate-900 dark:text-white flex items-center gap-1.5">
-            <MapPin className="w-3.5 h-3.5 text-blue-500" />
-            {report.barangay}
+          <p className="text-xs font-semibold text-slate-900 dark:text-white flex items-center gap-1.5 truncate">
+            <MapPin className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+            <span className="truncate">{report.barangay}</span>
           </p>
           <p className="text-[11px] font-mono text-slate-500 dark:text-slate-400 mt-0.5 pl-5">{report.coordinates}</p>
         </div>
 
-        <div className="bg-slate-50/60 dark:bg-slate-800/40 rounded-2xl p-4 border border-slate-200/50 dark:border-slate-700/50">
-          <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed italic">&ldquo;{report.description}&rdquo;</p>
+        <div className="bg-slate-50/60 dark:bg-slate-800/40 rounded-2xl p-3.5 sm:p-4 border border-slate-200/50 dark:border-slate-700/50">
+          <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed italic break-words">&ldquo;{report.description}&rdquo;</p>
           <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-2 font-medium">
             — {report.reporter}, <span className="tabular-nums">{report.time}</span>
           </p>
@@ -240,19 +246,19 @@ function IncidentDetailCard({ report, onClose, onViewInReports }: {
 
         <div className="space-y-2 text-xs">
           <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
-            <User className="w-3.5 h-3.5 text-slate-400" />
-            <span>{report.reporter}</span>
+            <User className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+            <span className="truncate">{report.reporter}</span>
           </div>
           <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
-            <Phone className="w-3.5 h-3.5 text-slate-400" />
+            <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
             <span className="font-mono">{report.contact}</span>
           </div>
           <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
-            <Clock className="w-3.5 h-3.5 text-slate-400" />
+            <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
             <span className="tabular-nums">{report.time}</span>
           </div>
           <div className="flex items-center gap-2">
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
             <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
               {report.status === 'verified' ? '✓ Verified' : report.status}
             </span>
@@ -261,7 +267,7 @@ function IncidentDetailCard({ report, onClose, onViewInReports }: {
 
         <button
           onClick={onViewInReports}
-          className="w-full py-2.5 px-4 text-xs font-semibold text-white bg-[#0071E3] hover:bg-[#0077ED] rounded-xl transition-all flex items-center justify-center gap-2 shadow-[0_2px_8px_rgba(0,113,227,0.25)] active:scale-[0.97]"
+          className="w-full py-2.5 px-4 text-xs font-semibold text-white bg-[#0071E3] hover:bg-[#0077ED] rounded-xl transition-all flex items-center justify-center gap-2 shadow-[0_2px_8px_rgba(0,113,227,0.25)] active:scale-[0.97] cursor-pointer"
         >
           <FileText className="w-3.5 h-3.5" /> Open in Incident Reports
         </button>
@@ -300,10 +306,11 @@ function IncidentSidebarContent({
         </div>
         <button
           onClick={onClose}
-          className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-800 transition-colors active:scale-90 cursor-pointer"
-          title="Collapse sidebar"
+          className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-all active:scale-90 cursor-pointer shrink-0"
+          title="Close incident list"
+          aria-label="Close incident list"
         >
-          <ChevronLeft className="w-4 h-4" />
+          <X className="w-4 h-4" />
         </button>
       </div>
 
@@ -359,7 +366,7 @@ function LayerToggle({ active, label, activeDot, onClick }: {
   return (
     <button
       onClick={onClick}
-      className={`relative flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-semibold tracking-tight transition-all duration-200 active:scale-[0.96] ${active
+      className={`relative flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-1.5 rounded-xl text-[11px] sm:text-xs font-semibold tracking-tight transition-all duration-200 active:scale-[0.96] cursor-pointer ${active
         ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm ring-1 ring-slate-950/5 dark:ring-white/10'
         : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-white/40 dark:hover:bg-slate-800/40'
         }`}
@@ -383,7 +390,12 @@ export default function GeospatialMap() {
 
   const [layers, setLayers] = useState<MapLayerState>(INITIAL_LAYERS);
   const [selected, setSelected] = useState<SelectedFeature>(null);
-  const [drawerOpen, setDrawerOpen] = useState(true);
+  const [drawerOpen, setDrawerOpen] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth >= 1024;
+    }
+    return true;
+  });
   const [filterUrgency, setFilterUrgency] = useState<string>('All Urgency');
   const [filterType, setFilterType] = useState<string>('All Types');
   const [loading, setLoading] = useState(true);
@@ -481,16 +493,16 @@ export default function GeospatialMap() {
 
   return (
     <PageTransition>
-      <div className="flex flex-col flex-1 min-h-0 gap-4">
+      <div className="flex flex-col flex-1 min-h-0 gap-3 sm:gap-4 h-full">
 
         {/* ── Toolbar Row ── */}
         <div className="shrink-0">
-          <div className="relative z-30 bg-white/80 dark:bg-[#111827]/80 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)] px-5 py-3 transition-all">
-            <div className="relative flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="relative z-30 bg-white/80 dark:bg-[#111827]/80 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)] px-3 sm:px-5 py-2.5 sm:py-3 transition-all">
+            <div className="relative flex flex-col md:flex-row items-center justify-between gap-2.5 sm:gap-4">
 
               {/* Left: Filter Controls Capsule */}
-              <div className="flex items-center gap-3 flex-wrap justify-start w-full md:w-auto relative z-20">
-                <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mr-1">
+              <div className="grid grid-cols-2 gap-2 w-full md:w-auto md:flex md:items-center md:gap-2.5 relative z-20">
+                <div className="hidden md:flex items-center gap-1.5 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mr-1">
                   <Filter className="w-3.5 h-3.5" />
                   <span>Filters</span>
                 </div>
@@ -508,9 +520,9 @@ export default function GeospatialMap() {
               </div>
 
               {/* Center: Apple Segmented Layer Toggle Capsule (Heatmap, Pins, Borders) */}
-              <div className="md:absolute md:left-1/2 md:-translate-x-1/2 flex items-center justify-center relative z-10 w-full md:w-auto">
-                <div className="inline-flex items-center gap-1 p-1 bg-slate-100/80 dark:bg-slate-800/80 backdrop-blur-md rounded-2xl border border-slate-200/60 dark:border-white/5 shadow-inner">
-                  <div className="flex items-center gap-1 px-2 py-1 text-slate-400 dark:text-slate-500">
+              <div className="w-full md:w-auto flex items-center justify-between md:justify-center md:absolute md:left-1/2 md:-translate-x-1/2 relative z-10">
+                <div className="inline-flex items-center gap-0.5 sm:gap-1 p-1 bg-slate-100/80 dark:bg-slate-800/80 backdrop-blur-md rounded-2xl border border-slate-200/60 dark:border-white/5 shadow-inner">
+                  <div className="flex items-center gap-1 px-1.5 sm:px-2 py-1 text-slate-400 dark:text-slate-500">
                     <Layers className="w-3.5 h-3.5" />
                     <span className="text-[11px] font-semibold uppercase tracking-wider hidden sm:inline">Layers</span>
                   </div>
@@ -533,9 +545,16 @@ export default function GeospatialMap() {
                     onClick={() => toggleLayer('boundaries')}
                   />
                 </div>
+
+                {/* Plotted chip on mobile — right aligned with layers */}
+                <div className="flex md:hidden items-center gap-1 text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                  <span className="px-2 py-1 rounded-xl bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200/50 dark:border-slate-700/50 tabular-nums">
+                    <strong className="text-slate-800 dark:text-slate-200 font-bold">{pinReports.length}</strong> Plotted
+                  </span>
+                </div>
               </div>
 
-              {/* Right: Plotted count chip for balanced symmetry */}
+              {/* Right: Plotted count chip for balanced symmetry on desktop */}
               <div className="hidden md:flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400">
                 <span className="px-2.5 py-1 rounded-xl bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200/50 dark:border-slate-700/50 tabular-nums">
                   <strong className="text-slate-800 dark:text-slate-200">{pinReports.length}</strong> Plotted
@@ -546,7 +565,7 @@ export default function GeospatialMap() {
         </div>
 
         {/* ── Map + Side Panel ── */}
-        <div className="flex-1 min-h-0 flex flex-row relative h-full">
+        <div className="flex-1 min-h-[340px] sm:min-h-[440px] lg:min-h-0 h-[calc(100dvh-18rem-env(safe-area-inset-bottom,0px))] lg:h-full flex flex-row relative">
 
           {/* Desktop Sidebar (inline, animated width & margin) */}
           <AnimatePresence initial={false}>
@@ -582,14 +601,14 @@ export default function GeospatialMap() {
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.2, ease: 'easeOut' }}
                   onClick={() => setDrawerOpen(false)}
-                  className="fixed inset-0 z-40 bg-black/40 backdrop-blur-xs"
+                  className="fixed inset-0 z-[140] bg-black/50 backdrop-blur-xs"
                 />
                 <motion.div
                   initial={{ x: '-100%' }}
                   animate={{ x: 0 }}
                   exit={{ x: '-100%' }}
                   transition={PANEL_TRANSITION}
-                  className="fixed inset-y-0 left-0 z-50 w-[min(320px,85vw)] bg-white/95 dark:bg-[#111827]/95 backdrop-blur-2xl shadow-2xl border-r border-slate-200/80 dark:border-white/10 flex flex-col overflow-hidden"
+                  className="fixed inset-y-0 left-0 z-[150] w-[min(340px,85vw)] bg-white dark:bg-[#111827] shadow-2xl border-r border-slate-200/80 dark:border-white/10 flex flex-col overflow-hidden pt-[max(env(safe-area-inset-top),0.75rem)] pb-[max(env(safe-area-inset-bottom),1.5rem)]"
                 >
                   <IncidentSidebarContent
                     count={drawerReports.length}
@@ -606,7 +625,7 @@ export default function GeospatialMap() {
           </AnimatePresence>
 
           {/* Map Shell Container — White Card Shell with Framed Placeholder */}
-          <div className="flex-1 min-w-0 h-full bg-white/80 dark:bg-[#111827]/80 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] p-3 sm:p-3.5 flex flex-col overflow-hidden min-h-0 relative transform-gpu">
+          <div className="flex-1 min-w-0 h-full bg-white/80 dark:bg-[#111827]/80 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] p-2.5 sm:p-3.5 flex flex-col overflow-hidden min-h-0 relative transform-gpu">
             <div className="relative flex-1 min-h-0 w-full rounded-xl overflow-hidden border border-slate-200/70 dark:border-white/10 shadow-inner bg-slate-100 dark:bg-slate-900">
 
               {/* Drawer re-open button (Apple Floating Capsule) */}
@@ -618,11 +637,14 @@ export default function GeospatialMap() {
                     exit={{ opacity: 0, scale: 0.92, x: -8 }}
                     transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
                     onClick={() => setDrawerOpen(true)}
-                    className="absolute left-3 top-3 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/95 dark:bg-[#111827]/95 backdrop-blur-xl shadow-md border border-slate-200/80 dark:border-white/10 text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-800 transition-all active:scale-[0.95] text-xs font-semibold cursor-pointer"
+                    className="absolute left-3 top-3 z-20 flex items-center gap-2 px-3 py-1.5 sm:py-2 rounded-xl bg-white/95 dark:bg-[#111827]/95 backdrop-blur-xl shadow-md border border-slate-200/80 dark:border-white/10 text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-800 transition-all active:scale-[0.95] text-xs font-semibold cursor-pointer"
                     title="Show incident list"
                   >
-                    <ChevronRight className="w-4 h-4 text-[#0071E3]" />
-                    <span>Show Incidents</span>
+                    <Navigation className="w-3.5 h-3.5 text-[#0071E3]" />
+                    <span>Incidents</span>
+                    <span className="px-1.5 py-0.5 rounded-full bg-blue-500/10 text-[#0071E3] dark:text-blue-400 font-bold text-[10px] tabular-nums">
+                      {drawerReports.length}
+                    </span>
                   </motion.button>
                 )}
               </AnimatePresence>
