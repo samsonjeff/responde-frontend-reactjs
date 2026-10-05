@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Filter, X, Eye, ChevronLeft, ChevronRight,
   Clock, User, Phone, MessageSquare,
   CheckCircle2, AlertTriangle, RotateCcw, Send,
-  ShieldCheck, FileText, AlertOctagon, MapPinned,
+  ShieldCheck, FileText, AlertOctagon, MapPinned, Bot,
 } from 'lucide-react';
 import DatePicker from '../components/DatePicker';
 import FilterDropdown from '../components/DropDown';
@@ -14,6 +14,15 @@ import PageLoader from '../components/PageLoader';
 import PageTransition from '../components/Transition';
 
 import { fetchReports, subscribeToReports, type Report, type ReportStatus } from '../services/incidentService';
+import { useBotConversations, type BotMessage } from '../context/BotConversationsContext';
+
+const formatBubbleTime = (iso?: string) => {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime())
+    ? ''
+    : d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+};
 
 // ── Apple Design Spring Physics & Ease curves ──
 const APPLE_SPRING = { type: 'spring', stiffness: 340, damping: 34, mass: 0.8 } as const;
@@ -234,6 +243,25 @@ export default function IncidentReports() {
 
   const itemsPerPage = 10;
 
+  // ── Bot conversation thread for the review modal (existing context data) ──
+  const { conversations: botConversations } = useBotConversations();
+  const isBotReport = reviewingReport?.source === 'Bot';
+  const isScraperReport = reviewingReport?.source === 'Scraper';
+  const botThread = useMemo<BotMessage[]>(() => {
+    if (!reviewingReport || reviewingReport.source !== 'Bot') return [];
+    if (reviewingReport.threadMessages && reviewingReport.threadMessages.length > 0) {
+      return reviewingReport.threadMessages;
+    }
+    const reportTime = new Date(reviewingReport.createdAt).getTime();
+    const sessions = botConversations.filter((c) => c.psid === reviewingReport.senderPsid);
+    const session =
+      sessions.find((c) => c.messages.some((m) => m.timestamp && new Date(m.timestamp).getTime() === reportTime)) ??
+      sessions[0];
+    if (session && session.messages.length > 0) return session.messages;
+    // Fallback: only the single message stored on the report
+    return [{ sender: 'user', text: reviewingReport.originalText, timestamp: reviewingReport.createdAt }];
+  }, [reviewingReport, botConversations]);
+
   const tabs = [
     { key: 'under_review' as const, label: 'Under Review', count: reports.filter(r => r.status === 'under_review').length },
     { key: 'verified' as const, label: 'Verified', count: reports.filter(r => r.status === 'verified').length },
@@ -305,14 +333,17 @@ export default function IncidentReports() {
 
   const handleVerify = () => {
     if (!reviewingReport || !editForm) return;
-    const coords = editForm.coordinates || '';
-    if (!validateCoordinates(coords)) {
-      setCoordError(true);
-      setShakeKey(prev => prev + 1);
-      showToast('Invalid coordinates format. Use: lat, lng', 'error');
-      return;
+    const hasCoordinatesField = reviewingReport.source !== 'Bot' && reviewingReport.source !== 'Scraper';
+    if (hasCoordinatesField) {
+      const coords = editForm.coordinates || '';
+      if (!validateCoordinates(coords)) {
+        setCoordError(true);
+        setShakeKey(prev => prev + 1);
+        showToast('Invalid coordinates format. Use: lat, lng', 'error');
+        return;
+      }
+      setCoordError(false);
     }
-    setCoordError(false);
     const now = new Date().toLocaleString('en-US', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
     setReports(prev => prev.map(r => r.id === reviewingReport.id ? {
       ...r,
@@ -322,7 +353,7 @@ export default function IncidentReports() {
       verifiedAt: now,
       rejectionReason: null,
     } as Report : r));
-    showToast(`Report #${reviewingReport.id} verified and plotted on map`, 'success');
+    showToast(hasCoordinatesField ? `Report #${reviewingReport.id} verified and plotted on map` : `Report #${reviewingReport.id} verified`, 'success');
     closeReview();
   };
 
@@ -820,32 +851,87 @@ export default function IncidentReports() {
                         {/* LEFT: Original Report */}
                         <div className="space-y-3">
                           <div className="flex items-center gap-2 text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                            <FileText className="w-3.5 h-3.5" /> Original Report
+                            {isBotReport ? <Bot className="w-3.5 h-3.5" /> : <FileText className="w-3.5 h-3.5" />} {isBotReport ? 'Bot Conversation' : 'Original Report'}
                           </div>
 
-                          <div className="bg-slate-50/80 dark:bg-slate-800/40 rounded-2xl p-4.5 border border-slate-200/60 dark:border-slate-700/60 space-y-3.5">
-                            <p className="text-sm text-slate-700 dark:text-slate-200 italic leading-relaxed">
-                              &quot;{reviewingReport.originalText}&quot;
-                            </p>
-                            <div className="pt-3 border-t border-slate-200/60 dark:border-slate-700/60 grid grid-cols-2 gap-2.5 text-xs">
-                              <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
-                                <User className="w-3.5 h-3.5 text-slate-400" />
-                                <span className="truncate">{reviewingReport.reporter}</span>
+                          {isBotReport ? (
+                            <div className="bg-slate-50/80 dark:bg-slate-800/40 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 overflow-hidden flex flex-col">
+                              {/* Header row: user, source, date */}
+                              <div className="flex items-center justify-between gap-2 px-4 py-2.5 border-b border-slate-200/60 dark:border-slate-700/60 text-xs text-slate-600 dark:text-slate-300">
+                                <span className="flex items-center gap-1.5 min-w-0">
+                                  <User className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                  <span className="truncate font-semibold">{reviewingReport.reporter}</span>
+                                </span>
+                                <span className="flex items-center gap-1.5 shrink-0">
+                                  <MessageSquare className="w-3.5 h-3.5 text-slate-400" />
+                                  {reviewingReport.source}
+                                </span>
+                                <span className="flex items-center gap-1.5 shrink-0">
+                                  <Clock className="w-3.5 h-3.5 text-slate-400" />
+                                  {reviewingReport.time}
+                                </span>
                               </div>
-                              <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
-                                <Phone className="w-3.5 h-3.5 text-slate-400" />
-                                <span className="truncate">{reviewingReport.contact}</span>
-                              </div>
-                              <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
-                                <MessageSquare className="w-3.5 h-3.5 text-slate-400" />
-                                <span className="truncate">{reviewingReport.source}</span>
-                              </div>
-                              <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
-                                <Clock className="w-3.5 h-3.5 text-slate-400" />
-                                <span className="truncate">{reviewingReport.time}</span>
+
+                              {/* Scrollable chat thread */}
+                              <div className="h-72 overflow-y-auto p-4 space-y-3 bg-slate-50/40 dark:bg-[#0B0F17]/40">
+                                {botThread.map((msg, idx) =>
+                                  msg.sender === 'bot' ? (
+                                    <div key={idx} className="flex items-end gap-2 justify-end">
+                                      <div className="flex flex-col items-end max-w-[82%]">
+                                        <div className="bg-[#0071E3] text-white rounded-[20px] rounded-br-[4px] px-4 py-2.5 shadow-[0_2px_10px_rgba(0,113,227,0.22)]">
+                                          <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.text}</p>
+                                        </div>
+                                        <span className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 mr-1 font-medium">
+                                          {formatBubbleTime(msg.timestamp)}
+                                        </span>
+                                      </div>
+                                      <div className="w-7 h-7 rounded-full bg-blue-100 dark:bg-blue-950 flex items-center justify-center text-[11px] font-bold text-[#0071E3] dark:text-blue-400 shrink-0 mb-4 ring-1 ring-blue-500/20">
+                                        <Bot className="w-3.5 h-3.5" />
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <div key={idx} className="flex items-end gap-2 justify-start">
+                                      <div className="w-7 h-7 rounded-full bg-slate-500 flex items-center justify-center text-[10px] font-bold text-white shrink-0 mb-4 ring-1 ring-black/5">
+                                        {(reviewingReport.reporter || '?').trim().charAt(0).toUpperCase()}
+                                      </div>
+                                      <div className="flex flex-col items-start max-w-[82%]">
+                                        <div className="bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-100 rounded-[20px] rounded-bl-[4px] px-4 py-2.5">
+                                          <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.text}</p>
+                                        </div>
+                                        <span className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 ml-1 font-medium">
+                                          {formatBubbleTime(msg.timestamp)}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  )
+                                )}
                               </div>
                             </div>
-                          </div>
+                          ) : (
+                            <div className="bg-slate-50/80 dark:bg-slate-800/40 rounded-2xl p-4.5 border border-slate-200/60 dark:border-slate-700/60 space-y-3.5">
+                              <p className="text-sm text-slate-700 dark:text-slate-200 italic leading-relaxed">
+                                &quot;{reviewingReport.originalText}&quot;
+                              </p>
+                              <div className="pt-3 border-t border-slate-200/60 dark:border-slate-700/60 grid grid-cols-2 gap-2.5 text-xs">
+                                <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
+                                  <User className="w-3.5 h-3.5 text-slate-400" />
+                                  <span className="truncate">{reviewingReport.reporter}</span>
+                                </div>
+                                <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
+                                  <Phone className="w-3.5 h-3.5 text-slate-400" />
+                                  <span className="truncate">{reviewingReport.contact}</span>
+                                </div>
+                                <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
+                                  <MessageSquare className="w-3.5 h-3.5 text-slate-400" />
+                                  <span className="truncate">{reviewingReport.source}</span>
+                                </div>
+                                <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
+                                  <Clock className="w-3.5 h-3.5 text-slate-400" />
+                                  <span className="truncate">{reviewingReport.time}</span>
+                                </div>
+                              </div>
+                            </div>
+                          )}
 
                           {reviewingReport.verifiedBy && (
                             <div className="bg-emerald-500/10 rounded-xl p-3 border border-emerald-500/20">
@@ -924,34 +1010,49 @@ export default function IncidentReports() {
                               />
                             </div>
 
-                            <motion.div
-                              key={shakeKey}
-                              animate={coordError ? { x: [0, -6, 6, -6, 6, -3, 3, 0] } : { x: 0 }}
-                              transition={{ duration: 0.4, ease: 'easeInOut' }}
-                            >
-                              <label className="block text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400 mb-1">
-                                Coordinates (lat, lng)
-                                {coordError && (
-                                  <span className="ml-2 text-rose-500 font-normal lowercase">— invalid format</span>
-                                )}
-                              </label>
-                              <input
-                                type="text"
-                                value={editForm.coordinates || ''}
-                                onChange={e => {
-                                  const formatted = formatCoordinates(e.target.value);
-                                  setEditForm(prev => ({ ...prev, coordinates: formatted }));
-                                  if (coordError && validateCoordinates(formatted)) {
-                                    setCoordError(false);
-                                  }
-                                }}
-                                className={`w-full px-3.5 py-2 text-sm bg-white dark:bg-slate-800 border rounded-xl text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 outline-none font-mono transition-all ${coordError
-                                  ? 'border-rose-400 dark:border-rose-600 bg-rose-50 dark:bg-rose-900/10'
-                                  : 'border-slate-200 dark:border-slate-700'
-                                  }`}
-                                placeholder="14.0951, 121.0203"
-                              />
-                            </motion.div>
+                            {isBotReport ? (
+                              <div>
+                                <label className="block text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400 mb-1">
+                                  Phone Number
+                                </label>
+                                <input
+                                  type="text"
+                                  value={editForm.contact || ''}
+                                  onChange={e => setEditForm(prev => ({ ...prev, contact: e.target.value }))}
+                                  className="w-full px-3.5 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 outline-none font-mono transition-all"
+                                  placeholder="e.g. 0912-345-6789"
+                                />
+                              </div>
+                            ) : !isScraperReport ? (
+                              <motion.div
+                                key={shakeKey}
+                                animate={coordError ? { x: [0, -6, 6, -6, 6, -3, 3, 0] } : { x: 0 }}
+                                transition={{ duration: 0.4, ease: 'easeInOut' }}
+                              >
+                                <label className="block text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400 mb-1">
+                                  Coordinates (lat, lng)
+                                  {coordError && (
+                                    <span className="ml-2 text-rose-500 font-normal lowercase">— invalid format</span>
+                                  )}
+                                </label>
+                                <input
+                                  type="text"
+                                  value={editForm.coordinates || ''}
+                                  onChange={e => {
+                                    const formatted = formatCoordinates(e.target.value);
+                                    setEditForm(prev => ({ ...prev, coordinates: formatted }));
+                                    if (coordError && validateCoordinates(formatted)) {
+                                      setCoordError(false);
+                                    }
+                                  }}
+                                  className={`w-full px-3.5 py-2 text-sm bg-white dark:bg-slate-800 border rounded-xl text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 outline-none font-mono transition-all ${coordError
+                                    ? 'border-rose-400 dark:border-rose-600 bg-rose-50 dark:bg-rose-900/10'
+                                    : 'border-slate-200 dark:border-slate-700'
+                                    }`}
+                                  placeholder="14.0951, 121.0203"
+                                />
+                              </motion.div>
+                            ) : null}
                           </div>
                         </div>
                       </div>
@@ -966,7 +1067,14 @@ export default function IncidentReports() {
                           </h4>
                           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
                             {[
-                              { key: 'barangayCorrect', label: 'Barangay & coordinates verified' },
+                              {
+                                key: 'barangayCorrect',
+                                label: isBotReport
+                                  ? 'Barangay & phone number verified'
+                                  : isScraperReport
+                                    ? 'Barangay & location verified'
+                                    : 'Barangay & coordinates verified',
+                              },
                               { key: 'typeAccurate', label: 'Incident type is accurate' },
                               { key: 'locationReal', label: 'Location / landmark is real' },
                               { key: 'notDuplicate', label: 'Not a duplicate report' },
