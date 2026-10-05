@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { motion, AnimatePresence, useReducedMotion, type Variants } from 'framer-motion';
 import { Lock, User, Eye, EyeOff, AlertCircle, Mail, ArrowLeft, ArrowRight, RefreshCw, CheckCircle2, KeyRound } from 'lucide-react';
 import { useAuth, AuthError } from '../context/AuthContext';
 import { authService } from '../services/authService';
@@ -428,9 +429,91 @@ export default function Login() {
     setConfirmPassword('');
   };
 
+  const shouldReduceMotion = useReducedMotion();
+
+  // Animation variants
+  const cardVariants: Variants = {
+    hidden: {
+      opacity: 0,
+      y: shouldReduceMotion ? 0 : 20,
+      scale: shouldReduceMotion ? 1 : 0.98,
+    },
+    visible: {
+      opacity: 1,
+      y: 0,
+      scale: 1,
+      transition: {
+        duration: 0.45,
+        ease: [0.16, 1, 0.3, 1],
+      },
+    },
+  };
+
+  const stepVariants: Variants = {
+    hidden: {
+      opacity: 0,
+      x: shouldReduceMotion ? 0 : 16,
+    },
+    visible: {
+      opacity: 1,
+      x: 0,
+      transition: {
+        duration: 0.32,
+        ease: [0.16, 1, 0.3, 1],
+        staggerChildren: shouldReduceMotion ? 0 : 0.05,
+        delayChildren: shouldReduceMotion ? 0 : 0.04,
+      },
+    },
+    exit: {
+      opacity: 0,
+      x: shouldReduceMotion ? 0 : -16,
+      transition: {
+        duration: 0.2,
+        ease: [0.25, 1, 0.5, 1],
+      },
+    },
+  };
+
+  const formItemVariants: Variants = {
+    hidden: {
+      opacity: 0,
+      y: shouldReduceMotion ? 0 : 10,
+    },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.32,
+        ease: [0.16, 1, 0.3, 1],
+      },
+    },
+  };
+
+  const logoSpringVariants: Variants = {
+    hidden: {
+      opacity: 0,
+      scale: shouldReduceMotion ? 1 : 0.7,
+    },
+    visible: {
+      opacity: 1,
+      scale: 1,
+      transition: {
+        type: 'spring',
+        stiffness: 340,
+        damping: 20,
+        delay: 0.05,
+      },
+    },
+  };
+
   return (
     <main className="h-screen h-[100dvh] w-full flex items-center justify-center bg-slate-50/80 p-3 sm:p-4 md:p-6 overflow-y-auto select-none">
-      <div className="w-full max-w-md sm:max-w-lg md:max-w-3xl lg:max-w-4xl xl:max-w-5xl border border-slate-200/80 bg-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] rounded-2xl sm:rounded-3xl overflow-hidden my-auto">
+      <motion.div
+        variants={cardVariants}
+        initial="hidden"
+        animate="visible"
+        className="w-full max-w-md sm:max-w-lg md:max-w-3xl lg:max-w-4xl xl:max-w-5xl border border-slate-200/80 bg-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] rounded-2xl sm:rounded-3xl overflow-hidden my-auto"
+      >
         <div className="grid grid-cols-1 md:grid-cols-2 items-stretch gap-0">
 
           {/* LEFT SIDE --- Form */}
@@ -441,13 +524,20 @@ export default function Login() {
                 title="Return to Landing Page"
                 className="group flex flex-col items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 rounded-2xl p-1 transition-all"
               >
-                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full overflow-hidden shadow-md ring-2 ring-blue-500/20 group-hover:ring-blue-500/50 group-hover:shadow-lg group-hover:scale-105 active:scale-95 transition-all duration-200 bg-white flex items-center justify-center mb-2 sm:mb-2.5">
+                <motion.div
+                  variants={logoSpringVariants}
+                  initial="hidden"
+                  animate="visible"
+                  whileHover={{ scale: 1.06 }}
+                  whileTap={{ scale: 0.94 }}
+                  className="w-14 h-14 sm:w-16 sm:h-16 rounded-full overflow-hidden shadow-md ring-2 ring-blue-500/20 group-hover:ring-blue-500/50 group-hover:shadow-lg transition-all duration-200 bg-white flex items-center justify-center mb-2 sm:mb-2.5"
+                >
                   <img
                     src="/Responde_Logo.png"
                     alt="RESPONDE Logo"
                     className="w-full h-full object-cover"
                   />
-                </div>
+                </motion.div>
                 <h1 className="text-xl sm:text-2xl font-extrabold text-blue-800 tracking-wider group-hover:text-blue-600 transition-colors">
                   RESPONDE
                 </h1>
@@ -460,391 +550,461 @@ export default function Login() {
               </p>
             </div>
 
-            {errorMessage && (
-              <div className="mb-3 p-2.5 rounded-xl bg-red-50/90 border border-red-200/80 flex items-center gap-2 text-red-600 text-xs animate-in fade-in duration-200">
-                <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                <span>{errorMessage}</span>
-              </div>
-            )}
+            <AnimatePresence mode="wait">
+              {errorMessage && (
+                <motion.div
+                  key="error-alert"
+                  initial={{ opacity: 0, y: -8, scale: 0.98 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -8, scale: 0.98 }}
+                  transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+                  className="mb-3 p-2.5 rounded-xl bg-red-50/90 border border-red-200/80 flex items-center gap-2 text-red-600 text-xs shadow-xs"
+                >
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                  <span>{errorMessage}</span>
+                </motion.div>
+              )}
 
-            {infoMessage && (
-              <div className="mb-3 p-2.5 rounded-xl bg-blue-50/90 border border-blue-200/80 flex items-center gap-2 text-blue-700 text-xs animate-in fade-in duration-200">
-                <CheckCircle2 className="w-3.5 h-3.5 shrink-0 text-blue-600" />
-                <span>{infoMessage}</span>
-              </div>
-            )}
+              {infoMessage && (
+                <motion.div
+                  key="info-alert"
+                  initial={{ opacity: 0, y: -8, scale: 0.98 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -8, scale: 0.98 }}
+                  transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+                  className="mb-3 p-2.5 rounded-xl bg-blue-50/90 border border-blue-200/80 flex items-center gap-2 text-blue-700 text-xs shadow-xs"
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5 shrink-0 text-blue-600" />
+                  <span>{infoMessage}</span>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-            {/* STEP 1: CREDENTIALS */}
-            {step === 'credentials' && (
-              <>
-                <form onSubmit={handleCredentialsSubmit} className="space-y-2.5 sm:space-y-3">
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
-                      Email or Username
-                    </label>
-                    <div className="relative">
-                      <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-                      <input
-                        id="login-identifier"
-                        type="text"
-                        value={identifier}
-                        onChange={(e) => setIdentifier(e.target.value)}
-                        placeholder="e.g. mdrrmo@gmail.com or username"
-                        autoComplete="username"
-                        className="w-full pl-9 pr-4 py-2 sm:py-2.5 bg-slate-50/80 border border-slate-300 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-xs sm:text-sm min-h-[38px] sm:min-h-[40px]"
-                      />
-                    </div>
-                  </div>
+            {/* STEP TRANSITIONS */}
+            <AnimatePresence mode="wait">
+              {/* STEP 1: CREDENTIALS */}
+              {step === 'credentials' && (
+                <motion.div
+                  key="step-credentials"
+                  variants={stepVariants}
+                  initial="hidden"
+                  animate="visible"
+                  exit="exit"
+                >
+                  <form onSubmit={handleCredentialsSubmit} className="space-y-2.5 sm:space-y-3">
+                    <motion.div variants={formItemVariants}>
+                      <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
+                        Email or Username
+                      </label>
+                      <div className="relative">
+                        <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                        <input
+                          id="login-identifier"
+                          type="text"
+                          value={identifier}
+                          onChange={(e) => setIdentifier(e.target.value)}
+                          placeholder="e.g. mdrrmo@gmail.com or username"
+                          autoComplete="username"
+                          className="w-full pl-9 pr-4 py-2 sm:py-2.5 bg-slate-50/80 border border-slate-300 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-xs sm:text-sm min-h-[38px] sm:min-h-[40px]"
+                        />
+                      </div>
+                    </motion.div>
 
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
-                      Password
-                    </label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-                      <input
-                        id="login-password"
-                        type={showPassword ? 'text' : 'password'}
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder="••••••••"
-                        autoComplete="current-password"
-                        className="w-full pl-9 pr-9 py-2 sm:py-2.5 bg-slate-50/80 border border-slate-300 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-xs sm:text-sm min-h-[38px] sm:min-h-[40px]"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        aria-label={showPassword ? 'Hide password' : 'Show password'}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 transition-colors"
+                    <motion.div variants={formItemVariants}>
+                      <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
+                        Password
+                      </label>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                        <input
+                          id="login-password"
+                          type={showPassword ? 'text' : 'password'}
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          placeholder="••••••••"
+                          autoComplete="current-password"
+                          className="w-full pl-9 pr-9 py-2 sm:py-2.5 bg-slate-50/80 border border-slate-300 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-xs sm:text-sm min-h-[38px] sm:min-h-[40px]"
+                        />
+                        <motion.button
+                          type="button"
+                          whileTap={{ scale: 0.88 }}
+                          onClick={() => setShowPassword(!showPassword)}
+                          aria-label={showPassword ? 'Hide password' : 'Show password'}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 transition-colors cursor-pointer"
+                        >
+                          {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </motion.button>
+                      </div>
+                    </motion.div>
+
+                    <motion.div variants={formItemVariants} className="flex justify-end pt-0.5">
+                      <span
+                        onClick={handleOpenForgotPassword}
+                        className="text-xs text-blue-600 hover:text-blue-800 hover:underline cursor-pointer transition-colors"
                       >
-                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </button>
-                    </div>
-                  </div>
+                        Forgot Password?
+                      </span>
+                    </motion.div>
 
-                  <div className="flex justify-end pt-0.5">
-                    <span
-                      onClick={handleOpenForgotPassword}
-                      className="text-xs text-blue-600 hover:text-blue-800 hover:underline cursor-pointer transition-colors"
+                    <motion.div variants={formItemVariants}>
+                      <motion.button
+                        id="login-submit"
+                        type="submit"
+                        disabled={isLoading}
+                        whileHover={!isLoading ? { scale: 1.01 } : undefined}
+                        whileTap={!isLoading ? { scale: 0.985 } : undefined}
+                        className="w-full py-2.5 sm:py-3 px-4 bg-gradient-to-r from-blue-700 to-blue-900 hover:from-blue-600 hover:to-blue-800 text-white font-semibold rounded-xl shadow-md shadow-blue-700/20 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all disabled:opacity-50 text-xs sm:text-sm min-h-[40px] sm:min-h-[42px] cursor-pointer"
+                      >
+                        {isLoading ? 'Authenticating...' : 'Sign In to Dashboard'}
+                      </motion.button>
+                    </motion.div>
+                  </form>
+
+                  {/* Divider */}
+                  <motion.div variants={formItemVariants} className="relative my-2.5 sm:my-3">
+                    <div className="absolute inset-0 flex items-center">
+                      <div className="w-full border-t border-slate-200" />
+                    </div>
+                    <div className="relative flex justify-center text-xs">
+                      <span className="bg-white px-3 text-slate-400 uppercase tracking-wider text-[10px]">
+                        or
+                      </span>
+                    </div>
+                  </motion.div>
+
+                  {/* Google Sign In (Direct OAuth without OTP) */}
+                  <motion.div variants={formItemVariants}>
+                    <motion.button
+                      id="login-google"
+                      type="button"
+                      whileHover={{ scale: 1.01, backgroundColor: '#f8fafc' }}
+                      whileTap={{ scale: 0.985 }}
+                      onClick={() => loginWithGoogle().catch((err) => {
+                        setErrorMessage(err instanceof Error ? err.message : 'Google sign-in failed.');
+                      })}
+                      className="w-full py-2 sm:py-2.5 px-4 flex items-center justify-center gap-2.5 bg-white border border-slate-300 hover:bg-slate-50/80 rounded-xl text-xs sm:text-sm font-medium text-slate-700 transition-colors min-h-[38px] sm:min-h-[40px] cursor-pointer"
                     >
-                      Forgot Password?
-                    </span>
-                  </div>
+                      <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" />
+                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                      </svg>
+                      <span>Sign in with Google</span>
+                    </motion.button>
+                  </motion.div>
+                </motion.div>
+              )}
 
-                  <button
-                    id="login-submit"
-                    type="submit"
-                    disabled={isLoading}
-                    className="w-full py-2.5 sm:py-3 px-4 bg-gradient-to-r from-blue-700 to-blue-900 hover:from-blue-600 hover:to-blue-800 text-white font-semibold rounded-xl shadow-md shadow-blue-700/20 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all transform active:scale-[0.99] disabled:opacity-50 text-xs sm:text-sm min-h-[40px] sm:min-h-[42px] cursor-pointer"
-                  >
-                    {isLoading ? 'Authenticating...' : 'Sign In to Dashboard'}
-                  </button>
-                </form>
-
-                {/* Divider */}
-                <div className="relative my-2.5 sm:my-3">
-                  <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-slate-200" />
-                  </div>
-                  <div className="relative flex justify-center text-xs">
-                    <span className="bg-white px-3 text-slate-400 uppercase tracking-wider text-[10px]">
-                      or
-                    </span>
-                  </div>
-                </div>
-
-                {/* Google Sign In (Direct OAuth without OTP) */}
-                <button
-                  id="login-google"
-                  type="button"
-                  onClick={() => loginWithGoogle().catch((err) => {
-                    setErrorMessage(err instanceof Error ? err.message : 'Google sign-in failed.');
-                  })}
-                  className="w-full py-2 sm:py-2.5 px-4 flex items-center justify-center gap-2.5 bg-white border border-slate-300 hover:bg-slate-50/80 rounded-xl text-xs sm:text-sm font-medium text-slate-700 transition-colors min-h-[38px] sm:min-h-[40px] cursor-pointer"
+              {/* STEP 2: EMAIL VERIFICATION CODE (LOGIN OTP) */}
+              {step === 'otp' && (
+                <motion.div
+                  key="step-otp"
+                  variants={stepVariants}
+                  initial="hidden"
+                  animate="visible"
+                  exit="exit"
+                  className="space-y-4"
                 >
-                  <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
-                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" />
-                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
-                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
-                  </svg>
-                  <span>Sign in with Google</span>
-                </button>
-              </>
-            )}
-
-            {/* STEP 2: EMAIL VERIFICATION CODE (LOGIN OTP) */}
-            {step === 'otp' && (
-              <div className="space-y-4 animate-in fade-in slide-in-from-right-3 duration-200">
-                <div className="bg-blue-50/80 border border-blue-200/80 rounded-xl p-3 text-center">
-                  <div className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-700 mb-1.5">
-                    <Mail className="w-4 h-4" />
-                  </div>
-                  <h3 className="text-xs sm:text-sm font-bold text-blue-900">
-                    Step 2: Enter Verification Code
-                  </h3>
-                  <p className="text-[11px] text-blue-700/90 mt-0.5">
-                    Enter the 6-digit code sent to <strong className="font-semibold">{maskedEmail}</strong>
-                  </p>
-                </div>
-
-                <div className="flex justify-between gap-1.5 sm:gap-2" onPaste={handleOtpPaste}>
-                  {otpDigits.map((digit, idx) => (
-                    <input
-                      key={idx}
-                      ref={(el) => { otpInputRefs.current[idx] = el; }}
-                      type="text"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      maxLength={1}
-                      value={digit}
-                      disabled={isLoading}
-                      onChange={(e) => handleOtpDigitChange(idx, e.target.value)}
-                      onKeyDown={(e) => handleOtpKeyDown(idx, e)}
-                      className={`w-10 h-12 sm:w-11 sm:h-13 text-center text-lg sm:text-xl font-bold rounded-xl border transition-all focus:outline-none focus:ring-2 ${
-                        digit
-                          ? 'border-blue-600 bg-blue-50/30 text-blue-900 font-extrabold'
-                          : 'border-slate-300 bg-slate-50/60 text-slate-800'
-                      } focus:ring-blue-500/20 focus:border-blue-500`}
-                    />
-                  ))}
-                </div>
-
-                <div className="flex items-center justify-between text-xs pt-1">
-                  <span className="text-slate-400 text-[11px]">
-                    Expires in 10 minutes
-                  </span>
-                  <button
-                    type="button"
-                    disabled={!canResend || isResending}
-                    onClick={handleResendOtp}
-                    className="flex items-center gap-1 font-semibold text-blue-600 hover:text-blue-800 hover:underline disabled:opacity-50 disabled:no-underline cursor-pointer disabled:cursor-not-allowed text-[11px]"
-                  >
-                    <RefreshCw className={`w-3 h-3 ${isResending ? 'animate-spin' : ''}`} />
-                    {canResend ? 'Resend Code' : `Resend in ${resendCooldown}s`}
-                  </button>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => handleOtpSubmit()}
-                  disabled={isLoading || otpDigits.join('').length < 6}
-                  className="w-full py-2.5 sm:py-3 px-4 bg-gradient-to-r from-blue-700 to-blue-900 hover:from-blue-600 hover:to-blue-800 text-white font-semibold rounded-xl shadow-md shadow-blue-700/20 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all flex items-center justify-center gap-2 disabled:opacity-50 text-xs sm:text-sm min-h-[40px] sm:min-h-[42px] cursor-pointer disabled:cursor-not-allowed"
-                >
-                  {isLoading ? 'Verifying Code...' : (
-                    <>
-                      <span>Verify &amp; Enter Dashboard</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </>
-                  )}
-                </button>
-
-                <div className="text-center pt-1">
-                  <button
-                    type="button"
-                    onClick={handleBackToCredentials}
-                    className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-700 transition-colors cursor-pointer"
-                  >
-                    <ArrowLeft className="w-3.5 h-3.5" />
-                    <span>Back to credentials</span>
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* STEP: FORGOT PASSWORD REQUEST */}
-            {step === 'forgot_request' && (
-              <div className="space-y-3.5 animate-in fade-in slide-in-from-right-3 duration-200">
-                <div className="bg-blue-50/80 border border-blue-200/80 rounded-xl p-3 text-center">
-                  <div className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-700 mb-1.5">
-                    <KeyRound className="w-4 h-4" />
-                  </div>
-                  <h3 className="text-xs sm:text-sm font-bold text-blue-900">
-                    Reset Your Password
-                  </h3>
-                  <p className="text-[11px] text-blue-700/90 mt-0.5">
-                    Enter your email or username. We'll send a 6-digit verification code to reset your password.
-                  </p>
-                </div>
-
-                <form onSubmit={handleForgotRequestSubmit} className="space-y-3">
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
-                      Email or Username
-                    </label>
-                    <div className="relative">
-                      <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-                      <input
-                        type="text"
-                        value={forgotIdentifier}
-                        onChange={(e) => setForgotIdentifier(e.target.value)}
-                        placeholder="e.g. mdrrmo@gmail.com or username"
-                        autoComplete="username"
-                        autoFocus
-                        required
-                        className="w-full pl-9 pr-4 py-2 sm:py-2.5 bg-slate-50/80 border border-slate-300 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-xs sm:text-sm min-h-[38px] sm:min-h-[40px]"
-                      />
+                  <motion.div variants={formItemVariants} className="bg-blue-50/80 border border-blue-200/80 rounded-xl p-3 text-center">
+                    <div className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-700 mb-1.5 shadow-xs">
+                      <Mail className="w-4 h-4" />
                     </div>
-                  </div>
+                    <h3 className="text-xs sm:text-sm font-bold text-blue-900">
+                      Step 2: Enter Verification Code
+                    </h3>
+                    <p className="text-[11px] text-blue-700/90 mt-0.5">
+                      Enter the 6-digit code sent to <strong className="font-semibold">{maskedEmail}</strong>
+                    </p>
+                  </motion.div>
 
-                  <button
-                    type="submit"
-                    disabled={isLoading}
-                    className="w-full py-2.5 sm:py-3 px-4 bg-gradient-to-r from-blue-700 to-blue-900 hover:from-blue-600 hover:to-blue-800 text-white font-semibold rounded-xl shadow-md shadow-blue-700/20 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all flex items-center justify-center gap-2 disabled:opacity-50 text-xs sm:text-sm min-h-[40px] sm:min-h-[42px] cursor-pointer disabled:cursor-not-allowed"
-                  >
-                    {isLoading ? 'Sending Code...' : (
-                      <>
-                        <span>Send Verification Code</span>
-                        <ArrowRight className="w-4 h-4" />
-                      </>
-                    )}
-                  </button>
-                </form>
-
-                <div className="text-center pt-1">
-                  <button
-                    type="button"
-                    onClick={handleBackToCredentials}
-                    className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-700 transition-colors cursor-pointer"
-                  >
-                    <ArrowLeft className="w-3.5 h-3.5" />
-                    <span>Back to sign in</span>
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* STEP: FORGOT PASSWORD RESET */}
-            {step === 'forgot_reset' && (
-              <form onSubmit={handleForgotResetSubmit} className="space-y-3 animate-in fade-in slide-in-from-right-3 duration-200">
-                <div className="bg-blue-50/80 border border-blue-200/80 rounded-xl p-2.5 text-center">
-                  <div className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-blue-100 text-blue-700 mb-1">
-                    <Mail className="w-3.5 h-3.5" />
-                  </div>
-                  <h3 className="text-xs sm:text-sm font-bold text-blue-900">
-                    Enter Verification Code &amp; New Password
-                  </h3>
-                  <p className="text-[11px] text-blue-700/90 mt-0.5">
-                    Sent to <strong className="font-semibold">{forgotMaskedEmail}</strong>
-                  </p>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
-                    6-Digit Code
-                  </label>
-                  <div className="flex justify-between gap-1.5 sm:gap-2" onPaste={handleForgotOtpPaste}>
-                    {forgotOtpDigits.map((digit, idx) => (
+                  <motion.div variants={formItemVariants} className="flex justify-between gap-1.5 sm:gap-2" onPaste={handleOtpPaste}>
+                    {otpDigits.map((digit, idx) => (
                       <input
                         key={idx}
-                        ref={(el) => { forgotOtpRefs.current[idx] = el; }}
+                        ref={(el) => { otpInputRefs.current[idx] = el; }}
                         type="text"
                         inputMode="numeric"
                         pattern="[0-9]*"
                         maxLength={1}
                         value={digit}
                         disabled={isLoading}
-                        onChange={(e) => handleForgotOtpDigitChange(idx, e.target.value)}
-                        onKeyDown={(e) => handleForgotOtpKeyDown(idx, e)}
-                        className={`w-10 h-10 sm:w-11 sm:h-11 text-center text-lg sm:text-xl font-bold rounded-xl border transition-all focus:outline-none focus:ring-2 ${
+                        onChange={(e) => handleOtpDigitChange(idx, e.target.value)}
+                        onKeyDown={(e) => handleOtpKeyDown(idx, e)}
+                        className={`w-10 h-12 sm:w-11 sm:h-13 text-center text-lg sm:text-xl font-bold rounded-xl border transition-all focus:outline-none focus:ring-2 ${
                           digit
-                            ? 'border-blue-600 bg-blue-50/30 text-blue-900 font-extrabold'
+                            ? 'border-blue-600 bg-blue-50/30 text-blue-900 font-extrabold shadow-xs'
                             : 'border-slate-300 bg-slate-50/60 text-slate-800'
                         } focus:ring-blue-500/20 focus:border-blue-500`}
                       />
                     ))}
-                  </div>
-                  <div className="flex items-center justify-between text-xs pt-1">
-                    <span className="text-slate-400 text-[10px] sm:text-[11px]">
+                  </motion.div>
+
+                  <motion.div variants={formItemVariants} className="flex items-center justify-between text-xs pt-1">
+                    <span className="text-slate-400 text-[11px]">
                       Expires in 10 minutes
                     </span>
                     <button
                       type="button"
-                      disabled={!canResendForgot || isResendingForgot}
-                      onClick={handleForgotResendOtp}
+                      disabled={!canResend || isResending}
+                      onClick={handleResendOtp}
                       className="flex items-center gap-1 font-semibold text-blue-600 hover:text-blue-800 hover:underline disabled:opacity-50 disabled:no-underline cursor-pointer disabled:cursor-not-allowed text-[11px]"
                     >
-                      <RefreshCw className={`w-3 h-3 ${isResendingForgot ? 'animate-spin' : ''}`} />
-                      {canResendForgot ? 'Resend Code' : `Resend in ${forgotCooldown}s`}
+                      <RefreshCw className={`w-3 h-3 ${isResending ? 'animate-spin' : ''}`} />
+                      {canResend ? 'Resend Code' : `Resend in ${resendCooldown}s`}
                     </button>
-                  </div>
-                </div>
+                  </motion.div>
 
-                <div className="space-y-2">
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
-                      New Password
-                    </label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-                      <input
-                        type={showNewPassword ? 'text' : 'password'}
-                        value={newPassword}
-                        onChange={(e) => setNewPassword(e.target.value)}
-                        placeholder="At least 6 characters"
-                        required
-                        className="w-full pl-9 pr-9 py-2 bg-slate-50/80 border border-slate-300 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-xs sm:text-sm min-h-[38px]"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowNewPassword(!showNewPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer"
-                      >
-                        {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </button>
-                    </div>
-                  </div>
+                  <motion.div variants={formItemVariants}>
+                    <motion.button
+                      type="button"
+                      onClick={() => handleOtpSubmit()}
+                      disabled={isLoading || otpDigits.join('').length < 6}
+                      whileHover={!isLoading && otpDigits.join('').length === 6 ? { scale: 1.01 } : undefined}
+                      whileTap={!isLoading && otpDigits.join('').length === 6 ? { scale: 0.985 } : undefined}
+                      className="w-full py-2.5 sm:py-3 px-4 bg-gradient-to-r from-blue-700 to-blue-900 hover:from-blue-600 hover:to-blue-800 text-white font-semibold rounded-xl shadow-md shadow-blue-700/20 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all flex items-center justify-center gap-2 disabled:opacity-50 text-xs sm:text-sm min-h-[40px] sm:min-h-[42px] cursor-pointer disabled:cursor-not-allowed"
+                    >
+                      {isLoading ? 'Verifying Code...' : (
+                        <>
+                          <span>Verify &amp; Enter Dashboard</span>
+                          <ArrowRight className="w-4 h-4" />
+                        </>
+                      )}
+                    </motion.button>
+                  </motion.div>
 
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
-                      Confirm New Password
-                    </label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-                      <input
-                        type={showConfirmPassword ? 'text' : 'password'}
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        placeholder="Re-enter new password"
-                        required
-                        className="w-full pl-9 pr-9 py-2 bg-slate-50/80 border border-slate-300 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-xs sm:text-sm min-h-[38px]"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer"
-                      >
-                        {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </button>
-                    </div>
-                  </div>
-                </div>
+                  <motion.div variants={formItemVariants} className="text-center pt-1">
+                    <button
+                      type="button"
+                      onClick={handleBackToCredentials}
+                      className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-700 transition-colors cursor-pointer"
+                    >
+                      <ArrowLeft className="w-3.5 h-3.5" />
+                      <span>Back to credentials</span>
+                    </button>
+                  </motion.div>
+                </motion.div>
+              )}
 
-                <button
-                  type="submit"
-                  disabled={isLoading || forgotOtpDigits.join('').length < 6 || !newPassword}
-                  className="w-full py-2.5 sm:py-3 px-4 bg-gradient-to-r from-blue-700 to-blue-900 hover:from-blue-600 hover:to-blue-800 text-white font-semibold rounded-xl shadow-md shadow-blue-700/20 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all flex items-center justify-center gap-2 disabled:opacity-50 text-xs sm:text-sm min-h-[40px] sm:min-h-[42px] cursor-pointer disabled:cursor-not-allowed"
+              {/* STEP: FORGOT PASSWORD REQUEST */}
+              {step === 'forgot_request' && (
+                <motion.div
+                  key="step-forgot-request"
+                  variants={stepVariants}
+                  initial="hidden"
+                  animate="visible"
+                  exit="exit"
+                  className="space-y-3.5"
                 >
-                  {isLoading ? 'Resetting Password...' : (
-                    <>
-                      <span>Reset Password &amp; Sign In</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </>
-                  )}
-                </button>
+                  <motion.div variants={formItemVariants} className="bg-blue-50/80 border border-blue-200/80 rounded-xl p-3 text-center">
+                    <div className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-700 mb-1.5 shadow-xs">
+                      <KeyRound className="w-4 h-4" />
+                    </div>
+                    <h3 className="text-xs sm:text-sm font-bold text-blue-900">
+                      Reset Your Password
+                    </h3>
+                    <p className="text-[11px] text-blue-700/90 mt-0.5">
+                      Enter your email or username. We'll send a 6-digit verification code to reset your password.
+                    </p>
+                  </motion.div>
 
-                <div className="text-center pt-0.5">
-                  <button
-                    type="button"
-                    onClick={handleBackToCredentials}
-                    className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-700 transition-colors cursor-pointer"
-                  >
-                    <ArrowLeft className="w-3.5 h-3.5" />
-                    <span>Back to sign in</span>
-                  </button>
-                </div>
-              </form>
-            )}
+                  <form onSubmit={handleForgotRequestSubmit} className="space-y-3">
+                    <motion.div variants={formItemVariants}>
+                      <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
+                        Email or Username
+                      </label>
+                      <div className="relative">
+                        <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                        <input
+                          type="text"
+                          value={forgotIdentifier}
+                          onChange={(e) => setForgotIdentifier(e.target.value)}
+                          placeholder="e.g. mdrrmo@gmail.com or username"
+                          autoComplete="username"
+                          autoFocus
+                          required
+                          className="w-full pl-9 pr-4 py-2 sm:py-2.5 bg-slate-50/80 border border-slate-300 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-xs sm:text-sm min-h-[38px] sm:min-h-[40px]"
+                        />
+                      </div>
+                    </motion.div>
+
+                    <motion.div variants={formItemVariants}>
+                      <motion.button
+                        type="submit"
+                        disabled={isLoading}
+                        whileHover={!isLoading ? { scale: 1.01 } : undefined}
+                        whileTap={!isLoading ? { scale: 0.985 } : undefined}
+                        className="w-full py-2.5 sm:py-3 px-4 bg-gradient-to-r from-blue-700 to-blue-900 hover:from-blue-600 hover:to-blue-800 text-white font-semibold rounded-xl shadow-md shadow-blue-700/20 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all flex items-center justify-center gap-2 disabled:opacity-50 text-xs sm:text-sm min-h-[40px] sm:min-h-[42px] cursor-pointer disabled:cursor-not-allowed"
+                      >
+                        {isLoading ? 'Sending Code...' : (
+                          <>
+                            <span>Send Verification Code</span>
+                            <ArrowRight className="w-4 h-4" />
+                          </>
+                        )}
+                      </motion.button>
+                    </motion.div>
+                  </form>
+
+                  <motion.div variants={formItemVariants} className="text-center pt-1">
+                    <button
+                      type="button"
+                      onClick={handleBackToCredentials}
+                      className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-700 transition-colors cursor-pointer"
+                    >
+                      <ArrowLeft className="w-3.5 h-3.5" />
+                      <span>Back to sign in</span>
+                    </button>
+                  </motion.div>
+                </motion.div>
+              )}
+
+              {/* STEP: FORGOT PASSWORD RESET */}
+              {step === 'forgot_reset' && (
+                <motion.div
+                  key="step-forgot-reset"
+                  variants={stepVariants}
+                  initial="hidden"
+                  animate="visible"
+                  exit="exit"
+                >
+                  <form onSubmit={handleForgotResetSubmit} className="space-y-3">
+                    <motion.div variants={formItemVariants} className="bg-blue-50/80 border border-blue-200/80 rounded-xl p-2.5 text-center">
+                      <div className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-blue-100 text-blue-700 mb-1 shadow-xs">
+                        <Mail className="w-3.5 h-3.5" />
+                      </div>
+                      <h3 className="text-xs sm:text-sm font-bold text-blue-900">
+                        Enter Verification Code &amp; New Password
+                      </h3>
+                      <p className="text-[11px] text-blue-700/90 mt-0.5">
+                        Sent to <strong className="font-semibold">{forgotMaskedEmail}</strong>
+                      </p>
+                    </motion.div>
+
+                    <motion.div variants={formItemVariants}>
+                      <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
+                        6-Digit Code
+                      </label>
+                      <div className="flex justify-between gap-1.5 sm:gap-2" onPaste={handleForgotOtpPaste}>
+                        {forgotOtpDigits.map((digit, idx) => (
+                          <input
+                            key={idx}
+                            ref={(el) => { forgotOtpRefs.current[idx] = el; }}
+                            type="text"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            maxLength={1}
+                            value={digit}
+                            disabled={isLoading}
+                            onChange={(e) => handleForgotOtpDigitChange(idx, e.target.value)}
+                            onKeyDown={(e) => handleForgotOtpKeyDown(idx, e)}
+                            className={`w-10 h-10 sm:w-11 sm:h-11 text-center text-lg sm:text-xl font-bold rounded-xl border transition-all focus:outline-none focus:ring-2 ${
+                              digit
+                                ? 'border-blue-600 bg-blue-50/30 text-blue-900 font-extrabold shadow-xs'
+                                : 'border-slate-300 bg-slate-50/60 text-slate-800'
+                            } focus:ring-blue-500/20 focus:border-blue-500`}
+                          />
+                        ))}
+                      </div>
+                      <div className="flex items-center justify-between text-xs pt-1">
+                        <span className="text-slate-400 text-[10px] sm:text-[11px]">
+                          Expires in 10 minutes
+                        </span>
+                        <button
+                          type="button"
+                          disabled={!canResendForgot || isResendingForgot}
+                          onClick={handleForgotResendOtp}
+                          className="flex items-center gap-1 font-semibold text-blue-600 hover:text-blue-800 hover:underline disabled:opacity-50 disabled:no-underline cursor-pointer disabled:cursor-not-allowed text-[11px]"
+                        >
+                          <RefreshCw className={`w-3 h-3 ${isResendingForgot ? 'animate-spin' : ''}`} />
+                          {canResendForgot ? 'Resend Code' : `Resend in ${forgotCooldown}s`}
+                        </button>
+                      </div>
+                    </motion.div>
+
+                    <motion.div variants={formItemVariants} className="space-y-2">
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
+                          New Password
+                        </label>
+                        <div className="relative">
+                          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                          <input
+                            type={showNewPassword ? 'text' : 'password'}
+                            value={newPassword}
+                            onChange={(e) => setNewPassword(e.target.value)}
+                            placeholder="At least 6 characters"
+                            required
+                            className="w-full pl-9 pr-9 py-2 bg-slate-50/80 border border-slate-300 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-xs sm:text-sm min-h-[38px]"
+                          />
+                          <motion.button
+                            type="button"
+                            whileTap={{ scale: 0.88 }}
+                            onClick={() => setShowNewPassword(!showNewPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer"
+                          >
+                            {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </motion.button>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
+                          Confirm New Password
+                        </label>
+                        <div className="relative">
+                          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                          <input
+                            type={showConfirmPassword ? 'text' : 'password'}
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            placeholder="Re-enter new password"
+                            required
+                            className="w-full pl-9 pr-9 py-2 bg-slate-50/80 border border-slate-300 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-xs sm:text-sm min-h-[38px]"
+                          />
+                          <motion.button
+                            type="button"
+                            whileTap={{ scale: 0.88 }}
+                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer"
+                          >
+                            {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </motion.button>
+                        </div>
+                      </div>
+                    </motion.div>
+
+                    <motion.div variants={formItemVariants}>
+                      <motion.button
+                        type="submit"
+                        disabled={isLoading || forgotOtpDigits.join('').length < 6 || !newPassword}
+                        whileHover={!isLoading && forgotOtpDigits.join('').length === 6 && Boolean(newPassword) ? { scale: 1.01 } : undefined}
+                        whileTap={!isLoading && forgotOtpDigits.join('').length === 6 && Boolean(newPassword) ? { scale: 0.985 } : undefined}
+                        className="w-full py-2.5 sm:py-3 px-4 bg-gradient-to-r from-blue-700 to-blue-900 hover:from-blue-600 hover:to-blue-800 text-white font-semibold rounded-xl shadow-md shadow-blue-700/20 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all flex items-center justify-center gap-2 disabled:opacity-50 text-xs sm:text-sm min-h-[40px] sm:min-h-[42px] cursor-pointer disabled:cursor-not-allowed"
+                      >
+                        {isLoading ? 'Resetting Password...' : (
+                          <>
+                            <span>Reset Password &amp; Sign In</span>
+                            <ArrowRight className="w-4 h-4" />
+                          </>
+                        )}
+                      </motion.button>
+                    </motion.div>
+
+                    <motion.div variants={formItemVariants} className="text-center pt-0.5">
+                      <button
+                        type="button"
+                        onClick={handleBackToCredentials}
+                        className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-700 transition-colors cursor-pointer"
+                      >
+                        <ArrowLeft className="w-3.5 h-3.5" />
+                        <span>Back to sign in</span>
+                      </button>
+                    </motion.div>
+                  </form>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             <div className="mt-3.5 sm:mt-4 pt-2.5 sm:pt-3 border-t border-slate-100 text-center">
               <p className="text-[10px] sm:text-[11px] text-slate-400">
@@ -855,13 +1015,21 @@ export default function Login() {
 
           {/* RIGHT SIDE --- Image Panel */}
           <div className="hidden md:flex relative w-full h-full min-h-[380px] lg:min-h-[440px] flex-col items-center justify-center overflow-hidden">
-            <img
+            <motion.img
+              initial={{ scale: shouldReduceMotion ? 1 : 1.08, opacity: 0.8 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
               src="https://images.unsplash.com/photo-1547683905-f686c993aae5?q=80&w=1000&auto=format&fit=crop"
               alt="Disaster Response"
               className="absolute inset-0 w-full h-full object-cover"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-blue-950/90 via-blue-900/75 to-blue-900/60" />
-            <div className="relative z-10 p-6 md:p-8 lg:p-10 max-w-sm lg:max-w-md">
+            <motion.div
+              initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
+              className="relative z-10 p-6 md:p-8 lg:p-10 max-w-sm lg:max-w-md"
+            >
               <h2 className="text-white text-lg sm:text-xl lg:text-2xl font-bold leading-tight">
                 Real-Time Disaster Intelligence
               </h2>
@@ -874,11 +1042,12 @@ export default function Login() {
                   MDRRMO Operations
                 </span>
               </div>
-            </div>
+            </motion.div>
           </div>
 
         </div>
-      </div>
+      </motion.div>
     </main>
   );
 }
+

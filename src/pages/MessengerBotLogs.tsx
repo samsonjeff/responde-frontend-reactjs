@@ -251,9 +251,9 @@ export default function MessengerBotLogs() {
       {!loading && !error && (
         <div className="flex-1 flex flex-col gap-6 min-h-0">
           {/* Header & Filter Controls Bar */}
-          <div className="bg-white/85 dark:bg-[#111827]/85 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-[0_4px_20px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.2)] p-4 flex flex-col gap-4">
+          <div className="relative z-30 bg-white/85 dark:bg-[#111827]/85 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-[0_4px_20px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.2)] border-t border-t-white/80 dark:border-t-white/10 p-4 flex flex-col gap-4">
             <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4">
-              <div className="flex flex-wrap items-center gap-2.5 w-full xl:w-auto">
+              <div className="flex flex-wrap items-center gap-2.5 w-full xl:w-auto relative z-20">
                 <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 mr-1">
                   <Filter className="w-3.5 h-3.5" />
                   <span>Filter:</span>
@@ -274,7 +274,7 @@ export default function MessengerBotLogs() {
                   onChange={(val) => { setFilterStatus(val); setSelectedId(""); }}
                 />
               </div>
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 xl:ml-auto w-full xl:w-auto">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 xl:ml-auto w-full xl:w-auto relative z-10">
                 <div className="flex items-center gap-2 w-full sm:w-auto">
                   <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 whitespace-nowrap">From:</span>
                   <DatePicker value={fromDate} onChange={setFromDate} placeholder="Select Date" />

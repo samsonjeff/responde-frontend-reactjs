@@ -511,20 +511,20 @@ export default function About() {
                   {/* Top Metric Header */}
                   <div className="flex items-center justify-between">
                     <div>
-                      <div className="text-xs font-semibold text-white tracking-tight">Talisay Resiliency Benchmark</div>
-                      <div className="text-[11px] text-slate-400">Comparing manual phone calls vs RESPONDE</div>
+                      <div className="text-xs font-semibold text-white tracking-tight">Talisay Disaster Intelligence Benchmark</div>
+                      <div className="text-[11px] text-slate-400">Automated multi-channel intake vs manual logbooks</div>
                     </div>
                     <span className="px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 text-xs font-bold font-mono">
-                      -78% DELAY
+                      REAL-TIME INTAKE
                     </span>
                   </div>
 
                   {/* Impact Statistics Cards */}
                   <div className="grid grid-cols-2 gap-3 my-auto py-2">
                     <div className="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800/80 space-y-1">
-                      <div className="text-[11px] text-slate-400 font-medium">Response Turnaround</div>
-                      <div className="text-2xl font-bold text-white tracking-tight font-mono">2.4 min</div>
-                      <div className="text-[10px] text-emerald-400 font-medium">Down from ~25+ min legacy</div>
+                      <div className="text-[11px] text-slate-400 font-medium">Automated Intake</div>
+                      <div className="text-2xl font-bold text-white tracking-tight font-mono">24/7</div>
+                      <div className="text-[10px] text-emerald-400 font-medium">Continuous bot &amp; social feed monitoring</div>
                     </div>
 
                     <div className="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800/80 space-y-1">
@@ -588,7 +588,7 @@ export default function About() {
                   <CheckCircle2 className="w-3.5 h-3.5" />
                 </div>
                 <p className="text-[13.5px] sm:text-[14px] text-[#424245] font-normal leading-normal">
-                  Eliminates chaotic telephone trees and lost dispatches during typhoons.
+                  Eliminates chaotic telephone trees and lost distress reports during disasters.
                 </p>
               </div>
               <div className="flex items-start gap-3">
@@ -596,7 +596,7 @@ export default function About() {
                   <CheckCircle2 className="w-3.5 h-3.5" />
                 </div>
                 <p className="text-[13.5px] sm:text-[14px] text-[#424245] font-normal leading-normal">
-                  Guarantees transparent incident logging and rapid life-saving mobilization.
+                  Guarantees transparent incident logging and rapid geospatial verification.
                 </p>
               </div>
             </div>

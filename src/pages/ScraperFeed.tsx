@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence, type Variants } from "framer-motion";
 import {
   Filter, Globe, MessageCircle, AlertTriangle, MapPin, Clock,
@@ -10,6 +10,7 @@ import FilterDropdown from "../components/DropDown";
 import { StaggerContainer, StaggerItem } from "../components/Stagger";
 import { authService } from "../services/authService";
 import PageLoader from "../components/PageLoader";
+import { TALISAY_BARANGAYS } from "../data/talisay-barangays";
 
 interface ScrapedPost {
   id: string;
@@ -215,7 +216,7 @@ export default function ScraperFeed() {
 
     if (!hasShownInitialToast.current) {
       hasShownInitialToast.current = true;
-      showToast(`${mapped.length} scraped posts loaded`, "success");
+      showToast(`${mapped.length} scraped comments loaded`, "success");
     }
   };
 
@@ -269,7 +270,7 @@ export default function ScraperFeed() {
 
     try {
       await authService.updateFbCommentStatus(postId, newStatus);
-      showToast(`Post marked as ${newStatus.toLowerCase()}`, "success");
+      showToast(`Comment marked as ${newStatus.toLowerCase()}`, "success");
     } catch (err: any) {
       console.error("[ScraperFeed] Status update error:", err);
       showToast(`Update failed: ${err.message || "Failed to update status"}`, "error");
@@ -410,7 +411,7 @@ export default function ScraperFeed() {
         <div className="flex-1 flex items-center justify-center">
           <div className="flex flex-col items-center gap-3 text-red-500 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-6 max-w-md text-center">
             <AlertTriangle className="w-8 h-8" />
-            <p className="font-semibold text-sm">Failed to load scraped posts</p>
+            <p className="font-semibold text-sm">Failed to load scraped comments</p>
             <p className="text-xs text-red-400 font-mono">{error}</p>
             <p className="text-xs text-slate-500 dark:text-slate-400">
               Check your Supabase credentials and RLS policies.
@@ -433,12 +434,7 @@ export default function ScraperFeed() {
 
                 <FilterDropdown
                   value={filterBarangay}
-                  options={[
-                    "All Barangays", "Leynes", "Poblacion", "Sampaloc",
-                    "Cawit", "Banga", "San Isidro", "Miranda", "Aya",
-                    "Tranca", "Tumaway", "Caloocan", "Buco", "Balas",
-                    "Quiling", "Laurel", "Sta. Maria", "Ayala",
-                  ]}
+                  options={["All Barangays", ...TALISAY_BARANGAYS]}
                   onChange={(val) => { setFilterBarangay(val); setSelectedId(""); }}
                 />
 
@@ -484,11 +480,11 @@ export default function ScraperFeed() {
                     <Radio className="w-4 h-4" />
                   </div>
                   <h3 className="font-semibold text-slate-900 dark:text-white text-base tracking-tight">
-                    Scraped Posts
+                    Scraper Comments
                   </h3>
                 </div>
                 <span className="bg-blue-500/10 text-[#0071E3] dark:text-blue-400 border border-blue-500/20 text-xs font-semibold rounded-full px-2.5 py-0.5 tabular-nums">
-                  {filteredPosts.length} posts
+                  {filteredPosts.length} comments
                 </span>
               </div>
 
@@ -496,7 +492,7 @@ export default function ScraperFeed() {
                 {filteredPosts.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-12 px-4 text-slate-400 dark:text-slate-500 text-sm gap-3">
                     <Radio className="w-8 h-8 stroke-[1.5] text-slate-300 dark:text-slate-600" />
-                    <span className="font-medium text-slate-600 dark:text-slate-400">No scraped posts found.</span>
+                    <span className="font-medium text-slate-600 dark:text-slate-400">No scraped comments found.</span>
                     <div className="w-full text-xs bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800 text-left font-mono mt-2 space-y-2">
                       <p className="font-semibold text-slate-700 dark:text-slate-300 border-b border-slate-100 dark:border-slate-800 pb-1.5 mb-1.5 uppercase tracking-wider text-[10px]">
                         Database Query Diagnostics
@@ -652,7 +648,7 @@ export default function ScraperFeed() {
                         <StaggerItem>
                           <div>
                             <h4 className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2.5">
-                              Original Scraped Post
+                              Original Scraped Comment
                             </h4>
                             <div className="bg-white dark:bg-slate-800/80 rounded-2xl p-5 border border-slate-200/70 dark:border-slate-700/70 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
                               <p className="text-sm text-slate-800 dark:text-slate-200 leading-relaxed italic">
@@ -708,27 +704,11 @@ export default function ScraperFeed() {
                     </div>
 
                     {/* Action Bar */}
-                    <div className="px-6 py-4 border-t border-slate-200/60 dark:border-slate-800/60 bg-white/60 dark:bg-[#111827]/60 backdrop-blur-md shrink-0 flex items-center gap-2.5 flex-wrap">
-                      <button
-                        type="button"
-                        onClick={() => handleUpdateStatus(selectedPost.id, "Verified")}
-                        className="px-4 py-2.5 bg-[#0071E3] hover:bg-[#0077ED] text-white text-xs font-semibold rounded-xl shadow-[0_2px_8px_rgba(0,113,227,0.25)] flex items-center gap-2 active:scale-[0.97] transition-all"
-                      >
-                        <CheckCircle className="w-3.5 h-3.5" />
-                        Verify
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleUpdateStatus(selectedPost.id, "Flagged")}
-                        className="px-4 py-2.5 bg-orange-500/10 hover:bg-orange-500/15 text-orange-600 dark:text-orange-400 border border-orange-500/20 text-xs font-semibold rounded-xl flex items-center gap-2 active:scale-[0.97] transition-all"
-                      >
-                        <AlertTriangle className="w-3.5 h-3.5" />
-                        Flag
-                      </button>
+                    <div className="px-6 py-4 border-t border-slate-200/60 dark:border-slate-800/60 bg-white/60 dark:bg-[#111827]/60 backdrop-blur-md shrink-0 flex items-center justify-end">
                       <button
                         type="button"
                         onClick={() => handleUpdateStatus(selectedPost.id, "Resolved")}
-                        className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200/80 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200/60 dark:border-slate-700/60 text-xs font-semibold rounded-xl flex items-center gap-2 ml-auto active:scale-[0.97] transition-all"
+                        className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200/80 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200/60 dark:border-slate-700/60 text-xs font-semibold rounded-xl flex items-center gap-2 active:scale-[0.97] transition-all"
                       >
                         <XCircle className="w-3.5 h-3.5" />
                         Dismiss
@@ -748,10 +728,10 @@ export default function ScraperFeed() {
                       <Radio className="w-8 h-8 stroke-[1.5]" />
                     </div>
                     <h4 className="font-semibold text-slate-800 dark:text-slate-200 text-base">
-                      No Post Selected
+                      No Comment Selected
                     </h4>
                     <p className="text-xs text-slate-400 dark:text-slate-500 max-w-[260px] mt-1">
-                      Select a scraped post from the feed stream to inspect NLP extraction and verify incidents.
+                      Select a scraped comment from the feed stream to inspect NLP extraction and triage details.
                     </p>
                   </motion.div>
                 )}

@@ -890,118 +890,71 @@ export default function Analytics() {
           </div>
         </motion.div>
 
-        {/* ── 6. HIGH-RISK RANKINGS & AVERAGE RESPONSE TIME ── */}
-        <div className="grid grid-cols-1 xl:grid-cols-5 gap-6 relative z-10">
-          {/* Average Response Time per Barangay */}
-          <motion.div variants={itemVariants} className="xl:col-span-2">
-            <AppleCard className="p-6 h-full flex flex-col justify-between">
-              <div>
-                <SectionHeader
-                  icon={Clock3}
-                  title="Response Time Benchmark"
-                  description="Average verification latency per community"
-                  iconColor="#0EA5E9"
-                />
-                <div className="space-y-2.5 mt-2">
-                  {riskData.map((item) => {
-                    const times = data
-                      .filter((r) => r.barangay === item.barangay)
-                      .map(responseMinutes)
-                      .filter((v): v is number => v !== null);
-                    const avg = times.length
-                      ? Math.round(times.reduce((a, b) => a + b, 0) / times.length)
-                      : null;
-                    return (
-                      <div
-                        key={item.barangay}
-                        className="flex items-center justify-between p-3 rounded-xl bg-slate-50/70 dark:bg-slate-800/40 border border-slate-100 dark:border-white/5 transition-all hover:bg-slate-100/60 dark:hover:bg-slate-800/60"
+        {/* ── 6. HIGH-RISK BARANGAYS RANKING ── */}
+        <motion.div variants={itemVariants} className="relative z-10">
+          <AppleCard className="p-6 h-full flex flex-col">
+            <SectionHeader
+              icon={AlertTriangle}
+              title="High-Risk Barangays"
+              description="Priority ranking determined by cumulative volume & urgency score"
+              iconColor="#DC2626"
+            />
+            <div className="overflow-x-auto flex-1">
+              <table className="w-full min-w-125">
+                <thead>
+                  <tr className="border-b border-slate-200/60 dark:border-slate-800/80">
+                    {['Barangay', 'Reports', 'High Urgency', 'Priority', 'Dominant Need'].map((h, i) => (
+                      <th
+                        key={h}
+                        className={`${i === 0 || i === 4 ? 'text-left' : 'text-center'
+                          } py-3 px-2 text-[10px] uppercase tracking-wider font-semibold text-slate-400 dark:text-slate-500`}
                       >
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                          <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate">
-                            {item.barangay}
-                          </span>
-                        </div>
-                        <span className="text-xs font-bold text-slate-900 dark:text-white tabular-nums shrink-0 ml-2">
-                          {avg !== null ? `${avg} min` : '—'}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-              <div className="mt-4 pt-3 border-t border-slate-100 dark:border-white/5 text-[11px] text-slate-400 dark:text-slate-500">
-                *Calculated from submission timestamp to field verification stamp.
-              </div>
-            </AppleCard>
-          </motion.div>
-
-          {/* High-Risk Priority Table */}
-          <motion.div variants={itemVariants} className="xl:col-span-3">
-            <AppleCard className="p-6 h-full flex flex-col">
-              <SectionHeader
-                icon={AlertTriangle}
-                title="High-Risk Barangays"
-                description="Priority ranking determined by cumulative volume & urgency score"
-                iconColor="#DC2626"
-              />
-              <div className="overflow-x-auto flex-1">
-                <table className="w-full min-w-125">
-                  <thead>
-                    <tr className="border-b border-slate-200/60 dark:border-slate-800/80">
-                      {['Barangay', 'Reports', 'High Urgency', 'Priority', 'Dominant Need'].map((h, i) => (
-                        <th
-                          key={h}
-                          className={`${i === 0 || i === 4 ? 'text-left' : 'text-center'
-                            } py-3 px-2 text-[10px] uppercase tracking-wider font-semibold text-slate-400 dark:text-slate-500`}
-                        >
-                          {h}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-white/5">
-                    {riskData.map((item) => (
-                      <tr
-                        key={item.barangay}
-                        className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors duration-150"
-                      >
-                        <td className="py-3 px-2 text-xs font-semibold text-slate-900 dark:text-slate-100">
-                          {item.barangay}
-                        </td>
-                        <td className="py-3 px-2 text-center text-xs text-slate-600 dark:text-slate-300 tabular-nums">
-                          {item.incidents}
-                        </td>
-                        <td className="py-3 px-2 text-center text-xs font-bold text-rose-600 dark:text-rose-400 tabular-nums">
-                          {item.high}
-                        </td>
-                        <td className="py-3 px-2 text-center">
-                          <span
-                            className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border text-[10px] font-semibold ${URGENCY_CLASS[item.priority]
-                              }`}
-                          >
-                            <span
-                              className={`w-1.5 h-1.5 rounded-full ${item.priority === 'High'
-                                ? 'bg-rose-500'
-                                : item.priority === 'Moderate'
-                                  ? 'bg-amber-500'
-                                  : 'bg-emerald-500'
-                                }`}
-                            />
-                            {item.priority}
-                          </span>
-                        </td>
-                        <td className="py-3 px-2 text-xs text-slate-600 dark:text-slate-400 font-medium">
-                          {item.dominantType}
-                        </td>
-                      </tr>
+                        {h}
+                      </th>
                     ))}
-                  </tbody>
-                </table>
-              </div>
-            </AppleCard>
-          </motion.div>
-        </div>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-white/5">
+                  {riskData.map((item) => (
+                    <tr
+                      key={item.barangay}
+                      className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors duration-150"
+                    >
+                      <td className="py-3 px-2 text-xs font-semibold text-slate-900 dark:text-slate-100">
+                        {item.barangay}
+                      </td>
+                      <td className="py-3 px-2 text-center text-xs text-slate-600 dark:text-slate-300 tabular-nums">
+                        {item.incidents}
+                      </td>
+                      <td className="py-3 px-2 text-center text-xs font-bold text-rose-600 dark:text-rose-400 tabular-nums">
+                        {item.high}
+                      </td>
+                      <td className="py-3 px-2 text-center">
+                        <span
+                          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border text-[10px] font-semibold ${URGENCY_CLASS[item.priority]
+                            }`}
+                        >
+                          <span
+                            className={`w-1.5 h-1.5 rounded-full ${item.priority === 'High'
+                              ? 'bg-rose-500'
+                              : item.priority === 'Moderate'
+                                ? 'bg-amber-500'
+                                : 'bg-emerald-500'
+                              }`}
+                          />
+                          {item.priority}
+                        </span>
+                      </td>
+                      <td className="py-3 px-2 text-xs text-slate-600 dark:text-slate-400 font-medium">
+                        {item.dominantType}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </AppleCard>
+        </motion.div>
 
         {/* ── 7. PRESCRIPTIVE RECOMMENDATIONS ── */}
         <motion.div variants={itemVariants} className="relative z-10">

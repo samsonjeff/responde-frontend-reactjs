@@ -4,7 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   X, ArrowRight, ExternalLink, MapPin, Clock, User,
   AlertCircle, CheckCircle, HelpCircle, AlertTriangle,
-  MessageSquare, Radio, Zap, Sparkles, Bot, ChevronRight, ChevronLeft
+  MessageSquare, Radio, Sparkles, Bot, ChevronRight, ChevronLeft,
+  Brain,
 } from 'lucide-react';
 import { StaggerContainer, StaggerItem } from '../components/Stagger';
 import { useTheme } from '../components/ThemeContent';
@@ -275,7 +276,7 @@ export default function Dashboard() {
 
       if (!hasShownInitialToast.current && mappedScraper.length > 0) {
         hasShownInitialToast.current = true;
-        showToast(`${mappedScraper.length} scraped posts loaded`, 'success');
+        showToast(`${mappedScraper.length} scraped comments loaded`, 'success');
       }
 
       if (fetchError && mappedScraper.length === 0) {
@@ -292,7 +293,14 @@ export default function Dashboard() {
 
   // Stats
   const totalIncidents = botConversations.length + scraperItems.length;
-  const avgResponse = 0;
+  const nlpProcessCount = useMemo(() => {
+    // Total text units processed through the NLP inference pipeline (social comments + bot messages)
+    const botUserMsgs = botConversations.reduce((acc, c) => {
+      const userCount = c.messages ? c.messages.filter(m => m.sender === 'user').length : 1;
+      return acc + (userCount || 1);
+    }, 0);
+    return scraperItems.length + botUserMsgs;
+  }, [scraperItems.length, botConversations]);
 
   // Dashboard Map Data
   const URGENCY_WEIGHTS: Record<string, number> = { High: 3, Moderate: 2, Low: 1 };
@@ -458,18 +466,18 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Avg Response Time */}
+            {/* NLP Process Count */}
             <div className="bg-white/80 dark:bg-[#111827]/80 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)] p-3.5 sm:p-4 md:p-5 flex items-center justify-between group transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md min-w-0">
               <div className="space-y-1 min-w-0">
-                <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 truncate">Avg Response Time</p>
-                <p className="text-xl sm:text-2xl md:text-3xl font-semibold tracking-tight tabular-nums text-slate-900 dark:text-white">{avgResponse}s</p>
-                <div className="flex items-center gap-1 text-[10px] sm:text-[11px] text-emerald-600 dark:text-emerald-400 font-medium truncate">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-                  <span className="truncate">Instant latency</span>
+                <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 truncate">NLP Process Count</p>
+                <p className="text-xl sm:text-2xl md:text-3xl font-semibold tracking-tight tabular-nums text-slate-900 dark:text-white">{nlpProcessCount}</p>
+                <div className="flex items-center gap-1 text-[10px] sm:text-[11px] text-purple-600 dark:text-purple-400 font-medium truncate">
+                  <span className="w-1.5 h-1.5 rounded-full bg-purple-500 shrink-0" />
+                  <span className="truncate">Automated triage</span>
                 </div>
               </div>
-              <div className="w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-xl sm:rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shadow-[0_0_16px_rgba(16,185,129,0.15)] flex items-center justify-center shrink-0">
-                <Zap className="w-4.5 h-4.5 sm:w-5 sm:h-5 md:w-6 md:h-6" />
+              <div className="w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-xl sm:rounded-2xl bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 shadow-[0_0_16px_rgba(168,85,247,0.15)] flex items-center justify-center shrink-0">
+                <Brain className="w-4.5 h-4.5 sm:w-5 sm:h-5 md:w-6 md:h-6" />
               </div>
             </div>
           </div>
@@ -687,7 +695,7 @@ export default function Dashboard() {
               {scraperItems.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16 text-slate-400 dark:text-slate-500 text-xs gap-2">
                   <Radio className="w-8 h-8 stroke-[1.5] text-slate-300 dark:text-slate-600" />
-                  <span>No scraped posts yet.</span>
+                  <span>No scraped comments yet.</span>
                 </div>
               ) : (
                 scraperItems.map((item, index) => (
@@ -1070,7 +1078,7 @@ export default function Dashboard() {
                   <div className="p-3 rounded-xl bg-slate-50/60 dark:bg-slate-800/30 border border-slate-100 dark:border-white/5">
                     <div className="flex items-center gap-1.5 text-slate-400 dark:text-slate-500 text-[10px] uppercase font-semibold tracking-wider">
                       <User className="w-3.5 h-3.5" />
-                      <span>Original Poster</span>
+                      <span>Original Commenter</span>
                     </div>
                     <p className="text-xs font-semibold text-slate-800 dark:text-slate-200 mt-1 truncate">{activeScraper.reporter}</p>
                   </div>
