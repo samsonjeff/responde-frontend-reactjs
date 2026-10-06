@@ -559,4 +559,20 @@ export const authService = {
     }
     return data;
   },
+
+  /**
+   * Delete a user account (Super Admin only).
+   */
+  async deleteUser(userId: string): Promise<{ success: boolean; message: string }> {
+    const res = await apiFetch(`/api/auth/users/${encodeURIComponent(userId)}`, {
+      method: 'DELETE',
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new AuthError(data.error ?? data.message ?? 'Failed to delete user', {
+        reason: 'user_delete_error'
+      });
+    }
+    return data;
+  },
 };
