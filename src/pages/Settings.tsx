@@ -157,7 +157,7 @@ export default function Settings() {
   const [deleteModalUser, setDeleteModalUser] = useState<AuthUser | null>(null);
   const [isDeletingUser, setIsDeletingUser] = useState(false);
 
-  const handleDeleteUser = () => {
+  const handleDeleteUser = async () => {
     if (!deleteModalUser) return;
     if (deleteModalUser.role === 'super_admin') {
       alert('Super Admin accounts are protected and cannot be deleted.');
@@ -165,8 +165,8 @@ export default function Settings() {
     }
 
     setIsDeletingUser(true);
-    // Client-side simulation as requested (no backend logic)
-    setTimeout(() => {
+    try {
+      await authService.deleteUser(deleteModalUser.user_id);
       const deletedName = deleteModalUser.full_name || deleteModalUser.username || 'Personnel';
       setUsers(prev => prev.filter(u => u.user_id !== deleteModalUser.user_id));
       setAuditLogs(prev => [{
@@ -176,10 +176,13 @@ export default function Settings() {
         target: `${deletedName} (${deleteModalUser.role === 'admin' ? 'Admin' : 'Staff'})`,
         timestamp: new Date().toISOString(),
       }, ...prev]);
+      showSuccessFeedback(`${deletedName} has been deleted successfully.`);
+    } catch (err: any) {
+      alert(err.message || 'Failed to delete user.');
+    } finally {
       setIsDeletingUser(false);
       setDeleteModalUser(null);
-      showSuccessFeedback(`${deletedName} has been deleted successfully.`);
-    }, 600);
+    }
   };
 
   // Mobile Sign Out State
@@ -211,8 +214,7 @@ export default function Settings() {
   const [deleteSelfChallengeToken, setDeleteSelfChallengeToken] = useState<string>('');
   const [deleteSelfMaskedEmail, setDeleteSelfMaskedEmail] = useState<string>('');
   const [otpCooldown, setOtpCooldown] = useState(0);
-  const [generatedSimCode, setGeneratedSimCode] = useState<string>('');
-  const [isRequestingOtp, setIsRequestingOtp] = useState(false);
+    const [isRequestingOtp, setIsRequestingOtp] = useState(false);
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
   const otpInputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
@@ -243,8 +245,7 @@ export default function Settings() {
     setDeleteSelfChallengeToken('');
     setDeleteSelfMaskedEmail(maskEmailAddress(currentUser?.email));
     setOtpCooldown(0);
-    setGeneratedSimCode('');
-  };
+      };
 
   const closeDeleteMyAccountModal = () => {
     if (isConfirmingDelete) return;
@@ -270,24 +271,20 @@ export default function Settings() {
     }
 
     setIsRequestingOtp(true);
-    const fallbackCode = Math.floor(100000 + Math.random() * 900000).toString();
-    setGeneratedSimCode(fallbackCode);
-
     try {
       const res = await authService.sendVerificationCode('delete_account');
       setDeleteSelfChallengeToken(res.challenge_token);
       setDeleteSelfMaskedEmail(res.masked_email || maskEmailAddress(currentUser?.email));
-    } catch {
-      setDeleteSelfChallengeToken(`sim-${Date.now()}`);
-      setDeleteSelfMaskedEmail(maskEmailAddress(currentUser?.email));
-    } finally {
-      setIsRequestingOtp(false);
       setDeleteSelfStep('otp');
       setOtpCooldown(45);
       setDeleteSelfOtp(['', '', '', '', '', '']);
       setTimeout(() => {
         otpInputRefs.current[0]?.focus();
       }, 150);
+    } catch (err: any) {
+      setDeleteSelfPasswordError(err.message || 'Failed to send verification code. Please try again.');
+    } finally {
+      setIsRequestingOtp(false);
     }
   };
 
@@ -295,22 +292,20 @@ export default function Settings() {
     if (otpCooldown > 0 || isRequestingOtp) return;
     setIsRequestingOtp(true);
     setDeleteSelfOtpError(null);
-    const newCode = Math.floor(100000 + Math.random() * 900000).toString();
-    setGeneratedSimCode(newCode);
 
     try {
       const res = await authService.sendVerificationCode('delete_account');
       if (res.challenge_token) setDeleteSelfChallengeToken(res.challenge_token);
       if (res.masked_email) setDeleteSelfMaskedEmail(res.masked_email);
-    } catch {
-      // Offline fallback
-    } finally {
-      setIsRequestingOtp(false);
       setOtpCooldown(45);
       setDeleteSelfOtp(['', '', '', '', '', '']);
       setTimeout(() => {
         otpInputRefs.current[0]?.focus();
       }, 100);
+    } catch (err: any) {
+      setDeleteSelfOtpError(err.message || 'Failed to resend verification code.');
+    } finally {
+      setIsRequestingOtp(false);
     }
   };
 
@@ -364,37 +359,15 @@ export default function Settings() {
     setDeleteSelfOtpError(null);
 
     try {
-      let verified = false;
-      if (deleteSelfChallengeToken && !deleteSelfChallengeToken.startsWith('sim-')) {
-        try {
-          await authService.verifyCode(deleteSelfChallengeToken, fullCode, 'delete_account');
-          verified = true;
-        } catch {
-          verified = false;
-        }
+      if (deleteSelfChallengeToken) {
+        await authService.verifyCode(deleteSelfChallengeToken, fullCode, 'delete_account');
       }
 
-      if (!verified) {
-        if (fullCode === generatedSimCode || fullCode === '123456') {
-          verified = true;
-        }
-      }
-
-      if (!verified) {
-        setDeleteSelfOtpError('Invalid verification code. Please check your email and try again.');
-        setIsConfirmingDelete(false);
-        return;
-      }
-
-      try {
-        await authService.deleteAccount({
-          password: deleteSelfPassword,
-          code: fullCode,
-          challenge_token: deleteSelfChallengeToken,
-        });
-      } catch {
-        // Fallback for simulation
-      }
+      await authService.deleteAccount({
+        password: deleteSelfPassword,
+        code: fullCode,
+        challenge_token: deleteSelfChallengeToken,
+      });
 
       const actorName = currentUser?.full_name || currentUser?.username || 'Super Admin';
       const userDisplayRole = userRole === 'super_admin' ? 'Super Admin' : userRole === 'admin' ? 'Admin' : 'Staff';
