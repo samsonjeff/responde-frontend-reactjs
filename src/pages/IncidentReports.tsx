@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -6,6 +6,7 @@ import {
   Clock, User, Phone, MessageSquare,
   CheckCircle2, AlertTriangle, RotateCcw, Send,
   ShieldCheck, FileText, AlertOctagon, MapPinned, Bot,
+  Check, Search,
 } from 'lucide-react';
 import DatePicker from '../components/DatePicker';
 import FilterDropdown from '../components/DropDown';
@@ -15,6 +16,9 @@ import PageTransition from '../components/Transition';
 
 import { fetchReports, subscribeToReports, type Report, type ReportStatus } from '../services/incidentService';
 import { useBotConversations, type BotMessage } from '../context/BotConversationsContext';
+import { TALISAY_BARANGAYS, talisayBarangays } from '../data/talisay-barangays';
+
+export const BASE_INCIDENT_TYPES = ['Earthquake', 'Fire', 'Flood', 'Landslide', 'None'] as const;
 
 const formatBubbleTime = (iso?: string) => {
   if (!iso) return '';
@@ -172,6 +176,157 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: number)
   );
 }
 
+// ── Review Modal Scrollable Barangay Select ──
+interface BarangaySelectProps {
+  value: string;
+  onChange: (value: string) => void;
+  options: readonly string[] | string[];
+}
+
+function BarangaySelect({ value, onChange, options }: BarangaySelectProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const containerRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+        setSearchTerm('');
+      }
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsOpen(false);
+        setSearchTerm('');
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (isOpen) {
+      setTimeout(() => searchInputRef.current?.focus(), 60);
+      if (listRef.current) {
+        const selectedEl = listRef.current.querySelector('[aria-selected="true"]') as HTMLElement | null;
+        if (selectedEl) {
+          selectedEl.scrollIntoView({ block: 'nearest' });
+        }
+      }
+    }
+  }, [isOpen]);
+
+  const allOptions = useMemo(() => {
+    const list = [...options];
+    if (value && value !== 'Unknown' && !list.includes(value)) {
+      list.unshift(value);
+    }
+    return list;
+  }, [value, options]);
+
+  const filteredOptions = useMemo(() => {
+    if (!searchTerm.trim()) return allOptions;
+    const query = searchTerm.toLowerCase().trim();
+    return allOptions.filter(opt => opt.toLowerCase().includes(query));
+  }, [allOptions, searchTerm]);
+
+  const isPlaceholder = !value || value === 'Unknown';
+
+  return (
+    <div ref={containerRef} className={`relative w-full ${isOpen ? 'z-40' : 'z-10'}`}>
+      <button
+        type="button"
+        onClick={() => setIsOpen(prev => !prev)}
+        className="w-full px-3.5 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-left flex items-center justify-between transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 cursor-pointer select-none shadow-2xs"
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
+      >
+        <span className={`truncate ${isPlaceholder ? 'text-slate-400 dark:text-slate-500 font-normal' : 'text-slate-800 dark:text-slate-100 font-medium'}`}>
+          {isPlaceholder ? (value === 'Unknown' ? 'Unknown (Select Barangay)' : 'Select Barangay') : value}
+        </span>
+        <ChevronDown
+          className={`w-4 h-4 text-slate-400 dark:text-slate-500 transition-transform duration-200 shrink-0 ${isOpen ? 'rotate-180 text-blue-500' : ''}`}
+        />
+      </button>
+
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -4, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -4, scale: 0.98 }}
+            transition={{ duration: 0.15, ease: 'easeOut' }}
+            className="absolute left-0 right-0 top-full mt-1.5 z-50 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl overflow-hidden"
+          >
+            {/* Search filter */}
+            <div className="p-2 border-b border-slate-100 dark:border-slate-700/60 bg-slate-50/70 dark:bg-slate-900/40">
+              <div className="relative flex items-center">
+                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 pointer-events-none" />
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  value={searchTerm}
+                  onChange={e => setSearchTerm(e.target.value)}
+                  placeholder="Search barangay..."
+                  className="w-full pl-8 pr-2.5 py-1.5 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  onClick={e => e.stopPropagation()}
+                />
+              </div>
+            </div>
+
+            {/* Scrollable List — Fixed max-height so it is scrollable and never stretches to the bottom */}
+            <div
+              ref={listRef}
+              role="listbox"
+              className="max-h-52 overflow-y-auto overscroll-contain py-1 text-xs sm:text-sm divide-y divide-slate-100/60 dark:divide-slate-700/40"
+              style={{ scrollbarWidth: 'thin' }}
+            >
+              {filteredOptions.length === 0 ? (
+                <div className="px-3 py-4 text-center text-xs text-slate-400 dark:text-slate-500">
+                  No barangay matching &ldquo;{searchTerm}&rdquo;
+                </div>
+              ) : (
+                filteredOptions.map(opt => {
+                  const isSelected = value === opt;
+                  return (
+                    <button
+                      key={opt}
+                      type="button"
+                      role="option"
+                      aria-selected={isSelected}
+                      onClick={() => {
+                        onChange(opt);
+                        setIsOpen(false);
+                        setSearchTerm('');
+                      }}
+                      className={`w-full text-left px-3.5 py-2 flex items-center justify-between transition-colors cursor-pointer select-none ${
+                        isSelected
+                          ? 'bg-blue-50/80 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-semibold'
+                          : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/60'
+                      }`}
+                    >
+                      <span className="truncate">{opt}</span>
+                      {isSelected && <Check className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0 ml-2" />}
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 export default function IncidentReports() {
   const navigate = useNavigate();
   const [reports, setReports] = useState<Report[]>([]);
@@ -293,6 +448,19 @@ export default function IncidentReports() {
     setCurrentPage(1);
     setSelectedIds([]);
   }, [activeTab, filterBarangay, filterType, filterUrgency]);
+
+  const availableIncidentTypes = useMemo(() => {
+    const set = new Set<string>(BASE_INCIDENT_TYPES);
+    reports.forEach(r => {
+      if (r.type && r.type.trim() && r.type !== 'All Types') {
+        set.add(r.type);
+      }
+    });
+    if (editForm.type && editForm.type.trim() && editForm.type !== 'All Types') {
+      set.add(editForm.type);
+    }
+    return Array.from(set).sort();
+  }, [reports, editForm.type]);
 
   const openReview = (report: Report) => {
     setReviewingReport(report);
@@ -452,6 +620,10 @@ export default function IncidentReports() {
 
   const getTypeColor = (type: string) => {
     switch (type) {
+      case 'Earthquake': return 'text-amber-600 dark:text-amber-400';
+      case 'Fire': return 'text-rose-600 dark:text-rose-400';
+      case 'Flood': return 'text-cyan-600 dark:text-cyan-400';
+      case 'Landslide': return 'text-yellow-700 dark:text-yellow-500';
       case 'Search & Rescue': return 'text-orange-600 dark:text-orange-400';
       case 'Medical': return 'text-emerald-600 dark:text-emerald-400';
       case 'Food & Water': return 'text-blue-600 dark:text-blue-400';
@@ -609,7 +781,7 @@ export default function IncidentReports() {
                 <div className="col-span-1 lg:col-span-auto">
                   <FilterDropdown
                     value={filterBarangay}
-                    options={['All Barangays', ...Array.from(new Set(reports.map(r => r.barangay))).sort()]}
+                    options={['All Barangays', ...Array.from(new Set([...TALISAY_BARANGAYS, ...reports.map(r => r.barangay)])).sort()]}
                     onChange={setFilterBarangay}
                   />
                 </div>
@@ -617,7 +789,7 @@ export default function IncidentReports() {
                 <div className="col-span-1 lg:col-span-auto">
                   <FilterDropdown
                     value={filterType}
-                    options={['All Types', ...Array.from(new Set(reports.map(r => r.type))).sort()]}
+                    options={['All Types', ...Array.from(new Set([...BASE_INCIDENT_TYPES, ...reports.map(r => r.type)])).filter(Boolean).sort()]}
                     onChange={setFilterType}
                   />
                 </div>
@@ -1036,15 +1208,18 @@ export default function IncidentReports() {
                           <div className="space-y-3">
                             <div>
                               <label className="block text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400 mb-1">Barangay</label>
-                              <select
+                              <BarangaySelect
                                 value={editForm.barangay || ''}
-                                onChange={e => setEditForm(prev => ({ ...prev, barangay: e.target.value }))}
-                                className="w-full px-3.5 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 outline-none transition-all"
-                              >
-                                {['Leynes', 'Poblacion', 'Cawit', 'San Isidro', 'Sampaloc', 'Banga', 'Banadero'].map(b => (
-                                  <option key={b} value={b}>{b}</option>
-                                ))}
-                              </select>
+                                options={TALISAY_BARANGAYS}
+                                onChange={selected => {
+                                  const feature = talisayBarangays.features.find(f => f.properties.name === selected);
+                                  setEditForm(prev => ({
+                                    ...prev,
+                                    barangay: selected,
+                                    coordinates: prev.coordinates || (feature ? `${feature.properties.centroid[1]}, ${feature.properties.centroid[0]}` : prev.coordinates)
+                                  }));
+                                }}
+                              />
                             </div>
 
                             <div className="grid grid-cols-2 gap-3">
@@ -1053,9 +1228,12 @@ export default function IncidentReports() {
                                 <select
                                   value={editForm.type || ''}
                                   onChange={e => setEditForm(prev => ({ ...prev, type: e.target.value }))}
-                                  className="w-full px-3.5 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 outline-none transition-all"
+                                  className="w-full px-3.5 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 outline-none transition-all cursor-pointer"
                                 >
-                                  {['Search & Rescue', 'Medical', 'Food & Water', 'Infrastructure'].map(t => (
+                                  {!editForm.type && (
+                                    <option value="" disabled>Select Type</option>
+                                  )}
+                                  {availableIncidentTypes.map(t => (
                                     <option key={t} value={t}>{t}</option>
                                   ))}
                                 </select>
