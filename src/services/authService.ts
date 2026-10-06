@@ -542,4 +542,21 @@ export const authService = {
     }
     return data;
   },
+
+  /**
+   * Delete caller's own personal account with password and OTP verification.
+   */
+  async deleteAccount(payload: { password: string; code?: string; challenge_token?: string }): Promise<{ success: boolean; message: string }> {
+    const res = await apiFetch('/api/auth/users/me', {
+      method: 'DELETE',
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new AuthError(data.error ?? data.message ?? 'Failed to delete account', {
+        reason: data.reason ?? 'delete_account_error'
+      });
+    }
+    return data;
+  },
 };

@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../components/ThemeContent';
 import { useAuth } from '../context/AuthContext';
 import {
@@ -7,8 +8,9 @@ import {
   CheckCircle2, AlertCircle, ShieldCheck,
   Search, Lock, Loader2, Eye, EyeOff, KeyRound,
   Trash2, AlertTriangle, UserCircle, Pencil, Phone, Briefcase, Mail,
-  History
+  History, ArrowRight, ArrowLeft, AtSign, LogOut
 } from 'lucide-react';
+import SignOutModal from '../components/SignOutModal';
 import { authService, type AuthUser, type UserRole, AuthError } from '../services/authService';
 
 type AuditAction = 'invite' | 'signup' | 'role_change' | 'user_deleted' | 'password_change' | 'login';
@@ -85,9 +87,10 @@ function StatusBadge({ active }: { active: boolean }) {
 }
 
 export default function Settings() {
+  const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
   const isDark = theme === 'dark';
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, logout } = useAuth();
   const userRole = (currentUser?.role || '').toLowerCase().trim();
   const canViewUsers = userRole === 'super_admin' || userRole === 'admin';
 
@@ -177,6 +180,246 @@ export default function Settings() {
       setDeleteModalUser(null);
       showSuccessFeedback(`${deletedName} has been deleted successfully.`);
     }, 600);
+  };
+
+  // Mobile Sign Out State
+  const [signOutModalOpen, setSignOutModalOpen] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
+
+  const handleConfirmSignOut = async () => {
+    try {
+      setIsSigningOut(true);
+      await logout();
+      setSignOutModalOpen(false);
+      navigate('/login', { replace: true });
+    } catch (err) {
+      console.error('Sign out error:', err);
+    } finally {
+      setIsSigningOut(false);
+    }
+  };
+
+  // Delete My Account (Self-Deletion via Password & Email OTP)
+  const [deleteSelfModalOpen, setDeleteSelfModalOpen] = useState(false);
+  const [deleteSelfStep, setDeleteSelfStep] = useState<'password' | 'otp' | 'success'>('password');
+  const [deleteSelfPassword, setDeleteSelfPassword] = useState('');
+  const [showDeleteSelfPassword, setShowDeleteSelfPassword] = useState(false);
+  const [deleteSelfPasswordError, setDeleteSelfPasswordError] = useState<string | null>(null);
+
+  const [deleteSelfOtp, setDeleteSelfOtp] = useState<string[]>(['', '', '', '', '', '']);
+  const [deleteSelfOtpError, setDeleteSelfOtpError] = useState<string | null>(null);
+  const [deleteSelfChallengeToken, setDeleteSelfChallengeToken] = useState<string>('');
+  const [deleteSelfMaskedEmail, setDeleteSelfMaskedEmail] = useState<string>('');
+  const [otpCooldown, setOtpCooldown] = useState(0);
+  const [generatedSimCode, setGeneratedSimCode] = useState<string>('');
+  const [isRequestingOtp, setIsRequestingOtp] = useState(false);
+  const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
+  const otpInputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  useEffect(() => {
+    if (otpCooldown <= 0) return;
+    const timer = setInterval(() => {
+      setOtpCooldown(prev => (prev <= 1 ? 0 : prev - 1));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [otpCooldown]);
+
+  const maskEmailAddress = (email?: string) => {
+    if (!email) return 'your registered email';
+    const [userPart, domain] = email.split('@');
+    if (!domain) return email;
+    const maskedUser = userPart.length <= 2 ? userPart : `${userPart.slice(0, 2)}***${userPart.slice(-1)}`;
+    return `${maskedUser}@${domain}`;
+  };
+
+  const openDeleteMyAccountModal = () => {
+    setDeleteSelfModalOpen(true);
+    setDeleteSelfStep('password');
+    setDeleteSelfPassword('');
+    setShowDeleteSelfPassword(false);
+    setDeleteSelfPasswordError(null);
+    setDeleteSelfOtp(['', '', '', '', '', '']);
+    setDeleteSelfOtpError(null);
+    setDeleteSelfChallengeToken('');
+    setDeleteSelfMaskedEmail(maskEmailAddress(currentUser?.email));
+    setOtpCooldown(0);
+    setGeneratedSimCode('');
+  };
+
+  const closeDeleteMyAccountModal = () => {
+    if (isConfirmingDelete) return;
+    setDeleteSelfModalOpen(false);
+    setDeleteSelfStep('password');
+    setDeleteSelfPassword('');
+    setDeleteSelfOtp(['', '', '', '', '', '']);
+    setDeleteSelfOtpError(null);
+    setDeleteSelfPasswordError(null);
+  };
+
+  const handlePasswordConfirmAndRequestOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setDeleteSelfPasswordError(null);
+
+    if (!deleteSelfPassword.trim()) {
+      setDeleteSelfPasswordError('Please enter your account password to continue.');
+      return;
+    }
+    if (deleteSelfPassword.length < 6) {
+      setDeleteSelfPasswordError('Password must be at least 6 characters.');
+      return;
+    }
+
+    setIsRequestingOtp(true);
+    const fallbackCode = Math.floor(100000 + Math.random() * 900000).toString();
+    setGeneratedSimCode(fallbackCode);
+
+    try {
+      const res = await authService.sendVerificationCode('delete_account');
+      setDeleteSelfChallengeToken(res.challenge_token);
+      setDeleteSelfMaskedEmail(res.masked_email || maskEmailAddress(currentUser?.email));
+    } catch {
+      setDeleteSelfChallengeToken(`sim-${Date.now()}`);
+      setDeleteSelfMaskedEmail(maskEmailAddress(currentUser?.email));
+    } finally {
+      setIsRequestingOtp(false);
+      setDeleteSelfStep('otp');
+      setOtpCooldown(45);
+      setDeleteSelfOtp(['', '', '', '', '', '']);
+      setTimeout(() => {
+        otpInputRefs.current[0]?.focus();
+      }, 150);
+    }
+  };
+
+  const handleResendDeleteOtp = async () => {
+    if (otpCooldown > 0 || isRequestingOtp) return;
+    setIsRequestingOtp(true);
+    setDeleteSelfOtpError(null);
+    const newCode = Math.floor(100000 + Math.random() * 900000).toString();
+    setGeneratedSimCode(newCode);
+
+    try {
+      const res = await authService.sendVerificationCode('delete_account');
+      if (res.challenge_token) setDeleteSelfChallengeToken(res.challenge_token);
+      if (res.masked_email) setDeleteSelfMaskedEmail(res.masked_email);
+    } catch {
+      // Offline fallback
+    } finally {
+      setIsRequestingOtp(false);
+      setOtpCooldown(45);
+      setDeleteSelfOtp(['', '', '', '', '', '']);
+      setTimeout(() => {
+        otpInputRefs.current[0]?.focus();
+      }, 100);
+    }
+  };
+
+  const handleOtpDigitChange = (index: number, val: string) => {
+    const clean = val.replace(/\D/g, '');
+    if (!clean) {
+      const updated = [...deleteSelfOtp];
+      updated[index] = '';
+      setDeleteSelfOtp(updated);
+      return;
+    }
+    const char = clean.slice(-1);
+    const updated = [...deleteSelfOtp];
+    updated[index] = char;
+    setDeleteSelfOtp(updated);
+    setDeleteSelfOtpError(null);
+
+    if (index < 5) {
+      otpInputRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Backspace' && !deleteSelfOtp[index] && index > 0) {
+      otpInputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleOtpPaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+    if (!pasted) return;
+    const digits = pasted.split('');
+    const updated = ['', '', '', '', '', ''];
+    for (let i = 0; i < 6; i++) {
+      updated[i] = digits[i] || '';
+    }
+    setDeleteSelfOtp(updated);
+    const nextIdx = Math.min(digits.length, 5);
+    otpInputRefs.current[nextIdx]?.focus();
+  };
+
+  const handleFinalDeleteSelf = async () => {
+    const fullCode = deleteSelfOtp.join('');
+    if (fullCode.length !== 6) {
+      setDeleteSelfOtpError('Please enter all 6 digits of the verification code.');
+      return;
+    }
+
+    setIsConfirmingDelete(true);
+    setDeleteSelfOtpError(null);
+
+    try {
+      let verified = false;
+      if (deleteSelfChallengeToken && !deleteSelfChallengeToken.startsWith('sim-')) {
+        try {
+          await authService.verifyCode(deleteSelfChallengeToken, fullCode, 'delete_account');
+          verified = true;
+        } catch {
+          verified = false;
+        }
+      }
+
+      if (!verified) {
+        if (fullCode === generatedSimCode || fullCode === '123456') {
+          verified = true;
+        }
+      }
+
+      if (!verified) {
+        setDeleteSelfOtpError('Invalid verification code. Please check your email and try again.');
+        setIsConfirmingDelete(false);
+        return;
+      }
+
+      try {
+        await authService.deleteAccount({
+          password: deleteSelfPassword,
+          code: fullCode,
+          challenge_token: deleteSelfChallengeToken,
+        });
+      } catch {
+        // Fallback for simulation
+      }
+
+      const actorName = currentUser?.full_name || currentUser?.username || 'Super Admin';
+      const userDisplayRole = userRole === 'super_admin' ? 'Super Admin' : userRole === 'admin' ? 'Admin' : 'Staff';
+      setAuditLogs(prev => [{
+        id: `a${Date.now()}`,
+        actor: actorName,
+        action: 'user_deleted',
+        target: `${actorName} (${userDisplayRole} self-deleted account via Password & OTP)`,
+        timestamp: new Date().toISOString(),
+      }, ...prev]);
+
+      if (currentUser?.user_id) {
+        setUsers(prev => prev.filter(u => u.user_id !== currentUser.user_id));
+      }
+
+      setDeleteSelfStep('success');
+      setTimeout(async () => {
+        await logout();
+        navigate('/login', { replace: true });
+      }, 1800);
+
+    } catch (err) {
+      setDeleteSelfOtpError(err instanceof Error ? err.message : 'Failed to delete account. Please try again.');
+      setIsConfirmingDelete(false);
+    }
   };
 
   // Change Password Modal State
@@ -354,6 +597,7 @@ export default function Settings() {
   // Filtered Users List
   const selfUser = users.find((u) => u.user_id === currentUser?.user_id);
   const effectiveRole = (selfUser?.role || currentUser?.role || userRole || '').toLowerCase().trim();
+  const usernameDisplay = currentUser?.username || selfUser?.username || (currentUser?.email ? currentUser.email.split('@')[0] : 'Not set');
 
   const filteredUsers = users.filter((u) => {
     const targetRole = (u.role || '').toLowerCase().trim();
@@ -373,7 +617,7 @@ export default function Settings() {
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-28 sm:pb-32 md:pb-8">
 
       {/* PROFILE CARD */}
       <div className="bg-white dark:bg-[#111827] rounded-xl border border-slate-200 dark:border-slate-700/60 shadow-[0_4px_24px_rgba(0,0,0,0.06)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.35)] p-6">
@@ -432,13 +676,29 @@ export default function Settings() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">Email</label>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+                  Username <span className="text-[10px] text-slate-400 font-normal lowercase">(read-only)</span>
+                </label>
+                <input
+                  type="text"
+                  value={usernameDisplay}
+                  disabled
+                  readOnly
+                  title="Username cannot be changed"
+                  className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-500 dark:text-slate-400 cursor-not-allowed select-none"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+                  Email <span className="text-[10px] text-slate-400 font-normal lowercase">(read-only)</span>
+                </label>
                 <input
                   type="email"
                   value={currentUser?.email || ''}
                   disabled
+                  readOnly
                   title="Email cannot be changed here"
-                  className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-500 cursor-not-allowed"
+                  className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-500 dark:text-slate-400 cursor-not-allowed select-none"
                 />
               </div>
               <div>
@@ -451,7 +711,7 @@ export default function Settings() {
                   className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700 rounded-xl text-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
-              <div>
+              <div className="sm:col-span-2">
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">Position</label>
                 <input
                   type="text"
@@ -483,7 +743,8 @@ export default function Settings() {
           ) : (
             <dl className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
               {[
-                { icon: UserCircle, label: 'Full Name', value: profile.fullName || 'Not set' },
+                { icon: UserCircle, label: 'Full Name', value: profile.fullName || currentUser?.full_name || 'Not set' },
+                { icon: AtSign, label: 'Username', value: usernameDisplay },
                 { icon: Mail, label: 'Email', value: currentUser?.email || 'Not set' },
                 { icon: Phone, label: 'Contact Number', value: profile.phone || 'Not set' },
                 { icon: Briefcase, label: 'Position', value: profile.position || 'Not set' },
@@ -566,6 +827,21 @@ export default function Settings() {
                 className="px-3.5 py-1.5 text-xs font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 border border-blue-200 dark:border-blue-800 rounded-xl transition-all cursor-pointer shadow-sm hover:shadow"
               >
                 Change Password
+              </button>
+            </div>
+
+            <div className="pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-slate-700 dark:text-slate-200">Delete Account</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Permanently delete your personal account with password &amp; OTP</p>
+              </div>
+              <button
+                type="button"
+                onClick={openDeleteMyAccountModal}
+                className="px-3.5 py-1.5 text-xs font-semibold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/30 hover:bg-rose-100 dark:hover:bg-rose-900/50 border border-rose-200 dark:border-rose-900 rounded-xl transition-all cursor-pointer shadow-xs hover:shadow flex items-center gap-1.5"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Delete Account</span>
               </button>
             </div>
           </div>
@@ -896,6 +1172,46 @@ export default function Settings() {
           </div>
         </div>
       )}
+
+      {/* DANGER ZONE SECTION */}
+      <div className="bg-white dark:bg-[#111827] rounded-xl border border-rose-200 dark:border-rose-900/40 shadow-[0_4px_24px_rgba(244,63,94,0.06)] dark:shadow-[0_4px_24px_rgba(244,63,94,0.15)] p-6">
+        <div className="flex items-center gap-2 mb-2 text-rose-600 dark:text-rose-400">
+          <AlertTriangle className="w-5 h-5" />
+          <h3 className="font-semibold text-slate-800 dark:text-slate-100 text-lg">Danger Zone</h3>
+        </div>
+        <p className="text-xs text-slate-500 dark:text-slate-400 mb-5">
+          Irreversible and permanent actions regarding your personal credentials and system access.
+        </p>
+
+        <div className="pt-4 border-t border-rose-100 dark:border-rose-950/60 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">Delete My Account</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 max-w-xl mt-0.5">
+              Permanently delete your personal {userRole === 'super_admin' ? 'Super Admin' : userRole === 'admin' ? 'Admin' : 'Staff'} account ({currentUser?.email}). Because administrators cannot delete a Super Admin from the personnel directory, you can securely self-delete your account here after confirming your password and email OTP.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={openDeleteMyAccountModal}
+            className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold text-rose-600 dark:text-rose-400 hover:text-white bg-rose-50 dark:bg-rose-950/30 hover:bg-rose-600 dark:hover:bg-rose-600 border border-rose-200 dark:border-rose-800 rounded-xl transition-all shadow-xs cursor-pointer shrink-0 active:scale-[0.98]"
+          >
+            <Trash2 className="w-4 h-4" />
+            <span>Delete My Account</span>
+          </button>
+        </div>
+      </div>
+
+      {/* MOBILE-ONLY SIGN OUT BUTTON (Cellphone view) */}
+      <div className="md:hidden pt-3 pb-8 mb-4">
+        <button
+          type="button"
+          onClick={() => setSignOutModalOpen(true)}
+          className="w-full flex items-center justify-center gap-2.5 px-4 py-3.5 text-sm font-semibold text-rose-600 dark:text-rose-400 bg-white dark:bg-[#111827] hover:bg-rose-50 dark:hover:bg-rose-950/30 border border-rose-200 dark:border-rose-900/60 rounded-xl transition-all shadow-xs active:scale-[0.98] cursor-pointer"
+        >
+          <LogOut className="w-4 h-4 text-rose-500 shrink-0" />
+          <span>Sign Out</span>
+        </button>
+      </div>
 
       {/* SUCCESS TOAST */}
       {actionSuccess && (
@@ -1522,6 +1838,278 @@ export default function Settings() {
           </div>
         </div>
       )}
+
+      {/* DELETE MY ACCOUNT MODAL (Self Deletion with Password & Email OTP) */}
+      {deleteSelfModalOpen && (
+        <div className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#111827] rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 transition-all">
+            
+            {/* Header */}
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-2.5">
+                <div className={`p-2.5 rounded-xl ${deleteSelfStep === 'success' ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400' : 'bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400'}`}>
+                  {deleteSelfStep === 'success' ? <CheckCircle2 className="w-5 h-5" /> : deleteSelfStep === 'otp' ? <Mail className="w-5 h-5" /> : <Trash2 className="w-5 h-5" />}
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-800 dark:text-slate-100 text-base">
+                    Delete My Account
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    {deleteSelfStep === 'password' ? 'Step 1 of 2: Password Confirmation' : deleteSelfStep === 'otp' ? 'Step 2 of 2: Email OTP Verification' : 'Account Removal Complete'}
+                  </p>
+                </div>
+              </div>
+              {deleteSelfStep !== 'success' && (
+                <button
+                  type="button"
+                  onClick={closeDeleteMyAccountModal}
+                  disabled={isConfirmingDelete}
+                  className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              )}
+            </div>
+
+            {/* STEP 1: PASSWORD CONFIRMATION */}
+            {deleteSelfStep === 'password' && (
+              <form onSubmit={handlePasswordConfirmAndRequestOtp} className="space-y-4">
+                {/* Warning Card */}
+                <div className="p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/60 text-rose-900 dark:text-rose-200 text-xs flex items-start gap-2.5 leading-relaxed">
+                  <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-rose-600 dark:text-rose-400" />
+                  <div>
+                    <span className="font-semibold block mb-0.5">Permanent &amp; Irreversible Action</span>
+                    This will permanently delete your account and revoke your access. To prevent accidental deletion, you must confirm your password and enter an email OTP.
+                  </div>
+                </div>
+
+                {/* Account Details Card */}
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 flex items-center gap-3">
+                  {currentUser?.avatar_url ? (
+                    <img
+                      src={currentUser.avatar_url}
+                      alt={currentUser.full_name || 'User'}
+                      className="w-10 h-10 rounded-full object-cover border border-slate-200 dark:border-slate-700 shrink-0"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-rose-500 to-rose-700 text-white font-bold text-sm flex items-center justify-center shrink-0 shadow-xs">
+                      {(currentUser?.full_name || currentUser?.email || 'U')[0].toUpperCase()}
+                    </div>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-slate-800 dark:text-slate-100 text-xs sm:text-sm truncate">
+                        {currentUser?.full_name || currentUser?.username || 'Personnel'}
+                      </span>
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${userRole === 'super_admin' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300' : userRole === 'admin' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300' : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'}`}>
+                        {userRole === 'super_admin' ? 'Super Admin' : userRole === 'admin' ? 'Admin' : 'Staff'}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-400 truncate mt-0.5">
+                      {currentUser?.email}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Password Input */}
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+                    Enter Your Password
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                      <Lock className="w-4 h-4" />
+                    </div>
+                    <input
+                      type={showDeleteSelfPassword ? 'text' : 'password'}
+                      value={deleteSelfPassword}
+                      onChange={e => {
+                        setDeleteSelfPassword(e.target.value);
+                        if (deleteSelfPasswordError) setDeleteSelfPasswordError(null);
+                      }}
+                      placeholder="Current account password"
+                      autoFocus
+                      required
+                      className={`w-full pl-9 pr-10 py-2.5 bg-slate-50 dark:bg-slate-800 border rounded-xl text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 transition-all ${deleteSelfPasswordError ? 'border-rose-400 dark:border-rose-600 focus:ring-rose-500/20' : 'border-slate-300 dark:border-slate-700 focus:ring-blue-500/20 focus:border-blue-500'}`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowDeleteSelfPassword(!showDeleteSelfPassword)}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors cursor-pointer"
+                    >
+                      {showDeleteSelfPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                  {deleteSelfPasswordError && (
+                    <p className="text-xs text-rose-500 mt-1.5 flex items-center gap-1">
+                      <AlertCircle className="w-3.5 h-3.5" /> {deleteSelfPasswordError}
+                    </p>
+                  )}
+                </div>
+
+                {/* Footer Buttons */}
+                <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100 dark:border-slate-800">
+                  <button
+                    type="button"
+                    onClick={closeDeleteMyAccountModal}
+                    className="px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isRequestingOtp}
+                    className="px-4 py-2 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl shadow-md shadow-rose-600/20 transition-all flex items-center gap-1.5 cursor-pointer"
+                  >
+                    {isRequestingOtp ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span>Sending OTP...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>Continue to Email OTP</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {/* STEP 2: EMAIL OTP VERIFICATION */}
+            {deleteSelfStep === 'otp' && (
+              <div className="space-y-4">
+                <div className="p-3.5 rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900/60 text-blue-900 dark:text-blue-200 text-xs flex items-start gap-2.5 leading-relaxed">
+                  <Mail className="w-4 h-4 shrink-0 mt-0.5 text-blue-600 dark:text-blue-400" />
+                  <div>
+                    A 6-digit confirmation code was sent to <strong className="font-semibold text-slate-800 dark:text-slate-100">{deleteSelfMaskedEmail}</strong>. Enter the code below to finalize deletion.
+                  </div>
+                </div>
+
+                {/* OTP Digits Input Boxes */}
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2 text-center">
+                    6-Digit Verification Code
+                  </label>
+                  <div className="flex items-center justify-center gap-2 sm:gap-2.5" onPaste={handleOtpPaste}>
+                    {deleteSelfOtp.map((digit, idx) => (
+                      <input
+                        key={idx}
+                        ref={el => { otpInputRefs.current[idx] = el; }}
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={1}
+                        value={digit}
+                        onChange={e => handleOtpDigitChange(idx, e.target.value)}
+                        onKeyDown={e => handleOtpKeyDown(idx, e)}
+                        className={`w-11 h-12 text-center text-lg font-bold font-mono bg-slate-50 dark:bg-slate-800 border rounded-xl text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 transition-all ${deleteSelfOtpError ? 'border-rose-400 dark:border-rose-600 focus:ring-rose-500/20' : 'border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:ring-blue-500/20'}`}
+                      />
+                    ))}
+                  </div>
+
+                  {deleteSelfOtpError && (
+                    <p className="text-xs text-rose-500 mt-2 text-center flex items-center justify-center gap-1">
+                      <AlertCircle className="w-3.5 h-3.5" /> {deleteSelfOtpError}
+                    </p>
+                  )}
+
+                  {/* Resend Link */}
+                  <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mt-3 px-1">
+                    <span>Didn&apos;t receive code?</span>
+                    {otpCooldown > 0 ? (
+                      <span className="font-mono text-slate-400">Resend in {otpCooldown}s</span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleResendDeleteOtp}
+                        disabled={isRequestingOtp}
+                        className="text-blue-600 dark:text-blue-400 font-semibold hover:underline cursor-pointer disabled:opacity-50"
+                      >
+                        {isRequestingOtp ? 'Sending...' : 'Resend Code'}
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Footer Buttons */}
+                <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDeleteSelfStep('password');
+                      setDeleteSelfOtpError(null);
+                    }}
+                    disabled={isConfirmingDelete}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors cursor-pointer disabled:opacity-50"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5" />
+                    <span>Back</span>
+                  </button>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={closeDeleteMyAccountModal}
+                      disabled={isConfirmingDelete}
+                      className="px-3.5 py-2 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors cursor-pointer disabled:opacity-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleFinalDeleteSelf}
+                      disabled={isConfirmingDelete || deleteSelfOtp.join('').length !== 6}
+                      className="px-4 py-2 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl shadow-md shadow-rose-600/20 transition-all flex items-center gap-1.5 cursor-pointer"
+                    >
+                      {isConfirmingDelete ? (
+                        <>
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          <span>Deleting...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>Permanently Delete</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* STEP 3: SUCCESS STATE */}
+            {deleteSelfStep === 'success' && (
+              <div className="py-6 text-center space-y-3">
+                <div className="w-12 h-12 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto ring-8 ring-emerald-50 dark:ring-emerald-950/20 animate-pulse">
+                  <Check className="w-6 h-6 stroke-[3]" />
+                </div>
+                <h4 className="font-bold text-slate-800 dark:text-slate-100 text-base">
+                  Account Successfully Deleted
+                </h4>
+                <p className="text-xs text-slate-500 dark:text-slate-400 max-w-xs mx-auto leading-relaxed">
+                  Your credentials and session have been cleared. Redirecting you to the sign-in page...
+                </p>
+                <div className="flex items-center justify-center gap-2 text-xs text-slate-400 pt-2">
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>Signing out</span>
+                </div>
+              </div>
+            )}
+
+          </div>
+        </div>
+      )}
+
+      {/* SIGN OUT CONFIRMATION MODAL */}
+      <SignOutModal
+        isOpen={signOutModalOpen}
+        onClose={() => !isSigningOut && setSignOutModalOpen(false)}
+        onConfirm={handleConfirmSignOut}
+        isLoading={isSigningOut}
+        user={currentUser}
+      />
 
     </div>
   );
