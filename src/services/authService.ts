@@ -264,7 +264,27 @@ export const authService = {
     return data;
   },
 
-  /**
+    /**
+   * Change password for the currently authenticated user.
+   */
+  async changePassword(payload: {
+    current_password: string;
+    new_password: string;
+  }): Promise<{ success: boolean; message: string }> {
+    const res = await apiFetch('/api/auth/change-password', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new AuthError(data.error ?? data.message ?? 'Failed to update password', {
+        reason: data.reason ?? 'change_password_error',
+      });
+    }
+    return data;
+  },
+
+/**
    * Restore session from httpOnly cookie on app boot.
    * Returns the current user, or null if no valid session exists.
    */
