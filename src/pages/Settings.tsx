@@ -420,7 +420,7 @@ export default function Settings() {
     setPasswordModalOpen(false);
   };
 
-  const handlePasswordSubmit = (e: React.FormEvent) => {
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setPasswordError(null);
     setPasswordSuccess(null);
@@ -446,10 +446,13 @@ export default function Settings() {
     }
 
     setIsSubmittingPassword(true);
-    // Client-side simulation as requested (no backend auth call)
-    setTimeout(() => {
-      setIsSubmittingPassword(false);
-      setPasswordSuccess('Password successfully updated! Your credentials have been saved.');
+    try {
+      const res = await authService.changePassword({
+        current_password: currentPassword,
+        new_password: newPassword,
+      });
+
+      setPasswordSuccess(res.message || 'Password successfully updated! Your credentials have been saved.');
       setAuditLogs(prev => [{
         id: `a${Date.now()}`,
         actor: currentUser?.full_name || 'Super Admin',
@@ -461,7 +464,11 @@ export default function Settings() {
       setTimeout(() => {
         resetPasswordModal();
       }, 1600);
-    }, 700);
+    } catch (err: any) {
+      setPasswordError(err.message || 'Failed to update password. Please check your current password and try again.');
+    } finally {
+      setIsSubmittingPassword(false);
+    }
   };
 
   const fetchUsers = useCallback(async () => {
