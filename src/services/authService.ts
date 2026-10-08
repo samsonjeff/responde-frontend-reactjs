@@ -98,7 +98,7 @@ export function setStoredUser(user: AuthUser | null): void {
 }
 
 // Internal fetch wrapper - sends cookies AND Authorization Bearer header if token exists
-async function apiFetch(path: string, options?: RequestInit): Promise<Response> {
+export async function apiFetch(path: string, options?: RequestInit): Promise<Response> {
   const token = getStoredSessionToken();
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
