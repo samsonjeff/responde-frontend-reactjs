@@ -386,6 +386,14 @@ export default function IncidentReports() {
   const [filterUrgency, setFilterUrgency] = useState('All Urgency');
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
+  const resetFilters = () => {
+    setFilterBarangay('All Barangays');
+    setFilterType('All Types');
+    setFilterUrgency('All Urgency');
+    setFromDate('');
+    setToDate('');
+  };
+
   const hasActiveFilters =
     filterBarangay !== 'All Barangays' ||
     filterType !== 'All Types' ||
@@ -447,7 +455,7 @@ export default function IncidentReports() {
   useEffect(() => {
     setCurrentPage(1);
     setSelectedIds([]);
-  }, [activeTab, filterBarangay, filterType, filterUrgency]);
+  }, [activeTab, filterBarangay, filterType, filterUrgency, fromDate, toDate]);
 
   const availableIncidentTypes = useMemo(() => {
     const set = new Set<string>(BASE_INCIDENT_TYPES);
@@ -591,13 +599,48 @@ export default function IncidentReports() {
 
   const allChecklistChecked = Object.values(checklist).every(Boolean);
 
-  const filteredReports = reports.filter(r => {
-    if (r.status !== activeTab) return false;
-    if (filterBarangay !== 'All Barangays' && r.barangay !== filterBarangay) return false;
-    if (filterType !== 'All Types' && r.type !== filterType) return false;
-    if (filterUrgency !== 'All Urgency' && r.urgency !== filterUrgency) return false;
-    return true;
-  });
+  const getReportDateString = (r: Report): string | null => {
+    if (r.createdAt) {
+      try {
+        const d = new Date(r.createdAt);
+        if (!isNaN(d.getTime())) return d.toISOString().split('T')[0];
+      } catch {}
+    }
+    if (r.time) {
+      const parts = r.time.split(' ')[0].split('/');
+      if (parts.length === 2) {
+        const mm = parts[0].padStart(2, '0');
+        const dd = parts[1].padStart(2, '0');
+        const yyyy = new Date().getFullYear();
+        return `${yyyy}-${mm}-${dd}`;
+      }
+      if (parts.length === 3) {
+        const mm = parts[0].padStart(2, '0');
+        const dd = parts[1].padStart(2, '0');
+        const yyyy = parts[2].length === 2 ? `20${parts[2]}` : parts[2];
+        return `${yyyy}-${mm}-${dd}`;
+      }
+    }
+    return null;
+  };
+
+  const filteredReports = useMemo(() => {
+    return reports.filter(r => {
+      if (r.status !== activeTab) return false;
+      if (filterBarangay !== 'All Barangays' && r.barangay?.toLowerCase() !== filterBarangay.toLowerCase()) return false;
+      if (filterType !== 'All Types' && r.type?.toLowerCase() !== filterType.toLowerCase()) return false;
+      if (filterUrgency !== 'All Urgency' && r.urgency?.toLowerCase() !== filterUrgency.toLowerCase()) return false;
+      if (fromDate) {
+        const repDate = getReportDateString(r);
+        if (repDate && repDate < fromDate) return false;
+      }
+      if (toDate) {
+        const repDate = getReportDateString(r);
+        if (repDate && repDate > toDate) return false;
+      }
+      return true;
+    });
+  }, [reports, activeTab, filterBarangay, filterType, filterUrgency, fromDate, toDate]);
 
   const totalPages = Math.ceil(filteredReports.length / itemsPerPage);
   const paginatedReports = filteredReports.slice(
@@ -755,30 +798,23 @@ export default function IncidentReports() {
                 {hasActiveFilters && (
                   <button
                     type="button"
-                    onClick={() => {
-                      setFilterBarangay('All Barangays');
-                      setFilterType('All Types');
-                      setFilterUrgency('All Urgency');
-                      setFromDate('');
-                      setToDate('');
-                    }}
-                    className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                    onClick={resetFilters}
+                    className="inline-flex items-center gap-1 text-xs font-semibold text-[#0071E3] dark:text-sky-400 hover:underline cursor-pointer"
                   >
-                    Reset
+                    <RotateCcw className="w-3 h-3" />
+                    <span>Reset</span>
                   </button>
                 )}
               </div>
 
-              {/* Filter Controls — 2-column compact grid on mobile, flex row on desktop */}
-              <div className={`${mobileFiltersOpen ? 'grid' : 'hidden'} lg:flex grid-cols-2 gap-2 lg:gap-3 lg:items-center pt-2.5 lg:pt-0`}>
-                <div className="hidden lg:flex items-center gap-2 text-slate-600 dark:text-slate-300 text-xs font-semibold shrink-0 uppercase tracking-wider">
-                  <div className="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500">
-                    <Filter className="w-3.5 h-3.5" />
-                  </div>
+              {/* Filter Controls — 2-column compact grid on mobile, flex row with wrap on desktop */}
+              <div className={`${mobileFiltersOpen ? 'grid' : 'hidden'} lg:flex lg:flex-wrap grid-cols-2 gap-2 sm:gap-2.5 lg:gap-3 lg:items-center pt-2.5 lg:pt-0`}>
+                <div className="hidden lg:flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-100/80 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 text-xs font-semibold shrink-0 border border-slate-200/50 dark:border-slate-700/50">
+                  <Filter className="w-3.5 h-3.5 text-[#0071E3]" />
                   <span>Filters</span>
                 </div>
 
-                <div className="col-span-1 lg:col-span-auto">
+                <div className="col-span-1 lg:col-span-auto min-w-[130px]">
                   <FilterDropdown
                     value={filterBarangay}
                     options={['All Barangays', ...Array.from(new Set([...TALISAY_BARANGAYS, ...reports.map(r => r.barangay)])).sort()]}
@@ -786,7 +822,7 @@ export default function IncidentReports() {
                   />
                 </div>
 
-                <div className="col-span-1 lg:col-span-auto">
+                <div className="col-span-1 lg:col-span-auto min-w-[120px]">
                   <FilterDropdown
                     value={filterType}
                     options={['All Types', ...Array.from(new Set([...BASE_INCIDENT_TYPES, ...reports.map(r => r.type)])).filter(Boolean).sort()]}
@@ -794,7 +830,7 @@ export default function IncidentReports() {
                   />
                 </div>
 
-                <div className="col-span-2 sm:col-span-1 lg:col-span-auto">
+                <div className="col-span-2 sm:col-span-1 lg:col-span-auto min-w-[120px]">
                   <FilterDropdown
                     value={filterUrgency}
                     options={['All Urgency', 'High', 'Moderate', 'Low']}
@@ -802,19 +838,30 @@ export default function IncidentReports() {
                   />
                 </div>
 
-                <div className="col-span-2 lg:col-span-auto flex items-center gap-2 lg:ml-auto w-full lg:w-auto">
-                  <div className="flex items-center gap-1.5 flex-1 sm:flex-initial">
-                    <span className="text-[11px] sm:text-xs font-medium text-slate-500 dark:text-slate-400 shrink-0">From:</span>
-                    <div className="flex-1 sm:w-36">
-                      <DatePicker value={fromDate} onChange={setFromDate} placeholder="Select Date" />
-                    </div>
+                <div className="col-span-2 lg:col-span-auto flex flex-wrap sm:flex-nowrap items-center gap-2.5 sm:gap-3 lg:ml-auto w-full lg:w-auto">
+                  <div className="flex items-center gap-2 flex-1 sm:flex-initial min-w-[130px]">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 whitespace-nowrap">
+                      From:
+                    </span>
+                    <DatePicker value={fromDate} onChange={setFromDate} placeholder="Select Date" />
                   </div>
-                  <div className="flex items-center gap-1.5 flex-1 sm:flex-initial">
-                    <span className="text-[11px] sm:text-xs font-medium text-slate-500 dark:text-slate-400 shrink-0">To:</span>
-                    <div className="flex-1 sm:w-36">
-                      <DatePicker value={toDate} onChange={setToDate} placeholder="Select Date" />
-                    </div>
+                  <div className="flex items-center gap-2 flex-1 sm:flex-initial min-w-[130px]">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 whitespace-nowrap">
+                      To:
+                    </span>
+                    <DatePicker value={toDate} onChange={setToDate} placeholder="Select Date" />
                   </div>
+                  {hasActiveFilters && (
+                    <button
+                      type="button"
+                      onClick={resetFilters}
+                      className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-[#0071E3] hover:text-blue-700 dark:text-sky-400 bg-blue-500/10 hover:bg-blue-500/15 rounded-xl transition-all duration-150 active:scale-[0.97] cursor-pointer shrink-0 ml-auto sm:ml-0"
+                      title="Reset all filters"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                      <span>Reset</span>
+                    </button>
+                  )}
                 </div>
               </div>
             </div>

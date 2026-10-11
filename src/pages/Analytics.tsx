@@ -21,6 +21,7 @@ import {
   Clock3,
   Filter,
   X,
+  RotateCcw,
   Layers,
   Sparkles,
   PieChart as PieChartIcon,
@@ -52,6 +53,7 @@ export type AnalyticsReport = {
   source: string;
   time: string;
   status: string;
+  createdAt?: string | null;
   verifiedAt?: string | null;
 };
 
@@ -263,34 +265,47 @@ export default function Analytics() {
     return ['All Barangays', ...unique];
   }, [data]);
 
-  const allTypes = useMemo(() => ['All Types', 'Search & Rescue', 'Medical', 'Food & Water', 'Infrastructure'], []);
+  const allTypes = useMemo(() => {
+    const base = ['Search & Rescue', 'Medical', 'Food & Water', 'Infrastructure'];
+    const fromData = data.map(r => r.type).filter(Boolean);
+    return ['All Types', ...Array.from(new Set([...base, ...fromData])).sort()];
+  }, [data]);
   const allSources = useMemo(() => ['All Sources', 'Bot', 'Scraper'], []);
 
   // Effective filters (header dropdowns override chart clicks)
   const effectiveBarangay = barangayFilter !== 'All Barangays' ? barangayFilter : activeBarangay;
   const effectiveType = typeFilter !== 'All Types' ? typeFilter : activeType;
 
+  const getAnalyticsReportDate = (r: AnalyticsReport): string | null => {
+    if (r.createdAt) {
+      try {
+        const d = new Date(r.createdAt);
+        if (!isNaN(d.getTime())) return d.toISOString().split('T')[0];
+      } catch {}
+    }
+    const p = parseReportTime(r.time);
+    if (p) {
+      const yyyy = new Date().getFullYear();
+      const mm = String(p.month).padStart(2, '0');
+      const dd = String(p.day).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd}`;
+    }
+    return null;
+  };
+
   // ── Filtered data ────────────────────────────────────────────────────────
   const filtered = useMemo(() => {
     return data.filter(r => {
-      if (effectiveBarangay && r.barangay !== effectiveBarangay) return false;
-      if (effectiveType && r.type !== effectiveType) return false;
+      if (effectiveBarangay && r.barangay?.toLowerCase() !== effectiveBarangay.toLowerCase()) return false;
+      if (effectiveType && r.type?.toLowerCase() !== effectiveType.toLowerCase()) return false;
       if (sourceFilter !== 'All Sources' && !r.source?.toLowerCase().includes(sourceFilter.toLowerCase())) return false;
       if (fromDate) {
-        const p = parseReportTime(r.time);
-        if (p) {
-          const d = new Date(new Date().getFullYear(), p.month - 1, p.day);
-          const from = new Date(fromDate);
-          if (d < from) return false;
-        }
+        const dStr = getAnalyticsReportDate(r);
+        if (dStr && dStr < fromDate) return false;
       }
       if (toDate) {
-        const p = parseReportTime(r.time);
-        if (p) {
-          const d = new Date(new Date().getFullYear(), p.month - 1, p.day);
-          const to = new Date(toDate);
-          if (d > to) return false;
-        }
+        const dStr = getAnalyticsReportDate(r);
+        if (dStr && dStr > toDate) return false;
       }
       return true;
     });
@@ -517,15 +532,15 @@ export default function Analytics() {
                 />
               </div>
 
-              {/* Date Pickers */}
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 xl:ml-auto w-full xl:w-auto relative z-40">
-                <div className="flex items-center gap-2 w-full sm:w-auto">
+              {/* Date Pickers & Reset */}
+              <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 sm:gap-3 xl:ml-auto w-full xl:w-auto relative z-40">
+                <div className="flex items-center gap-2 flex-1 sm:flex-initial min-w-[130px]">
                   <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 whitespace-nowrap">
                     From:
                   </span>
                   <DatePicker value={fromDate} onChange={setFromDate} placeholder="Select Date" />
                 </div>
-                <div className="flex items-center gap-2 w-full sm:w-auto">
+                <div className="flex items-center gap-2 flex-1 sm:flex-initial min-w-[130px]">
                   <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 whitespace-nowrap">
                     To:
                   </span>
@@ -534,10 +549,12 @@ export default function Analytics() {
 
                 {hasActiveFilters && (
                   <button
+                    type="button"
                     onClick={resetFilters}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-[#0071E3] hover:text-blue-700 dark:text-sky-400 bg-blue-500/10 hover:bg-blue-500/15 rounded-xl transition-all duration-150 active:scale-[0.97]"
+                    className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-[#0071E3] hover:text-blue-700 dark:text-sky-400 bg-blue-500/10 hover:bg-blue-500/15 rounded-xl transition-all duration-150 active:scale-[0.97] cursor-pointer shrink-0 ml-auto sm:ml-0"
+                    title="Reset all filters"
                   >
-                    <X className="w-3.5 h-3.5" />
+                    <RotateCcw className="w-3.5 h-3.5" />
                     <span>Reset</span>
                   </button>
                 )}

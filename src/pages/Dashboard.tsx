@@ -329,18 +329,11 @@ export default function Dashboard() {
     setSelectedConvId(conv.id);
     setActiveConv(conv);
     setShowMobileList(false);
-    if (conv.status === 'Incomplete') {
-      updateBotConversationStatus(conv.id, 'Complete', true);
-    }
   };
 
   const handleModalSelectConv = (id: string) => {
     setSelectedConvId(id);
     setShowMobileList(false);
-    const target = botConversations.find((c) => c.id === id);
-    if (target && target.status === 'Incomplete') {
-      updateBotConversationStatus(id, 'Complete', true);
-    }
   };
 
   const selectedConversation = botConversations.find(c => c.id === selectedConvId) || botConversations[0] || activeConv;

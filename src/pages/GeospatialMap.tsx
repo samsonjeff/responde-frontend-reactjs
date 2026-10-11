@@ -3,7 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X,
-  Filter, Navigation,
+  Filter, Navigation, RotateCcw,
   Siren, HeartPulse, Droplets, HardHat, ShieldCheck,
   FileText, User, Phone, Clock, Layers, MapPin,
 } from 'lucide-react';
@@ -416,6 +416,15 @@ export default function GeospatialMap() {
   const [filterType, setFilterType] = useState<string>('All Types');
   const [loading, setLoading] = useState(true);
 
+  const hasActiveFilters =
+    (filterUrgency !== 'All Urgency' && filterUrgency !== 'All') ||
+    (filterType !== 'All Types' && filterType !== 'All');
+
+  const resetFilters = () => {
+    setFilterUrgency('All Urgency');
+    setFilterType('All Types');
+  };
+
   useEffect(() => {
     const timer = setTimeout(() => {
       setLoading(false);
@@ -423,40 +432,60 @@ export default function GeospatialMap() {
     return () => clearTimeout(timer);
   }, []);
 
+  const availableIncidentTypes = useMemo(() => {
+    const set = new Set<string>(['Search & Rescue', 'Medical', 'Food & Water', 'Infrastructure']);
+    reports.forEach((r) => {
+      if (r.type && r.type.trim() && r.type !== 'All Types') {
+        set.add(r.type);
+      }
+    });
+    return ['All Types', ...Array.from(set).sort()];
+  }, [reports]);
+
+  const matchUrgency = useCallback((itemUrgency?: string) => {
+    if (!filterUrgency || filterUrgency === 'All Urgency' || filterUrgency === 'All') return true;
+    return itemUrgency?.trim().toLowerCase() === filterUrgency.trim().toLowerCase();
+  }, [filterUrgency]);
+
+  const matchType = useCallback((itemType?: string) => {
+    if (!filterType || filterType === 'All Types' || filterType === 'All') return true;
+    return itemType?.trim().toLowerCase() === filterType.trim().toLowerCase();
+  }, [filterType]);
+
   // Compute barangay max urgency level (High=3, Moderate=2, Low=1) reflecting active filters
   const URGENCY_WEIGHTS: Record<string, number> = { High: 3, Moderate: 2, Low: 1 };
   const barangayCounts = useMemo(() => {
     const maxUrgency: Record<string, number> = {};
     reports
       .filter((r) => r.status === 'verified' || r.status === 'under_review')
-      .filter((r) => filterUrgency === 'All Urgency' || filterUrgency === 'All' || r.urgency === filterUrgency)
-      .filter((r) => filterType === 'All Types' || filterType === 'All' || r.type === filterType)
+      .filter((r) => matchUrgency(r.urgency))
+      .filter((r) => matchType(r.type))
       .forEach((r) => {
         const weight = URGENCY_WEIGHTS[r.urgency] || 1;
         maxUrgency[r.barangay] = Math.max(maxUrgency[r.barangay] || 0, weight);
       });
     return maxUrgency;
-  }, [reports, filterUrgency, filterType]);
+  }, [reports, matchUrgency, matchType]);
 
   // Reports with coords for pin layer (verified + under_review — matches drawer)
   const pinReports = useMemo(() => {
     return reports
       .filter((r) => (r.status === 'verified' || r.status === 'under_review') && parseCoords(r.coordinates))
-      .filter((r) => filterUrgency === 'All Urgency' || filterUrgency === 'All' || r.urgency === filterUrgency)
-      .filter((r) => filterType === 'All Types' || filterType === 'All' || r.type === filterType);
-  }, [reports, filterUrgency, filterType]);
+      .filter((r) => matchUrgency(r.urgency))
+      .filter((r) => matchType(r.type));
+  }, [reports, matchUrgency, matchType]);
 
   // Drawer list: verified + under_review with coords
   const drawerReports = useMemo(() => {
     return reports
       .filter((r) => (r.status === 'verified' || r.status === 'under_review') && parseCoords(r.coordinates))
-      .filter((r) => filterUrgency === 'All Urgency' || filterUrgency === 'All' || r.urgency === filterUrgency)
-      .filter((r) => filterType === 'All Types' || filterType === 'All' || r.type === filterType)
+      .filter((r) => matchUrgency(r.urgency))
+      .filter((r) => matchType(r.type))
       .sort((a, b) => {
         const u = { High: 3, Moderate: 2, Low: 1 };
         return (u[b.urgency as keyof typeof u] || 0) - (u[a.urgency as keyof typeof u] || 0);
       });
-  }, [reports, filterUrgency, filterType]);
+  }, [reports, matchUrgency, matchType]);
 
   const toggleLayer = useCallback((key: keyof MapLayerState) => {
     setLayers((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -514,29 +543,45 @@ export default function GeospatialMap() {
         {/* ── Toolbar Row ── */}
         <div className="shrink-0">
           <div className="relative z-30 bg-white/80 dark:bg-[#111827]/80 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)] px-3 sm:px-5 py-2.5 sm:py-3 transition-all">
-            <div className="relative flex flex-col sm:flex-row flex-wrap xl:flex-nowrap items-stretch sm:items-center justify-between gap-2.5 sm:gap-3">
+            <div className="flex flex-col md:flex-row flex-wrap md:flex-nowrap items-stretch md:items-center justify-between gap-3">
 
               {/* Left: Filter Controls Capsule */}
-              <div className="grid grid-cols-2 gap-2 w-full sm:w-auto sm:flex sm:items-center sm:gap-2.5 relative z-20">
-                <div className="hidden sm:flex items-center gap-1.5 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mr-1">
-                  <Filter className="w-3.5 h-3.5" />
+              <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
+                <div className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-100/80 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 text-xs font-semibold shrink-0 border border-slate-200/50 dark:border-slate-700/50">
+                  <Filter className="w-3.5 h-3.5 text-[#0071E3]" />
                   <span>Filters</span>
                 </div>
-                <FilterDropdown
-                  value={filterUrgency}
-                  options={['All Urgency', 'High', 'Moderate', 'Low']}
-                  onChange={setFilterUrgency}
-                />
+                <div className="flex-1 sm:flex-initial min-w-[120px]">
+                  <FilterDropdown
+                    value={filterUrgency}
+                    options={['All Urgency', 'High', 'Moderate', 'Low']}
+                    onChange={setFilterUrgency}
+                  />
+                </div>
 
-                <FilterDropdown
-                  value={filterType}
-                  options={['All Types', 'Search & Rescue', 'Medical', 'Food & Water', 'Infrastructure']}
-                  onChange={setFilterType}
-                />
+                <div className="flex-1 sm:flex-initial min-w-[130px]">
+                  <FilterDropdown
+                    value={filterType}
+                    options={availableIncidentTypes}
+                    onChange={setFilterType}
+                  />
+                </div>
+
+                {hasActiveFilters && (
+                  <button
+                    type="button"
+                    onClick={resetFilters}
+                    className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-[#0071E3] hover:text-blue-700 dark:text-sky-400 bg-blue-500/10 hover:bg-blue-500/15 rounded-xl transition-all duration-150 active:scale-[0.97] cursor-pointer shrink-0"
+                    title="Reset filters"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span>Reset</span>
+                  </button>
+                )}
               </div>
 
-              {/* Center / Right: Apple Segmented Layer Toggle Capsule (Heatmap, Pins, Borders) */}
-              <div className="w-full sm:w-auto flex items-center justify-between sm:justify-end xl:justify-center xl:absolute xl:left-1/2 xl:-translate-x-1/2 relative z-10">
+              {/* Right: Apple Segmented Layer Toggle Capsule & Plotted Count */}
+              <div className="flex flex-wrap items-center justify-between sm:justify-end gap-2 sm:gap-3 shrink-0">
                 <div className="inline-flex items-center gap-0.5 sm:gap-1 p-1 bg-slate-100/80 dark:bg-slate-800/80 backdrop-blur-md rounded-2xl border border-slate-200/60 dark:border-white/5 shadow-inner">
                   <div className="flex items-center gap-1 px-1.5 sm:px-2 py-1 text-slate-400 dark:text-slate-500">
                     <Layers className="w-3.5 h-3.5" />
@@ -562,19 +607,11 @@ export default function GeospatialMap() {
                   />
                 </div>
 
-                {/* Plotted chip on mobile & tablet (< xl) */}
-                <div className="flex xl:hidden items-center gap-1 text-[11px] font-semibold text-slate-500 dark:text-slate-400 ml-2">
-                  <span className="px-2 py-1 rounded-xl bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200/50 dark:border-slate-700/50 tabular-nums whitespace-nowrap">
-                    <strong className="text-slate-800 dark:text-slate-200 font-bold">{pinReports.length}</strong> Plotted
+                <div className="flex items-center gap-1 text-xs font-semibold text-slate-500 dark:text-slate-400 shrink-0">
+                  <span className="px-2.5 py-1 rounded-xl bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200/50 dark:border-slate-700/50 tabular-nums">
+                    <strong className="text-slate-800 dark:text-slate-200">{pinReports.length}</strong> Plotted
                   </span>
                 </div>
-              </div>
-
-              {/* Right: Plotted count chip for balanced symmetry on desktop (>= xl) */}
-              <div className="hidden xl:flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400">
-                <span className="px-2.5 py-1 rounded-xl bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200/50 dark:border-slate-700/50 tabular-nums">
-                  <strong className="text-slate-800 dark:text-slate-200">{pinReports.length}</strong> Plotted
-                </span>
               </div>
             </div>
           </div>
