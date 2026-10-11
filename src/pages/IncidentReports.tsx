@@ -14,7 +14,14 @@ import { StaggerContainer, StaggerItem } from '../components/Stagger';
 import PageLoader from '../components/PageLoader';
 import PageTransition from '../components/Transition';
 
-import { fetchReports, subscribeToReports, type Report, type ReportStatus } from '../services/incidentService';
+import {
+  fetchReports,
+  subscribeToReports,
+  updateIncidentReport,
+  bulkUpdateIncidentReports,
+  type Report,
+  type ReportStatus,
+} from '../services/incidentService';
 import { useBotConversations, type BotMessage } from '../context/BotConversationsContext';
 import { TALISAY_BARANGAYS, talisayBarangays } from '../data/talisay-barangays';
 
@@ -348,11 +355,7 @@ export default function IncidentReports() {
       try {
         const data = await fetchReports();
         if (cancelled) return;
-        setReports((prev) => {
-          // keep local review state (status edits) for rows we already have
-          const local = new Map(prev.map((r) => [r.id, r]));
-          return data.map((r) => local.get(r.id) ?? r);
-        });
+        setReports(data);
         setLoadError('');
       } catch (err) {
         if (!cancelled) setLoadError(err instanceof Error ? err.message : 'Failed to load reports.');
@@ -534,14 +537,23 @@ export default function IncidentReports() {
     return value.replace(/[^0-9.,\-\s]/g, '');
   };
 
-  const handleSaveDraft = () => {
+  const handleSaveDraft = async () => {
     if (!reviewingReport || !editForm) return;
-    setReports(prev => prev.map(r => r.id === reviewingReport.id ? { ...r, ...editForm } as Report : r));
-    showToast(`Report #${reviewingReport.id} draft saved`, 'info');
+    const targetId = reviewingReport.id;
+    const actionDesc = editForm.action || 'Draft saved';
+    const updated = { ...reviewingReport, ...editForm, action: actionDesc, actionTaken: actionDesc } as Report;
+    setReports(prev => prev.map(r => r.id === targetId ? updated : r));
+    showToast(`Report #${targetId} draft saved`, 'info');
     closeReview();
+
+    try {
+      await updateIncidentReport(targetId, updated);
+    } catch (err) {
+      console.error('Failed to save draft:', err);
+    }
   };
 
-  const handleVerify = () => {
+  const handleVerify = async () => {
     if (!reviewingReport || !editForm) return;
     const hasCoordinatesField = reviewingReport.source !== 'Bot' && reviewingReport.source !== 'Scraper';
     if (hasCoordinatesField) {
@@ -555,60 +567,140 @@ export default function IncidentReports() {
       setCoordError(false);
     }
     const now = new Date().toLocaleString('en-US', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
-    setReports(prev => prev.map(r => r.id === reviewingReport.id ? {
-      ...r,
+    const actionDesc = editForm.action || 'Verified and plotted on map';
+    const updated: Report = {
+      ...reviewingReport,
       ...editForm,
       status: 'verified',
-      verifiedBy: 'Current Officer',
+      verifiedBy: 'MDRRMO Officer',
       verifiedAt: now,
       rejectionReason: null,
-    } as Report : r));
+      action: actionDesc,
+      actionTaken: actionDesc,
+    };
+
+    setReports(prev => prev.map(r => r.id === reviewingReport.id ? updated : r));
     showToast(hasCoordinatesField ? `Report #${reviewingReport.id} verified and plotted on map` : `Report #${reviewingReport.id} verified`, 'success');
     closeReview();
+
+    try {
+      await updateIncidentReport(reviewingReport.id, updated);
+    } catch (err) {
+      console.error('Failed to persist verification:', err);
+    }
   };
 
-  const handleResolve = () => {
+  const handleResolve = async () => {
     if (!reviewingReport) return;
-    setReports(prev => prev.map(r => r.id === reviewingReport.id ? { ...r, status: 'resolved' } : r));
-    showToast(`Report #${reviewingReport.id} marked as resolved`, 'success');
+    const targetId = reviewingReport.id;
+    const actionDesc = editForm.action || 'Marked as resolved';
+    const updated: Report = {
+      ...reviewingReport,
+      status: 'resolved',
+      action: actionDesc,
+      actionTaken: actionDesc,
+    };
+    setReports(prev => prev.map(r => r.id === targetId ? updated : r));
+    showToast(`Report #${targetId} marked as resolved`, 'success');
     closeReview();
+
+    try {
+      await updateIncidentReport(targetId, {
+        status: 'resolved',
+        action: actionDesc,
+        actionTaken: actionDesc,
+      });
+    } catch (err) {
+      console.error('Failed to persist resolve action:', err);
+    }
   };
 
-  const handleReject = () => {
+  const handleReject = async () => {
     if (!reviewingReport || !rejectReason) return;
-    setReports(prev => prev.map(r => r.id === reviewingReport.id ? {
-      ...r,
+    const targetId = reviewingReport.id;
+    const reasonLabel = getRejectionLabel(rejectReason);
+    const actionDesc = editForm.action || `Rejected: ${reasonLabel}`;
+    const updated: Report = {
+      ...reviewingReport,
       status: 'rejected',
       rejectionReason: rejectReason,
       verifiedBy: null,
       verifiedAt: null,
-    } as Report : r));
-    showToast(`Report #${reviewingReport.id} rejected: ${getRejectionLabel(rejectReason)}`, 'error');
+      action: actionDesc,
+      actionTaken: actionDesc,
+    };
+    setReports(prev => prev.map(r => r.id === targetId ? updated : r));
+    showToast(`Report #${targetId} rejected: ${reasonLabel}`, 'error');
     closeReview();
+
+    try {
+      await updateIncidentReport(targetId, {
+        status: 'rejected',
+        rejectionReason: rejectReason,
+        action: actionDesc,
+        actionTaken: actionDesc,
+      });
+    } catch (err) {
+      console.error('Failed to persist rejection:', err);
+    }
   };
 
-  const handleRestore = (id: string) => {
-    setReports(prev => prev.map(r => r.id === id ? { ...r, status: 'pending', rejectionReason: null } : r));
+  const handleRestore = async (id: string) => {
+    setReports(prev => prev.map(r => r.id === id ? { ...r, status: 'pending', rejectionReason: null, action: 'Restored to pending' } : r));
     setSelectedIds(prev => prev.filter(i => i !== id));
     showToast(`Report #${id} restored to pending`, 'info');
+
+    try {
+      await updateIncidentReport(id, {
+        status: 'pending',
+        rejectionReason: null,
+        action: 'Restored to pending',
+      });
+    } catch (err) {
+      console.error('Failed to persist restore:', err);
+    }
   };
 
-  const handleBulkStartReview = () => {
-    setReports(prev => prev.map(r => selectedIds.includes(r.id) && r.status === 'pending' ? { ...r, status: 'under_review' } : r));
-    showToast(`${selectedIds.length} reports moved to Under Review`, 'info');
+  const handleBulkStartReview = async () => {
+    const count = selectedIds.length;
+    const targetIds = [...selectedIds];
+    setReports(prev => prev.map(r => targetIds.includes(r.id) && r.status === 'pending' ? { ...r, status: 'under_review', action: 'Moved to Under Review' } : r));
+    showToast(`${count} reports moved to Under Review`, 'info');
     setSelectedIds([]);
+
+    try {
+      await bulkUpdateIncidentReports(targetIds, 'under_review', 'Moved to Under Review');
+    } catch (err) {
+      console.error('Failed to persist bulk review:', err);
+    }
   };
 
-  const handleBulkResolve = () => {
-    setReports(prev => prev.map(r => selectedIds.includes(r.id) && r.status === 'verified' ? { ...r, status: 'resolved' } : r));
-    showToast(`${selectedIds.length} reports marked as resolved`, 'success');
+  const handleBulkResolve = async () => {
+    const count = selectedIds.length;
+    const targetIds = [...selectedIds];
+    setReports(prev => prev.map(r => targetIds.includes(r.id) && r.status === 'verified' ? { ...r, status: 'resolved', action: 'Marked resolved in bulk' } : r));
+    showToast(`${count} reports marked as resolved`, 'success');
     setSelectedIds([]);
+
+    try {
+      await bulkUpdateIncidentReports(targetIds, 'resolved', 'Marked resolved in bulk');
+    } catch (err) {
+      console.error('Failed to persist bulk resolve:', err);
+    }
   };
 
-  const handleBulkRestore = () => {
-    setReports(prev => prev.map(r => selectedIds.includes(r.id) && r.status === 'rejected' ? { ...r, status: 'pending', rejectionReason: null } : r));
-    showToast(`${selectedIds.length} reports restored to pending`, 'info');
+  const handleBulkRestore = async () => {
+    const count = selectedIds.length;
+    const targetIds = [...selectedIds];
+    setReports(prev => prev.map(r => targetIds.includes(r.id) && r.status === 'rejected' ? { ...r, status: 'pending', rejectionReason: null, action: 'Restored to pending in bulk' } : r));
+    showToast(`${count} reports restored to pending`, 'info');
     setSelectedIds([]);
+
+    try {
+      await bulkUpdateIncidentReports(targetIds, 'pending', 'Restored to pending in bulk');
+    } catch (err) {
+      console.error('Failed to persist bulk restore:', err);
+    }
   };
 
   const allChecklistChecked = Object.values(checklist).every(Boolean);
@@ -1258,6 +1350,15 @@ export default function IncidentReports() {
                               </p>
                             </div>
                           )}
+
+                          {reviewingReport.action && (
+                            <div className="bg-blue-500/10 rounded-xl p-3 border border-blue-500/20">
+                              <p className="text-xs text-blue-700 dark:text-blue-400 font-semibold flex items-center gap-1.5">
+                                <Send className="w-3.5 h-3.5" />
+                                Action: {reviewingReport.action}
+                              </p>
+                            </div>
+                          )}
                         </div>
 
                         {/* RIGHT: Officer Edit Form */}
@@ -1367,6 +1468,19 @@ export default function IncidentReports() {
                                 />
                               </motion.div>
                             ) : null}
+
+                            <div>
+                              <label className="block text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400 mb-1">
+                                Action Taken / Response Notes
+                              </label>
+                              <input
+                                type="text"
+                                value={editForm.action || ''}
+                                onChange={e => setEditForm(prev => ({ ...prev, action: e.target.value, actionTaken: e.target.value }))}
+                                className="w-full px-3.5 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 outline-none transition-all"
+                                placeholder="e.g. Dispatched rescue boat, verified with Barangay Captain..."
+                              />
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -1502,8 +1616,7 @@ export default function IncidentReports() {
                       <button
                         type="button"
                         onClick={() => {
-                          setReports(prev => prev.map(r => r.id === reviewingReport.id ? { ...r, status: 'pending', rejectionReason: null } : r));
-                          showToast(`Report #${reviewingReport.id} restored to pending`, 'info');
+                          handleRestore(reviewingReport.id);
                           closeReview();
                         }}
                         className="flex-1 sm:flex-none justify-center px-4 py-2 text-xs font-semibold text-blue-700 dark:text-blue-300 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 rounded-xl transition-all flex items-center gap-1.5 active:scale-[0.97]"

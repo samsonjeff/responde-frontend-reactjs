@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabaseClient';
+import { apiFetch } from './authService';
 
 export type ReportStatus = 'pending' | 'under_review' | 'verified' | 'rejected' | 'resolved';
 
@@ -20,6 +21,8 @@ export interface Report {
   contact: string;
   coordinates: string;
   landmark: string;
+  action?: string;
+  actionTaken?: string;
   verifiedBy: string | null;
   verifiedAt: string | null;
   rejectionReason: string | null;
@@ -43,6 +46,7 @@ interface ConversationRow {
   urgency: string | null;
   incident_type: string | null;
   needs_review: boolean | null;
+  status?: string | null;
 }
 
 interface FbCommentRow {
@@ -213,8 +217,14 @@ const groupConversationRows = (convRows: ConversationRow[]): Report[] => {
       firstRow.sender_name ||
       (firstRow.sender_psid ? `PSID: ${String(firstRow.sender_psid).slice(-6)}` : 'Unknown User');
 
-    // Use latest row ID so it references the final turn of this conversation session
-    const reportId = `conv-${latestRow.id}`;
+    // Resolve status from latestRow or any turn in the session
+    const statusRow = rows.slice().reverse().find((r) => r.status && r.status.trim().length > 0);
+    const rawStatus = (statusRow?.status || latestRow.status || '').toLowerCase().trim();
+    const resolvedStatus: ReportStatus =
+      rawStatus === 'verified' ? 'verified' :
+      rawStatus === 'resolved' ? 'resolved' :
+      rawStatus === 'rejected' ? 'rejected' :
+      rawStatus === 'pending' ? 'pending' : 'under_review';
 
     return {
       id: reportId,
@@ -227,7 +237,7 @@ const groupConversationRows = (convRows: ConversationRow[]): Report[] => {
       senderPsid: firstRow.sender_psid,
       conversationId: firstRow.conversation_id,
       threadMessages,
-      status: 'under_review',
+      status: resolvedStatus,
       description: substantiveMsg,
       originalText: substantiveMsg,
       reporter: reporterName,
@@ -246,6 +256,13 @@ const fromFbComment = (row: FbCommentRow): Report => {
   const created = row.comment_date && row.comment_time
     ? `${row.comment_date}T${row.comment_time}`
     : row.created_at;
+  const rawStatus = (row.status || '').toLowerCase().trim();
+  const resolvedStatus: ReportStatus =
+    rawStatus === 'verified' ? 'verified' :
+    rawStatus === 'resolved' ? 'resolved' :
+    rawStatus === 'flagged' || rawStatus === 'rejected' ? 'rejected' :
+    rawStatus === 'pending' ? 'pending' : 'under_review';
+
   return {
     id: `fb-${row.id}`,
     barangay: row.barangay ? titleCase(row.barangay) : 'Unknown',
@@ -254,7 +271,7 @@ const fromFbComment = (row: FbCommentRow): Report => {
     source: 'Scraper',
     time: formatTime(created),
     createdAt: created,
-    status: 'under_review',
+    status: resolvedStatus,
     description: row.comment_text ?? '',
     originalText: row.comment_text ?? '',
     reporter: row.user_name ?? 'Unknown',
@@ -270,9 +287,10 @@ const fromFbComment = (row: FbCommentRow): Report => {
 
 /** Fetch Messenger-bot conversations and Facebook comments, merged newest first. */
 export async function fetchReports(): Promise<Report[]> {
-  const [convRes, fbRes] = await Promise.all([
+  const [convRes, fbRes, incRes] = await Promise.all([
     supabase.from('conversations').select('*').order('timestamp', { ascending: false }),
     supabase.from('fb_comments').select('*').order('created_at', { ascending: false }),
+    supabase.from('incident_reports').select('*').order('created_at', { ascending: false }),
   ]);
 
   if (convRes.error) throw convRes.error;
@@ -281,17 +299,153 @@ export async function fetchReports(): Promise<Report[]> {
   const botReports = groupConversationRows((convRes.data ?? []) as ConversationRow[]);
   const fbReports = ((fbRes.data ?? []) as FbCommentRow[]).map(fromFbComment);
 
-  const reports = [...botReports, ...fbReports];
+  const baseReports = [...botReports, ...fbReports];
 
-  return reports.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  // If incident_reports table exists and has rows, overlay saved reviews & actions
+  if (incRes.data && Array.isArray(incRes.data) && incRes.data.length > 0) {
+    const incMap = new Map<string, Record<string, unknown>>(
+      incRes.data.map((r: Record<string, unknown>) => [String(r.id), r])
+    );
+
+    const merged = baseReports.map((rep) => {
+      const saved = incMap.get(rep.id);
+      if (!saved) return rep;
+      return {
+        ...rep,
+        status: (saved.status as ReportStatus) || rep.status,
+        action: (saved.action as string) || (saved.action_taken as string) || rep.action || '',
+        actionTaken: (saved.action_taken as string) || (saved.action as string) || rep.actionTaken || '',
+        barangay: (saved.barangay as string) || rep.barangay,
+        type: (saved.type as string) || rep.type,
+        urgency: (saved.urgency as string) || rep.urgency,
+        coordinates: (saved.coordinates as string) || rep.coordinates,
+        landmark: (saved.landmark as string) || rep.landmark,
+        description: (saved.description as string) || rep.description,
+        verifiedBy: (saved.verified_by as string | null) ?? rep.verifiedBy,
+        verifiedAt: saved.verified_at ? formatTime(saved.verified_at as string) : rep.verifiedAt,
+        resolvedBy: (saved.resolved_by as string | null) ?? null,
+        resolvedAt: saved.resolved_at ? formatTime(saved.resolved_at as string) : null,
+        rejectionReason: (saved.rejection_reason as string | null) ?? rep.rejectionReason,
+      };
+    });
+
+    return merged.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
+  return baseReports.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 }
 
-/** Subscribe to inserts/updates on both tables. Returns an unsubscribe function. */
+/** Update an incident report action, triage status, notes, and coordinates. */
+export async function updateIncidentReport(
+  id: string,
+  payload: Partial<Report> & { action?: string; actionTaken?: string }
+): Promise<boolean> {
+  const actionText = payload.action || payload.actionTaken || '';
+  const body = {
+    ...payload,
+    action: actionText,
+    action_taken: actionText,
+  };
+
+  try {
+    const res = await apiFetch(`/api/auth/data/incident-reports/${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    });
+    if (res.ok) {
+      return true;
+    }
+  } catch (apiErr) {
+    console.warn('[incidentService] Backend API request failed, trying direct Supabase:', apiErr);
+  }
+
+  // Direct Supabase fallback
+  try {
+    if (id.startsWith('conv-')) {
+      const rawId = parseInt(id.replace(/^conv-/, ''), 10);
+      if (!isNaN(rawId)) {
+        const convUpdates: Record<string, unknown> = {};
+        if (payload.status) convUpdates.status = payload.status;
+        if (payload.barangay) convUpdates.barangay = payload.barangay;
+        if (payload.type) convUpdates.incident_type = payload.type;
+        if (payload.urgency) convUpdates.urgency = payload.urgency;
+        if (Object.keys(convUpdates).length > 0) {
+          await supabase.from('conversations').update(convUpdates).eq('id', rawId);
+        }
+      }
+    } else if (id.startsWith('fb-')) {
+      const rawId = id.replace(/^fb-/, '');
+      const fbStatusMap: Record<string, string> = {
+        verified: 'Verified',
+        resolved: 'Resolved',
+        rejected: 'Flagged',
+        under_review: 'New',
+        pending: 'New',
+      };
+      const fbUpdates: Record<string, unknown> = {};
+      if (payload.status && fbStatusMap[payload.status]) fbUpdates.status = fbStatusMap[payload.status];
+      if (payload.barangay) fbUpdates.barangay = payload.barangay;
+      if (payload.type) fbUpdates.incident_type = payload.type;
+      if (Object.keys(fbUpdates).length > 0) {
+        await supabase.from('fb_comments').update(fbUpdates).eq('id', rawId);
+      }
+    }
+
+    try {
+      await supabase.from('incident_reports').upsert(
+        {
+          id,
+          status: payload.status,
+          action: actionText,
+          action_taken: actionText,
+          coordinates: payload.coordinates,
+          barangay: payload.barangay,
+          type: payload.type,
+          urgency: payload.urgency,
+          landmark: payload.landmark,
+          verified_by: payload.verifiedBy,
+          verified_at: payload.verifiedAt,
+          rejection_reason: payload.rejectionReason,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'id' }
+      );
+    } catch {}
+
+    return true;
+  } catch (err) {
+    console.error('[incidentService] Failed to persist report action to database:', err);
+    return false;
+  }
+}
+
+/** Bulk update incident reports status and action. */
+export async function bulkUpdateIncidentReports(
+  ids: string[],
+  status: ReportStatus,
+  action?: string
+): Promise<boolean> {
+  try {
+    const res = await apiFetch('/api/auth/data/incident-reports/bulk', {
+      method: 'POST',
+      body: JSON.stringify({ ids, status, action: action || '' }),
+    });
+    if (res.ok) return true;
+  } catch (apiErr) {
+    console.warn('[incidentService] Bulk update via API failed, running individually:', apiErr);
+  }
+
+  await Promise.allSettled(ids.map((id) => updateIncidentReport(id, { status, action })));
+  return true;
+}
+
+/** Subscribe to inserts/updates on conversations, fb_comments, and incident_reports tables. */
 export function subscribeToReports(onChange: () => void): () => void {
   const channel = supabase
     .channel('incident-reports-changes')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'conversations' }, onChange)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'fb_comments' }, onChange)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'incident_reports' }, onChange)
     .subscribe();
 
   return () => {
