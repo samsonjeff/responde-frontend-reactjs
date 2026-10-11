@@ -38,7 +38,7 @@ export default function HeroSection() {
     <section
       ref={heroSectionRef}
       id="hero"
-      className="relative min-h-screen flex flex-col justify-center items-center text-center px-6 pt-32 pb-20 bg-[#0B0F17] border-b border-white/[0.08] text-[#F5F5F7] overflow-hidden select-none"
+      className="relative min-h-screen flex flex-col justify-center items-center text-center px-6 pt-32 pb-20 bg-[#0B0F17] border-b border-white/8 text-[#F5F5F7] overflow-hidden select-none"
     >
       {/* ── Background Image with Atmospheric Overlays ── */}
       <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none select-none">
@@ -48,7 +48,7 @@ export default function HeroSection() {
           className="w-full h-full object-cover object-center lg:object-[center_30%] filter brightness-95 contrast-100"
         />
         {/* Apple-grade soft atmospheric gradient overlays */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[#0B0F17]/70 via-black/30 to-[#0B0F17]/90" />
+        <div className="absolute inset-0 bg-linear-to-b from-[#0B0F17]/70 via-black/30 to-[#0B0F17]/90" />
       </div>
 
       {/* ── Hero Content ── */}
