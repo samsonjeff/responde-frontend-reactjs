@@ -21,6 +21,7 @@ import {
   Clock3,
   Filter,
   X,
+  RotateCcw,
   Layers,
   Sparkles,
   PieChart as PieChartIcon,
@@ -517,15 +518,15 @@ export default function Analytics() {
                 />
               </div>
 
-              {/* Date Pickers */}
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 xl:ml-auto w-full xl:w-auto relative z-40">
-                <div className="flex items-center gap-2 w-full sm:w-auto">
+              {/* Date Pickers & Reset */}
+              <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 sm:gap-3 xl:ml-auto w-full xl:w-auto relative z-40">
+                <div className="flex items-center gap-2 flex-1 sm:flex-initial min-w-[130px]">
                   <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 whitespace-nowrap">
                     From:
                   </span>
                   <DatePicker value={fromDate} onChange={setFromDate} placeholder="Select Date" />
                 </div>
-                <div className="flex items-center gap-2 w-full sm:w-auto">
+                <div className="flex items-center gap-2 flex-1 sm:flex-initial min-w-[130px]">
                   <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 whitespace-nowrap">
                     To:
                   </span>
@@ -534,10 +535,12 @@ export default function Analytics() {
 
                 {hasActiveFilters && (
                   <button
+                    type="button"
                     onClick={resetFilters}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-[#0071E3] hover:text-blue-700 dark:text-sky-400 bg-blue-500/10 hover:bg-blue-500/15 rounded-xl transition-all duration-150 active:scale-[0.97]"
+                    className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-[#0071E3] hover:text-blue-700 dark:text-sky-400 bg-blue-500/10 hover:bg-blue-500/15 rounded-xl transition-all duration-150 active:scale-[0.97] cursor-pointer shrink-0 ml-auto sm:ml-0"
+                    title="Reset all filters"
                   >
-                    <X className="w-3.5 h-3.5" />
+                    <RotateCcw className="w-3.5 h-3.5" />
                     <span>Reset</span>
                   </button>
                 )}
