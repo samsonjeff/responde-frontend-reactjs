@@ -16,7 +16,7 @@ import PageLoader from '../components/PageLoader';
 import PageTransition from '../components/Transition';
 import type { MapLayerState, SelectedFeature } from '../types/geospatial';
 import type { Report } from '../data/sample-reports';
-import { getBarangayMeta } from '../data/talisay-barangays';
+import { getBarangayMeta, normalizeBarangayName, clampPointToBarangay } from '../data/talisay-barangays';
 
 const INITIAL_LAYERS: MapLayerState = {
   choropleth: true,
@@ -191,6 +191,29 @@ function BarangayDetailCard({ name, reports, onClose, onViewList }: {
           </div>
         </div>
 
+        {reports.length > 0 && (
+          <div>
+            <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">Incidents in Barangay</p>
+            <div className="space-y-1.5 max-h-[160px] overflow-y-auto pr-1 scrollbar-thin">
+              {reports.map((r) => {
+                const b = URGENCY_BADGES[r.urgency] || URGENCY_BADGES['Low'];
+                return (
+                  <div key={r.id} className="flex items-center justify-between text-xs px-2.5 py-1.5 rounded-xl bg-slate-50/70 dark:bg-slate-800/40 border border-slate-200/40 dark:border-slate-700/40">
+                    <span className="flex items-center gap-1.5 min-w-0">
+                      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${b.dot}`} />
+                      <span className="font-mono text-[10px] text-slate-400 font-semibold">#{r.id}</span>
+                      <span className="text-slate-800 dark:text-slate-200 font-medium truncate">{r.type}</span>
+                    </span>
+                    <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-md ${b.bg} ${b.text} shrink-0 ml-2`}>
+                      {r.urgency}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         <button
           onClick={onViewList}
           className="w-full py-2.5 px-4 text-xs font-semibold text-white bg-[#0071E3] hover:bg-[#0077ED] rounded-xl transition-all flex items-center justify-center gap-2 shadow-[0_2px_8px_rgba(0,113,227,0.25)] active:scale-[0.97] cursor-pointer"
@@ -276,7 +299,15 @@ function IncidentDetailCard({ report, onClose, onViewInReports }: {
           <div className="flex items-center gap-2">
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
             <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
-              {report.status === 'verified' ? '✓ Verified' : report.status}
+              {report.status === 'verified'
+                ? '✓ Verified'
+                : report.status === 'under_review'
+                ? 'Under Review'
+                : report.status === 'pending'
+                ? 'Pending'
+                : report.status === 'resolved'
+                ? 'Resolved'
+                : report.status}
             </span>
           </div>
         </div>
@@ -398,7 +429,7 @@ function LayerToggle({ active, label, activeDot, onClick }: {
 export default function GeospatialMap() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { reports, getReportsByBarangay } = useReports();
+  const { reports } = useReports();
   const { theme } = useTheme();
 
   // Map theme follows the global app theme
@@ -412,15 +443,18 @@ export default function GeospatialMap() {
     }
     return true;
   });
+  const [filterStatus, setFilterStatus] = useState<string>('Verified Only');
   const [filterUrgency, setFilterUrgency] = useState<string>('All Urgency');
   const [filterType, setFilterType] = useState<string>('All Types');
   const [loading, setLoading] = useState(true);
 
   const hasActiveFilters =
+    filterStatus !== 'Verified Only' ||
     (filterUrgency !== 'All Urgency' && filterUrgency !== 'All') ||
     (filterType !== 'All Types' && filterType !== 'All');
 
   const resetFilters = () => {
+    setFilterStatus('Verified Only');
     setFilterUrgency('All Urgency');
     setFilterType('All Types');
   };
@@ -442,6 +476,17 @@ export default function GeospatialMap() {
     return ['All Types', ...Array.from(set).sort()];
   }, [reports]);
 
+  const matchStatus = useCallback((itemStatus?: string) => {
+    if (!filterStatus || filterStatus === 'Verified Only' || filterStatus === 'Verified') {
+      return itemStatus?.trim().toLowerCase() === 'verified';
+    }
+    if (filterStatus === 'All Reports' || filterStatus === 'All') {
+      return itemStatus?.trim().toLowerCase() !== 'rejected';
+    }
+    const target = filterStatus.trim().toLowerCase().replace(/\s+/g, '_');
+    return itemStatus?.trim().toLowerCase() === target;
+  }, [filterStatus]);
+
   const matchUrgency = useCallback((itemUrgency?: string) => {
     if (!filterUrgency || filterUrgency === 'All Urgency' || filterUrgency === 'All') return true;
     return itemUrgency?.trim().toLowerCase() === filterUrgency.trim().toLowerCase();
@@ -452,40 +497,79 @@ export default function GeospatialMap() {
     return itemType?.trim().toLowerCase() === filterType.trim().toLowerCase();
   }, [filterType]);
 
-  // Compute barangay max urgency level (High=3, Moderate=2, Low=1) reflecting active filters
+  // Reports for pin layer (only verified reports by default, or filtered by status, urgency & type)
+  const pinReports = useMemo(() => {
+    const valid = reports
+      .filter((r) => r.status !== 'rejected')
+      .filter((r) => matchStatus(r.status));
+    const coordSeenCount: Record<string, number> = {};
+
+    return valid
+      .map((r) => {
+        const parsed = parseCoords(r.coordinates);
+        let finalLngLat: [number, number] | null = null;
+
+        if (parsed && parsed[1] >= 14.075) {
+          // Clamp/project point inside assigned barangay polygon if it falls outside border
+          finalLngLat = clampPointToBarangay([parsed[0], parsed[1]], r.barangay);
+        } else {
+          const meta = getBarangayMeta(r.barangay);
+          if (meta?.centroid && meta.centroid[1] >= 14.075) {
+            const hash = (r.id || '').split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
+            const latOff = (((hash % 7) - 3) * 0.0006);
+            const lngOff = ((((hash >> 2) % 7) - 3) * 0.0006);
+            const rawCand: [number, number] = [meta.centroid[0] + lngOff, meta.centroid[1] + latOff];
+            finalLngLat = clampPointToBarangay(rawCand, r.barangay);
+          }
+        }
+
+        if (!finalLngLat) return r;
+
+        // Collision avoidance: if multiple reports share the exact same coordinates,
+        // apply a micro spiral displacement (~25m) so pins don't stack directly on top of each other
+        const coordKey = `${r.barangay}_${finalLngLat[1].toFixed(5)},${finalLngLat[0].toFixed(5)}`;
+        const count = coordSeenCount[coordKey] || 0;
+        coordSeenCount[coordKey] = count + 1;
+
+        if (count > 0) {
+          const angle = count * 2.39996; // Golden angle
+          const dist = 0.00025 * Math.sqrt(count);
+          const dLng = dist * Math.cos(angle);
+          const dLat = dist * Math.sin(angle);
+          finalLngLat = clampPointToBarangay([finalLngLat[0] + dLng, finalLngLat[1] + dLat], r.barangay);
+        }
+
+        return {
+          ...r,
+          coordinates: `${finalLngLat[1].toFixed(5)}, ${finalLngLat[0].toFixed(5)}`,
+        };
+      })
+      .filter((r) => {
+        const coords = parseCoords(r.coordinates);
+        return coords && coords[1] >= 14.075;
+      })
+      .filter((r) => matchUrgency(r.urgency))
+      .filter((r) => matchType(r.type));
+  }, [reports, matchStatus, matchUrgency, matchType]);
+
+  // Compute barangay max urgency level (High=3, Moderate=2, Low=1) reflecting active filters and pins
   const URGENCY_WEIGHTS: Record<string, number> = { High: 3, Moderate: 2, Low: 1 };
   const barangayCounts = useMemo(() => {
     const maxUrgency: Record<string, number> = {};
-    reports
-      .filter((r) => r.status === 'verified' || r.status === 'under_review')
-      .filter((r) => matchUrgency(r.urgency))
-      .filter((r) => matchType(r.type))
-      .forEach((r) => {
-        const weight = URGENCY_WEIGHTS[r.urgency] || 1;
-        maxUrgency[r.barangay] = Math.max(maxUrgency[r.barangay] || 0, weight);
-      });
+    pinReports.forEach((r) => {
+      const weight = URGENCY_WEIGHTS[r.urgency] || 1;
+      maxUrgency[r.barangay] = Math.max(maxUrgency[r.barangay] || 0, weight);
+    });
     return maxUrgency;
-  }, [reports, matchUrgency, matchType]);
+  }, [pinReports]);
 
-  // Reports with coords for pin layer (verified + under_review — matches drawer)
-  const pinReports = useMemo(() => {
-    return reports
-      .filter((r) => (r.status === 'verified' || r.status === 'under_review') && parseCoords(r.coordinates))
-      .filter((r) => matchUrgency(r.urgency))
-      .filter((r) => matchType(r.type));
-  }, [reports, matchUrgency, matchType]);
-
-  // Drawer list: verified + under_review with coords
+  // Drawer list: synchronized exactly with the visible pins on the map
   const drawerReports = useMemo(() => {
-    return reports
-      .filter((r) => (r.status === 'verified' || r.status === 'under_review') && parseCoords(r.coordinates))
-      .filter((r) => matchUrgency(r.urgency))
-      .filter((r) => matchType(r.type))
-      .sort((a, b) => {
-        const u = { High: 3, Moderate: 2, Low: 1 };
-        return (u[b.urgency as keyof typeof u] || 0) - (u[a.urgency as keyof typeof u] || 0);
-      });
-  }, [reports, matchUrgency, matchType]);
+    return [...pinReports].sort((a, b) => {
+      const u = { High: 3, Moderate: 2, Low: 1 };
+      return (u[b.urgency as keyof typeof u] || 0) - (u[a.urgency as keyof typeof u] || 0);
+    });
+  }, [pinReports]);
 
   const toggleLayer = useCallback((key: keyof MapLayerState) => {
     setLayers((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -507,7 +591,11 @@ export default function GeospatialMap() {
   useEffect(() => {
     const focusId = searchParams.get('focus');
     if (focusId) {
-      const report = reports.find((r) => r.id === focusId);
+      const targetReport = reports.find((r) => r.id === focusId);
+      if (targetReport && targetReport.status !== 'verified' && filterStatus === 'Verified Only') {
+        setFilterStatus('All Reports');
+      }
+      const report = pinReports.find((r) => r.id === focusId) || targetReport;
       if (report) {
         const coords = parseCoords(report.coordinates);
         if (coords) {
@@ -519,20 +607,28 @@ export default function GeospatialMap() {
       }
       setSearchParams({}, { replace: true });
     }
-  }, [searchParams, reports, setSearchParams]);
+  }, [searchParams, pinReports, reports, filterStatus, setSearchParams]);
 
   // Selected data
   const selectedReport = selected?.type === 'incident'
-    ? reports.find((r) => r.id === selected.id)
+    ? pinReports.find((r) => r.id === selected.id) || reports.find((r) => r.id === selected.id) || null
     : null;
 
   const selectedBarangayReports = useMemo(() => {
     if (selected?.type !== 'barangay') return [];
-    const all = getReportsByBarangay()[selected.name] || [];
-    return all
-      .filter((r) => filterUrgency === 'All Urgency' || filterUrgency === 'All' || r.urgency === filterUrgency)
-      .filter((r) => filterType === 'All Types' || filterType === 'All' || r.type === filterType);
-  }, [selected, getReportsByBarangay, filterUrgency, filterType]);
+    const targetName = selected.name.trim().toLowerCase();
+    const targetNormalized = normalizeBarangayName(selected.name).trim().toLowerCase();
+
+    return pinReports.filter((r) => {
+      const rName = (r.barangay || '').trim().toLowerCase();
+      const rNormalized = normalizeBarangayName(r.barangay).trim().toLowerCase();
+      if (rName === targetName || rNormalized === targetNormalized) return true;
+      // Handle "Poblacion" matching "Poblacion Barangay X"
+      if ((targetName === 'poblacion' || targetNormalized === 'poblacion') && rNormalized.startsWith('poblacion')) return true;
+      if ((rName === 'poblacion' || rNormalized === 'poblacion') && targetNormalized.startsWith('poblacion')) return true;
+      return false;
+    });
+  }, [selected, pinReports]);
 
   if (loading) return <PageLoader variant="geospatial" />;
 
@@ -543,14 +639,23 @@ export default function GeospatialMap() {
         {/* ── Toolbar Row ── */}
         <div className="shrink-0">
           <div className="relative z-30 bg-white/80 dark:bg-[#111827]/80 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)] px-3 sm:px-5 py-2.5 sm:py-3 transition-all">
-            <div className="flex flex-col md:flex-row flex-wrap md:flex-nowrap items-stretch md:items-center justify-between gap-3">
+            <div className="flex flex-col md:flex-row md:flex-wrap lg:flex-nowrap items-stretch md:items-center justify-between gap-2.5 sm:gap-3">
 
               {/* Left: Filter Controls Capsule */}
               <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
-                <div className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-100/80 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 text-xs font-semibold shrink-0 border border-slate-200/50 dark:border-slate-700/50">
+                <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-100/80 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 text-xs font-semibold shrink-0 border border-slate-200/50 dark:border-slate-700/50">
                   <Filter className="w-3.5 h-3.5 text-[#0071E3]" />
                   <span>Filters</span>
                 </div>
+
+                <div className="flex-1 sm:flex-initial min-w-[130px]">
+                  <FilterDropdown
+                    value={filterStatus}
+                    options={['Verified Only', 'All Reports', 'Under Review', 'Resolved']}
+                    onChange={setFilterStatus}
+                  />
+                </div>
+
                 <div className="flex-1 sm:flex-initial min-w-[120px]">
                   <FilterDropdown
                     value={filterUrgency}

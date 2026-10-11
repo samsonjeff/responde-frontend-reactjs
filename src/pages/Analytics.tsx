@@ -497,7 +497,7 @@ export default function Analytics() {
             </div>
 
             {/* Filter Bar with DatePicker and FilterDropdown */}
-            <div className="pt-4 border-t border-slate-200/60 dark:border-white/5 flex flex-col xl:flex-row xl:items-center gap-3 relative z-50">
+            <div className="pt-4 border-t border-slate-200/60 dark:border-white/5 flex flex-col md:flex-row md:flex-wrap lg:flex-nowrap items-stretch md:items-center justify-between gap-2.5 sm:gap-3 relative z-50">
               <div className="flex flex-wrap items-center gap-2.5 relative z-50">
                 <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-100/80 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 text-xs font-semibold shrink-0 border border-slate-200/50 dark:border-slate-700/50">
                   <Filter className="w-3.5 h-3.5 text-[#0071E3]" />
@@ -533,7 +533,7 @@ export default function Analytics() {
               </div>
 
               {/* Date Pickers & Reset */}
-              <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 sm:gap-3 xl:ml-auto w-full xl:w-auto relative z-40">
+              <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 sm:gap-3 md:ml-auto w-full md:w-auto relative z-40">
                 <div className="flex items-center gap-2 flex-1 sm:flex-initial min-w-[130px]">
                   <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 whitespace-nowrap">
                     From:

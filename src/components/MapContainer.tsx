@@ -48,10 +48,8 @@ function getBarangayLabels(): {
 
     for (const feature of talisayBarangays.features) {
         const { id, name, centroid } = feature.properties;
-        // Poblacion Barangay 6 has 4 polygon parts in data; use the town center centroid
-        if (name === 'Poblacion Barangay 6' && (centroid[0] < 121.01 || centroid[1] < 14.08)) {
-            continue;
-        }
+        // Ignore any non-mainland feature
+        if (centroid[1] < 14.075) continue;
         if (seen.has(name)) continue;
         seen.add(name);
 
@@ -139,7 +137,7 @@ function buildPinGeoJSON(reports: Report[]) {
                     geometry: { type: 'Point' as const, coordinates: c || [0, 0] },
                 };
             })
-            .filter((f) => f.geometry.coordinates[0] !== 0),
+            .filter((f) => f.geometry.coordinates[0] !== 0 && f.geometry.coordinates[1] >= 14.075),
     };
 }
 
@@ -313,6 +311,19 @@ export default function MapContainer({ theme, layers, barangayCounts, pinReports
                     layout: { visibility: layersRef.current.pins ? 'visible' : 'none' },
                 });
 
+                // ── Interactions: Pins ──
+                map.on('mouseenter', PIN_LAYER_ID, () => { map.getCanvas().style.cursor = 'pointer'; });
+                map.on('mouseleave', PIN_LAYER_ID, () => { map.getCanvas().style.cursor = ''; });
+                map.on('click', PIN_LAYER_ID, (e: any) => {
+                    if (e.originalEvent) {
+                        e.originalEvent._pinHandled = true;
+                    }
+                    if (e.features?.length > 0) {
+                        const id = e.features[0].properties?.id;
+                        onSelectFeatureRef.current({ type: 'incident', id });
+                    }
+                });
+
                 // ── Interactions: Barangay ──
                 map.on('mouseenter', FILL_LAYER_ID, () => { map.getCanvas().style.cursor = 'pointer'; });
                 map.on('mousemove', FILL_LAYER_ID, (e: any) => {
@@ -328,19 +339,10 @@ export default function MapContainer({ theme, layers, barangayCounts, pinReports
                     map.setPaintProperty(HIGHLIGHT_LAYER_ID, 'line-opacity', 0);
                 });
                 map.on('click', FILL_LAYER_ID, (e: any) => {
+                    if (e.originalEvent?._pinHandled) return;
                     if (e.features?.length > 0) {
                         const props = e.features[0].properties;
                         onSelectFeatureRef.current({ type: 'barangay', id: props.id, name: props.name });
-                    }
-                });
-
-                // ── Interactions: Pins ──
-                map.on('mouseenter', PIN_LAYER_ID, () => { map.getCanvas().style.cursor = 'pointer'; });
-                map.on('mouseleave', PIN_LAYER_ID, () => { map.getCanvas().style.cursor = ''; });
-                map.on('click', PIN_LAYER_ID, (e: any) => {
-                    if (e.features?.length > 0) {
-                        const id = e.features[0].properties?.id;
-                        onSelectFeatureRef.current({ type: 'incident', id });
                     }
                 });
 

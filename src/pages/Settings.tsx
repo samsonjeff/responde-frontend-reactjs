@@ -77,8 +77,8 @@ function Card({ icon: Icon, title, children }: {
 function StatusBadge({ active }: { active: boolean }) {
   return (
     <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium border ${active
-        ? 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800'
-        : 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800'
+      ? 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800'
+      : 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800'
       }`}>
       <Wifi className="w-3 h-3" />
       {active ? 'Connected' : 'Disconnected'}
@@ -214,7 +214,7 @@ export default function Settings() {
   const [deleteSelfChallengeToken, setDeleteSelfChallengeToken] = useState<string>('');
   const [deleteSelfMaskedEmail, setDeleteSelfMaskedEmail] = useState<string>('');
   const [otpCooldown, setOtpCooldown] = useState(0);
-    const [isRequestingOtp, setIsRequestingOtp] = useState(false);
+  const [isRequestingOtp, setIsRequestingOtp] = useState(false);
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
   const otpInputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
@@ -245,7 +245,7 @@ export default function Settings() {
     setDeleteSelfChallengeToken('');
     setDeleteSelfMaskedEmail(maskEmailAddress(currentUser?.email));
     setOtpCooldown(0);
-      };
+  };
 
   const closeDeleteMyAccountModal = () => {
     if (isConfirmingDelete) return;
@@ -633,10 +633,10 @@ export default function Settings() {
             )}
             <span
               className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${userRole === 'super_admin'
-                  ? 'bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/40 dark:text-purple-300 dark:border-purple-800'
-                  : userRole === 'admin'
-                    ? 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-800'
-                    : 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'
+                ? 'bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/40 dark:text-purple-300 dark:border-purple-800'
+                : userRole === 'admin'
+                  ? 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-800'
+                  : 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'
                 }`}
             >
               {userRole === 'super_admin' ? 'Super Admin' : userRole === 'admin' ? 'Admin' : 'Staff'}
@@ -999,10 +999,10 @@ export default function Settings() {
                         <td className="px-4 py-3">
                           <span
                             className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${u.role === 'super_admin'
-                                ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300 border border-purple-200 dark:border-purple-800'
-                                : u.role === 'admin'
-                                  ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 border border-blue-200 dark:border-blue-800'
-                                  : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
+                              ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300 border border-purple-200 dark:border-purple-800'
+                              : u.role === 'admin'
+                                ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 border border-blue-200 dark:border-blue-800'
+                                : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
                               }`}
                           >
                             {u.role === 'super_admin' ? 'Super Admin' : u.role === 'admin' ? 'Admin' : 'Staff'}
@@ -1397,8 +1397,8 @@ export default function Settings() {
                       <label
                         title={roleDisabledTooltip}
                         className={`flex items-center gap-2.5 p-2.5 border border-slate-200 dark:border-slate-700 rounded-xl ${isRoleSelectionDisabled
-                            ? 'opacity-50 cursor-not-allowed bg-slate-50 dark:bg-slate-900'
-                            : 'cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800'
+                          ? 'opacity-50 cursor-not-allowed bg-slate-50 dark:bg-slate-900'
+                          : 'cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800'
                           }`}
                       >
                         <input
@@ -1419,8 +1419,8 @@ export default function Settings() {
                       <label
                         title={roleDisabledTooltip}
                         className={`flex items-center gap-2.5 p-2.5 border border-slate-200 dark:border-slate-700 rounded-xl ${isRoleSelectionDisabled
-                            ? 'opacity-50 cursor-not-allowed bg-slate-50 dark:bg-slate-900'
-                            : 'cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800'
+                          ? 'opacity-50 cursor-not-allowed bg-slate-50 dark:bg-slate-900'
+                          : 'cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800'
                           }`}
                       >
                         <input
@@ -1441,8 +1441,8 @@ export default function Settings() {
                       <label
                         title={roleDisabledTooltip}
                         className={`flex items-center gap-2.5 p-2.5 border border-slate-200 dark:border-slate-700 rounded-xl ${!isRoleSelectionDisabled && currentUser?.role === 'super_admin'
-                            ? 'cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800'
-                            : 'opacity-50 cursor-not-allowed bg-slate-50 dark:bg-slate-900'
+                          ? 'cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800'
+                          : 'opacity-50 cursor-not-allowed bg-slate-50 dark:bg-slate-900'
                           }`}
                       >
                         <input
@@ -1623,10 +1623,10 @@ export default function Settings() {
                       <div className="flex items-center justify-between text-[11px]">
                         <span className="text-slate-500 dark:text-slate-400">Password Strength:</span>
                         <span className={`font-semibold ${newPassword.length >= 8 && (/\d/.test(newPassword) || /[^A-Za-z0-9]/.test(newPassword))
-                            ? (newPassword.length >= 10 && /\d/.test(newPassword) && /[^A-Za-z0-9]/.test(newPassword)
-                              ? 'text-emerald-600 dark:text-emerald-400'
-                              : 'text-amber-600 dark:text-amber-400')
-                            : 'text-rose-500 dark:text-rose-400'
+                          ? (newPassword.length >= 10 && /\d/.test(newPassword) && /[^A-Za-z0-9]/.test(newPassword)
+                            ? 'text-emerald-600 dark:text-emerald-400'
+                            : 'text-amber-600 dark:text-amber-400')
+                          : 'text-rose-500 dark:text-rose-400'
                           }`}>
                           {newPassword.length >= 8 && (/\d/.test(newPassword) || /[^A-Za-z0-9]/.test(newPassword))
                             ? (newPassword.length >= 10 && /\d/.test(newPassword) && /[^A-Za-z0-9]/.test(newPassword)
@@ -1638,10 +1638,10 @@ export default function Settings() {
                       <div className="w-full bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden">
                         <div
                           className={`h-full transition-all duration-300 rounded-full ${newPassword.length >= 10 && /\d/.test(newPassword) && /[^A-Za-z0-9]/.test(newPassword)
-                              ? 'w-full bg-emerald-500'
-                              : newPassword.length >= 8 && (/\d/.test(newPassword) || /[^A-Za-z0-9]/.test(newPassword))
-                                ? 'w-2/3 bg-amber-500'
-                                : 'w-1/3 bg-rose-500'
+                            ? 'w-full bg-emerald-500'
+                            : newPassword.length >= 8 && (/\d/.test(newPassword) || /[^A-Za-z0-9]/.test(newPassword))
+                              ? 'w-2/3 bg-amber-500'
+                              : 'w-1/3 bg-rose-500'
                             }`}
                         />
                       </div>
@@ -1775,8 +1775,8 @@ export default function Settings() {
                     </span>
                     <span
                       className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${deleteModalUser.role === 'admin'
-                          ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 border border-blue-200 dark:border-blue-800'
-                          : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
+                        ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 border border-blue-200 dark:border-blue-800'
+                        : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
                         }`}
                     >
                       {deleteModalUser.role === 'admin' ? 'Admin' : 'Staff'}
@@ -1823,7 +1823,7 @@ export default function Settings() {
       {deleteSelfModalOpen && (
         <div className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white dark:bg-[#111827] rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 transition-all">
-            
+
             {/* Header */}
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-2.5">

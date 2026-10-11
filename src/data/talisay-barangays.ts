@@ -163,8 +163,8 @@ export const TALISAY_BARANGAY_DETAILS: Record<string, BarangayDetailMeta> = {
         "id": 13,
         "name": "Poblacion Barangay 6",
         "psgc": 401030016,
-        "area_km2": 12.54,
-        "len_km": 26,
+        "area_km2": 0.07,
+        "len_km": 1.2,
         "centroid": [
             121.0216,
             14.0905
@@ -243,8 +243,8 @@ export const TALISAY_BARANGAY_DETAILS: Record<string, BarangayDetailMeta> = {
         "area_km2": 6.51,
         "len_km": 14.4,
         "centroid": [
-            121.0503,
-            14.1234
+            121.0535,
+            14.1275
         ]
     },
     "Tumaway": {
@@ -983,223 +983,12 @@ export const talisayBarangays: BarangayFeatureCollection = {
                         "id": 13,
                         "name": "Poblacion Barangay 6",
                         "centroid": [
-                                121.029,
-                                14.0324
-                        ],
-                        "psgc": 401030016,
-                        "area_km2": 12.54,
-                        "len_km": 26,
-                        "part": 1
-                },
-                "geometry": {
-                        "type": "Polygon",
-                        "coordinates": [
-                                [
-                                        [
-                                                121.03140024900007,
-                                                14.030116939000036
-                                        ],
-                                        [
-                                                121.02913112800003,
-                                                14.035255825000036
-                                        ],
-                                        [
-                                                121.026570934,
-                                                14.031867735000047
-                                        ],
-                                        [
-                                                121.03140024900007,
-                                                14.030116939000036
-                                        ]
-                                ]
-                        ]
-                }
-        },
-        {
-                "type": "Feature",
-                "properties": {
-                        "id": 13,
-                        "name": "Poblacion Barangay 6",
-                        "centroid": [
-                                121.0473,
-                                14.0302
-                        ],
-                        "psgc": 401030016,
-                        "area_km2": 12.54,
-                        "len_km": 26,
-                        "part": 2
-                },
-                "geometry": {
-                        "type": "Polygon",
-                        "coordinates": [
-                                [
-                                        [
-                                                121.04825467500008,
-                                                14.031225727000047
-                                        ],
-                                        [
-                                                121.04446448300007,
-                                                14.036051193000047
-                                        ],
-                                        [
-                                                121.04192556700004,
-                                                14.03081684500006
-                                        ],
-                                        [
-                                                121.04539107500013,
-                                                14.029406920000042
-                                        ],
-                                        [
-                                                121.04931301800002,
-                                                14.025739630000032
-                                        ],
-                                        [
-                                                121.05407589800005,
-                                                14.02789292800003
-                                        ],
-                                        [
-                                                121.04825467500008,
-                                                14.031225727000047
-                                        ]
-                                ]
-                        ]
-                }
-        },
-        {
-                "type": "Feature",
-                "properties": {
-                        "id": 13,
-                        "name": "Poblacion Barangay 6",
-                        "centroid": [
-                                120.9968,
-                                14.0265
-                        ],
-                        "psgc": 401030016,
-                        "area_km2": 12.54,
-                        "len_km": 26,
-                        "part": 3
-                },
-                "geometry": {
-                        "type": "Polygon",
-                        "coordinates": [
-                                [
-                                        [
-                                                121.01431170100011,
-                                                14.042833941000028
-                                        ],
-                                        [
-                                                121.01154908900003,
-                                                14.042867268000066
-                                        ],
-                                        [
-                                                121.01049934800005,
-                                                14.038520965000032
-                                        ],
-                                        [
-                                                121.00427961300011,
-                                                14.03530938600005
-                                        ],
-                                        [
-                                                120.9929730120001,
-                                                14.036675582000045
-                                        ],
-                                        [
-                                                120.98732214200004,
-                                                14.031859122000071
-                                        ],
-                                        [
-                                                120.980814161,
-                                                14.033028039000046
-                                        ],
-                                        [
-                                                120.97582060100002,
-                                                14.037605576000033
-                                        ],
-                                        [
-                                                120.97621851700002,
-                                                14.040149413000053
-                                        ],
-                                        [
-                                                120.97256670300008,
-                                                14.042411989000074
-                                        ],
-                                        [
-                                                120.96713537900007,
-                                                14.038737440000034
-                                        ],
-                                        [
-                                                120.96602034000011,
-                                                14.034825424000074
-                                        ],
-                                        [
-                                                120.9734490730001,
-                                                14.02959518900008
-                                        ],
-                                        [
-                                                120.97342435200007,
-                                                14.025386767000043
-                                        ],
-                                        [
-                                                120.99244286400007,
-                                                14.011166635000052
-                                        ],
-                                        [
-                                                120.99216476200003,
-                                                14.01320066200003
-                                        ],
-                                        [
-                                                120.99557915100002,
-                                                14.016334490000075
-                                        ],
-                                        [
-                                                120.99999183600004,
-                                                14.015578893000052
-                                        ],
-                                        [
-                                                121.00461439600008,
-                                                14.010863939000046
-                                        ],
-                                        [
-                                                121.01628010400009,
-                                                14.013680974000067
-                                        ],
-                                        [
-                                                121.01999243000013,
-                                                14.01726043600007
-                                        ],
-                                        [
-                                                121.01968363300013,
-                                                14.01958851300003
-                                        ],
-                                        [
-                                                121.01560550500005,
-                                                14.024692555000055
-                                        ],
-                                        [
-                                                121.0187836890001,
-                                                14.03715340800005
-                                        ],
-                                        [
-                                                121.01431170100011,
-                                                14.042833941000028
-                                        ]
-                                ]
-                        ]
-                }
-        },
-        {
-                "type": "Feature",
-                "properties": {
-                        "id": 13,
-                        "name": "Poblacion Barangay 6",
-                        "centroid": [
                                 121.0216,
                                 14.0905
                         ],
                         "psgc": 401030016,
-                        "area_km2": 12.54,
-                        "len_km": 26,
-                        "part": 4
+                        "area_km2": 0.07,
+                        "len_km": 1.2
                 },
                 "geometry": {
                         "type": "Polygon",
@@ -1585,8 +1374,8 @@ export const talisayBarangays: BarangayFeatureCollection = {
                         "id": 20,
                         "name": "Tranca",
                         "centroid": [
-                                121.0503,
-                                14.1234
+                                121.0535,
+                                14.1275
                         ],
                         "psgc": 401030024,
                         "area_km2": 6.51,
@@ -1778,6 +1567,91 @@ export const TALISAY_BARANGAYS = [
 
 export type TalisayBarangay = typeof TALISAY_BARANGAYS[number];
 
-export function getBarangayMeta(name: string): BarangayDetailMeta | undefined {
-    return TALISAY_BARANGAY_DETAILS[name];
+export function normalizeBarangayName(name?: string): string {
+    if (!name) return '';
+    const trimmed = name.trim();
+    const matched = TALISAY_BARANGAYS.find(
+        (b) => b.toLowerCase() === trimmed.toLowerCase()
+    );
+    if (matched) return matched;
+    const cleaned = trimmed.replace(/^(brgy\.?|barangay)\s+/i, '').trim();
+    const matchedCleaned = TALISAY_BARANGAYS.find(
+        (b) => b.toLowerCase() === cleaned.toLowerCase()
+    );
+    if (matchedCleaned) return matchedCleaned;
+    // Match "Poblacion 1" -> "Poblacion Barangay 1"
+    const pobMatch = cleaned.match(/^poblacion\s*(\d+)$/i);
+    if (pobMatch) {
+        const pobTarget = `Poblacion Barangay ${pobMatch[1]}` as TalisayBarangay;
+        if (TALISAY_BARANGAYS.includes(pobTarget)) return pobTarget;
+    }
+    return trimmed;
 }
+
+export function getBarangayMeta(name: string): BarangayDetailMeta | undefined {
+    if (!name) return undefined;
+    if (TALISAY_BARANGAY_DETAILS[name]) return TALISAY_BARANGAY_DETAILS[name];
+    const norm = normalizeBarangayName(name);
+    return TALISAY_BARANGAY_DETAILS[norm];
+}
+
+/** Check if [lng, lat] point is inside a polygon ring */
+export function isPointInPolygon(point: [number, number], vs: number[][]): boolean {
+    const x = point[0], y = point[1];
+    let inside = false;
+    for (let i = 0, j = vs.length - 1; i < vs.length; j = i++) {
+        const xi = vs[i][0], yi = vs[i][1];
+        const xj = vs[j][0], yj = vs[j][1];
+        const intersect = ((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+        if (intersect) inside = !inside;
+    }
+    return inside;
+}
+
+/** Get GeoJSON feature for a barangay by name or normalized name */
+export function getBarangayFeature(name: string) {
+    if (!name) return undefined;
+    const target = name.trim().toLowerCase();
+    const normalized = normalizeBarangayName(name).trim().toLowerCase();
+    return talisayBarangays.features.find((f) => {
+        const fName = f.properties.name.trim().toLowerCase();
+        const fNorm = normalizeBarangayName(f.properties.name).trim().toLowerCase();
+        return fName === target || fNorm === normalized || fName.includes(target) || target.includes(fName);
+    });
+}
+
+/**
+ * Ensures a [lng, lat] coordinate point is strictly inside its assigned barangay polygon.
+ * If the point is outside (e.g. across a boundary or in an adjacent barangay), it is
+ * nudged inwards along the ray toward the barangay center until safely contained.
+ */
+export function clampPointToBarangay(
+    coords: [number, number], // [lng, lat]
+    barangayName: string
+): [number, number] {
+    const feat = getBarangayFeature(barangayName);
+    if (!feat) return coords;
+    const poly = feat.geometry.coordinates[0];
+    const cent = feat.properties.centroid;
+
+    if (isPointInPolygon(coords, poly)) {
+        return coords;
+    }
+
+    // Step inward towards the centroid until safely inside the polygon
+    for (let t = 0.05; t <= 1.0; t += 0.05) {
+        const cand: [number, number] = [
+            coords[0] + t * (cent[0] - coords[0]),
+            coords[1] + t * (cent[1] - coords[1]),
+        ];
+        if (isPointInPolygon(cand, poly)) {
+            const safeT = Math.min(1.0, t + 0.1);
+            return [
+                coords[0] + safeT * (cent[0] - coords[0]),
+                coords[1] + safeT * (cent[1] - coords[1]),
+            ];
+        }
+    }
+    return cent;
+}
+

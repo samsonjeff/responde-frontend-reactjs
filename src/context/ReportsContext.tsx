@@ -51,7 +51,7 @@ export function ReportsProvider({ children }: { children: ReactNode }) {
     const getReportsByBarangay = useCallback(() => {
         const map: Record<string, Report[]> = {};
         reports
-            .filter((r) => r.status === 'verified' || r.status === 'under_review')
+            .filter((r) => r.status !== 'rejected')
             .forEach((r) => {
                 if (!map[r.barangay]) map[r.barangay] = [];
                 map[r.barangay].push(r);

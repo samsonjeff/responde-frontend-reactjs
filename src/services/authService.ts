@@ -75,7 +75,7 @@ export function setStoredSessionToken(token: string | null): void {
     } else {
       localStorage.removeItem(SESSION_TOKEN_KEY);
     }
-  } catch {}
+  } catch { }
 }
 
 export function getStoredUser(): AuthUser | null {
@@ -94,7 +94,7 @@ export function setStoredUser(user: AuthUser | null): void {
     } else {
       localStorage.removeItem(USER_KEY);
     }
-  } catch {}
+  } catch { }
 }
 
 // Internal fetch wrapper - sends cookies AND Authorization Bearer header if token exists
@@ -264,9 +264,9 @@ export const authService = {
     return data;
   },
 
-    /**
-   * Change password for the currently authenticated user.
-   */
+  /**
+ * Change password for the currently authenticated user.
+ */
   async changePassword(payload: {
     current_password: string;
     new_password: string;
@@ -284,10 +284,10 @@ export const authService = {
     return data;
   },
 
-/**
-   * Restore session from httpOnly cookie on app boot.
-   * Returns the current user, or null if no valid session exists.
-   */
+  /**
+     * Restore session from httpOnly cookie on app boot.
+     * Returns the current user, or null if no valid session exists.
+     */
   async me(): Promise<AuthUser | null> {
     try {
       const res = await apiFetch('/api/auth/me');
