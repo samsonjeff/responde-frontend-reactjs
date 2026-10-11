@@ -205,8 +205,8 @@ export default function MessengerBotLogs() {
   const hasActiveFilters = activeFilterCount > 0;
 
   const availableBarangays = useMemo(() => {
-    const list = Array.from(new Set(conversations.map((c) => c.barangay).filter(Boolean))).sort();
-    return list.length > 0 ? list : [...TALISAY_BARANGAYS];
+    const fromConversations = conversations.map((c) => c.barangay).filter(Boolean);
+    return Array.from(new Set([...TALISAY_BARANGAYS, ...fromConversations])).sort();
   }, [conversations]);
 
   const availableTypes = useMemo(() => {
