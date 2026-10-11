@@ -432,40 +432,60 @@ export default function GeospatialMap() {
     return () => clearTimeout(timer);
   }, []);
 
+  const availableIncidentTypes = useMemo(() => {
+    const set = new Set<string>(['Search & Rescue', 'Medical', 'Food & Water', 'Infrastructure']);
+    reports.forEach((r) => {
+      if (r.type && r.type.trim() && r.type !== 'All Types') {
+        set.add(r.type);
+      }
+    });
+    return ['All Types', ...Array.from(set).sort()];
+  }, [reports]);
+
+  const matchUrgency = useCallback((itemUrgency?: string) => {
+    if (!filterUrgency || filterUrgency === 'All Urgency' || filterUrgency === 'All') return true;
+    return itemUrgency?.trim().toLowerCase() === filterUrgency.trim().toLowerCase();
+  }, [filterUrgency]);
+
+  const matchType = useCallback((itemType?: string) => {
+    if (!filterType || filterType === 'All Types' || filterType === 'All') return true;
+    return itemType?.trim().toLowerCase() === filterType.trim().toLowerCase();
+  }, [filterType]);
+
   // Compute barangay max urgency level (High=3, Moderate=2, Low=1) reflecting active filters
   const URGENCY_WEIGHTS: Record<string, number> = { High: 3, Moderate: 2, Low: 1 };
   const barangayCounts = useMemo(() => {
     const maxUrgency: Record<string, number> = {};
     reports
       .filter((r) => r.status === 'verified' || r.status === 'under_review')
-      .filter((r) => filterUrgency === 'All Urgency' || filterUrgency === 'All' || r.urgency === filterUrgency)
-      .filter((r) => filterType === 'All Types' || filterType === 'All' || r.type === filterType)
+      .filter((r) => matchUrgency(r.urgency))
+      .filter((r) => matchType(r.type))
       .forEach((r) => {
         const weight = URGENCY_WEIGHTS[r.urgency] || 1;
         maxUrgency[r.barangay] = Math.max(maxUrgency[r.barangay] || 0, weight);
       });
     return maxUrgency;
-  }, [reports, filterUrgency, filterType]);
+  }, [reports, matchUrgency, matchType]);
 
   // Reports with coords for pin layer (verified + under_review — matches drawer)
   const pinReports = useMemo(() => {
     return reports
       .filter((r) => (r.status === 'verified' || r.status === 'under_review') && parseCoords(r.coordinates))
-      .filter((r) => filterUrgency === 'All Urgency' || filterUrgency === 'All' || r.urgency === filterUrgency)
-      .filter((r) => filterType === 'All Types' || filterType === 'All' || r.type === filterType);
-  }, [reports, filterUrgency, filterType]);
+      .filter((r) => matchUrgency(r.urgency))
+      .filter((r) => matchType(r.type));
+  }, [reports, matchUrgency, matchType]);
 
   // Drawer list: verified + under_review with coords
   const drawerReports = useMemo(() => {
     return reports
       .filter((r) => (r.status === 'verified' || r.status === 'under_review') && parseCoords(r.coordinates))
-      .filter((r) => filterUrgency === 'All Urgency' || filterUrgency === 'All' || r.urgency === filterUrgency)
-      .filter((r) => filterType === 'All Types' || filterType === 'All' || r.type === filterType)
+      .filter((r) => matchUrgency(r.urgency))
+      .filter((r) => matchType(r.type))
       .sort((a, b) => {
         const u = { High: 3, Moderate: 2, Low: 1 };
         return (u[b.urgency as keyof typeof u] || 0) - (u[a.urgency as keyof typeof u] || 0);
       });
-  }, [reports, filterUrgency, filterType]);
+  }, [reports, matchUrgency, matchType]);
 
   const toggleLayer = useCallback((key: keyof MapLayerState) => {
     setLayers((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -542,7 +562,7 @@ export default function GeospatialMap() {
                 <div className="flex-1 sm:flex-initial min-w-[130px]">
                   <FilterDropdown
                     value={filterType}
-                    options={['All Types', 'Search & Rescue', 'Medical', 'Food & Water', 'Infrastructure']}
+                    options={availableIncidentTypes}
                     onChange={setFilterType}
                   />
                 </div>

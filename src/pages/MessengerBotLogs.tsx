@@ -193,10 +193,6 @@ export default function MessengerBotLogs() {
   const handleSelectConversation = (id: string) => {
     setSelectedId(id);
     setMobileView('chat');
-    const target = conversations.find((c) => c.id === id);
-    if (target && target.status === "Incomplete") {
-      updateConversationStatus(id, "Complete", true);
-    }
   };
 
   const activeFilterCount =
@@ -227,23 +223,77 @@ export default function MessengerBotLogs() {
     setSelectedId("");
   };
 
-  const filteredConversations = conversations.filter((c) => {
-    if (filterBarangay !== "All Barangays" && c.barangay !== filterBarangay) return false;
-    if (filterType !== "All Types" && c.type !== filterType) return false;
-    if (filterStatus !== "All Status" && c.status !== filterStatus && c.id !== selectedId) return false;
-    if (fromDate && c.time && c.time.includes("-")) {
-      const msgDate = c.time.split(" ")[0];
-      if (msgDate < fromDate) return false;
+  const getConvoDateString = (c: Conversation): string | null => {
+    if (c.createdAt) {
+      try {
+        const d = new Date(c.createdAt);
+        if (!isNaN(d.getTime())) return d.toISOString().split('T')[0];
+      } catch {}
     }
-    if (toDate && c.time && c.time.includes("-")) {
-      const msgDate = c.time.split(" ")[0];
-      if (msgDate > toDate) return false;
+    if (c.messages && c.messages.length > 0) {
+      for (let i = c.messages.length - 1; i >= 0; i--) {
+        const ts = c.messages[i].timestamp;
+        if (ts) {
+          try {
+            const d = new Date(ts);
+            if (!isNaN(d.getTime())) return d.toISOString().split('T')[0];
+          } catch {}
+        }
+      }
     }
-    return true;
-  });
+    if (c.time) {
+      if (c.time.includes('-')) {
+        const p = c.time.split(' ')[0];
+        if (/^\d{4}-\d{2}-\d{2}$/.test(p)) return p;
+      }
+      const parts = c.time.split(' ')[0].split('/');
+      if (parts.length === 2) {
+        const mm = parts[0].padStart(2, '0');
+        const dd = parts[1].padStart(2, '0');
+        const yyyy = new Date().getFullYear();
+        return `${yyyy}-${mm}-${dd}`;
+      }
+    }
+    return null;
+  };
+
+  const filteredConversations = useMemo(() => {
+    return conversations.filter((c) => {
+      if (filterBarangay !== "All Barangays" && c.barangay?.toLowerCase() !== filterBarangay.toLowerCase()) {
+        return false;
+      }
+      if (filterType !== "All Types" && c.type?.toLowerCase() !== filterType.toLowerCase()) {
+        return false;
+      }
+      if (filterStatus !== "All Status" && c.status?.toLowerCase() !== filterStatus.toLowerCase()) {
+        return false;
+      }
+      if (fromDate) {
+        const dStr = getConvoDateString(c);
+        if (dStr && dStr < fromDate) return false;
+      }
+      if (toDate) {
+        const dStr = getConvoDateString(c);
+        if (dStr && dStr > toDate) return false;
+      }
+      return true;
+    });
+  }, [conversations, filterBarangay, filterType, filterStatus, fromDate, toDate]);
 
   const selectedConversation =
-    filteredConversations.find((c) => c.id === selectedId) || filteredConversations[0];
+    filteredConversations.find((c) => c.id === selectedId) || filteredConversations[0] || null;
+
+  // Sync selectedId with first filtered item when active filter excludes previous selection
+  useEffect(() => {
+    if (filteredConversations.length > 0) {
+      const exists = filteredConversations.some((c) => c.id === selectedId);
+      if (!exists) {
+        setSelectedId(filteredConversations[0].id);
+      }
+    } else {
+      setSelectedId("");
+    }
+  }, [filteredConversations, selectedId]);
 
   // Auto-scroll chat to bottom when conversation or message count changes
   useEffect(() => {

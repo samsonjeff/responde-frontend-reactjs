@@ -15,7 +15,17 @@ export interface BotConversation {
   type: string;
   status: 'Incomplete' | 'Complete';
   time: string;
+  createdAt?: string;
   messages: BotMessage[];
+}
+
+function titleCase(str: string): string {
+  if (!str) return '';
+  return str
+    .toLowerCase()
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
 }
 
 export const initialBotConversations: BotConversation[] = [
@@ -27,6 +37,7 @@ export const initialBotConversations: BotConversation[] = [
     type: "General",
     status: "Complete",
     time: "12:41",
+    createdAt: "2026-10-11T12:41:00.000Z",
     messages: [
       { sender: "user", text: "May baha po ba sa Tumaway ngayon?" },
       { sender: "bot", text: "Magandang araw! Sa kasalukuyan, may bahagyang pagbaha sa mababang bahagi ng Tumaway dulot ng malakas na ulan. Pinapayuhan ang lahat na mag-ingat." },
@@ -40,6 +51,7 @@ export const initialBotConversations: BotConversation[] = [
     type: "Emergency",
     status: "Complete",
     time: "12:36",
+    createdAt: "2026-10-11T12:36:00.000Z",
     messages: [
       { sender: "user", text: "Nasira ang aming bubong sa lakas ng hangin" },
       { sender: "bot", text: "Nai-record na po ang inyong ulat. Ipinadala na po ito sa Talisay MDRRMO Emergency Response Team para sa agarang tulong." },
@@ -53,6 +65,7 @@ export const initialBotConversations: BotConversation[] = [
     type: "Medical",
     status: "Complete",
     time: "12:30",
+    createdAt: "2026-10-11T12:30:00.000Z",
     messages: [
       { sender: "user", text: "Kailangan po ng ambulance dito sa Burol" },
       { sender: "bot", text: "Agad po naming ipinarating sa pinakamalapit na health center at rescue unit. Pakibantayan po ang inyong telepono para sa tawag ng responders." },
@@ -66,6 +79,7 @@ export const initialBotConversations: BotConversation[] = [
     type: "General",
     status: "Incomplete",
     time: "12:22",
+    createdAt: "2026-10-11T12:22:00.000Z",
     messages: [
       { sender: "user", text: "Saan po ang evacuation center?" },
       { sender: "bot", text: "Ang pinakamalapit na evacuation center para sa San Isidro ay matatagpuan sa San Isidro Elementary School Gymnasium." },
@@ -79,6 +93,7 @@ export const initialBotConversations: BotConversation[] = [
     type: "General",
     status: "Complete",
     time: "12:15",
+    createdAt: "2026-10-11T12:15:00.000Z",
     messages: [
       { sender: "user", text: "May kuryente po ba sa ibabaw ng burol?" },
       { sender: "bot", text: "Kasalukuyan pong may power interruption sa ilang bahagi ng Brgy. Dahlia dahil sa natumbang linya ng kuryente. Inaayos na po ito ng BATELEC." },
@@ -92,6 +107,7 @@ export const initialBotConversations: BotConversation[] = [
     type: "Emergency",
     status: "Incomplete",
     time: "12:09",
+    createdAt: "2026-10-11T12:09:00.000Z",
     messages: [
       { sender: "user", text: "Tulong po, may gumuguho na bahagi ng bundok" },
       { sender: "bot", text: "Naiulat na po ang landslide alert sa Incident Commander. Mangyaring lumikas agad sa mas ligtas na lugar." },
@@ -105,6 +121,7 @@ export const initialBotConversations: BotConversation[] = [
     type: "Medical",
     status: "Complete",
     time: "11:58",
+    createdAt: "2026-10-11T11:58:00.000Z",
     messages: [
       { sender: "user", text: "Humingi po kami ng first aid supplies para sa evacuation center." },
       { sender: "bot", text: "Natanggap na po ang request para sa medical supplies sa Poblacion Evacuation Center." },
@@ -112,7 +129,7 @@ export const initialBotConversations: BotConversation[] = [
   },
 ];
 
-const STORAGE_KEY = 'responde_bot_status_overrides';
+const STORAGE_KEY = 'responde_bot_status_overrides_v2';
 const INACTIVITY_GAP_MS = 60 * 60 * 1000;
 const POLL_INTERVAL_MS = 30_000;
 
@@ -213,6 +230,9 @@ export function BotConversationsProvider({ children }: { children: ReactNode }) 
       psid: string;
       senderName: string;
       lastTime: number;
+      barangay: string;
+      type: string;
+      needsReview: boolean;
       messages: BotMessage[];
     };
 
@@ -233,6 +253,15 @@ export function BotConversationsProvider({ children }: { children: ReactNode }) 
       const rowTime = new Date(row.timestamp).getTime();
       const lastIdx = psidToLastIdx.get(psid);
       const resolvedName = psidNameMap.get(psid) ?? 'Unknown User';
+      const rowBarangay = row.barangay && String(row.barangay).trim() ? String(row.barangay).trim() : '';
+      const rowType = row.incident_type && String(row.incident_type).trim()
+        ? String(row.incident_type).trim()
+        : (row.intent && String(row.intent).trim() ? String(row.intent).trim() : '');
+      const rowNeedsReview = Boolean(
+        row.needs_review === true ||
+        row.location_status === 'not_found' ||
+        (!rowBarangay || rowBarangay.toLowerCase() === 'unknown')
+      );
 
       let session: Session;
       if (lastIdx === undefined || rowTime - sessions[lastIdx].lastTime > INACTIVITY_GAP_MS) {
@@ -241,6 +270,9 @@ export function BotConversationsProvider({ children }: { children: ReactNode }) 
           psid,
           senderName: resolvedName,
           lastTime: rowTime,
+          barangay: rowBarangay,
+          type: rowType,
+          needsReview: rowNeedsReview,
           messages: [],
         };
         sessions.push(session);
@@ -250,6 +282,15 @@ export function BotConversationsProvider({ children }: { children: ReactNode }) 
         session.lastTime = rowTime;
         if (session.senderName === 'Unknown User' && resolvedName !== 'Unknown User') {
           session.senderName = resolvedName;
+        }
+        if (!session.barangay && rowBarangay) {
+          session.barangay = rowBarangay;
+        }
+        if (!session.type && rowType) {
+          session.type = rowType;
+        }
+        if (rowNeedsReview) {
+          session.needsReview = true;
         }
       }
 
@@ -272,6 +313,8 @@ export function BotConversationsProvider({ children }: { children: ReactNode }) 
           })}`;
 
           const override = statusOverridesRef.current[session.id];
+          const calculatedStatus = session.needsReview || !session.barangay ? 'Incomplete' : 'Complete';
+
           return {
             id: session.id,
             psid: session.psid,
@@ -279,10 +322,11 @@ export function BotConversationsProvider({ children }: { children: ReactNode }) 
               session.senderName !== 'Unknown User'
                 ? session.senderName
                 : `PSID: ${session.psid.slice(-6)}`,
-            barangay: 'General',
-            type: 'Emergency',
-            status: override || 'Complete',
+            barangay: session.barangay ? titleCase(session.barangay) : 'General',
+            type: session.type ? titleCase(session.type) : 'Emergency',
+            status: override || calculatedStatus,
             time: timeFormatted,
+            createdAt: new Date(session.lastTime).toISOString(),
             messages: session.messages,
           };
         });

@@ -599,29 +599,48 @@ export default function IncidentReports() {
 
   const allChecklistChecked = Object.values(checklist).every(Boolean);
 
-  const filteredReports = reports.filter(r => {
-    if (r.status !== activeTab) return false;
-    if (filterBarangay !== 'All Barangays' && r.barangay !== filterBarangay) return false;
-    if (filterType !== 'All Types' && r.type !== filterType) return false;
-    if (filterUrgency !== 'All Urgency' && r.urgency !== filterUrgency) return false;
-    if (fromDate && r.createdAt) {
+  const getReportDateString = (r: Report): string | null => {
+    if (r.createdAt) {
       try {
-        const repDate = new Date(r.createdAt).toISOString().split('T')[0];
-        if (repDate < fromDate) return false;
-      } catch {
-        // fallback
+        const d = new Date(r.createdAt);
+        if (!isNaN(d.getTime())) return d.toISOString().split('T')[0];
+      } catch {}
+    }
+    if (r.time) {
+      const parts = r.time.split(' ')[0].split('/');
+      if (parts.length === 2) {
+        const mm = parts[0].padStart(2, '0');
+        const dd = parts[1].padStart(2, '0');
+        const yyyy = new Date().getFullYear();
+        return `${yyyy}-${mm}-${dd}`;
+      }
+      if (parts.length === 3) {
+        const mm = parts[0].padStart(2, '0');
+        const dd = parts[1].padStart(2, '0');
+        const yyyy = parts[2].length === 2 ? `20${parts[2]}` : parts[2];
+        return `${yyyy}-${mm}-${dd}`;
       }
     }
-    if (toDate && r.createdAt) {
-      try {
-        const repDate = new Date(r.createdAt).toISOString().split('T')[0];
-        if (repDate > toDate) return false;
-      } catch {
-        // fallback
+    return null;
+  };
+
+  const filteredReports = useMemo(() => {
+    return reports.filter(r => {
+      if (r.status !== activeTab) return false;
+      if (filterBarangay !== 'All Barangays' && r.barangay?.toLowerCase() !== filterBarangay.toLowerCase()) return false;
+      if (filterType !== 'All Types' && r.type?.toLowerCase() !== filterType.toLowerCase()) return false;
+      if (filterUrgency !== 'All Urgency' && r.urgency?.toLowerCase() !== filterUrgency.toLowerCase()) return false;
+      if (fromDate) {
+        const repDate = getReportDateString(r);
+        if (repDate && repDate < fromDate) return false;
       }
-    }
-    return true;
-  });
+      if (toDate) {
+        const repDate = getReportDateString(r);
+        if (repDate && repDate > toDate) return false;
+      }
+      return true;
+    });
+  }, [reports, activeTab, filterBarangay, filterType, filterUrgency, fromDate, toDate]);
 
   const totalPages = Math.ceil(filteredReports.length / itemsPerPage);
   const paginatedReports = filteredReports.slice(

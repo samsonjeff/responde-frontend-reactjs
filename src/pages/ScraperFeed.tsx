@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { motion, AnimatePresence, type Variants } from "framer-motion";
 import {
   Filter, Globe, MessageCircle, AlertTriangle, MapPin, Clock,
@@ -311,32 +311,67 @@ export default function ScraperFeed() {
     setToDate("");
   };
 
-  // Filter logic
-  const filteredPosts = posts.filter((p) => {
-    if (filterBarangay !== "All Barangays" && p.barangay !== filterBarangay) return false;
-    if (filterType !== "All Types" && p.type !== filterType) return false;
-    if (filterUrgency !== "All Urgency" && p.urgency !== filterUrgency) return false;
-    if (filterStatus !== "All Status" && p.status !== filterStatus) return false;
-    if (fromDate && p.createdAt) {
-      try {
-        const postDate = new Date(p.createdAt).toISOString().split('T')[0];
-        if (postDate < fromDate) return false;
-      } catch {
-        // fallback ignore date parsing error
-      }
-    }
-    if (toDate && p.createdAt) {
-      try {
-        const postDate = new Date(p.createdAt).toISOString().split('T')[0];
-        if (postDate > toDate) return false;
-      } catch {
-        // fallback ignore date parsing error
-      }
-    }
-    return true;
-  });
+  const availableBarangays = useMemo(() => {
+    const fromPosts = posts.map((p) => p.barangay).filter(Boolean);
+    return ["All Barangays", ...Array.from(new Set([...TALISAY_BARANGAYS, ...fromPosts])).sort()];
+  }, [posts]);
 
-  const selectedPost = filteredPosts.find((p) => p.id === selectedId) || filteredPosts[0];
+  const availableTypes = useMemo(() => {
+    const base = ["Search & Rescue", "Medical", "Food & Water", "Infrastructure"];
+    const fromPosts = posts.map((p) => p.type).filter(Boolean);
+    return ["All Types", ...Array.from(new Set([...base, ...fromPosts])).sort()];
+  }, [posts]);
+
+  const getPostDateString = (p: ScrapedPost): string | null => {
+    if (p.createdAt) {
+      try {
+        const d = new Date(p.createdAt);
+        if (!isNaN(d.getTime())) return d.toISOString().split('T')[0];
+      } catch {}
+    }
+    if (p.timestamp) {
+      const parts = p.timestamp.split(' ')[0].split('/');
+      if (parts.length === 2) {
+        const mm = parts[0].padStart(2, '0');
+        const dd = parts[1].padStart(2, '0');
+        const yyyy = new Date().getFullYear();
+        return `${yyyy}-${mm}-${dd}`;
+      }
+    }
+    return null;
+  };
+
+  // Filter logic
+  const filteredPosts = useMemo(() => {
+    return posts.filter((p) => {
+      if (filterBarangay !== "All Barangays" && p.barangay?.toLowerCase() !== filterBarangay.toLowerCase()) return false;
+      if (filterType !== "All Types" && p.type?.toLowerCase() !== filterType.toLowerCase()) return false;
+      if (filterUrgency !== "All Urgency" && p.urgency?.toLowerCase() !== filterUrgency.toLowerCase()) return false;
+      if (filterStatus !== "All Status" && p.status?.toLowerCase() !== filterStatus.toLowerCase()) return false;
+      if (fromDate) {
+        const dStr = getPostDateString(p);
+        if (dStr && dStr < fromDate) return false;
+      }
+      if (toDate) {
+        const dStr = getPostDateString(p);
+        if (dStr && dStr > toDate) return false;
+      }
+      return true;
+    });
+  }, [posts, filterBarangay, filterType, filterUrgency, filterStatus, fromDate, toDate]);
+
+  const selectedPost = filteredPosts.find((p) => p.id === selectedId) || filteredPosts[0] || null;
+
+  useEffect(() => {
+    if (filteredPosts.length > 0) {
+      const exists = filteredPosts.some((p) => p.id === selectedId);
+      if (!exists) {
+        setSelectedId(filteredPosts[0].id);
+      }
+    } else {
+      setSelectedId("");
+    }
+  }, [filteredPosts, selectedId]);
 
   const AVATAR_PALETTE = [
     "bg-[#1877F2]", // Blue
@@ -511,13 +546,13 @@ export default function ScraperFeed() {
 
                 <FilterDropdown
                   value={filterBarangay}
-                  options={["All Barangays", ...TALISAY_BARANGAYS]}
+                  options={availableBarangays}
                   onChange={(val) => { setFilterBarangay(val); setSelectedId(""); }}
                 />
 
                 <FilterDropdown
                   value={filterType}
-                  options={["All Types", "Search & Rescue", "Medical", "Food & Water", "Infrastructure"]}
+                  options={availableTypes}
                   onChange={(val) => { setFilterType(val); setSelectedId(""); }}
                 />
 
