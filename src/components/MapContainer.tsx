@@ -118,9 +118,19 @@ function enrichGeoJSONWithCounts(
 }
 
 function parseCoords(coords: string): [number, number] | null {
+    if (!coords || typeof coords !== 'string') return null;
     const parts = coords.split(',').map((s) => parseFloat(s.trim()));
     if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
-        return [parts[1], parts[0]];
+        let lat: number;
+        let lng: number;
+        if (parts[0] > 50) {
+            lng = parts[0];
+            lat = parts[1];
+        } else {
+            lat = parts[0];
+            lng = parts[1];
+        }
+        return [lng, lat];
     }
     return null;
 }
@@ -134,7 +144,7 @@ function buildPinGeoJSON(reports: Report[]) {
                 return {
                     type: 'Feature' as const,
                     properties: { id: r.id, urgency: r.urgency, type: r.type },
-                    geometry: { type: 'Point' as const, coordinates: c || [0, 0] },
+                    geometry: { type: 'Point' as const, coordinates: c || [121.022, 14.095] },
                 };
             })
             .filter((f) => f.geometry.coordinates[0] !== 0 && f.geometry.coordinates[1] >= 14.075),

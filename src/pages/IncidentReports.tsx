@@ -15,15 +15,17 @@ import PageLoader from '../components/PageLoader';
 import PageTransition from '../components/Transition';
 
 import {
-  fetchReports,
-  subscribeToReports,
-  updateIncidentReport,
-  bulkUpdateIncidentReports,
+  isReportIncomplete,
+  getIncompleteReasons,
+  formatReportCode,
   type Report,
   type ReportStatus,
 } from '../services/incidentService';
+import { useReports } from '../context/ReportsContext';
 import { useBotConversations, type BotMessage } from '../context/BotConversationsContext';
-import { TALISAY_BARANGAYS, talisayBarangays } from '../data/talisay-barangays';
+import { TALISAY_BARANGAYS } from '../data/talisay-barangays';
+
+export type TabKey = 'under_review' | 'incomplete' | 'verified' | 'resolved' | 'rejected';
 
 export const BASE_INCIDENT_TYPES = ['Earthquake', 'Fire', 'Flood', 'Landslide', 'None'] as const;
 
@@ -336,41 +338,19 @@ function BarangaySelect({ value, onChange, options }: BarangaySelectProps) {
 
 export default function IncidentReports() {
   const navigate = useNavigate();
-  const [reports, setReports] = useState<Report[]>([]);
+  const {
+    reports,
+    loading,
+    updateReport: contextUpdateReport,
+    bulkUpdateReports: contextBulkUpdateReports,
+  } = useReports();
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [activeTab, setActiveTab] = useState<ReportStatus>('under_review');
+  const [activeTab, setActiveTab] = useState<TabKey>('under_review');
   const [reviewingReport, setReviewingReport] = useState<Report | null>(null);
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [loading, setLoading] = useState(true);
-
-  const [loadError, setLoadError] = useState('');
-
-  // ── Load reports from Supabase (+ realtime refresh) ──
-  useEffect(() => {
-    let cancelled = false;
-
-    const load = async (initial: boolean) => {
-      try {
-        const data = await fetchReports();
-        if (cancelled) return;
-        setReports(data);
-        setLoadError('');
-      } catch (err) {
-        if (!cancelled) setLoadError(err instanceof Error ? err.message : 'Failed to load reports.');
-      } finally {
-        if (!cancelled && initial) setLoading(false);
-      }
-    };
-
-    load(true);
-    const unsubscribe = subscribeToReports(() => load(false));
-    return () => {
-      cancelled = true;
-      unsubscribe();
-    };
-  }, []);
+  const [loadError] = useState('');
 
   // ── Toast State ──
   const [toasts, setToasts] = useState<Toast[]>([]);
@@ -398,7 +378,11 @@ export default function IncidentReports() {
       const match = reports.find((r) => r.id === urlFocus);
       if (match) {
         setReviewingReport(match);
-        setActiveTab(match.status);
+        if (match.status === 'verified' || match.status === 'resolved' || match.status === 'rejected') {
+          setActiveTab(match.status);
+        } else {
+          setActiveTab(isReportIncomplete(match) ? 'incomplete' : 'under_review');
+        }
       }
     }
   }, [urlFocus, reports]);
@@ -443,6 +427,21 @@ export default function IncidentReports() {
 
   const itemsPerPage = 10;
 
+  // ── Incomplete detection for review modal ──
+  const isModalReportIncomplete = useMemo(() => {
+    if (!reviewingReport) return false;
+    const b = (editForm.barangay !== undefined ? editForm.barangay : reviewingReport.barangay) || '';
+    const t = (editForm.type !== undefined ? editForm.type : reviewingReport.type) || '';
+    return isReportIncomplete({ barangay: b, type: t });
+  }, [reviewingReport, editForm.barangay, editForm.type]);
+
+  const modalIncompleteReasons = useMemo(() => {
+    if (!reviewingReport) return [];
+    const b = (editForm.barangay !== undefined ? editForm.barangay : reviewingReport.barangay) || '';
+    const t = (editForm.type !== undefined ? editForm.type : reviewingReport.type) || '';
+    return getIncompleteReasons({ barangay: b, type: t });
+  }, [reviewingReport, editForm.barangay, editForm.type]);
+
   // ── Bot conversation thread for the review modal (existing context data) ──
   const { conversations: botConversations } = useBotConversations();
   const isBotReport = reviewingReport?.source === 'Bot';
@@ -452,21 +451,42 @@ export default function IncidentReports() {
     if (reviewingReport.threadMessages && reviewingReport.threadMessages.length > 0) {
       return reviewingReport.threadMessages;
     }
-    const reportTime = new Date(reviewingReport.createdAt).getTime();
+    const reportTime = new Date(reviewingReport.createdAt || 0).getTime();
     const sessions = botConversations.filter((c) => c.psid === reviewingReport.senderPsid);
     const session =
       sessions.find((c) => c.messages.some((m) => m.timestamp && new Date(m.timestamp).getTime() === reportTime)) ??
       sessions[0];
     if (session && session.messages.length > 0) return session.messages;
     // Fallback: only the single message stored on the report
-    return [{ sender: 'user', text: reviewingReport.originalText, timestamp: reviewingReport.createdAt }];
+    return [{ sender: 'user', text: reviewingReport.originalText, timestamp: reviewingReport.createdAt || '' }];
   }, [reviewingReport, botConversations]);
 
   const tabs = [
-    { key: 'under_review' as const, label: 'Under Review', count: reports.filter(r => r.status === 'under_review').length },
-    { key: 'verified' as const, label: 'Verified', count: reports.filter(r => r.status === 'verified').length },
-    { key: 'resolved' as const, label: 'Resolved', count: reports.filter(r => r.status === 'resolved').length },
-    { key: 'rejected' as const, label: 'Rejected', count: reports.filter(r => r.status === 'rejected').length },
+    {
+      key: 'under_review' as const,
+      label: 'Under Review',
+      count: reports.filter(r => (r.status === 'under_review' || r.status === 'pending') && !isReportIncomplete(r)).length,
+    },
+    {
+      key: 'incomplete' as const,
+      label: 'Incomplete',
+      count: reports.filter(r => (r.status === 'under_review' || r.status === 'pending') && isReportIncomplete(r)).length,
+    },
+    {
+      key: 'verified' as const,
+      label: 'Verified',
+      count: reports.filter(r => r.status === 'verified').length,
+    },
+    {
+      key: 'resolved' as const,
+      label: 'Resolved',
+      count: reports.filter(r => r.status === 'resolved').length,
+    },
+    {
+      key: 'rejected' as const,
+      label: 'Rejected',
+      count: reports.filter(r => r.status === 'rejected').length,
+    },
   ];
 
   useEffect(() => {
@@ -477,20 +497,25 @@ export default function IncidentReports() {
   const availableIncidentTypes = useMemo(() => {
     const set = new Set<string>(BASE_INCIDENT_TYPES);
     reports.forEach(r => {
-      if (r.type && r.type.trim() && r.type !== 'All Types') {
+      if (r.type && r.type.trim() && r.type !== 'All Types' && r.type.toLowerCase() !== 'unclassified') {
         set.add(r.type);
       }
     });
-    if (editForm.type && editForm.type.trim() && editForm.type !== 'All Types') {
+    if (editForm.type && editForm.type.trim() && editForm.type !== 'All Types' && editForm.type.toLowerCase() !== 'unclassified') {
       set.add(editForm.type);
     }
-    return Array.from(set).sort();
+    return Array.from(set).filter(t => t.toLowerCase() !== 'unclassified').sort();
   }, [reports, editForm.type]);
 
   const openReview = (report: Report) => {
     setReviewingReport(report);
+
+    const initialType = (!report.type || report.type.toLowerCase() === 'unclassified') ? 'None' : report.type;
+
     setEditForm({
       ...report,
+      type: initialType,
+      coordinates: report.coordinates || '',
       contact: report.contact === '—' ? '' : (report.contact || ''),
     });
     setChecklist({
@@ -504,7 +529,7 @@ export default function IncidentReports() {
     setRejectReason('');
     setCoordError(false);
     if (report.status === 'pending') {
-      setReports(prev => prev.map(r => r.id === report.id ? { ...r, status: 'under_review' } : r));
+      contextUpdateReport(report.id, { status: 'under_review' });
     }
   };
 
@@ -551,12 +576,11 @@ export default function IncidentReports() {
       action: actionDesc,
       actionTaken: actionDesc,
     } as Report;
-    setReports(prev => prev.map(r => r.id === targetId ? updated : r));
     showToast(isOngoingStatus ? `Report #${targetId} changes saved` : `Report #${targetId} draft saved`, 'info');
     closeReview();
 
     try {
-      await updateIncidentReport(targetId, updated);
+      await contextUpdateReport(targetId, updated);
     } catch (err) {
       console.error('Failed to save draft:', err);
     }
@@ -564,10 +588,20 @@ export default function IncidentReports() {
 
   const handleVerify = async () => {
     if (!reviewingReport || !editForm) return;
-    const hasCoordinatesField = reviewingReport.source !== 'Bot' && reviewingReport.source !== 'Scraper';
-    if (hasCoordinatesField) {
-      const coords = editForm.coordinates || '';
-      if (!validateCoordinates(coords)) {
+
+    // Guard: Report must be complete before it can be verified
+    const currentBarangay = (editForm.barangay || reviewingReport.barangay || '').trim();
+    const currentType = (editForm.type || reviewingReport.type || '').trim();
+    if (isReportIncomplete({ barangay: currentBarangay, type: currentType })) {
+      const reasons = getIncompleteReasons({ barangay: currentBarangay, type: currentType });
+      showToast(`Cannot verify incomplete report. Please resolve: ${reasons.join(', ')}`, 'error');
+      return;
+    }
+
+    // Only validate coordinates if officer typed them (no fake coordinates injected)
+    const rawCoords = (editForm.coordinates || '').trim();
+    if (rawCoords) {
+      if (!validateCoordinates(rawCoords)) {
         setCoordError(true);
         setShakeKey(prev => prev + 1);
         showToast('Invalid coordinates format. Use: lat, lng', 'error');
@@ -575,11 +609,13 @@ export default function IncidentReports() {
       }
       setCoordError(false);
     }
+
     const now = new Date().toLocaleString('en-US', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
     const actionDesc = editForm.action || 'Verified and plotted on map';
     const updated: Report = {
       ...reviewingReport,
       ...editForm,
+      coordinates: rawCoords,
       status: 'verified',
       verifiedBy: 'MDRRMO Officer',
       verifiedAt: now,
@@ -588,12 +624,11 @@ export default function IncidentReports() {
       actionTaken: actionDesc,
     };
 
-    setReports(prev => prev.map(r => r.id === reviewingReport.id ? updated : r));
-    showToast(hasCoordinatesField ? `Report #${reviewingReport.id} verified and plotted on map` : `Report #${reviewingReport.id} verified`, 'success');
+    showToast(`Report #${reviewingReport.id} verified and plotted on map`, 'success');
     closeReview();
 
     try {
-      await updateIncidentReport(reviewingReport.id, updated);
+      await contextUpdateReport(reviewingReport.id, updated);
     } catch (err) {
       console.error('Failed to persist verification:', err);
     }
@@ -610,12 +645,11 @@ export default function IncidentReports() {
       action: actionDesc,
       actionTaken: actionDesc,
     };
-    setReports(prev => prev.map(r => r.id === targetId ? updated : r));
     showToast(`Report #${targetId} marked as resolved`, 'success');
     closeReview();
 
     try {
-      await updateIncidentReport(targetId, updated);
+      await contextUpdateReport(targetId, updated);
     } catch (err) {
       console.error('Failed to persist resolve action:', err);
     }
@@ -636,56 +670,44 @@ export default function IncidentReports() {
       action: actionDesc,
       actionTaken: actionDesc,
     };
-    setReports(prev => prev.map(r => r.id === targetId ? updated : r));
     showToast(`Report #${targetId} rejected: ${reasonLabel}`, 'error');
     closeReview();
 
     try {
-      await updateIncidentReport(targetId, updated);
+      await contextUpdateReport(targetId, updated);
     } catch (err) {
       console.error('Failed to persist rejection:', err);
     }
   };
 
   const handleRestore = async (id: string) => {
-    setReports(prev => prev.map(r => r.id === id ? { ...r, status: 'pending', rejectionReason: null, action: 'Restored to pending' } : r));
     setSelectedIds(prev => prev.filter(i => i !== id));
-    showToast(`Report #${id} restored to pending`, 'info');
+    const target = reports.find(r => r.id === id);
+    const isIncomplete = target ? isReportIncomplete(target) : false;
+    const destination = isIncomplete ? 'Incomplete' : 'Under Review';
+    const code = formatReportCode(id, target?.source);
+    showToast(`Report ${code} restored to ${destination}`, 'info');
 
     try {
-      await updateIncidentReport(id, {
-        status: 'pending',
+      await contextUpdateReport(id, {
+        status: 'under_review',
         rejectionReason: null,
-        action: 'Restored to pending',
+        action: `Restored to ${destination}`,
+        actionTaken: `Restored to ${destination}`,
       });
     } catch (err) {
       console.error('Failed to persist restore:', err);
     }
   };
 
-  const handleBulkStartReview = async () => {
-    const count = selectedIds.length;
-    const targetIds = [...selectedIds];
-    setReports(prev => prev.map(r => targetIds.includes(r.id) && r.status === 'pending' ? { ...r, status: 'under_review', action: 'Moved to Under Review' } : r));
-    showToast(`${count} reports moved to Under Review`, 'info');
-    setSelectedIds([]);
-
-    try {
-      await bulkUpdateIncidentReports(targetIds, 'under_review', 'Moved to Under Review');
-    } catch (err) {
-      console.error('Failed to persist bulk review:', err);
-    }
-  };
-
   const handleBulkResolve = async () => {
     const count = selectedIds.length;
     const targetIds = [...selectedIds];
-    setReports(prev => prev.map(r => targetIds.includes(r.id) && r.status === 'verified' ? { ...r, status: 'resolved', action: 'Marked resolved in bulk' } : r));
     showToast(`${count} reports marked as resolved`, 'success');
     setSelectedIds([]);
 
     try {
-      await bulkUpdateIncidentReports(targetIds, 'resolved', 'Marked resolved in bulk');
+      await contextBulkUpdateReports(targetIds, 'resolved', 'Marked resolved in bulk');
     } catch (err) {
       console.error('Failed to persist bulk resolve:', err);
     }
@@ -694,12 +716,11 @@ export default function IncidentReports() {
   const handleBulkRestore = async () => {
     const count = selectedIds.length;
     const targetIds = [...selectedIds];
-    setReports(prev => prev.map(r => targetIds.includes(r.id) && r.status === 'rejected' ? { ...r, status: 'pending', rejectionReason: null, action: 'Restored to pending in bulk' } : r));
-    showToast(`${count} reports restored to pending`, 'info');
+    showToast(`${count} reports restored (complete to Under Review, incomplete to Incomplete)`, 'info');
     setSelectedIds([]);
 
     try {
-      await bulkUpdateIncidentReports(targetIds, 'pending', 'Restored to pending in bulk');
+      await contextBulkUpdateReports(targetIds, 'under_review', 'Restored from rejected in bulk');
     } catch (err) {
       console.error('Failed to persist bulk restore:', err);
     }
@@ -734,9 +755,25 @@ export default function IncidentReports() {
 
   const filteredReports = useMemo(() => {
     return reports.filter(r => {
-      if (r.status !== activeTab) return false;
+      if (activeTab === 'under_review') {
+        const isUnderReviewOrPending = r.status === 'under_review' || r.status === 'pending';
+        if (!isUnderReviewOrPending || isReportIncomplete(r)) return false;
+      } else if (activeTab === 'incomplete') {
+        const isUnderReviewOrPending = r.status === 'under_review' || r.status === 'pending';
+        if (!isUnderReviewOrPending || !isReportIncomplete(r)) return false;
+      } else {
+        if (r.status !== activeTab) return false;
+      }
       if (filterBarangay !== 'All Barangays' && r.barangay?.toLowerCase() !== filterBarangay.toLowerCase()) return false;
-      if (filterType !== 'All Types' && r.type?.toLowerCase() !== filterType.toLowerCase()) return false;
+      if (filterType !== 'All Types') {
+        const normFilter = filterType.toLowerCase();
+        const repType = (r.type || 'none').toLowerCase();
+        if (normFilter === 'none') {
+          if (repType !== 'none' && repType !== 'unclassified') return false;
+        } else if (repType !== normFilter) {
+          return false;
+        }
+      }
       if (filterUrgency !== 'All Urgency' && r.urgency?.toLowerCase() !== filterUrgency.toLowerCase()) return false;
       if (fromDate) {
         const repDate = getReportDateString(r);
@@ -933,7 +970,12 @@ export default function IncidentReports() {
                 <div className="col-span-1 md:col-span-auto min-w-[120px]">
                   <FilterDropdown
                     value={filterType}
-                    options={['All Types', ...Array.from(new Set([...BASE_INCIDENT_TYPES, ...reports.map(r => r.type)])).filter(Boolean).sort()]}
+                    options={[
+                      'All Types',
+                      ...Array.from(new Set([...BASE_INCIDENT_TYPES, ...reports.map(r => r.type)]))
+                        .filter(t => Boolean(t) && t.toLowerCase() !== 'unclassified')
+                        .sort()
+                    ]}
                     onChange={setFilterType}
                   />
                 </div>
@@ -990,15 +1032,6 @@ export default function IncidentReports() {
                     {selectedIds.length} report{selectedIds.length > 1 ? 's' : ''} selected
                   </span>
                   <div className="flex items-center gap-2 flex-wrap">
-                    {activeTab === 'pending' && (
-                      <button
-                        type="button"
-                        onClick={handleBulkStartReview}
-                        className="px-3.5 py-1.5 text-xs font-semibold text-amber-700 bg-white dark:bg-slate-800 border border-amber-200/80 dark:border-amber-700/80 dark:text-amber-300 rounded-xl hover:bg-amber-50 dark:hover:bg-slate-700 transition-all flex items-center gap-1.5 active:scale-[0.96] shadow-2xs"
-                      >
-                        <Eye className="w-3.5 h-3.5" /> Start Review
-                      </button>
-                    )}
                     {activeTab === 'verified' && (
                       <button
                         type="button"
@@ -1026,11 +1059,11 @@ export default function IncidentReports() {
           {/* Table — Apple Pro Data Table */}
           <StaggerItem className="flex flex-col flex-1 min-h-0 w-full">
             <div className="relative z-10 bg-white/90 dark:bg-[#111827]/90 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-[0_4px_24px_rgba(0,0,0,0.04)] overflow-hidden flex flex-col flex-1 min-h-0">
-              <div className="overflow-x-auto w-full flex-1">
-                <table className="w-full min-w-[720px] text-sm text-left">
+              <div className="overflow-x-auto w-full flex-1 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700">
+                <table className="w-full min-w-[880px] text-sm text-left border-collapse">
                   <thead className="bg-slate-50/90 dark:bg-slate-800/60 backdrop-blur-md border-b border-slate-200/70 dark:border-slate-800 sticky top-0 z-10">
                     <tr>
-                      <th className="px-4 py-3.5 w-10">
+                      <th className="px-3.5 py-3.5 w-10">
                         <input
                           type="checkbox"
                           checked={paginatedReports.length > 0 && paginatedReports.every(r => selectedIds.includes(r.id))}
@@ -1038,14 +1071,14 @@ export default function IncidentReports() {
                           className="rounded-md border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-0 w-4 h-4 cursor-pointer transition-all"
                         />
                       </th>
-                      <th className="px-4 py-3.5 text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400">ID</th>
-                      <th className="px-4 py-3.5 text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400">Barangay</th>
-                      <th className="px-4 py-3.5 text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400">Type</th>
-                      <th className="px-4 py-3.5 text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400">Urgency</th>
-                      <th className="px-4 py-3.5 text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400">Status</th>
-                      <th className="px-4 py-3.5 text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400">Source</th>
-                      <th className="px-4 py-3.5 text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400">Time</th>
-                      <th className="px-4 py-3.5 text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400 text-right">Action</th>
+                      <th className="px-3.5 py-3.5 w-28 text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400 whitespace-nowrap">ID</th>
+                      <th className="px-3.5 py-3.5 min-w-[140px] text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400">Barangay</th>
+                      <th className="px-3.5 py-3.5 min-w-[140px] text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400">Type</th>
+                      <th className="px-3.5 py-3.5 w-24 text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400">Urgency</th>
+                      <th className="px-3.5 py-3.5 w-28 text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400">Status</th>
+                      <th className="px-3.5 py-3.5 w-20 text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400">Source</th>
+                      <th className="px-3.5 py-3.5 w-24 text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400">Time</th>
+                      <th className="px-4 py-3.5 min-w-[130px] text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400 text-right sticky right-0 z-20 bg-slate-50/95 dark:bg-slate-800/95 backdrop-blur-md shadow-[-6px_0_10px_-4px_rgba(0,0,0,0.06)] dark:shadow-[-6px_0_10px_-4px_rgba(0,0,0,0.3)]">Action</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
@@ -1053,7 +1086,11 @@ export default function IncidentReports() {
                       <tr className="h-full">
                         <td colSpan={9} className="h-full px-4 text-center text-slate-400 dark:text-slate-500 align-middle">
                           <div className="flex flex-col items-center justify-center py-20">
-                            <span className="text-sm font-medium">No reports found.</span>
+                            <span className="text-sm font-medium">
+                              {activeTab === 'incomplete'
+                                ? 'No incomplete reports. All reports have complete information!'
+                                : 'No reports found.'}
+                            </span>
                           </div>
                         </td>
                       </tr>
@@ -1075,7 +1112,7 @@ export default function IncidentReports() {
                               : ''
                             }`}
                         >
-                          <td className="px-4 py-3.5">
+                          <td className="px-3.5 py-3.5 w-10">
                             <input
                               type="checkbox"
                               checked={selectedIds.includes(report.id)}
@@ -1083,24 +1120,41 @@ export default function IncidentReports() {
                               className="rounded-md border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-0 w-4 h-4 cursor-pointer transition-all"
                             />
                           </td>
-                          <td className="px-4 py-3.5">
-                            <div className="flex items-center gap-2">
+                          <td className="px-3.5 py-3.5 w-28 whitespace-nowrap">
+                            <div className="flex items-center gap-1.5">
                               {report.status === 'pending' && (
                                 <span className="w-2 h-2 rounded-full bg-blue-500 shrink-0 ring-4 ring-blue-500/20 animate-pulse" title="Pending" />
                               )}
-                              <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200/50 dark:border-slate-700">
-                                #{report.id}
+                              <span
+                                className="font-mono text-xs font-semibold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200/50 dark:border-slate-700 truncate inline-block"
+                                title={`Original ID: ${report.id}`}
+                              >
+                                {formatReportCode(report.id, report.source)}
                               </span>
                             </div>
                           </td>
-                          <td className="px-4 py-3.5 text-slate-900 dark:text-slate-100 font-medium whitespace-nowrap">
-                            {report.barangay}
+                          <td className="px-3.5 py-3.5 text-slate-900 dark:text-slate-100 font-medium whitespace-nowrap">
+                            {(!report.barangay || report.barangay.trim().toLowerCase() === 'unknown') ? (
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-500/20">
+                                <AlertTriangle className="w-3 h-3 text-rose-500 shrink-0" />
+                                Unknown Barangay
+                              </span>
+                            ) : (
+                              report.barangay
+                            )}
                           </td>
                           <td className={`px-4 py-3.5 whitespace-nowrap font-medium text-xs ${getTypeColor(report.type)}`}>
-                            <span className="inline-flex items-center gap-1.5">
-                              <span className="w-1.5 h-1.5 rounded-full bg-current" />
-                              {report.type}
-                            </span>
+                            {(!report.type || report.type.trim().toLowerCase() === 'none' || report.type.trim().toLowerCase() === 'unclassified') ? (
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-500/20">
+                                <AlertTriangle className="w-3 h-3 text-rose-500 shrink-0" />
+                                Out of Scope (None)
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1.5">
+                                <span className="w-1.5 h-1.5 rounded-full bg-current" />
+                                {report.type}
+                              </span>
+                            )}
                           </td>
                           <td className="px-4 py-3.5 whitespace-nowrap">
                             <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold border ${getUrgencyColor(report.urgency)}`}>
@@ -1108,28 +1162,39 @@ export default function IncidentReports() {
                             </span>
                           </td>
                           <td className="px-4 py-3.5 whitespace-nowrap">
-                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border ${getStatusColor(report.status)}`}>
-                              <span className="w-1.5 h-1.5 rounded-full bg-current" />
-                              {getStatusLabel(report.status)}
-                            </span>
+                            {activeTab === 'incomplete' || (isReportIncomplete(report) && (report.status === 'pending' || report.status === 'under_review')) ? (
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20">
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                                Incomplete
+                              </span>
+                            ) : (
+                              <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border ${getStatusColor(report.status)}`}>
+                                <span className="w-1.5 h-1.5 rounded-full bg-current" />
+                                {getStatusLabel(report.status)}
+                              </span>
+                            )}
                           </td>
                           <td className="px-4 py-3.5 text-xs text-slate-600 dark:text-slate-400 whitespace-nowrap">
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-medium">
                               {report.source}
                             </span>
                           </td>
-                          <td className="px-4 py-3.5 text-slate-500 dark:text-slate-400 text-xs whitespace-nowrap font-mono">
+                          <td className="px-3.5 py-3.5 text-slate-500 dark:text-slate-400 text-xs whitespace-nowrap font-mono w-24">
                             {report.time}
                           </td>
-                          <td className="px-4 py-3.5 text-right whitespace-nowrap">
+                          <td className="px-4 py-3.5 text-right whitespace-nowrap min-w-[130px] sticky right-0 z-10 bg-white/95 dark:bg-[#111827]/95 group-hover:bg-slate-50/95 dark:group-hover:bg-slate-800/95 backdrop-blur-md shadow-[-6px_0_10px_-4px_rgba(0,0,0,0.06)] dark:shadow-[-6px_0_10px_-4px_rgba(0,0,0,0.3)]">
                             <div className="flex items-center justify-end gap-1.5">
                               {(report.status === 'pending' || report.status === 'under_review') && (
                                 <button
                                   type="button"
                                   onClick={() => openReview(report)}
-                                  className="px-3 py-1.5 text-xs font-semibold text-amber-700 dark:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 rounded-xl transition-all flex items-center gap-1.5 active:scale-[0.96] shadow-2xs cursor-pointer"
+                                  className={`px-3 py-1.5 text-xs font-semibold rounded-xl transition-all flex items-center gap-1.5 active:scale-[0.96] shadow-2xs cursor-pointer ${
+                                    isReportIncomplete(report)
+                                      ? 'text-amber-700 dark:text-amber-300 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30'
+                                      : 'text-amber-700 dark:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20'
+                                  }`}
                                 >
-                                  <ShieldCheck className="w-3.5 h-3.5" /> Review
+                                  <ShieldCheck className="w-3.5 h-3.5" /> {isReportIncomplete(report) ? 'Review & Complete' : 'Review'}
                                 </button>
                               )}
 
@@ -1223,8 +1288,14 @@ export default function IncidentReports() {
                 {/* Header */}
                 <div className="flex items-center justify-between gap-2 px-4 sm:px-6 py-3.5 sm:py-4.5 border-b border-slate-100 dark:border-slate-800/80 bg-white/80 dark:bg-[#111827]/80 backdrop-blur-md shrink-0 rounded-t-2xl sm:rounded-t-3xl z-10">
                   <div className="flex items-center flex-wrap gap-2 sm:gap-3 min-w-0">
-                    <span className="font-mono text-xs font-semibold px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200/60 dark:border-slate-700">
-                      #{reviewingReport.id}
+                    <span
+                      className="font-mono text-xs font-semibold px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200/60 dark:border-slate-700"
+                      title={`Original ID: ${reviewingReport.id}`}
+                    >
+                      {formatReportCode(reviewingReport.id, reviewingReport.source)}
+                    </span>
+                    <span className="font-mono text-[11px] text-slate-400 dark:text-slate-500 hidden sm:inline max-w-[200px] truncate" title={reviewingReport.id}>
+                      ({reviewingReport.id})
                     </span>
                     <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${getStatusColor(reviewingReport.status)}`}>
                       <span className="w-1.5 h-1.5 rounded-full bg-current" />
@@ -1370,17 +1441,35 @@ export default function IncidentReports() {
                           </div>
 
                           <div className="space-y-3">
+                            {/* Incomplete warning banner */}
+                            {isModalReportIncomplete && (
+                              <div className="bg-amber-500/10 border border-amber-500/25 rounded-2xl p-3.5 flex items-start gap-3">
+                                <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                                <div className="space-y-1">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="text-xs font-bold text-amber-800 dark:text-amber-300 uppercase tracking-wider">
+                                      Incomplete / Out of Scope
+                                    </span>
+                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-800 dark:text-amber-300 font-semibold">
+                                      {modalIncompleteReasons.join(' • ')}
+                                    </span>
+                                  </div>
+                                  <p className="text-xs text-amber-700 dark:text-amber-300/90 leading-relaxed">
+                                    Assign a valid Barangay and a disaster Type before verifying. Reports with unknown barangays or out-of-scope types cannot be plotted on the geospatial map.
+                                  </p>
+                                </div>
+                              </div>
+                            )}
+
                             <div>
                               <label className="block text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400 mb-1">Barangay</label>
                               <BarangaySelect
                                 value={editForm.barangay || ''}
                                 options={TALISAY_BARANGAYS}
                                 onChange={selected => {
-                                  const feature = talisayBarangays.features.find(f => f.properties.name === selected);
                                   setEditForm(prev => ({
                                     ...prev,
                                     barangay: selected,
-                                    coordinates: prev.coordinates || (feature ? `${feature.properties.centroid[1]}, ${feature.properties.centroid[0]}` : prev.coordinates)
                                   }));
                                 }}
                               />
@@ -1440,36 +1529,34 @@ export default function IncidentReports() {
                               />
                             </div>
 
-                            {!isBotReport ? (
-                              <motion.div
-                                key={shakeKey}
-                                animate={coordError ? { x: [0, -6, 6, -6, 6, -3, 3, 0] } : { x: 0 }}
-                                transition={{ duration: 0.4, ease: 'easeInOut' }}
-                              >
-                                <label className="block text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400 mb-1">
-                                  Coordinates (lat, lng)
-                                  {coordError && (
-                                    <span className="ml-2 text-rose-500 font-normal lowercase">— invalid format</span>
-                                  )}
-                                </label>
-                                <input
-                                  type="text"
-                                  value={editForm.coordinates || ''}
-                                  onChange={e => {
-                                    const formatted = formatCoordinates(e.target.value);
-                                    setEditForm(prev => ({ ...prev, coordinates: formatted }));
-                                    if (coordError && validateCoordinates(formatted)) {
-                                      setCoordError(false);
-                                    }
-                                  }}
-                                  className={`w-full px-3.5 py-2 text-sm bg-white dark:bg-slate-800 border rounded-xl text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 outline-none font-mono transition-all ${coordError
-                                    ? 'border-rose-400 dark:border-rose-600 bg-rose-50 dark:bg-rose-900/10'
-                                    : 'border-slate-200 dark:border-slate-700'
-                                    }`}
-                                  placeholder="14.0951, 121.0203"
-                                />
-                              </motion.div>
-                            ) : null}
+                            <motion.div
+                              key={shakeKey}
+                              animate={coordError ? { x: [0, -6, 6, -6, 6, -3, 3, 0] } : { x: 0 }}
+                              transition={{ duration: 0.4, ease: 'easeInOut' }}
+                            >
+                              <label className="block text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400 mb-1">
+                                Coordinates (lat, lng)
+                                {coordError && (
+                                  <span className="ml-2 text-rose-500 font-normal lowercase">— invalid format</span>
+                                )}
+                              </label>
+                              <input
+                                type="text"
+                                value={editForm.coordinates || ''}
+                                onChange={e => {
+                                  const formatted = formatCoordinates(e.target.value);
+                                  setEditForm(prev => ({ ...prev, coordinates: formatted }));
+                                  if (coordError && validateCoordinates(formatted)) {
+                                    setCoordError(false);
+                                  }
+                                }}
+                                className={`w-full px-3.5 py-2 text-sm bg-white dark:bg-slate-800 border rounded-xl text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 outline-none font-mono transition-all ${coordError
+                                  ? 'border-rose-400 dark:border-rose-600 bg-rose-50 dark:bg-rose-900/10'
+                                  : 'border-slate-200 dark:border-slate-700'
+                                  }`}
+                                placeholder="14.0951, 121.0203"
+                              />
+                            </motion.div>
 
                             <div>
                               <label className="block text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400 mb-1">
@@ -1652,8 +1739,14 @@ export default function IncidentReports() {
                       <button
                         type="button"
                         onClick={handleVerify}
-                        disabled={!allChecklistChecked}
-                        title={!allChecklistChecked ? 'Complete the checklist first' : ''}
+                        disabled={!allChecklistChecked || isModalReportIncomplete}
+                        title={
+                          isModalReportIncomplete
+                            ? `Cannot verify: ${modalIncompleteReasons.join(', ')}`
+                            : !allChecklistChecked
+                              ? 'Complete the checklist first'
+                              : 'Verify and plot on map'
+                        }
                         className="flex-1 sm:flex-none justify-center px-5 py-2 text-xs font-semibold text-white bg-[#0071E3] hover:bg-[#0077ED] disabled:opacity-40 disabled:cursor-not-allowed rounded-xl transition-all shadow-[0_2px_8px_rgba(0,113,227,0.25)] flex items-center gap-1.5 active:scale-[0.97]"
                       >
                         <Send className="w-3.5 h-3.5" /> Verify & Plot

@@ -1585,6 +1585,9 @@ export function normalizeBarangayName(name?: string): string {
         const pobTarget = `Poblacion Barangay ${pobMatch[1]}` as TalisayBarangay;
         if (TALISAY_BARANGAYS.includes(pobTarget)) return pobTarget;
     }
+    if (cleaned.toLowerCase() === 'poblacion') {
+        return 'Poblacion Barangay 1';
+    }
     return trimmed;
 }
 

@@ -10,7 +10,7 @@ export interface Report {
   urgency: string;
   source: string;
   time: string;
-  createdAt: string;
+  createdAt?: string;
   senderPsid?: string;
   conversationId?: string;
   threadMessages?: Array<{ sender: 'user' | 'bot'; text: string; timestamp?: string }>;
@@ -27,6 +27,64 @@ export interface Report {
   verifiedAt: string | null;
   rejectionReason: string | null;
   possibleDuplicateOf: string | null;
+}
+
+/** Check if report has missing barangay or out-of-scope type */
+export function isReportIncomplete(report?: { barangay?: string | null; type?: string | null } | null): boolean {
+  if (!report) return true;
+  const b = (report.barangay || '').trim().toLowerCase();
+  const t = (report.type || '').trim().toLowerCase();
+  const isUnknownBarangay = !b || b === 'unknown';
+  const isNoneType = !t || t === 'none' || t === 'unclassified';
+  return isUnknownBarangay || isNoneType;
+}
+
+/** Returns list of human-readable missing/incomplete reasons */
+export function getIncompleteReasons(report?: { barangay?: string | null; type?: string | null } | null): string[] {
+  if (!report) return ['Missing Information'];
+  const reasons: string[] = [];
+  const b = (report.barangay || '').trim().toLowerCase();
+  const t = (report.type || '').trim().toLowerCase();
+  if (!b || b === 'unknown') reasons.push('Unknown Barangay');
+  if (!t || t === 'none' || t === 'unclassified') reasons.push('Out of Scope (None)');
+  return reasons;
+}
+
+/**
+ * Formats raw/database IDs (e.g. "fb-122115019251367137_3014922105566730", "conv-377")
+ * into clean, standard incident ticket codes (e.g. "#FB-6730", "#BOT-0377", "#INC-0042").
+ */
+export function formatReportCode(id?: string | null, source?: string | null): string {
+  if (!id) return '#INC-0000';
+  const cleanId = String(id).trim();
+
+  // 1. Bot conversation: "conv-377" -> "#BOT-0377"
+  const convMatch = cleanId.match(/^conv-(\d+)$/i);
+  if (convMatch) {
+    return `#BOT-${convMatch[1].padStart(4, '0')}`;
+  }
+
+  // 2. Facebook scraper: "fb-122115019251367137_3014922105566730" -> "#FB-6730"
+  if (cleanId.startsWith('fb-') || cleanId.startsWith('fb_') || source === 'Scraper') {
+    const rawNum = cleanId.replace(/^fb[-_]/i, '');
+    const segments = rawNum.split('_');
+    const commentOrSuffix = segments[segments.length - 1] || segments[0];
+    const digitsOnly = commentOrSuffix.replace(/\D/g, '');
+    const shortDigits = digitsOnly.slice(-4) || commentOrSuffix.slice(-4);
+    return `#FB-${shortDigits.toUpperCase()}`;
+  }
+
+  // 3. Pure numeric ID: "42" -> "#INC-0042"
+  if (/^\d+$/.test(cleanId)) {
+    return `#INC-${cleanId.padStart(4, '0')}`;
+  }
+
+  // 4. Other IDs
+  if (cleanId.length > 8) {
+    return `#INC-${cleanId.slice(-4).toUpperCase()}`;
+  }
+
+  return cleanId.startsWith('#') ? cleanId : `#${cleanId.toUpperCase()}`;
 }
 
 // ── Raw rows ──
@@ -230,11 +288,14 @@ const groupConversationRows = (convRows: ConversationRow[]): Report[] => {
       rawStatus === 'pending' ? 'pending' : 'under_review';
 
     const reportId = `conv-${latestRow.id}`;
+    const cleanBotType = foundType && foundType.trim().toLowerCase() !== 'unclassified'
+      ? titleCase(foundType)
+      : 'None';
 
     return {
       id: reportId,
       barangay: foundBarangay ? titleCase(foundBarangay) : 'Unknown',
-      type: foundType ? titleCase(foundType) : 'Unclassified',
+      type: cleanBotType,
       urgency: normalizeUrgency(foundUrgency || null),
       source: 'Bot',
       time: formatTime(latestRow.timestamp),
@@ -268,10 +329,14 @@ const fromFbComment = (row: FbCommentRow): Report => {
     rawStatus === 'flagged' || rawStatus === 'rejected' ? 'rejected' :
     rawStatus === 'pending' ? 'pending' : 'under_review';
 
+  const cleanFbType = row.incident_type && row.incident_type.trim().toLowerCase() !== 'unclassified'
+    ? titleCase(row.incident_type)
+    : 'None';
+
   return {
     id: `fb-${row.id}`,
     barangay: row.barangay ? titleCase(row.barangay) : 'Unknown',
-    type: row.incident_type ? titleCase(row.incident_type) : 'Unclassified',
+    type: cleanFbType,
     urgency: 'Low',
     source: 'Scraper',
     time: formatTime(created),
@@ -315,13 +380,16 @@ export async function fetchReports(): Promise<Report[]> {
     const merged = baseReports.map((rep) => {
       const saved = incMap.get(rep.id);
       if (!saved) return rep;
+      const savedTypeRaw = ((saved.type as string) || rep.type || '').trim();
+      const resolvedType = (!savedTypeRaw || savedTypeRaw.toLowerCase() === 'unclassified') ? 'None' : savedTypeRaw;
+
       return {
         ...rep,
         status: (saved.status as ReportStatus) || rep.status,
         action: (saved.action as string) || (saved.action_taken as string) || rep.action || '',
         actionTaken: (saved.action_taken as string) || (saved.action as string) || rep.actionTaken || '',
         barangay: (saved.barangay as string) || rep.barangay,
-        type: (saved.type as string) || rep.type,
+        type: resolvedType,
         urgency: (saved.urgency as string) || rep.urgency,
         coordinates: (saved.coordinates as string) || rep.coordinates,
         landmark: (saved.landmark as string) || rep.landmark,
@@ -341,10 +409,10 @@ export async function fetchReports(): Promise<Report[]> {
       };
     });
 
-    return merged.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    return merged.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
   }
 
-  return baseReports.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  return baseReports.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
 }
 
 /** Update an incident report action, triage status, notes, and coordinates. */
