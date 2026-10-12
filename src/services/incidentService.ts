@@ -86,8 +86,11 @@ const normalizeUrgency = (value: string | null): string => {
 };
 
 const formatContacts = (value: string | string[] | null): string => {
-  if (!value) return '—';
-  return Array.isArray(value) ? value.join(', ') : value;
+  if (!value) return '';
+  if (Array.isArray(value)) {
+    return value.filter((p) => p && p !== '—').join(', ');
+  }
+  return value === '—' ? '' : value;
 };
 
 // ── Group Conversation Rows into One Incident Report Per Session ──
@@ -226,6 +229,8 @@ const groupConversationRows = (convRows: ConversationRow[]): Report[] => {
       rawStatus === 'rejected' ? 'rejected' :
       rawStatus === 'pending' ? 'pending' : 'under_review';
 
+    const reportId = `conv-${latestRow.id}`;
+
     return {
       id: reportId,
       barangay: foundBarangay ? titleCase(foundBarangay) : 'Unknown',
@@ -275,7 +280,7 @@ const fromFbComment = (row: FbCommentRow): Report => {
     description: row.comment_text ?? '',
     originalText: row.comment_text ?? '',
     reporter: row.user_name ?? 'Unknown',
-    contact: '—',
+    contact: '',
     coordinates: '',
     landmark: '',
     verifiedBy: null,
@@ -320,6 +325,13 @@ export async function fetchReports(): Promise<Report[]> {
         urgency: (saved.urgency as string) || rep.urgency,
         coordinates: (saved.coordinates as string) || rep.coordinates,
         landmark: (saved.landmark as string) || rep.landmark,
+        contact:
+          (saved.contact as string) !== undefined &&
+          (saved.contact as string) !== null &&
+          (saved.contact as string) !== '' &&
+          (saved.contact as string) !== '—'
+            ? (saved.contact as string)
+            : rep.contact,
         description: (saved.description as string) || rep.description,
         verifiedBy: (saved.verified_by as string | null) ?? rep.verifiedBy,
         verifiedAt: saved.verified_at ? formatTime(saved.verified_at as string) : rep.verifiedAt,
@@ -364,13 +376,35 @@ export async function updateIncidentReport(
     if (id.startsWith('conv-')) {
       const rawId = parseInt(id.replace(/^conv-/, ''), 10);
       if (!isNaN(rawId)) {
+        const { data: convRow } = await supabase
+          .from('conversations')
+          .select('id, conversation_id')
+          .eq('id', rawId)
+          .maybeSingle();
+
         const convUpdates: Record<string, unknown> = {};
         if (payload.status) convUpdates.status = payload.status;
         if (payload.barangay) convUpdates.barangay = payload.barangay;
         if (payload.type) convUpdates.incident_type = payload.type;
         if (payload.urgency) convUpdates.urgency = payload.urgency;
+        if (payload.contact !== undefined && payload.contact !== null) {
+          const cleanPhones = Array.isArray(payload.contact)
+            ? payload.contact
+            : String(payload.contact)
+                .split(/[,;\/]+/)
+                .map((p) => p.trim())
+                .filter((p) => p.length > 0 && p !== '—');
+          convUpdates.contact_numbers = cleanPhones;
+        }
+        if (payload.landmark !== undefined && payload.landmark !== null) {
+          convUpdates.location_status = payload.landmark;
+        }
         if (Object.keys(convUpdates).length > 0) {
-          await supabase.from('conversations').update(convUpdates).eq('id', rawId);
+          if (convRow?.conversation_id) {
+            await supabase.from('conversations').update(convUpdates).eq('conversation_id', convRow.conversation_id);
+          } else {
+            await supabase.from('conversations').update(convUpdates).eq('id', rawId);
+          }
         }
       }
     } else if (id.startsWith('fb-')) {
@@ -395,14 +429,15 @@ export async function updateIncidentReport(
       await supabase.from('incident_reports').upsert(
         {
           id,
-          status: payload.status,
+          status: payload.status || 'under_review',
           action: actionText,
           action_taken: actionText,
-          coordinates: payload.coordinates,
-          barangay: payload.barangay,
-          type: payload.type,
-          urgency: payload.urgency,
-          landmark: payload.landmark,
+          coordinates: payload.coordinates || '',
+          barangay: payload.barangay || 'Unknown',
+          type: payload.type || 'Unclassified',
+          urgency: payload.urgency || 'Low',
+          landmark: payload.landmark || '',
+          contact: payload.contact === '—' ? '' : (payload.contact || ''),
           verified_by: payload.verifiedBy,
           verified_at: payload.verifiedAt,
           rejection_reason: payload.rejectionReason,

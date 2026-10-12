@@ -489,7 +489,10 @@ export default function IncidentReports() {
 
   const openReview = (report: Report) => {
     setReviewingReport(report);
-    setEditForm({ ...report });
+    setEditForm({
+      ...report,
+      contact: report.contact === '—' ? '' : (report.contact || ''),
+    });
     setChecklist({
       barangayCorrect: false,
       typeAccurate: false,
@@ -540,10 +543,16 @@ export default function IncidentReports() {
   const handleSaveDraft = async () => {
     if (!reviewingReport || !editForm) return;
     const targetId = reviewingReport.id;
-    const actionDesc = editForm.action || 'Draft saved';
-    const updated = { ...reviewingReport, ...editForm, action: actionDesc, actionTaken: actionDesc } as Report;
+    const isOngoingStatus = reviewingReport.status === 'verified' || reviewingReport.status === 'resolved';
+    const actionDesc = editForm.action || (isOngoingStatus ? 'Updated report details' : 'Draft saved');
+    const updated = {
+      ...reviewingReport,
+      ...editForm,
+      action: actionDesc,
+      actionTaken: actionDesc,
+    } as Report;
     setReports(prev => prev.map(r => r.id === targetId ? updated : r));
-    showToast(`Report #${targetId} draft saved`, 'info');
+    showToast(isOngoingStatus ? `Report #${targetId} changes saved` : `Report #${targetId} draft saved`, 'info');
     closeReview();
 
     try {
@@ -596,6 +605,7 @@ export default function IncidentReports() {
     const actionDesc = editForm.action || 'Marked as resolved';
     const updated: Report = {
       ...reviewingReport,
+      ...editForm,
       status: 'resolved',
       action: actionDesc,
       actionTaken: actionDesc,
@@ -605,11 +615,7 @@ export default function IncidentReports() {
     closeReview();
 
     try {
-      await updateIncidentReport(targetId, {
-        status: 'resolved',
-        action: actionDesc,
-        actionTaken: actionDesc,
-      });
+      await updateIncidentReport(targetId, updated);
     } catch (err) {
       console.error('Failed to persist resolve action:', err);
     }
@@ -622,6 +628,7 @@ export default function IncidentReports() {
     const actionDesc = editForm.action || `Rejected: ${reasonLabel}`;
     const updated: Report = {
       ...reviewingReport,
+      ...editForm,
       status: 'rejected',
       rejectionReason: rejectReason,
       verifiedBy: null,
@@ -634,12 +641,7 @@ export default function IncidentReports() {
     closeReview();
 
     try {
-      await updateIncidentReport(targetId, {
-        status: 'rejected',
-        rejectionReason: rejectReason,
-        action: actionDesc,
-        actionTaken: actionDesc,
-      });
+      await updateIncidentReport(targetId, updated);
     } catch (err) {
       console.error('Failed to persist rejection:', err);
     }
@@ -1319,7 +1321,7 @@ export default function IncidentReports() {
                                 </div>
                                 <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
                                   <Phone className="w-3.5 h-3.5 text-slate-400" />
-                                  <span className="truncate">{reviewingReport.contact}</span>
+                                  <span className="truncate">{reviewingReport.contact || '—'}</span>
                                 </div>
                                 <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
                                   <MessageSquare className="w-3.5 h-3.5 text-slate-400" />
@@ -1425,20 +1427,20 @@ export default function IncidentReports() {
                               />
                             </div>
 
-                            {isBotReport ? (
-                              <div>
-                                <label className="block text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400 mb-1">
-                                  Phone Number
-                                </label>
-                                <input
-                                  type="text"
-                                  value={editForm.contact || ''}
-                                  onChange={e => setEditForm(prev => ({ ...prev, contact: e.target.value }))}
-                                  className="w-full px-3.5 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 outline-none font-mono transition-all"
-                                  placeholder="e.g. 0912-345-6789"
-                                />
-                              </div>
-                            ) : !isScraperReport ? (
+                            <div>
+                              <label className="block text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400 mb-1">
+                                Phone Number
+                              </label>
+                              <input
+                                type="text"
+                                value={editForm.contact || ''}
+                                onChange={e => setEditForm(prev => ({ ...prev, contact: e.target.value }))}
+                                className="w-full px-3.5 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 outline-none font-mono transition-all"
+                                placeholder="e.g. 0912-345-6789"
+                              />
+                            </div>
+
+                            {!isBotReport ? (
                               <motion.div
                                 key={shakeKey}
                                 animate={coordError ? { x: [0, -6, 6, -6, 6, -3, 3, 0] } : { x: 0 }}
@@ -1600,6 +1602,17 @@ export default function IncidentReports() {
                           <AlertOctagon className="w-3.5 h-3.5" /> Reject
                         </button>
                       </>
+                    )}
+
+                    {/* Save Changes button for verified or resolved reports */}
+                    {(reviewingReport.status === 'verified' || reviewingReport.status === 'resolved') && (
+                      <button
+                        type="button"
+                        onClick={handleSaveDraft}
+                        className="flex-1 sm:flex-none justify-center px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-700 rounded-xl transition-all active:scale-[0.97] flex items-center"
+                      >
+                        Save Changes
+                      </button>
                     )}
 
                     {reviewingReport.status === 'verified' && (

@@ -323,6 +323,36 @@ export const authService = {
   },
 
   /**
+   * Update the currently authenticated user's profile (full name, phone number).
+   */
+  async updateProfile(payload: {
+    full_name?: string;
+    phone_number?: string | null;
+  }): Promise<{ success: boolean; user: AuthUser; message?: string }> {
+    const res = await apiFetch('/api/auth/profile', {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      throw new AuthError(data.error ?? data.message ?? 'Failed to update profile', {
+        reason: 'profile_update_error',
+      });
+    }
+    if (data.user) {
+      const existing = getStoredUser();
+      const updatedUser: AuthUser = {
+        ...existing,
+        ...data.user,
+        avatar_url: data.user.avatar_url || existing?.avatar_url || null,
+      };
+      setStoredUser(updatedUser);
+      return { success: true, user: updatedUser, message: data.message };
+    }
+    return data;
+  },
+
+  /**
    * Fetch all registered system users (Super Admin & Admin only).
    */
   async getUsers(): Promise<AuthUser[]> {

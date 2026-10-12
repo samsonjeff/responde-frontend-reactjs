@@ -90,7 +90,7 @@ export default function Settings() {
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
   const isDark = theme === 'dark';
-  const { user: currentUser, logout } = useAuth();
+  const { user: currentUser, logout, setUser, refreshUser } = useAuth();
   const userRole = (currentUser?.role || '').toLowerCase().trim();
   const canViewUsers = userRole === 'super_admin' || userRole === 'admin';
 
@@ -120,25 +120,78 @@ export default function Settings() {
   const [isUpdatingRole, setIsUpdatingRole] = useState(false);
   const [roleError, setRoleError] = useState<string | null>(null);
 
-  // Profile State (local only)
+  // Profile State
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [profileError, setProfileError] = useState<string | null>(null);
+
+  const getInitialPosition = () => {
+    try {
+      const savedPos = localStorage.getItem('responde_user_position');
+      if (savedPos) return savedPos;
+    } catch {}
+    if (currentUser?.role) {
+      const roleTitle = currentUser.role === 'super_admin' ? 'Super Admin' : currentUser.role === 'admin' ? 'Admin' : 'Staff';
+      return `${roleTitle} • MDRRMO`;
+    }
+    return 'MDRRMO Personnel';
+  };
+
   const [profile, setProfile] = useState({
     fullName: currentUser?.full_name || '',
-    phone: '',
-    position: 'MDRRMO Personnel',
+    phone: currentUser?.phone_number || '',
+    position: getInitialPosition(),
   });
   const [profileDraft, setProfileDraft] = useState(profile);
 
-  const handleSaveProfile = (e: React.FormEvent) => {
+  // Sync profile when currentUser finishes loading or changes
+  useEffect(() => {
+    if (currentUser) {
+      const currentPhone = currentUser.phone_number || '';
+      const currentName = currentUser.full_name || '';
+      setProfile(prev => ({
+        ...prev,
+        fullName: currentName,
+        phone: currentPhone,
+      }));
+      setProfileDraft(prev => ({
+        ...prev,
+        fullName: currentName,
+        phone: currentPhone,
+      }));
+    }
+  }, [currentUser]);
+
+  const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSavingProfile(true);
-    setTimeout(() => {
+    setProfileError(null);
+
+    try {
+      const res = await authService.updateProfile({
+        full_name: profileDraft.fullName,
+        phone_number: profileDraft.phone,
+      });
+
+      if (res.user) {
+        setUser(res.user);
+      } else {
+        await refreshUser();
+      }
+
       setProfile(profileDraft);
-      setIsSavingProfile(false);
+      try {
+        localStorage.setItem('responde_user_position', profileDraft.position);
+      } catch {}
+
       setIsEditingProfile(false);
       showSuccessFeedback('Profile updated successfully.');
-    }, 600);
+    } catch (err: any) {
+      const msg = err.message || 'Failed to update profile.';
+      setProfileError(msg);
+    } finally {
+      setIsSavingProfile(false);
+    }
   };
 
   // Audit Log (mock, Super Admin only)
@@ -701,10 +754,16 @@ export default function Settings() {
                   className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700 rounded-xl text-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
+              {profileError && (
+                <div className="sm:col-span-2 p-2.5 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-xl text-xs text-rose-600 dark:text-rose-400 flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span>{profileError}</span>
+                </div>
+              )}
               <div className="sm:col-span-2 flex justify-end gap-2">
                 <button
                   type="button"
-                  onClick={() => setIsEditingProfile(false)}
+                  onClick={() => { setIsEditingProfile(false); setProfileError(null); }}
                   disabled={isSavingProfile}
                   className="px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl cursor-pointer transition-colors disabled:opacity-50"
                 >
@@ -726,7 +785,7 @@ export default function Settings() {
                 { icon: UserCircle, label: 'Full Name', value: profile.fullName || currentUser?.full_name || 'Not set' },
                 { icon: AtSign, label: 'Username', value: usernameDisplay },
                 { icon: Mail, label: 'Email', value: currentUser?.email || 'Not set' },
-                { icon: Phone, label: 'Contact Number', value: profile.phone || 'Not set' },
+                { icon: Phone, label: 'Contact Number', value: profile.phone || currentUser?.phone_number || 'Not set' },
                 { icon: Briefcase, label: 'Position', value: profile.position || 'Not set' },
               ].map(({ icon: Icon, label, value }) => (
                 <div key={label} className="flex items-start gap-3">
