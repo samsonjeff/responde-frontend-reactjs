@@ -8,7 +8,8 @@ import {
   CheckCircle2, AlertCircle, ShieldCheck,
   Search, Lock, Loader2, Eye, EyeOff, KeyRound,
   Trash2, AlertTriangle, UserCircle, Pencil, Phone, Briefcase, Mail,
-  History, ArrowRight, ArrowLeft, AtSign, LogOut
+  History, ArrowRight, ArrowLeft, AtSign, LogOut,
+  Bot
 } from 'lucide-react';
 import SignOutModal from '../components/SignOutModal';
 import { authService, type AuthUser, type UserRole, AuthError } from '../services/authService';
@@ -98,6 +99,7 @@ export default function Settings() {
   const [criticalAlerts, setCriticalAlerts] = useState(true);
   const [botConnected] = useState(true);
   const [scraperConnected] = useState(true);
+  const [nlpConnected] = useState(true);
 
   // -- User Management State --
   const [users, setUsers] = useState<AuthUser[]>([]);
@@ -911,6 +913,18 @@ export default function Settings() {
                 </div>
               </div>
               <StatusBadge active={scraperConnected} />
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-purple-50 dark:bg-purple-900/30 flex items-center justify-center">
+                  <Bot className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-slate-700 dark:text-slate-200">NLP Engine</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">AI triage &amp; classification service</p>
+                </div>
+              </div>
+              <StatusBadge active={nlpConnected} />
             </div>
           </div>
         </Card>
