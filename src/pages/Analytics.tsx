@@ -23,7 +23,6 @@ import {
   X,
   RotateCcw,
   Layers,
-  Sparkles,
   PieChart as PieChartIcon,
 } from 'lucide-react';
 import {
@@ -238,7 +237,13 @@ export { BarangayBarChart, type BarangayBarChartProps };
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function Analytics() {
   const { reports } = useReports();
-  const data = reports as AnalyticsReport[];
+  // MANDATORY FLOW: Incident Report -> Geospatial -> Analytics
+  // Analytics MUST ONLY compute from Geospatial verified data (verified by system users).
+  // Unverified, pending, under_review, and rejected reports are strictly excluded.
+  const data = useMemo(
+    () => (reports as AnalyticsReport[]).filter((r) => r.status === 'verified'),
+    [reports]
+  );
 
   // ── Filter state ────────────────────────────────────────────────────────
   const [fromDate, setFromDate] = useState('');
@@ -324,7 +329,7 @@ export default function Analytics() {
         const p = parseReportTime(r.time);
         return p && `${p.month}/${p.day}` === todayStr && r.status === 'verified';
       }).length,
-      incomplete: filtered.filter(r => r.status === 'under_review' || r.status === 'pending').length,
+      incomplete: 0,
       bot: filtered.filter(r => r.source?.toLowerCase().includes('bot')).length,
       scraper: filtered.filter(r => r.source?.toLowerCase().includes('scraper')).length,
       avgResponse: responseTimes.length
@@ -469,7 +474,7 @@ export default function Analytics() {
                       Analytics
                     </h1>
                     <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-[#0071E3]/10 text-[#0071E3] dark:text-blue-400 border border-[#0071E3]/20">
-                      <Sparkles className="w-3 h-3" /> Live Intelligence
+                      <CheckCircle2 className="w-3 h-3" /> Geospatial Verified Data
                     </span>
                   </div>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
@@ -562,6 +567,17 @@ export default function Analytics() {
             </div>
           </AppleCard>
         </motion.div>
+
+        {data.length === 0 && (
+          <motion.div variants={itemVariants} className="relative z-10">
+            <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-300 text-xs font-medium flex items-center gap-3">
+              <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
+              <span>
+                Geospatial has 0 verified reports. Analytics is currently showing empty states (0). Incoming citizen reports in the Incident Reports triage queue will appear here dynamically once verified by an officer.
+              </span>
+            </div>
+          </motion.div>
+        )}
 
         {/* ── 2. 5-STAT APPLE METRIC CARDS ── */}
         <motion.div variants={itemVariants} className="relative z-10">
@@ -670,7 +686,8 @@ export default function Analytics() {
               <div className="grid grid-cols-1 sm:grid-cols-12 gap-6 items-center flex-1">
                 {/* Donut Graphic */}
                 <div className="sm:col-span-5 relative flex items-center justify-center" style={{ height: 220 }}>
-                  <ResponsiveContainer width="100%" height="100%">
+                  {typeChartData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Tooltip content={<PieTooltip />} />
                       <Pie
@@ -700,6 +717,12 @@ export default function Analytics() {
                       </Pie>
                     </PieChart>
                   </ResponsiveContainer>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 text-xs">
+                      <PieChartIcon className="w-8 h-8 stroke-[1.5] text-slate-300 dark:text-slate-600 mb-1" />
+                      <span className="text-[11px]">No verified incidents</span>
+                    </div>
+                  )}
                   <div className="absolute flex flex-col items-center justify-center pointer-events-none">
                     <span className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white tabular-nums">
                       {stats.total}
@@ -932,7 +955,8 @@ export default function Analytics() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-white/5">
-                  {riskData.map((item) => (
+                  {riskData.length > 0 ? (
+                    riskData.map((item) => (
                     <tr
                       key={item.barangay}
                       className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors duration-150"
@@ -966,7 +990,14 @@ export default function Analytics() {
                         {item.dominantType}
                       </td>
                     </tr>
-                  ))}
+                  ))
+                ) : (
+                    <tr>
+                      <td colSpan={5} className="py-8 text-center text-xs text-slate-400 dark:text-slate-500">
+                        No verified geospatial risk data recorded yet.
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>

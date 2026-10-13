@@ -171,7 +171,7 @@ export function BarangayBarChart({
 }: BarangayBarChartProps) {
   const { reports: contextReports } = useReports();
   const isMobile = useIsMobile();
-  const rawReports = propReports ?? (contextReports as unknown as AnalyticsReport[]);
+  const rawReports = propReports ?? (contextReports as unknown as AnalyticsReport[]).filter((r) => r.status === 'verified');
 
   const chartData = useMemo(() => {
     const grouped: Record<string, { count: number; urgencyCounts: Record<string, number> }> = {};
