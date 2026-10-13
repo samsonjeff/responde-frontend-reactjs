@@ -501,7 +501,7 @@ export default function MessengerBotLogs() {
                             className={`w-full flex items-center gap-2.5 sm:gap-3.5 p-2.5 sm:p-3 rounded-xl transition-all duration-150 text-left relative group active:scale-[0.985] cursor-pointer ${isSelected
                               ? "bg-blue-500/10 dark:bg-blue-500/20 shadow-xs border border-blue-500/25 dark:border-blue-500/30 text-slate-900 dark:text-white"
                               : isIncomplete
-                                ? "bg-amber-500/[0.04] dark:bg-amber-500/[0.08] hover:bg-amber-500/[0.08] dark:hover:bg-amber-500/[0.14] border border-amber-500/15 dark:border-amber-500/20 text-slate-950 dark:text-white"
+                                ? "bg-slate-50 dark:bg-slate-800/40 hover:bg-slate-100/80 dark:hover:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/60 text-slate-900 dark:text-slate-100"
                                 : "hover:bg-slate-100/70 dark:hover:bg-slate-800/60 border border-transparent text-slate-700 dark:text-slate-300"
                               }`}
                           >
@@ -531,7 +531,7 @@ export default function MessengerBotLogs() {
                                     animate={{ scale: 1, opacity: 1 }}
                                     exit={{ scale: 0, opacity: 0 }}
                                     transition={APPLE_SPRING}
-                                    className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 sm:w-3 sm:h-3 bg-amber-500 border-2 border-white dark:border-slate-800 rounded-full shadow-xs"
+                                    className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 sm:w-3 sm:h-3 bg-[#0071E3] border-2 border-white dark:border-slate-800 rounded-full shadow-xs"
                                   />
                                 )}
                               </AnimatePresence>
@@ -541,7 +541,7 @@ export default function MessengerBotLogs() {
                             <div className="flex-1 min-w-0 pr-1">
                               <h4
                                 className={`text-xs sm:text-sm tracking-tight truncate transition-all duration-200 ${isIncomplete
-                                  ? "font-bold text-slate-950 dark:text-white"
+                                  ? "font-semibold text-slate-900 dark:text-white"
                                   : isSelected
                                     ? "font-semibold text-slate-900 dark:text-white"
                                     : "font-medium text-slate-700 dark:text-slate-300"
@@ -551,7 +551,7 @@ export default function MessengerBotLogs() {
                               </h4>
                               <p
                                 className={`text-[11px] sm:text-xs truncate mt-0.5 leading-snug transition-all duration-200 ${isIncomplete
-                                  ? "font-semibold text-slate-900 dark:text-slate-100"
+                                  ? "font-medium text-slate-600 dark:text-slate-300"
                                   : "font-normal text-slate-500 dark:text-slate-400"
                                   }`}
                               >
@@ -562,14 +562,14 @@ export default function MessengerBotLogs() {
                                   {convo.type} · {convo.barangay}
                                 </span>
                                 <span
-                                  className={`inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-medium rounded-md px-1.5 sm:px-2 py-0.5 border transition-colors duration-200 ${isIncomplete
-                                    ? "bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 border-amber-200/50 dark:border-amber-800/50 font-semibold"
+                                  className={`inline-flex items-center gap-1.5 text-[9px] sm:text-[10px] font-medium rounded-md px-1.5 sm:px-2 py-0.5 border transition-colors duration-200 ${isIncomplete
+                                    ? "bg-slate-100/90 dark:bg-slate-800/90 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700/70"
                                     : "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border-emerald-200/50 dark:border-emerald-800/50"
                                     }`}
                                 >
                                   <span
                                     className={`w-1.5 h-1.5 rounded-full ${isIncomplete
-                                      ? "bg-amber-500 animate-pulse"
+                                      ? "bg-[#0071E3] animate-pulse"
                                       : "bg-emerald-500"
                                       }`}
                                   />
@@ -583,7 +583,7 @@ export default function MessengerBotLogs() {
                               <div className="flex items-center gap-1">
                                 <span
                                   className={`text-[10px] sm:text-[11px] tabular-nums transition-colors duration-200 ${isIncomplete
-                                    ? "font-semibold text-amber-600 dark:text-amber-400"
+                                    ? "font-medium text-slate-600 dark:text-slate-400"
                                     : "font-normal text-slate-400 dark:text-slate-500"
                                     }`}
                                 >
@@ -596,7 +596,7 @@ export default function MessengerBotLogs() {
                                       animate={{ scale: 1, opacity: 1 }}
                                       exit={{ scale: 0, opacity: 0 }}
                                       transition={APPLE_SPRING}
-                                      className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)] shrink-0"
+                                      className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-[#0071E3] shadow-[0_0_8px_rgba(0,113,227,0.45)] shrink-0"
                                       title="Incomplete conversation"
                                     />
                                   )}
@@ -675,8 +675,8 @@ export default function MessengerBotLogs() {
                           <button
                             type="button"
                             onClick={() => updateConversationStatus(selectedConversation.id, "Incomplete")}
-                            className={`relative flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 rounded-full text-[11px] sm:text-xs font-semibold tracking-tight transition-colors duration-200 select-none active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 cursor-pointer ${selectedConversation.status === "Incomplete"
-                              ? "text-amber-600 dark:text-amber-400"
+                            className={`relative flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 rounded-full text-[11px] sm:text-xs font-semibold tracking-tight transition-colors duration-200 select-none active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071E3] cursor-pointer ${selectedConversation.status === "Incomplete"
+                              ? "text-slate-800 dark:text-slate-100"
                               : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
                               }`}
                             title="Mark conversation as Incomplete"
@@ -688,7 +688,7 @@ export default function MessengerBotLogs() {
                                 className="absolute inset-0 bg-white dark:bg-slate-700/90 rounded-full shadow-[0_1px_4px_rgba(0,0,0,0.1),0_1px_2px_rgba(0,0,0,0.06)] border border-black/[0.04] dark:border-white/10"
                               />
                             )}
-                            <span className="relative z-10 w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                            <span className="relative z-10 w-1.5 h-1.5 rounded-full bg-[#0071E3] animate-pulse" />
                             <span className="relative z-10 hidden xs:inline">Incomplete</span>
                             <span className="relative z-10 xs:hidden">Inc.</span>
                           </button>
