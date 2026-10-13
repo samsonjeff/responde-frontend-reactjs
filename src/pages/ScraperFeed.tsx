@@ -505,9 +505,9 @@ export default function ScraperFeed() {
       {!loading && !error && (
         <>
           {/* Filters Bar — Frosted Glass with Specular Edge, collapsible on mobile */}
-          <div className={`${mobileView === 'detail' ? 'hidden lg:block' : 'block'} relative z-30 backdrop-blur-xl bg-white/80 dark:bg-[#111827]/80 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-[0_4px_24px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.25)] border-t border-t-white/80 dark:border-t-white/10 p-3 sm:p-4 transition-all`}>
-            {/* Mobile Header Bar with Toggle & Active Filter Count */}
-            <div className="flex items-center justify-between lg:hidden mb-2.5">
+          <div className={`${mobileView === 'detail' ? 'hidden md:block' : 'block'} relative z-30 backdrop-blur-xl bg-white/80 dark:bg-[#111827]/80 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-[0_4px_24px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.25)] border-t border-t-white/80 dark:border-t-white/10 p-3 sm:p-4 transition-all`}>
+            {/* Mobile Header Bar with Toggle & Active Filter Count (< md) */}
+            <div className="flex items-center justify-between md:hidden mb-2.5">
               <button
                 type="button"
                 onClick={() => setMobileFiltersOpen(!mobileFiltersOpen)}
@@ -536,10 +536,10 @@ export default function ScraperFeed() {
               )}
             </div>
 
-            {/* Filter Controls Row — collapsible on mobile, always visible on lg */}
-            <div className={`${mobileFiltersOpen ? 'flex' : 'hidden'} lg:flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-3 pt-2 lg:pt-0 border-t lg:border-t-0 border-slate-200/60 dark:border-slate-800/60`}>
-              <div className="grid grid-cols-2 sm:grid-cols-4 lg:flex lg:flex-wrap items-center gap-2.5 sm:gap-3 w-full xl:w-auto relative z-20">
-                <div className="hidden lg:flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-100/80 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 text-xs font-semibold shrink-0 border border-slate-200/50 dark:border-slate-700/50">
+            {/* Filter Controls Row — collapsible on mobile, always visible on tablet & desktop */}
+            <div className={`${mobileFiltersOpen ? 'flex' : 'hidden'} md:flex flex-col md:flex-row md:flex-wrap items-stretch md:items-center justify-between gap-3 pt-2 md:pt-0 border-t md:border-t-0 border-slate-200/60 dark:border-slate-800/60`}>
+              <div className="grid grid-cols-2 sm:grid-cols-4 md:flex md:flex-wrap items-center gap-2.5 sm:gap-3 w-full md:w-auto relative z-20">
+                <div className="hidden md:flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-100/80 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 text-xs font-semibold shrink-0 border border-slate-200/50 dark:border-slate-700/50">
                   <Filter className="w-3.5 h-3.5 text-[#0071E3]" />
                   <span>Filters</span>
                 </div>
@@ -569,7 +569,7 @@ export default function ScraperFeed() {
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:flex lg:flex-wrap items-center gap-2.5 sm:gap-3 xl:ml-auto w-full xl:w-auto relative z-10">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:flex md:flex-wrap items-center gap-2.5 sm:gap-3 md:ml-auto w-full md:w-auto relative z-10">
                 <div className="flex items-center gap-2 flex-1 sm:flex-initial min-w-[130px]">
                   <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 whitespace-nowrap">From:</span>
                   <div className="flex-1 sm:w-36">
@@ -586,7 +586,7 @@ export default function ScraperFeed() {
                   <button
                     type="button"
                     onClick={resetFilters}
-                    className="col-span-1 sm:col-span-2 lg:col-span-auto inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-[#0071E3] hover:text-blue-700 dark:text-sky-400 bg-blue-500/10 hover:bg-blue-500/15 transition-all duration-150 active:scale-[0.97] cursor-pointer shrink-0 ml-auto sm:ml-0"
+                    className="col-span-1 sm:col-span-2 md:col-span-auto inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-[#0071E3] hover:text-blue-700 dark:text-sky-400 bg-blue-500/10 hover:bg-blue-500/15 transition-all duration-150 active:scale-[0.97] cursor-pointer shrink-0 ml-auto sm:ml-0"
                     title="Reset all filters"
                   >
                     <RotateCcw className="w-3.5 h-3.5" />
@@ -598,13 +598,13 @@ export default function ScraperFeed() {
           </div>
 
           {/* Two Column Layout / Responsive Split-Pane */}
-          <div className="flex-1 flex flex-col lg:grid lg:grid-cols-12 gap-4 lg:gap-6 min-h-0 lg:h-[calc(100vh-14.5rem)]">
+          <div className="flex-1 flex flex-col md:grid md:grid-cols-12 gap-3 md:gap-4 lg:gap-6 min-h-0 md:h-[calc(100vh-14.5rem)]">
             {/* LEFT: Post List — macOS Feed Sidebar Style */}
             <div
               className={`
-                ${mobileView === 'detail' ? 'hidden lg:flex' : 'flex'}
-                lg:col-span-5 bg-white/85 dark:bg-[#111827]/85 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] flex-col overflow-hidden
-                h-[calc(100vh-17.5rem)] min-h-[440px] lg:h-full lg:min-h-0
+                ${mobileView === 'detail' ? 'hidden md:flex' : 'flex'}
+                md:col-span-5 lg:col-span-5 bg-white/85 dark:bg-[#111827]/85 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] flex-col overflow-hidden
+                h-[calc(100vh-17.5rem)] min-h-[440px] md:h-full md:min-h-0
               `}
             >
               <div className="px-4 sm:px-5 py-3 sm:py-3.5 border-b border-slate-200/60 dark:border-slate-800/60 flex items-center justify-between shrink-0 bg-white/60 dark:bg-[#111827]/60 backdrop-blur-md">
@@ -741,9 +741,9 @@ export default function ScraperFeed() {
             {/* RIGHT: Post Detail — macOS Inspector Style */}
             <div
               className={`
-                ${mobileView === 'list' ? 'hidden lg:flex' : 'flex'}
-                lg:col-span-7 bg-white/90 dark:bg-[#111827]/90 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] flex-col overflow-hidden
-                h-[calc(100vh-12.5rem)] min-h-[480px] lg:h-full lg:min-h-0
+                ${mobileView === 'list' ? 'hidden md:flex' : 'flex'}
+                md:col-span-7 lg:col-span-7 bg-white/90 dark:bg-[#111827]/90 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] flex-col overflow-hidden
+                h-[calc(100vh-12.5rem)] min-h-[480px] md:h-full md:min-h-0
               `}
             >
               <AnimatePresence mode="wait">
@@ -759,11 +759,11 @@ export default function ScraperFeed() {
                     {/* Header */}
                     <div className="px-4 sm:px-6 py-3 sm:py-4.5 border-b border-slate-200/60 dark:border-slate-800/60 flex items-center justify-between shrink-0 bg-white/70 dark:bg-[#111827]/70 backdrop-blur-md gap-2">
                       <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-                        {/* Mobile Back Button (Apple iOS style) */}
+                        {/* Mobile Back Button (Apple iOS style < md) */}
                         <button
                           type="button"
                           onClick={() => setMobileView('list')}
-                          className="lg:hidden flex items-center gap-0.5 text-[#0071E3] dark:text-blue-400 text-xs font-semibold px-2 py-1 -ml-1 rounded-lg hover:bg-blue-500/10 active:scale-95 transition-all shrink-0 cursor-pointer"
+                          className="md:hidden flex items-center gap-0.5 text-[#0071E3] dark:text-blue-400 text-xs font-semibold px-2 py-1 -ml-1 rounded-lg hover:bg-blue-500/10 active:scale-95 transition-all shrink-0 cursor-pointer"
                           aria-label="Back to scraper feed list"
                         >
                           <ChevronLeft className="w-4 h-4" />

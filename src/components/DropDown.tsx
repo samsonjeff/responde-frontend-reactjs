@@ -70,7 +70,7 @@ export default function FilterDropdown({ value, options, onChange, className }: 
         type="button"
         aria-haspopup="listbox"
         aria-expanded={isOpen}
-        className={`w-full lg:w-auto px-3 py-1.5 sm:px-3 sm:py-2 text-xs font-medium rounded-xl flex items-center justify-between gap-2 cursor-pointer bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 transition-colors hover:bg-slate-50 dark:hover:bg-slate-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 min-w-0 sm:min-w-32.5 ${className || ''}`}
+        className={`w-full md:w-auto px-3 py-1.5 sm:px-3 sm:py-2 text-xs font-medium rounded-xl flex items-center justify-between gap-2 cursor-pointer bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 transition-colors hover:bg-slate-50 dark:hover:bg-slate-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 min-w-0 sm:min-w-32.5 ${className || ''}`}
       >
         <span className="truncate">{value}</span>
         <ChevronDown

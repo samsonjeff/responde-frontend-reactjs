@@ -50,11 +50,11 @@ export function buildRasterStyle(tileUrl: string): any {
 /** Default map center: Talisay Municipal Hall area */
 export const DEFAULT_CENTER: [number, number] = [121.0214, 14.0966];
 
-/** Default zoom: shows most of Talisay municipality */
+/** Default zoom: shows Talisay municipality */
 export const DEFAULT_ZOOM = 12;
 
-/** Max bounds to keep the map roughly around Talisay — wide enough to let users zoom out comfortably */
+/** Max bounds allowing natural viewing and panning of Talisay and Taal Lake area */
 export const MAX_BOUNDS: [[number, number], [number, number]] = [
-    [120.90, 13.95], // SW — generous padding south/west for Poblacion Brgy 6 & Sampaloc
-    [121.12, 14.20], // NE — generous padding north/east for Tranca & Aya
+    [120.88, 13.96], // SW — allows Taal Lake and Volcano Island to be naturally visible on the base map
+    [121.14, 14.22], // NE — generous padding north/east for Tranca & Aya
 ];

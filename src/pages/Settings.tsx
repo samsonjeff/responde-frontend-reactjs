@@ -8,7 +8,8 @@ import {
   CheckCircle2, AlertCircle, ShieldCheck,
   Search, Lock, Loader2, Eye, EyeOff, KeyRound,
   Trash2, AlertTriangle, UserCircle, Pencil, Phone, Briefcase, Mail,
-  History, ArrowRight, ArrowLeft, AtSign, LogOut
+  History, ArrowRight, ArrowLeft, AtSign, LogOut,
+  Bot
 } from 'lucide-react';
 import SignOutModal from '../components/SignOutModal';
 import { authService, type AuthUser, type UserRole, AuthError } from '../services/authService';
@@ -77,8 +78,8 @@ function Card({ icon: Icon, title, children }: {
 function StatusBadge({ active }: { active: boolean }) {
   return (
     <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium border ${active
-        ? 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800'
-        : 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800'
+      ? 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800'
+      : 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800'
       }`}>
       <Wifi className="w-3 h-3" />
       {active ? 'Connected' : 'Disconnected'}
@@ -90,7 +91,7 @@ export default function Settings() {
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
   const isDark = theme === 'dark';
-  const { user: currentUser, logout } = useAuth();
+  const { user: currentUser, logout, setUser, refreshUser } = useAuth();
   const userRole = (currentUser?.role || '').toLowerCase().trim();
   const canViewUsers = userRole === 'super_admin' || userRole === 'admin';
 
@@ -98,6 +99,7 @@ export default function Settings() {
   const [criticalAlerts, setCriticalAlerts] = useState(true);
   const [botConnected] = useState(true);
   const [scraperConnected] = useState(true);
+  const [nlpConnected] = useState(true);
 
   // -- User Management State --
   const [users, setUsers] = useState<AuthUser[]>([]);
@@ -120,25 +122,78 @@ export default function Settings() {
   const [isUpdatingRole, setIsUpdatingRole] = useState(false);
   const [roleError, setRoleError] = useState<string | null>(null);
 
-  // Profile State (local only)
+  // Profile State
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [profileError, setProfileError] = useState<string | null>(null);
+
+  const getInitialPosition = () => {
+    try {
+      const savedPos = localStorage.getItem('responde_user_position');
+      if (savedPos) return savedPos;
+    } catch {}
+    if (currentUser?.role) {
+      const roleTitle = currentUser.role === 'super_admin' ? 'Super Admin' : currentUser.role === 'admin' ? 'Admin' : 'Staff';
+      return `${roleTitle} • MDRRMO`;
+    }
+    return 'MDRRMO Personnel';
+  };
+
   const [profile, setProfile] = useState({
     fullName: currentUser?.full_name || '',
-    phone: '',
-    position: 'MDRRMO Personnel',
+    phone: currentUser?.phone_number || '',
+    position: getInitialPosition(),
   });
   const [profileDraft, setProfileDraft] = useState(profile);
 
-  const handleSaveProfile = (e: React.FormEvent) => {
+  // Sync profile when currentUser finishes loading or changes
+  useEffect(() => {
+    if (currentUser) {
+      const currentPhone = currentUser.phone_number || '';
+      const currentName = currentUser.full_name || '';
+      setProfile(prev => ({
+        ...prev,
+        fullName: currentName,
+        phone: currentPhone,
+      }));
+      setProfileDraft(prev => ({
+        ...prev,
+        fullName: currentName,
+        phone: currentPhone,
+      }));
+    }
+  }, [currentUser]);
+
+  const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSavingProfile(true);
-    setTimeout(() => {
+    setProfileError(null);
+
+    try {
+      const res = await authService.updateProfile({
+        full_name: profileDraft.fullName,
+        phone_number: profileDraft.phone,
+      });
+
+      if (res.user) {
+        setUser(res.user);
+      } else {
+        await refreshUser();
+      }
+
       setProfile(profileDraft);
-      setIsSavingProfile(false);
+      try {
+        localStorage.setItem('responde_user_position', profileDraft.position);
+      } catch {}
+
       setIsEditingProfile(false);
       showSuccessFeedback('Profile updated successfully.');
-    }, 600);
+    } catch (err: any) {
+      const msg = err.message || 'Failed to update profile.';
+      setProfileError(msg);
+    } finally {
+      setIsSavingProfile(false);
+    }
   };
 
   // Audit Log (mock, Super Admin only)
@@ -214,7 +269,7 @@ export default function Settings() {
   const [deleteSelfChallengeToken, setDeleteSelfChallengeToken] = useState<string>('');
   const [deleteSelfMaskedEmail, setDeleteSelfMaskedEmail] = useState<string>('');
   const [otpCooldown, setOtpCooldown] = useState(0);
-    const [isRequestingOtp, setIsRequestingOtp] = useState(false);
+  const [isRequestingOtp, setIsRequestingOtp] = useState(false);
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
   const otpInputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
@@ -245,7 +300,7 @@ export default function Settings() {
     setDeleteSelfChallengeToken('');
     setDeleteSelfMaskedEmail(maskEmailAddress(currentUser?.email));
     setOtpCooldown(0);
-      };
+  };
 
   const closeDeleteMyAccountModal = () => {
     if (isConfirmingDelete) return;
@@ -633,10 +688,10 @@ export default function Settings() {
             )}
             <span
               className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${userRole === 'super_admin'
-                  ? 'bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/40 dark:text-purple-300 dark:border-purple-800'
-                  : userRole === 'admin'
-                    ? 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-800'
-                    : 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'
+                ? 'bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/40 dark:text-purple-300 dark:border-purple-800'
+                : userRole === 'admin'
+                  ? 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-800'
+                  : 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'
                 }`}
             >
               {userRole === 'super_admin' ? 'Super Admin' : userRole === 'admin' ? 'Admin' : 'Staff'}
@@ -701,10 +756,16 @@ export default function Settings() {
                   className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700 rounded-xl text-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
+              {profileError && (
+                <div className="sm:col-span-2 p-2.5 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-xl text-xs text-rose-600 dark:text-rose-400 flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span>{profileError}</span>
+                </div>
+              )}
               <div className="sm:col-span-2 flex justify-end gap-2">
                 <button
                   type="button"
-                  onClick={() => setIsEditingProfile(false)}
+                  onClick={() => { setIsEditingProfile(false); setProfileError(null); }}
                   disabled={isSavingProfile}
                   className="px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl cursor-pointer transition-colors disabled:opacity-50"
                 >
@@ -726,7 +787,7 @@ export default function Settings() {
                 { icon: UserCircle, label: 'Full Name', value: profile.fullName || currentUser?.full_name || 'Not set' },
                 { icon: AtSign, label: 'Username', value: usernameDisplay },
                 { icon: Mail, label: 'Email', value: currentUser?.email || 'Not set' },
-                { icon: Phone, label: 'Contact Number', value: profile.phone || 'Not set' },
+                { icon: Phone, label: 'Contact Number', value: profile.phone || currentUser?.phone_number || 'Not set' },
                 { icon: Briefcase, label: 'Position', value: profile.position || 'Not set' },
               ].map(({ icon: Icon, label, value }) => (
                 <div key={label} className="flex items-start gap-3">
@@ -852,6 +913,18 @@ export default function Settings() {
                 </div>
               </div>
               <StatusBadge active={scraperConnected} />
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-purple-50 dark:bg-purple-900/30 flex items-center justify-center">
+                  <Bot className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-slate-700 dark:text-slate-200">NLP Engine</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">AI triage &amp; classification service</p>
+                </div>
+              </div>
+              <StatusBadge active={nlpConnected} />
             </div>
           </div>
         </Card>
@@ -999,10 +1072,10 @@ export default function Settings() {
                         <td className="px-4 py-3">
                           <span
                             className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${u.role === 'super_admin'
-                                ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300 border border-purple-200 dark:border-purple-800'
-                                : u.role === 'admin'
-                                  ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 border border-blue-200 dark:border-blue-800'
-                                  : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
+                              ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300 border border-purple-200 dark:border-purple-800'
+                              : u.role === 'admin'
+                                ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 border border-blue-200 dark:border-blue-800'
+                                : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
                               }`}
                           >
                             {u.role === 'super_admin' ? 'Super Admin' : u.role === 'admin' ? 'Admin' : 'Staff'}
@@ -1397,8 +1470,8 @@ export default function Settings() {
                       <label
                         title={roleDisabledTooltip}
                         className={`flex items-center gap-2.5 p-2.5 border border-slate-200 dark:border-slate-700 rounded-xl ${isRoleSelectionDisabled
-                            ? 'opacity-50 cursor-not-allowed bg-slate-50 dark:bg-slate-900'
-                            : 'cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800'
+                          ? 'opacity-50 cursor-not-allowed bg-slate-50 dark:bg-slate-900'
+                          : 'cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800'
                           }`}
                       >
                         <input
@@ -1419,8 +1492,8 @@ export default function Settings() {
                       <label
                         title={roleDisabledTooltip}
                         className={`flex items-center gap-2.5 p-2.5 border border-slate-200 dark:border-slate-700 rounded-xl ${isRoleSelectionDisabled
-                            ? 'opacity-50 cursor-not-allowed bg-slate-50 dark:bg-slate-900'
-                            : 'cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800'
+                          ? 'opacity-50 cursor-not-allowed bg-slate-50 dark:bg-slate-900'
+                          : 'cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800'
                           }`}
                       >
                         <input
@@ -1441,8 +1514,8 @@ export default function Settings() {
                       <label
                         title={roleDisabledTooltip}
                         className={`flex items-center gap-2.5 p-2.5 border border-slate-200 dark:border-slate-700 rounded-xl ${!isRoleSelectionDisabled && currentUser?.role === 'super_admin'
-                            ? 'cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800'
-                            : 'opacity-50 cursor-not-allowed bg-slate-50 dark:bg-slate-900'
+                          ? 'cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800'
+                          : 'opacity-50 cursor-not-allowed bg-slate-50 dark:bg-slate-900'
                           }`}
                       >
                         <input
@@ -1623,10 +1696,10 @@ export default function Settings() {
                       <div className="flex items-center justify-between text-[11px]">
                         <span className="text-slate-500 dark:text-slate-400">Password Strength:</span>
                         <span className={`font-semibold ${newPassword.length >= 8 && (/\d/.test(newPassword) || /[^A-Za-z0-9]/.test(newPassword))
-                            ? (newPassword.length >= 10 && /\d/.test(newPassword) && /[^A-Za-z0-9]/.test(newPassword)
-                              ? 'text-emerald-600 dark:text-emerald-400'
-                              : 'text-amber-600 dark:text-amber-400')
-                            : 'text-rose-500 dark:text-rose-400'
+                          ? (newPassword.length >= 10 && /\d/.test(newPassword) && /[^A-Za-z0-9]/.test(newPassword)
+                            ? 'text-emerald-600 dark:text-emerald-400'
+                            : 'text-amber-600 dark:text-amber-400')
+                          : 'text-rose-500 dark:text-rose-400'
                           }`}>
                           {newPassword.length >= 8 && (/\d/.test(newPassword) || /[^A-Za-z0-9]/.test(newPassword))
                             ? (newPassword.length >= 10 && /\d/.test(newPassword) && /[^A-Za-z0-9]/.test(newPassword)
@@ -1638,10 +1711,10 @@ export default function Settings() {
                       <div className="w-full bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden">
                         <div
                           className={`h-full transition-all duration-300 rounded-full ${newPassword.length >= 10 && /\d/.test(newPassword) && /[^A-Za-z0-9]/.test(newPassword)
-                              ? 'w-full bg-emerald-500'
-                              : newPassword.length >= 8 && (/\d/.test(newPassword) || /[^A-Za-z0-9]/.test(newPassword))
-                                ? 'w-2/3 bg-amber-500'
-                                : 'w-1/3 bg-rose-500'
+                            ? 'w-full bg-emerald-500'
+                            : newPassword.length >= 8 && (/\d/.test(newPassword) || /[^A-Za-z0-9]/.test(newPassword))
+                              ? 'w-2/3 bg-amber-500'
+                              : 'w-1/3 bg-rose-500'
                             }`}
                         />
                       </div>
@@ -1775,8 +1848,8 @@ export default function Settings() {
                     </span>
                     <span
                       className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${deleteModalUser.role === 'admin'
-                          ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 border border-blue-200 dark:border-blue-800'
-                          : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
+                        ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 border border-blue-200 dark:border-blue-800'
+                        : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
                         }`}
                     >
                       {deleteModalUser.role === 'admin' ? 'Admin' : 'Staff'}
@@ -1823,7 +1896,7 @@ export default function Settings() {
       {deleteSelfModalOpen && (
         <div className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white dark:bg-[#111827] rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 transition-all">
-            
+
             {/* Header */}
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-2.5">

@@ -354,8 +354,8 @@ export default function MessengerBotLogs() {
               relative z-30 bg-white/85 dark:bg-[#111827]/85 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-[0_4px_20px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.2)] border-t border-t-white/80 dark:border-t-white/10 p-3.5 sm:p-4 flex-col gap-3 transition-all duration-200 shrink-0
             `}
           >
-            {/* Mobile Header Toggle (< lg) */}
-            <div className="flex lg:hidden items-center justify-between w-full">
+            {/* Mobile Header Toggle (< md) */}
+            <div className="flex md:hidden items-center justify-between w-full">
               <button
                 type="button"
                 onClick={() => setMobileFiltersOpen(!mobileFiltersOpen)}
@@ -384,28 +384,28 @@ export default function MessengerBotLogs() {
               )}
             </div>
 
-            {/* Filter Controls Row — 2-column compact grid on mobile, flex row on desktop */}
-            <div className={`${mobileFiltersOpen ? 'flex' : 'hidden'} lg:flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-2.5 sm:gap-3 pt-2 lg:pt-0 border-t lg:border-t-0 border-slate-200/60 dark:border-slate-800/60`}>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:flex lg:flex-wrap items-center gap-2.5 sm:gap-3 w-full xl:w-auto relative z-20">
-                <div className="hidden lg:flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-100/80 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 text-xs font-semibold shrink-0 border border-slate-200/50 dark:border-slate-700/50">
+            {/* Filter Controls Row — 2-column compact grid on mobile, flex row on tablet & desktop */}
+            <div className={`${mobileFiltersOpen ? 'flex' : 'hidden'} md:flex flex-col md:flex-row md:flex-wrap items-stretch md:items-center justify-between gap-2.5 sm:gap-3 pt-2 md:pt-0 border-t md:border-t-0 border-slate-200/60 dark:border-slate-800/60`}>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:flex md:flex-wrap items-center gap-2.5 sm:gap-3 w-full md:w-auto relative z-20">
+                <div className="hidden md:flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-100/80 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 text-xs font-semibold shrink-0 border border-slate-200/50 dark:border-slate-700/50">
                   <Filter className="w-3.5 h-3.5 text-[#0071E3]" />
                   <span>Filters</span>
                 </div>
-                <div className="col-span-1 lg:col-span-auto">
+                <div className="col-span-1 md:col-span-auto">
                   <FilterDropdown
                     value={filterBarangay}
                     options={["All Barangays", ...availableBarangays]}
                     onChange={(val) => { setFilterBarangay(val); setSelectedId(""); }}
                   />
                 </div>
-                <div className="col-span-1 lg:col-span-auto">
+                <div className="col-span-1 md:col-span-auto">
                   <FilterDropdown
                     value={filterType}
                     options={["All Types", ...availableTypes]}
                     onChange={(val) => { setFilterType(val); setSelectedId(""); }}
                   />
                 </div>
-                <div className="col-span-2 sm:col-span-1 lg:col-span-auto">
+                <div className="col-span-2 sm:col-span-1 md:col-span-auto">
                   <FilterDropdown
                     value={filterStatus}
                     options={["All Status", "Incomplete", "Complete"]}
@@ -414,7 +414,7 @@ export default function MessengerBotLogs() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-2 lg:flex lg:flex-wrap items-center gap-2.5 sm:gap-3 xl:ml-auto w-full xl:w-auto relative z-10">
+              <div className="grid grid-cols-2 sm:grid-cols-2 md:flex md:flex-wrap items-center gap-2.5 sm:gap-3 md:ml-auto w-full md:w-auto relative z-10">
                 <div className="flex items-center gap-2 flex-1 sm:flex-initial min-w-[130px]">
                   <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 whitespace-nowrap">From:</span>
                   <div className="flex-1 sm:w-36">
@@ -431,7 +431,7 @@ export default function MessengerBotLogs() {
                   <button
                     type="button"
                     onClick={resetFilters}
-                    className="col-span-2 lg:col-span-auto inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-[#0071E3] hover:text-blue-700 dark:text-sky-400 bg-blue-500/10 hover:bg-blue-500/15 transition-all duration-150 active:scale-[0.97] cursor-pointer shrink-0 ml-auto sm:ml-0"
+                    className="col-span-2 md:col-span-auto inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-[#0071E3] hover:text-blue-700 dark:text-sky-400 bg-blue-500/10 hover:bg-blue-500/15 transition-all duration-150 active:scale-[0.97] cursor-pointer shrink-0 ml-auto sm:ml-0"
                     title="Reset all filters"
                   >
                     <RotateCcw className="w-3.5 h-3.5" />
@@ -442,13 +442,13 @@ export default function MessengerBotLogs() {
             </div>
           </div>
 
-          <div className="flex-1 flex flex-col lg:grid lg:grid-cols-12 gap-4 lg:gap-6 min-h-0 lg:h-[calc(100vh-14.5rem)]">
+          <div className="flex-1 flex flex-col md:grid md:grid-cols-12 gap-3 md:gap-4 lg:gap-6 min-h-0 md:h-[calc(100vh-14.5rem)]">
             {/* LEFT: Conversation List — macOS Messages Sidebar Style */}
             <div
               className={`
-                ${mobileView === 'chat' ? 'hidden lg:flex' : 'flex'}
-                lg:col-span-5 bg-white/85 dark:bg-[#111827]/85 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] flex-col overflow-hidden
-                h-[calc(100vh-17.5rem)] min-h-[440px] lg:h-full lg:min-h-0
+                ${mobileView === 'chat' ? 'hidden md:flex' : 'flex'}
+                md:col-span-5 lg:col-span-5 bg-white/85 dark:bg-[#111827]/85 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] flex-col overflow-hidden
+                h-[calc(100vh-17.5rem)] min-h-[440px] md:h-full md:min-h-0
               `}
             >
               {/* Header Row */}
@@ -501,7 +501,7 @@ export default function MessengerBotLogs() {
                             className={`w-full flex items-center gap-2.5 sm:gap-3.5 p-2.5 sm:p-3 rounded-xl transition-all duration-150 text-left relative group active:scale-[0.985] cursor-pointer ${isSelected
                               ? "bg-blue-500/10 dark:bg-blue-500/20 shadow-xs border border-blue-500/25 dark:border-blue-500/30 text-slate-900 dark:text-white"
                               : isIncomplete
-                                ? "bg-amber-500/[0.04] dark:bg-amber-500/[0.08] hover:bg-amber-500/[0.08] dark:hover:bg-amber-500/[0.14] border border-amber-500/15 dark:border-amber-500/20 text-slate-950 dark:text-white"
+                                ? "bg-slate-50 dark:bg-slate-800/40 hover:bg-slate-100/80 dark:hover:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/60 text-slate-900 dark:text-slate-100"
                                 : "hover:bg-slate-100/70 dark:hover:bg-slate-800/60 border border-transparent text-slate-700 dark:text-slate-300"
                               }`}
                           >
@@ -531,7 +531,7 @@ export default function MessengerBotLogs() {
                                     animate={{ scale: 1, opacity: 1 }}
                                     exit={{ scale: 0, opacity: 0 }}
                                     transition={APPLE_SPRING}
-                                    className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 sm:w-3 sm:h-3 bg-amber-500 border-2 border-white dark:border-slate-800 rounded-full shadow-xs"
+                                    className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 sm:w-3 sm:h-3 bg-[#0071E3] border-2 border-white dark:border-slate-800 rounded-full shadow-xs"
                                   />
                                 )}
                               </AnimatePresence>
@@ -541,7 +541,7 @@ export default function MessengerBotLogs() {
                             <div className="flex-1 min-w-0 pr-1">
                               <h4
                                 className={`text-xs sm:text-sm tracking-tight truncate transition-all duration-200 ${isIncomplete
-                                  ? "font-bold text-slate-950 dark:text-white"
+                                  ? "font-semibold text-slate-900 dark:text-white"
                                   : isSelected
                                     ? "font-semibold text-slate-900 dark:text-white"
                                     : "font-medium text-slate-700 dark:text-slate-300"
@@ -551,7 +551,7 @@ export default function MessengerBotLogs() {
                               </h4>
                               <p
                                 className={`text-[11px] sm:text-xs truncate mt-0.5 leading-snug transition-all duration-200 ${isIncomplete
-                                  ? "font-semibold text-slate-900 dark:text-slate-100"
+                                  ? "font-medium text-slate-600 dark:text-slate-300"
                                   : "font-normal text-slate-500 dark:text-slate-400"
                                   }`}
                               >
@@ -562,14 +562,14 @@ export default function MessengerBotLogs() {
                                   {convo.type} · {convo.barangay}
                                 </span>
                                 <span
-                                  className={`inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-medium rounded-md px-1.5 sm:px-2 py-0.5 border transition-colors duration-200 ${isIncomplete
-                                    ? "bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 border-amber-200/50 dark:border-amber-800/50 font-semibold"
+                                  className={`inline-flex items-center gap-1.5 text-[9px] sm:text-[10px] font-medium rounded-md px-1.5 sm:px-2 py-0.5 border transition-colors duration-200 ${isIncomplete
+                                    ? "bg-slate-100/90 dark:bg-slate-800/90 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700/70"
                                     : "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border-emerald-200/50 dark:border-emerald-800/50"
                                     }`}
                                 >
                                   <span
                                     className={`w-1.5 h-1.5 rounded-full ${isIncomplete
-                                      ? "bg-amber-500 animate-pulse"
+                                      ? "bg-[#0071E3] animate-pulse"
                                       : "bg-emerald-500"
                                       }`}
                                   />
@@ -583,7 +583,7 @@ export default function MessengerBotLogs() {
                               <div className="flex items-center gap-1">
                                 <span
                                   className={`text-[10px] sm:text-[11px] tabular-nums transition-colors duration-200 ${isIncomplete
-                                    ? "font-semibold text-amber-600 dark:text-amber-400"
+                                    ? "font-medium text-slate-600 dark:text-slate-400"
                                     : "font-normal text-slate-400 dark:text-slate-500"
                                     }`}
                                 >
@@ -596,7 +596,7 @@ export default function MessengerBotLogs() {
                                       animate={{ scale: 1, opacity: 1 }}
                                       exit={{ scale: 0, opacity: 0 }}
                                       transition={APPLE_SPRING}
-                                      className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)] shrink-0"
+                                      className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-[#0071E3] shadow-[0_0_8px_rgba(0,113,227,0.45)] shrink-0"
                                       title="Incomplete conversation"
                                     />
                                   )}
@@ -616,9 +616,9 @@ export default function MessengerBotLogs() {
             {/* RIGHT: Message Detail — Apple Messages Style */}
             <div
               className={`
-                ${mobileView === 'list' ? 'hidden lg:flex' : 'flex'}
-                lg:col-span-7 bg-white/90 dark:bg-[#111827]/90 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] flex-col overflow-hidden
-                h-[calc(100vh-12.5rem)] min-h-[480px] lg:h-full lg:min-h-0
+                ${mobileView === 'list' ? 'hidden md:flex' : 'flex'}
+                md:col-span-7 lg:col-span-7 bg-white/90 dark:bg-[#111827]/90 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] flex-col overflow-hidden
+                h-[calc(100vh-12.5rem)] min-h-[480px] md:h-full md:min-h-0
               `}
             >
               <AnimatePresence mode="wait">
@@ -634,11 +634,11 @@ export default function MessengerBotLogs() {
                     {/* Header */}
                     <div className="px-3.5 sm:px-6 py-3 sm:py-3.5 border-b border-slate-200/60 dark:border-slate-800/60 flex items-center justify-between shrink-0 bg-white/70 dark:bg-[#111827]/70 backdrop-blur-md gap-2">
                       <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-                        {/* Mobile Back Button to Conversation List */}
+                        {/* Mobile Back Button to Conversation List (< md) */}
                         <button
                           type="button"
                           onClick={() => setMobileView('list')}
-                          className="lg:hidden inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold text-[#0071E3] dark:text-sky-400 bg-[#0071E3]/10 dark:bg-sky-400/10 hover:bg-[#0071E3]/15 active:scale-95 transition-all shrink-0 cursor-pointer"
+                          className="md:hidden inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold text-[#0071E3] dark:text-sky-400 bg-[#0071E3]/10 dark:bg-sky-400/10 hover:bg-[#0071E3]/15 active:scale-95 transition-all shrink-0 cursor-pointer"
                           aria-label="Back to conversations list"
                         >
                           <ChevronLeft className="w-4 h-4 -ml-1" />
@@ -675,8 +675,8 @@ export default function MessengerBotLogs() {
                           <button
                             type="button"
                             onClick={() => updateConversationStatus(selectedConversation.id, "Incomplete")}
-                            className={`relative flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 rounded-full text-[11px] sm:text-xs font-semibold tracking-tight transition-colors duration-200 select-none active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 cursor-pointer ${selectedConversation.status === "Incomplete"
-                              ? "text-amber-600 dark:text-amber-400"
+                            className={`relative flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 rounded-full text-[11px] sm:text-xs font-semibold tracking-tight transition-colors duration-200 select-none active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071E3] cursor-pointer ${selectedConversation.status === "Incomplete"
+                              ? "text-slate-800 dark:text-slate-100"
                               : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
                               }`}
                             title="Mark conversation as Incomplete"
@@ -688,7 +688,7 @@ export default function MessengerBotLogs() {
                                 className="absolute inset-0 bg-white dark:bg-slate-700/90 rounded-full shadow-[0_1px_4px_rgba(0,0,0,0.1),0_1px_2px_rgba(0,0,0,0.06)] border border-black/[0.04] dark:border-white/10"
                               />
                             )}
-                            <span className="relative z-10 w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                            <span className="relative z-10 w-1.5 h-1.5 rounded-full bg-[#0071E3] animate-pulse" />
                             <span className="relative z-10 hidden xs:inline">Incomplete</span>
                             <span className="relative z-10 xs:hidden">Inc.</span>
                           </button>

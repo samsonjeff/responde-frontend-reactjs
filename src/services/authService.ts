@@ -75,7 +75,7 @@ export function setStoredSessionToken(token: string | null): void {
     } else {
       localStorage.removeItem(SESSION_TOKEN_KEY);
     }
-  } catch {}
+  } catch { }
 }
 
 export function getStoredUser(): AuthUser | null {
@@ -94,7 +94,7 @@ export function setStoredUser(user: AuthUser | null): void {
     } else {
       localStorage.removeItem(USER_KEY);
     }
-  } catch {}
+  } catch { }
 }
 
 // Internal fetch wrapper - sends cookies AND Authorization Bearer header if token exists
@@ -264,9 +264,9 @@ export const authService = {
     return data;
   },
 
-    /**
-   * Change password for the currently authenticated user.
-   */
+  /**
+ * Change password for the currently authenticated user.
+ */
   async changePassword(payload: {
     current_password: string;
     new_password: string;
@@ -284,10 +284,10 @@ export const authService = {
     return data;
   },
 
-/**
-   * Restore session from httpOnly cookie on app boot.
-   * Returns the current user, or null if no valid session exists.
-   */
+  /**
+     * Restore session from httpOnly cookie on app boot.
+     * Returns the current user, or null if no valid session exists.
+     */
   async me(): Promise<AuthUser | null> {
     try {
       const res = await apiFetch('/api/auth/me');
@@ -320,6 +320,36 @@ export const authService = {
       setStoredSessionToken(null);
       setStoredUser(null);
     }
+  },
+
+  /**
+   * Update the currently authenticated user's profile (full name, phone number).
+   */
+  async updateProfile(payload: {
+    full_name?: string;
+    phone_number?: string | null;
+  }): Promise<{ success: boolean; user: AuthUser; message?: string }> {
+    const res = await apiFetch('/api/auth/profile', {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      throw new AuthError(data.error ?? data.message ?? 'Failed to update profile', {
+        reason: 'profile_update_error',
+      });
+    }
+    if (data.user) {
+      const existing = getStoredUser();
+      const updatedUser: AuthUser = {
+        ...existing,
+        ...data.user,
+        avatar_url: data.user.avatar_url || existing?.avatar_url || null,
+      };
+      setStoredUser(updatedUser);
+      return { success: true, user: updatedUser, message: data.message };
+    }
+    return data;
   },
 
   /**

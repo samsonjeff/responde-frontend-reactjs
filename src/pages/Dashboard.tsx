@@ -319,10 +319,12 @@ export default function Dashboard() {
   }, [reports]);
 
   const dashboardPinReports = useMemo(() => {
-    return reports.filter((r) =>
-      (r.status === 'verified' || r.status === 'under_review') &&
-      r.coordinates && r.coordinates.includes(',')
-    );
+    return reports.filter((r) => {
+      if (r.status !== 'verified' && r.status !== 'under_review') return false;
+      if (!r.coordinates || !r.coordinates.includes(',')) return false;
+      const parts = r.coordinates.split(',').map((s) => parseFloat(s.trim()));
+      return parts.length === 2 && !isNaN(parts[0]) && parts[0] >= 14.075;
+    });
   }, [reports]);
 
   const openConversation = (conv: BotConversation) => {
