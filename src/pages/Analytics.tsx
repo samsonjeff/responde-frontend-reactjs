@@ -1106,8 +1106,8 @@ export default function Analytics() {
                             <motion.div
                               initial={{ width: 0 }}
                               animate={{ width: `${pct}%` }}
-                              transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
-                              className="h-full rounded-full transition-all duration-300"
+                              transition={{ duration: 0.95, ease: [0.25, 1, 0.5, 1] }}
+                              className="h-full rounded-full transition-[box-shadow] duration-200"
                               style={{
                                 backgroundColor: c.color,
                                 boxShadow: isHovered || isActive ? `0 0 10px ${c.color}` : undefined,

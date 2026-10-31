@@ -807,7 +807,7 @@ export default function Dashboard() {
           ) : (
             /* ── Progress Bars List View (Minimalist 2D) ── */
             <div className="mt-4 space-y-3">
-              {typeSummary.map((item) => {
+              {typeSummary.map((item, index) => {
                 const isSelected = selectedType && selectedType.toLowerCase() === item.type.toLowerCase();
                 return (
                   <button
@@ -839,8 +839,12 @@ export default function Dashboard() {
                       <motion.div
                         initial={{ width: 0 }}
                         animate={{ width: `${Math.max(item.percentage, 3)}%` }}
-                        transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
-                        className="h-full rounded-full transition-all duration-200 group-hover:brightness-110"
+                        transition={{
+                          duration: 0.95,
+                          delay: Math.min(index * 0.04, 0.28),
+                          ease: [0.25, 1, 0.5, 1],
+                        }}
+                        className="h-full rounded-full transition-[filter] duration-200 group-hover:brightness-110"
                         style={{ backgroundColor: item.color }}
                       />
                     </div>
