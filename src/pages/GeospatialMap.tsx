@@ -1508,18 +1508,41 @@ export default function GeospatialMap() {
                 </div>
               </div>
 
-              {/* Plotted & Unmapped live counters */}
-              <div className="flex items-center gap-2 text-xs font-semibold shrink-0">
-                <span className="px-3 py-1.5 rounded-xl bg-slate-100/90 dark:bg-slate-800/90 border border-slate-200/60 dark:border-white/5 tabular-nums text-slate-700 dark:text-slate-300">
-                  <strong className="text-slate-900 dark:text-white font-bold">{pinReports.length}</strong> Plotted
+              {/* Apple Maps Live Telemetry Status Capsule */}
+              <button
+                type="button"
+                onClick={() => setDrawerOpen((prev) => !prev)}
+                className="group relative inline-flex items-center gap-2.5 px-3.5 py-2 rounded-2xl bg-white/80 dark:bg-slate-800/80 backdrop-blur-md border border-slate-200/80 dark:border-white/10 shadow-xs hover:shadow-sm hover:border-[#0071E3]/40 dark:hover:border-sky-500/40 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] transition-all duration-200 cursor-pointer select-none shrink-0"
+                title={drawerOpen ? "Click to toggle live incidents drawer" : "Click to view live incidents drawer"}
+                aria-label="Toggle Live Incidents Drawer"
+              >
+                {/* Active Radar Beacon */}
+                <span className="relative flex h-2 w-2 shrink-0">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#0071E3] opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-[#0071E3]" />
                 </span>
-                {incompleteReports.length > 0 && (
-                  <span className="px-3 py-1.5 rounded-xl bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20 tabular-nums flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                    <strong>{incompleteReports.length}</strong> Unmapped
+
+                <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300">
+                  <MapPin className="w-3.5 h-3.5 text-[#0071E3] dark:text-sky-400 transition-transform duration-200 group-hover:scale-115 group-hover:-translate-y-0.5" strokeWidth={2} />
+                  <span className="font-medium">
+                    <strong className="text-slate-900 dark:text-white font-bold tabular-nums mr-1">
+                      {pinReports.length}
+                    </strong>
+                    Pins on Map
                   </span>
+                </div>
+
+                {incompleteReports.length > 0 && (
+                  <>
+                    <span className="w-px h-3.5 bg-slate-200 dark:bg-slate-700 shrink-0" />
+                    <div className="flex items-center gap-1.5 text-xs font-medium text-amber-600 dark:text-amber-400">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                      <span className="tabular-nums font-bold">{incompleteReports.length}</span>
+                      <span className="hidden sm:inline">Unmapped</span>
+                    </div>
+                  </>
                 )}
-              </div>
+              </button>
             </div>
 
             {/* ── Filters & Layer Controls ── */}
