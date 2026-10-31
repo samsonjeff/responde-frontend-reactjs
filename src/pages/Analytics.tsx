@@ -67,12 +67,67 @@ const ACCENT_BLUE = '#2563EB';
 
 const TYPE_CONFIG: Record<
   string,
-  { icon: LucideIcon; iconClass: string; color: string; bg: string }
+  {
+    icon: LucideIcon;
+    iconClass: string;
+    color: string;
+    bg: string;
+    glowShadow: string;
+    glowBorder: string;
+    hoverBg: string;
+    activeBorder: string;
+    activeBg: string;
+    activeShadow: string;
+  }
 > = {
-  'Search & Rescue': { icon: Siren, iconClass: 'text-amber-500', color: '#f59e0b', bg: 'rgba(245,158,11,0.1)' },
-  Medical: { icon: HeartPulse, iconClass: 'text-rose-500', color: '#ef4444', bg: 'rgba(239,68,68,0.1)' },
-  'Food & Water': { icon: Droplets, iconClass: 'text-emerald-500', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
-  Infrastructure: { icon: HardHat, iconClass: 'text-indigo-500', color: '#6366f1', bg: 'rgba(99,102,241,0.1)' },
+  'Search & Rescue': {
+    icon: Siren,
+    iconClass: 'text-amber-500',
+    color: '#f59e0b',
+    bg: 'rgba(245,158,11,0.1)',
+    glowShadow: 'hover:shadow-[0_8px_24px_rgba(245,158,11,0.25)]',
+    glowBorder: 'hover:border-amber-400/80 dark:hover:border-amber-500/70',
+    hoverBg: 'hover:bg-amber-50/60 dark:hover:bg-amber-950/25',
+    activeBorder: 'border-amber-500/60 dark:border-amber-400/60',
+    activeBg: 'bg-amber-500/15 dark:bg-amber-500/20',
+    activeShadow: 'shadow-[0_0_20px_rgba(245,158,11,0.28)]',
+  },
+  Medical: {
+    icon: HeartPulse,
+    iconClass: 'text-rose-500',
+    color: '#ef4444',
+    bg: 'rgba(239,68,68,0.1)',
+    glowShadow: 'hover:shadow-[0_8px_24px_rgba(239,68,68,0.25)]',
+    glowBorder: 'hover:border-rose-400/80 dark:hover:border-rose-500/70',
+    hoverBg: 'hover:bg-rose-50/60 dark:hover:bg-rose-950/25',
+    activeBorder: 'border-rose-500/60 dark:border-rose-400/60',
+    activeBg: 'bg-rose-500/15 dark:bg-rose-500/20',
+    activeShadow: 'shadow-[0_0_20px_rgba(239,68,68,0.28)]',
+  },
+  'Food & Water': {
+    icon: Droplets,
+    iconClass: 'text-emerald-500',
+    color: '#10b981',
+    bg: 'rgba(16,185,129,0.1)',
+    glowShadow: 'hover:shadow-[0_8px_24px_rgba(16,185,129,0.30)]',
+    glowBorder: 'hover:border-emerald-400/80 dark:hover:border-emerald-500/70',
+    hoverBg: 'hover:bg-emerald-50/60 dark:hover:bg-emerald-950/25',
+    activeBorder: 'border-emerald-500/60 dark:border-emerald-400/60',
+    activeBg: 'bg-emerald-500/15 dark:bg-emerald-500/20',
+    activeShadow: 'shadow-[0_0_20px_rgba(16,185,129,0.32)]',
+  },
+  Infrastructure: {
+    icon: HardHat,
+    iconClass: 'text-indigo-500',
+    color: '#6366f1',
+    bg: 'rgba(99,102,241,0.1)',
+    glowShadow: 'hover:shadow-[0_8px_24px_rgba(99,102,241,0.30)]',
+    glowBorder: 'hover:border-indigo-400/80 dark:hover:border-indigo-500/70',
+    hoverBg: 'hover:bg-indigo-50/60 dark:hover:bg-indigo-950/25',
+    activeBorder: 'border-indigo-500/60 dark:border-indigo-400/60',
+    activeBg: 'bg-indigo-500/15 dark:bg-indigo-500/20',
+    activeShadow: 'shadow-[0_0_20px_rgba(99,102,241,0.32)]',
+  },
 };
 
 const URGENCY_WEIGHT: Record<string, number> = { High: 3, Moderate: 2, Low: 1 };
@@ -256,6 +311,7 @@ export default function Analytics() {
   // Click-to-filter from charts
   const [activeBarangay, setActiveBarangay] = useState<string | null>(null);
   const [activeType, setActiveType] = useState<string | null>(null);
+  const [hoveredType, setHoveredType] = useState<string | null>(null);
   const [typeViewMode, setTypeViewMode] = useState<'donut' | 'bar'>('donut');
 
   const allBarangays = useMemo(() => {
@@ -820,30 +876,46 @@ export default function Analytics() {
                             />
                             <Tooltip content={<PieTooltip />} cursor={{ fill: 'rgba(139,92,246,0.06)' }} />
                             <Bar dataKey="value" radius={[5, 5, 0, 0]} cursor="pointer">
-                              {typeChartData.map((entry) => (
-                                <Cell
-                                  key={entry.name}
-                                  fill={entry.color}
-                                  opacity={activeType && activeType !== entry.name ? 0.3 : 1}
-                                />
-                              ))}
+                              {typeChartData.map((entry) => {
+                                const isSelected = activeType === entry.name;
+                                const isHovered = hoveredType === entry.name;
+                                const isDimmed = (activeType && !isSelected) || (hoveredType && !isHovered);
+                                return (
+                                  <Cell
+                                    key={entry.name}
+                                    fill={entry.color}
+                                    opacity={isDimmed ? 0.35 : 1}
+                                    style={{
+                                      filter: isSelected || isHovered ? `drop-shadow(0 0 10px ${entry.color})` : undefined,
+                                      transition: 'all 0.25s ease',
+                                    }}
+                                  />
+                                );
+                              })}
                             </Bar>
                           </BarChart>
                         </ResponsiveContainer>
                       ) : (
                         <div className="relative w-full h-full flex items-center justify-center">
-                          {/* Pulsing ambient halo behind donut core */}
+                          {/* Pulsing ambient halo behind donut core — dynamically glows with hovered or active category color */}
                           <motion.div
                             animate={{
-                              scale: [0.94, 1.08, 0.94],
-                              opacity: [0.2, 0.45, 0.2],
+                              scale: hoveredType || activeType ? [1.02, 1.15, 1.02] : [0.94, 1.08, 0.94],
+                              opacity: hoveredType || activeType ? [0.35, 0.6, 0.35] : [0.2, 0.45, 0.2],
                             }}
                             transition={{
-                              duration: 3.5,
+                              duration: hoveredType ? 2.0 : 3.5,
                               repeat: Infinity,
                               ease: 'easeInOut',
                             }}
-                            className="absolute w-28 h-28 rounded-full bg-violet-500/15 dark:bg-violet-400/20 blur-xl pointer-events-none"
+                            className="absolute w-28 h-28 rounded-full blur-xl pointer-events-none transition-colors duration-300"
+                            style={{
+                              backgroundColor: (hoveredType && TYPE_CONFIG[hoveredType]?.color)
+                                ? `${TYPE_CONFIG[hoveredType].color}40`
+                                : (activeType && TYPE_CONFIG[activeType]?.color)
+                                ? `${TYPE_CONFIG[activeType].color}40`
+                                : 'rgba(139, 92, 246, 0.2)',
+                            }}
                           />
 
                           <ResponsiveContainer width="100%" height="100%">
@@ -871,17 +943,24 @@ export default function Analytics() {
                                   setTypeFilter('All Types');
                                 }}
                               >
-                                {typeChartData.filter(d => d.value > 0).map((entry) => (
-                                  <Cell
-                                    key={entry.name}
-                                    fill={entry.color}
-                                    opacity={activeType && activeType !== entry.name ? 0.35 : 1}
-                                    style={{
-                                      filter: activeType === entry.name ? `drop-shadow(0 0 8px ${entry.color})` : undefined,
-                                      transition: 'opacity 0.25s ease, filter 0.25s ease',
-                                    }}
-                                  />
-                                ))}
+                                {typeChartData.filter(d => d.value > 0).map((entry) => {
+                                  const isSelected = activeType === entry.name;
+                                  const isHovered = hoveredType === entry.name;
+                                  const isDimmed = (activeType && !isSelected) || (hoveredType && !isHovered);
+                                  return (
+                                    <Cell
+                                      key={entry.name}
+                                      fill={entry.color}
+                                      opacity={isDimmed ? 0.35 : 1}
+                                      style={{
+                                        filter: isSelected || isHovered
+                                          ? `drop-shadow(0 0 12px ${entry.color})`
+                                          : undefined,
+                                        transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+                                      }}
+                                    />
+                                  );
+                                })}
                               </Pie>
                             </PieChart>
                           </ResponsiveContainer>
@@ -918,34 +997,55 @@ export default function Analytics() {
                       const totalTypeReports = reportsForTypeChart.length;
                       const pct = totalTypeReports > 0 ? Math.round((count / totalTypeReports) * 100) : 0;
                       const isActive = activeType === type;
+                      const isHovered = hoveredType === type;
+
                       return (
-                        <button
+                        <motion.button
                           key={type}
                           type="button"
+                          whileHover={{ y: -2, scale: 1.015 }}
+                          whileTap={{ scale: 0.98 }}
+                          transition={{ type: 'spring', stiffness: 450, damping: 25 }}
+                          onMouseEnter={() => setHoveredType(type)}
+                          onMouseLeave={() => setHoveredType(null)}
                           onClick={() => {
                             setActiveType(prev => (prev === type ? null : type));
                             setTypeFilter('All Types');
                           }}
-                          className={`w-full p-2.5 sm:p-3 rounded-2xl border text-left transition-all duration-200 cursor-pointer group active:scale-[0.98] ${
+                          className={`w-full p-2.5 sm:p-3 rounded-2xl border text-left transition-all duration-200 cursor-pointer group relative overflow-hidden select-none ${
                             isActive
-                              ? 'bg-violet-500/10 dark:bg-violet-500/15 border-violet-500/40 shadow-[0_0_16px_rgba(139,92,246,0.18)]'
-                              : 'bg-white/70 dark:bg-slate-800/40 border-slate-200/70 dark:border-white/5 hover:bg-white dark:hover:bg-slate-800/80 hover:border-slate-300 dark:hover:border-white/15 hover:-translate-y-0.5 hover:shadow-xs'
+                              ? `${c.activeBg} ${c.activeBorder} ${c.activeShadow}`
+                              : `bg-white/70 dark:bg-slate-800/40 border-slate-200/70 dark:border-white/5 ${c.hoverBg} ${c.glowBorder} ${c.glowShadow}`
                           }`}
                         >
-                          <div className="flex items-center justify-between gap-2 mb-1.5">
+                          <div className="flex items-center justify-between gap-2 mb-1.5 relative z-10">
                             <div className="flex items-center gap-2.5 min-w-0">
                               <div
-                                className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center shrink-0 border shadow-2xs transition-transform duration-200 group-hover:scale-105"
-                                style={{ background: c.bg, borderColor: `${c.color}30`, color: c.color }}
+                                className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-300 group-hover:scale-110"
+                                style={{
+                                  background: c.bg,
+                                  borderColor: isHovered || isActive ? `${c.color}70` : `${c.color}30`,
+                                  color: c.color,
+                                  boxShadow: isHovered || isActive ? `0 0 12px ${c.color}45` : undefined,
+                                }}
                               >
-                                <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" strokeWidth={1.75} />
+                                <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 transition-transform duration-300 group-hover:rotate-6" strokeWidth={1.8} />
                               </div>
-                              <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
+                              <span
+                                className={`text-xs font-semibold truncate transition-colors duration-200 ${
+                                  isActive
+                                    ? 'text-slate-900 dark:text-white font-bold'
+                                    : 'text-slate-800 dark:text-slate-200 group-hover:text-slate-900 dark:group-hover:text-white'
+                                }`}
+                                style={{
+                                  color: isHovered ? c.color : undefined,
+                                }}
+                              >
                                 {type}
                               </span>
                             </div>
                             <div className="flex items-center gap-1.5 shrink-0">
-                              <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white tabular-nums">
+                              <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white tabular-nums transition-transform duration-200 group-hover:scale-105">
                                 <AnimatedNumber key={`legend-count-${type}-${location.key}`} value={count} duration={1.8} />
                               </span>
                               <span className="text-[10px] sm:text-[11px] text-slate-400 dark:text-slate-500 font-medium">
@@ -953,17 +1053,20 @@ export default function Analytics() {
                               </span>
                             </div>
                           </div>
-                          {/* Animated Miniature Progress Indicator */}
-                          <div className="w-full h-1.5 rounded-full bg-slate-100 dark:bg-slate-700/60 overflow-hidden">
+                          {/* Animated Miniature Progress Indicator with color glow */}
+                          <div className="w-full h-1.5 rounded-full bg-slate-100 dark:bg-slate-700/60 overflow-hidden relative">
                             <motion.div
                               initial={{ width: 0 }}
                               animate={{ width: `${pct}%` }}
                               transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
-                              className="h-full rounded-full"
-                              style={{ backgroundColor: c.color }}
+                              className="h-full rounded-full transition-all duration-300"
+                              style={{
+                                backgroundColor: c.color,
+                                boxShadow: isHovered || isActive ? `0 0 10px ${c.color}` : undefined,
+                              }}
                             />
                           </div>
-                        </button>
+                        </motion.button>
                       );
                     })}
                   </div>
