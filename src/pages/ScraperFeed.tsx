@@ -1348,7 +1348,7 @@ export default function ScraperFeed() {
                           <button
                             type="button"
                             onClick={() => togglePostIncidentOverride(selectedPost.id)}
-                            className="px-3 py-2 bg-slate-100 hover:bg-slate-200/90 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold rounded-xl active:scale-[0.97] transition-all cursor-pointer border border-slate-200/70 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20 shadow-2xs"
+                            className="px-3 py-2 bg-slate-100 hover:bg-slate-200/90 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold rounded-xl hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.97] transition-all duration-200 ease-out cursor-pointer border border-slate-200/70 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20 shadow-2xs select-none"
                           >
                             Demote to Noise
                           </button>
@@ -1360,9 +1360,9 @@ export default function ScraperFeed() {
                           <button
                             type="button"
                             onClick={() => handleUpdateStatus(selectedPost.id, "Verified")}
-                            className="px-3.5 sm:px-4 py-2 sm:py-2.5 bg-[#0071E3] hover:bg-[#0077ED] text-white text-xs font-semibold rounded-xl flex items-center gap-2 shadow-xs hover:shadow-[0_4px_14px_rgba(0,113,227,0.35)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.97] transition-all cursor-pointer"
+                            className="group px-3.5 sm:px-4 py-2 sm:py-2.5 bg-[#0071E3] hover:bg-[#0077ED] text-white text-xs font-semibold rounded-xl flex items-center gap-2 shadow-xs hover:shadow-[0_4px_14px_rgba(0,113,227,0.35)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.97] transition-all duration-200 ease-out cursor-pointer select-none"
                           >
-                            <CheckCircle2 className="w-3.5 h-3.5" strokeWidth={1.75} />
+                            <CheckCircle2 className="w-3.5 h-3.5 transition-transform duration-200 ease-out group-hover:scale-110" strokeWidth={2} />
                             <span>Verify Incident</span>
                           </button>
                         )}
@@ -1370,9 +1370,9 @@ export default function ScraperFeed() {
                         <button
                           type="button"
                           onClick={() => handleUpdateStatus(selectedPost.id, "Resolved")}
-                          className="px-3.5 sm:px-4 py-2 sm:py-2.5 bg-white hover:bg-rose-50/80 dark:bg-[#111827] dark:hover:bg-rose-950/20 text-slate-700 dark:text-slate-300 hover:text-rose-600 dark:hover:text-rose-400 border border-slate-200/70 dark:border-white/10 hover:border-rose-300 dark:hover:border-rose-800/40 text-xs font-semibold rounded-xl flex items-center gap-2 active:scale-[0.97] transition-all cursor-pointer shadow-2xs"
+                          className="group px-3.5 sm:px-4 py-2 sm:py-2.5 bg-white hover:bg-rose-50/90 dark:bg-slate-900/80 dark:hover:bg-rose-950/30 text-slate-700 dark:text-slate-300 hover:text-rose-600 dark:hover:text-rose-400 border border-slate-200/80 dark:border-white/10 hover:border-rose-300/80 dark:hover:border-rose-700/50 hover:shadow-[0_4px_14px_rgba(244,63,94,0.18)] dark:hover:shadow-[0_4px_14px_rgba(244,63,94,0.25)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.97] text-xs font-semibold rounded-xl flex items-center gap-2 transition-all duration-200 ease-out cursor-pointer shadow-2xs select-none"
                         >
-                          <XCircle className="w-3.5 h-3.5" strokeWidth={1.75} />
+                          <XCircle className="w-3.5 h-3.5 transition-transform duration-200 ease-out group-hover:scale-110 group-hover:-rotate-12 text-slate-500 group-hover:text-rose-600 dark:text-slate-400 dark:group-hover:text-rose-400" strokeWidth={1.75} />
                           <span>Dismiss / Resolve</span>
                         </button>
                       </div>
