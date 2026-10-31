@@ -936,7 +936,7 @@ export default function MessengerBotLogs() {
                     onClick={() => handleViewModeChange("structured")}
                     className={`group relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold tracking-tight transition-all duration-200 select-none cursor-pointer active:scale-[0.98] ${
                       viewMode === "structured"
-                        ? "text-[#0071E3] dark:text-sky-300"
+                        ? "text-[#0071E3] dark:text-sky-400 font-bold"
                         : "text-slate-500 hover:text-[#0071E3] dark:text-slate-400 dark:hover:text-sky-300 hover:bg-blue-50/50 dark:hover:bg-blue-950/30"
                     }`}
                   >
@@ -948,13 +948,22 @@ export default function MessengerBotLogs() {
                       />
                     )}
                     <span className="relative z-10 flex items-center gap-1.5">
-                      <AlertTriangle className="w-3.5 h-3.5 text-[#0071E3] dark:text-sky-400 transition-transform duration-200 ease-out group-hover:scale-120 group-hover:-rotate-6" strokeWidth={2} />
+                      <AlertTriangle
+                        className={`w-3.5 h-3.5 transition-all duration-200 ease-out group-hover:scale-115 ${
+                          viewMode === "structured"
+                            ? "text-[#0071E3] dark:text-sky-400"
+                            : "text-slate-400 dark:text-slate-500 group-hover:text-[#0071E3] dark:group-hover:text-sky-300"
+                        }`}
+                        strokeWidth={2}
+                      />
                       <span className="transition-colors duration-150">Incidents</span>
-                      <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold tabular-nums transition-transform duration-200 group-hover:scale-105 ${
-                        viewMode === "structured"
-                          ? "bg-[#0071E3] text-white"
-                          : "bg-slate-200/80 dark:bg-slate-700 text-slate-600 dark:text-slate-300"
-                      }`}>
+                      <span
+                        className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold tabular-nums transition-all duration-200 group-hover:scale-105 ${
+                          viewMode === "structured"
+                            ? "bg-[#0071E3] text-white shadow-xs"
+                            : "bg-slate-200/80 dark:bg-slate-700 text-slate-600 dark:text-slate-300 group-hover:bg-blue-100 dark:group-hover:bg-blue-900/40 group-hover:text-[#0071E3] dark:group-hover:text-sky-300"
+                        }`}
+                      >
                         {incidentCount}
                       </span>
                     </span>
@@ -965,10 +974,10 @@ export default function MessengerBotLogs() {
                     role="tab"
                     aria-selected={viewMode === "unstructured"}
                     onClick={() => handleViewModeChange("unstructured")}
-                    className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold tracking-tight transition-colors duration-150 select-none cursor-pointer active:scale-[0.98] ${
+                    className={`group relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold tracking-tight transition-all duration-200 select-none cursor-pointer active:scale-[0.98] ${
                       viewMode === "unstructured"
-                        ? "text-slate-900 dark:text-white"
-                        : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
+                        ? "text-[#0071E3] dark:text-sky-400 font-bold"
+                        : "text-slate-500 hover:text-[#0071E3] dark:text-slate-400 dark:hover:text-sky-300 hover:bg-blue-50/50 dark:hover:bg-blue-950/30"
                     }`}
                   >
                     {viewMode === "unstructured" && (
@@ -979,13 +988,22 @@ export default function MessengerBotLogs() {
                       />
                     )}
                     <span className="relative z-10 flex items-center gap-1.5">
-                      <Layers className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" strokeWidth={1.75} />
-                      <span>All Logs</span>
-                      <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold tabular-nums ${
-                        viewMode === "unstructured"
-                          ? "bg-slate-800 dark:bg-slate-200 text-white dark:text-slate-900"
-                          : "bg-slate-200/80 dark:bg-slate-700 text-slate-600 dark:text-slate-300"
-                      }`}>
+                      <Layers
+                        className={`w-3.5 h-3.5 transition-all duration-200 ease-out group-hover:scale-115 ${
+                          viewMode === "unstructured"
+                            ? "text-[#0071E3] dark:text-sky-400"
+                            : "text-slate-400 dark:text-slate-500 group-hover:text-[#0071E3] dark:group-hover:text-sky-300"
+                        }`}
+                        strokeWidth={1.75}
+                      />
+                      <span className="transition-colors duration-150">All Logs</span>
+                      <span
+                        className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold tabular-nums transition-all duration-200 group-hover:scale-105 ${
+                          viewMode === "unstructured"
+                            ? "bg-[#0071E3] text-white shadow-xs"
+                            : "bg-slate-200/80 dark:bg-slate-700 text-slate-600 dark:text-slate-300 group-hover:bg-blue-100 dark:group-hover:bg-blue-900/40 group-hover:text-[#0071E3] dark:group-hover:text-sky-300"
+                        }`}
+                      >
                         {rawCount}
                       </span>
                     </span>
