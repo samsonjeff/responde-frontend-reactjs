@@ -18,6 +18,7 @@ import {
   Clock,
   Bot,
   Globe2,
+  Sparkles,
   Filter,
   X,
   RotateCcw,
@@ -1409,31 +1410,60 @@ export default function Analytics() {
 
           {/* ── 7. PRESCRIPTIVE RECOMMENDATIONS ── */}
           <motion.div variants={itemVariants} className="relative z-10">
-            <SoftCard className="p-6">
+            <SoftCard className="p-6 relative overflow-hidden bg-gradient-to-br from-amber-500/[0.03] via-blue-500/[0.02] to-slate-50/50 dark:from-amber-950/20 dark:via-slate-900/90 dark:to-slate-900/80 border-amber-500/20 dark:border-amber-500/20 shadow-sm">
+              {/* Subtle ambient light glow orbs */}
+              <div className="pointer-events-none absolute -top-16 -right-16 w-56 h-56 bg-amber-400/10 dark:bg-amber-400/5 rounded-full blur-3xl" />
+              <div className="pointer-events-none absolute -bottom-16 -left-16 w-56 h-56 bg-blue-500/10 dark:bg-blue-400/5 rounded-full blur-3xl" />
+
               <SectionHeader
                 icon={Lightbulb}
                 title="Prescriptive Action Recommendations"
                 description="Automated resource pre-positioning intelligence based on real-time incident density"
                 iconColor="#F59E0B"
+                iconBg="rgba(245, 158, 11, 0.12)"
+                badge={
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold bg-amber-500/10 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/25 shadow-2xs">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                    <span>AI Dispatch Intelligence</span>
+                  </span>
+                }
               />
 
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 relative z-10">
                 {recommendations.map((item) => {
                   const need = getDominantNeedMeta(item.dominantType);
                   const isHigh = item.priority === 'High';
                   const isModerate = item.priority === 'Moderate';
 
-                  const hoverStyles = isHigh
-                    ? 'hover:border-rose-400/80 dark:hover:border-rose-500/70 hover:shadow-[0_12px_32px_rgba(244,63,94,0.18)] dark:hover:shadow-[0_12px_32px_rgba(244,63,94,0.26)] hover:bg-rose-50/30 dark:hover:bg-rose-950/20'
+                  const cardTheme = isHigh
+                    ? {
+                        bg: 'bg-gradient-to-br from-rose-500/[0.07] via-rose-50/70 to-amber-500/[0.04] dark:from-rose-950/35 dark:via-slate-900/85 dark:to-amber-950/20',
+                        border: 'border-rose-200/90 dark:border-rose-500/30',
+                        pinBg: 'bg-rose-500/15 dark:bg-rose-500/25 border-rose-500/25 text-rose-600 dark:text-rose-400',
+                        hover: 'hover:border-rose-400 hover:shadow-[0_12px_28px_rgba(244,63,94,0.18)] dark:hover:shadow-[0_12px_28px_rgba(244,63,94,0.25)] hover:from-rose-500/[0.12] hover:to-amber-500/[0.08]',
+                        topBar: 'from-rose-500 via-rose-400 to-amber-500',
+                        badge: 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30 shadow-2xs',
+                        pulse: 'bg-rose-500',
+                      }
                     : isModerate
-                    ? 'hover:border-amber-400/80 dark:hover:border-amber-500/70 hover:shadow-[0_12px_32px_rgba(245,158,11,0.18)] dark:hover:shadow-[0_12px_32px_rgba(245,158,11,0.26)] hover:bg-amber-50/30 dark:hover:bg-amber-950/20'
-                    : 'hover:border-blue-400/80 dark:hover:border-blue-500/70 hover:shadow-[0_12px_32px_rgba(0,113,227,0.18)] dark:hover:shadow-[0_12px_32px_rgba(0,113,227,0.26)] hover:bg-blue-50/30 dark:hover:bg-blue-950/20';
-
-                  const topBarGradient = isHigh
-                    ? 'from-rose-500 to-amber-500'
-                    : isModerate
-                    ? 'from-amber-500 to-yellow-400'
-                    : 'from-[#0071E3] to-sky-400';
+                    ? {
+                        bg: 'bg-gradient-to-br from-amber-500/[0.07] via-amber-50/70 to-yellow-500/[0.04] dark:from-amber-950/35 dark:via-slate-900/85 dark:to-yellow-950/20',
+                        border: 'border-amber-200/90 dark:border-amber-500/30',
+                        pinBg: 'bg-amber-500/15 dark:bg-amber-500/25 border-amber-500/25 text-amber-600 dark:text-amber-400',
+                        hover: 'hover:border-amber-400 hover:shadow-[0_12px_28px_rgba(245,158,11,0.18)] dark:hover:shadow-[0_12px_28px_rgba(245,158,11,0.25)] hover:from-amber-500/[0.12] hover:to-yellow-500/[0.08]',
+                        topBar: 'from-amber-500 via-amber-400 to-yellow-400',
+                        badge: 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30 shadow-2xs',
+                        pulse: 'bg-amber-500',
+                      }
+                    : {
+                        bg: 'bg-gradient-to-br from-blue-500/[0.06] via-sky-50/70 to-emerald-500/[0.04] dark:from-blue-950/35 dark:via-slate-900/85 dark:to-emerald-950/20',
+                        border: 'border-blue-200/90 dark:border-blue-500/30',
+                        pinBg: 'bg-blue-500/15 dark:bg-blue-500/25 border-blue-500/25 text-[#0071E3] dark:text-sky-400',
+                        hover: 'hover:border-blue-400 hover:shadow-[0_12px_28px_rgba(0,113,227,0.18)] dark:hover:shadow-[0_12px_28px_rgba(0,113,227,0.25)] hover:from-blue-500/[0.12] hover:to-sky-500/[0.08]',
+                        topBar: 'from-[#0071E3] via-sky-400 to-emerald-400',
+                        badge: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 shadow-2xs',
+                        pulse: 'bg-[#10b981]',
+                      };
 
                   return (
                     <motion.div
@@ -1441,57 +1471,41 @@ export default function Analytics() {
                       whileHover={{ y: -3, scale: 1.015 }}
                       whileTap={{ scale: 0.99 }}
                       transition={{ type: 'spring', stiffness: 450, damping: 25 }}
-                      className={`group relative overflow-hidden rounded-2xl border border-slate-200/80 dark:border-white/10 p-5 bg-white/70 dark:bg-slate-900/60 backdrop-blur-md transition-all duration-300 flex flex-col justify-between cursor-default ${hoverStyles}`}
+                      className={`group relative overflow-hidden rounded-2xl border ${cardTheme.border} p-5 ${cardTheme.bg} backdrop-blur-md transition-all duration-300 flex flex-col justify-between cursor-default shadow-xs ${cardTheme.hover}`}
                     >
                       {/* Top Accent Gradient Bar with Hover Expansion */}
-                      <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${topBarGradient} opacity-75 group-hover:opacity-100 group-hover:h-1.5 transition-all duration-300`} />
+                      <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${cardTheme.topBar} opacity-85 group-hover:opacity-100 group-hover:h-1.5 transition-all duration-300`} />
 
                       <div>
                         <div className="flex items-center justify-between gap-3 mb-3 pt-1">
                           <div className="flex items-center gap-2 min-w-0">
-                            <div className="w-7 h-7 rounded-lg bg-blue-500/10 dark:bg-blue-500/20 border border-blue-500/20 flex items-center justify-center shrink-0 transition-transform duration-300 group-hover:scale-110">
-                              <MapPin className="w-3.5 h-3.5 text-[#0071E3] dark:text-sky-400" strokeWidth={2} />
+                            <div className={`w-7 h-7 rounded-lg border flex items-center justify-center shrink-0 transition-transform duration-300 group-hover:scale-110 ${cardTheme.pinBg}`}>
+                              <MapPin className="w-3.5 h-3.5" strokeWidth={2} />
                             </div>
                             <span className="font-bold text-sm text-slate-900 dark:text-white truncate group-hover:text-[#0071E3] dark:group-hover:text-sky-400 transition-colors">
                               {item.barangay}
                             </span>
                           </div>
-                          <span
-                            className={`shrink-0 inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-[11px] font-bold shadow-2xs ${
-                              isHigh
-                                ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/25'
-                                : isModerate
-                                ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/25'
-                                : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30'
-                            }`}
-                          >
+                          <span className={`shrink-0 inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-[11px] font-bold ${cardTheme.badge}`}>
                             <span className="relative flex h-2 w-2 items-center justify-center">
                               {isHigh && (
                                 <span className="absolute inline-flex h-full w-full rounded-full bg-rose-500 opacity-60 animate-ping" />
                               )}
-                              <span
-                                className={`relative inline-flex h-1.5 w-1.5 rounded-full shrink-0 ${
-                                  isHigh
-                                    ? 'bg-rose-500'
-                                    : isModerate
-                                    ? 'bg-amber-500'
-                                    : 'bg-[#10b981]'
-                                }`}
-                              />
+                              <span className={`relative inline-flex h-1.5 w-1.5 rounded-full shrink-0 ${cardTheme.pulse}`} />
                             </span>
                             <span>{item.priority} Urgency</span>
                           </span>
                         </div>
-                        <p className="text-xs leading-relaxed text-slate-600 dark:text-slate-300 font-normal">
+                        <p className="text-xs leading-relaxed text-slate-700 dark:text-slate-200 font-normal">
                           {item.text}
                         </p>
                       </div>
 
-                      <div className="mt-4 pt-3 border-t border-slate-100 dark:border-white/5 flex items-center justify-between text-[11px]">
+                      <div className="mt-4 pt-3 border-t border-slate-200/60 dark:border-white/10 flex items-center justify-between text-[11px]">
                         <span className={`w-20 inline-flex items-center justify-center py-0.5 rounded-full border text-[11px] font-semibold shadow-2xs ${need.pill}`}>
                           <span>{need.label}</span>
                         </span>
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg font-mono font-bold text-xs bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200/60 dark:border-white/5 shadow-2xs tabular-nums group-hover:border-[#0071E3]/30 transition-colors">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg font-mono font-bold text-xs bg-white/80 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-white/10 shadow-2xs tabular-nums group-hover:border-[#0071E3]/30 transition-colors">
                           {item.incidents} {item.incidents === 1 ? 'event' : 'events'}
                         </span>
                       </div>
