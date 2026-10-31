@@ -33,11 +33,14 @@ interface MapContainerProps {
     barangayCounts: Record<string, number>;
     pinReports: Report[];
     onSelectFeature: (feature: SelectedFeature) => void;
+    selectedFeature?: SelectedFeature;
 }
 
 const SOURCE_ID = 'barangays';
 const FILL_LAYER_ID = 'barangays-choropleth';
 const LINE_LAYER_ID = 'barangays-boundary';
+const HIGHLIGHT_FILL_LAYER_ID = 'barangays-highlight-fill';
+const HIGHLIGHT_GLOW_LAYER_ID = 'barangays-highlight-glow';
 const HIGHLIGHT_LAYER_ID = 'barangays-highlight';
 const PIN_SOURCE_ID = 'pins';
 const PIN_LAYER_ID = 'incident-pins';
@@ -98,16 +101,17 @@ function getBarangayLabels(): {
 function createLabelElement(
     text: string,
     onClick: () => void,
-    isSummary = false
-): HTMLDivElement {
+    isSummary = false,
+    onHover?: (isHovering: boolean) => void
+): { wrapper: HTMLDivElement; pill: HTMLDivElement } {
     const wrapper = document.createElement('div');
     wrapper.className = 'barangay-map-label-wrapper';
     wrapper.style.pointerEvents = 'auto';
     wrapper.style.cursor = 'pointer';
 
     const pill = document.createElement('div');
-    pill.className = `px-2 py-0.5 rounded-md text-[11px] font-semibold tracking-tight whitespace-nowrap select-none transition-all duration-150 shadow-xs hover:shadow-md hover:scale-105 active:scale-95 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xs text-slate-800 dark:text-slate-100 border border-slate-300/80 dark:border-slate-700/80 ${
-        isSummary ? 'ring-1 ring-blue-500/40 text-blue-700 dark:text-blue-300 font-bold' : ''
+    pill.className = `barangay-map-pill px-2.5 py-0.5 rounded-md text-[11px] font-semibold tracking-tight whitespace-nowrap select-none transition-all duration-200 shadow-xs bg-white/92 dark:bg-slate-900/92 backdrop-blur-xs text-slate-800 dark:text-slate-100 border border-slate-300/80 dark:border-slate-700/80 ${
+        isSummary ? 'ring-1 ring-blue-500/50 text-blue-700 dark:text-blue-300 font-bold' : ''
     }`;
     pill.textContent = text;
     wrapper.appendChild(pill);
@@ -117,7 +121,12 @@ function createLabelElement(
         onClick();
     });
 
-    return wrapper;
+    if (onHover) {
+        wrapper.addEventListener('mouseenter', () => onHover(true));
+        wrapper.addEventListener('mouseleave', () => onHover(false));
+    }
+
+    return { wrapper, pill };
 }
 
 /**
@@ -249,6 +258,7 @@ export default function MapContainer({
     barangayCounts,
     pinReports,
     onSelectFeature,
+    selectedFeature,
 }: MapContainerProps) {
     const mapContainerRef = useRef<HTMLDivElement>(null);
     const mapRef = useRef<maplibregl.Map | null>(null);
@@ -258,6 +268,51 @@ export default function MapContainer({
     const regularMarkersRef = useRef<maplibregl.Marker[]>([]);
     const poblacionSummaryMarkerRef = useRef<maplibregl.Marker | null>(null);
     const poblacionDetailMarkersRef = useRef<maplibregl.Marker[]>([]);
+    const labelPillsRef = useRef<Map<number, HTMLDivElement>>(new Map());
+    const hoveredBarangayIdRef = useRef<number | null>(null);
+    const selectedBarangayIdRef = useRef<number | null>(null);
+
+    const setHoveredBarangay = useCallback((id: number | null) => {
+        const map = mapRef.current;
+        if (!map || !isLoadedRef.current) return;
+        if (hoveredBarangayIdRef.current === id) return;
+        hoveredBarangayIdRef.current = id;
+
+        const effectiveId = id !== null ? id : (selectedBarangayIdRef.current ?? -1);
+        const isShowing = effectiveId !== -1;
+
+        if (map.getLayer(HIGHLIGHT_FILL_LAYER_ID)) {
+            map.setFilter(HIGHLIGHT_FILL_LAYER_ID, ['==', ['get', 'id'], effectiveId]);
+            map.setPaintProperty(HIGHLIGHT_FILL_LAYER_ID, 'fill-opacity', isShowing ? 0.22 : 0);
+        }
+        if (map.getLayer(HIGHLIGHT_GLOW_LAYER_ID)) {
+            map.setFilter(HIGHLIGHT_GLOW_LAYER_ID, ['==', ['get', 'id'], effectiveId]);
+            map.setPaintProperty(HIGHLIGHT_GLOW_LAYER_ID, 'line-opacity', isShowing ? 0.85 : 0);
+        }
+        if (map.getLayer(HIGHLIGHT_LAYER_ID)) {
+            map.setFilter(HIGHLIGHT_LAYER_ID, ['==', ['get', 'id'], effectiveId]);
+            map.setPaintProperty(HIGHLIGHT_LAYER_ID, 'line-opacity', isShowing ? 1.0 : 0);
+        }
+
+        labelPillsRef.current.forEach((pill, pillId) => {
+            if (isShowing && pillId === effectiveId) {
+                pill.classList.add('is-hovered');
+            } else {
+                pill.classList.remove('is-hovered');
+            }
+        });
+    }, []);
+
+    useEffect(() => {
+        if (selectedFeature?.type === 'barangay' && typeof selectedFeature.id === 'number') {
+            selectedBarangayIdRef.current = selectedFeature.id;
+        } else {
+            selectedBarangayIdRef.current = null;
+        }
+        if (hoveredBarangayIdRef.current === null) {
+            setHoveredBarangay(null);
+        }
+    }, [selectedFeature, setHoveredBarangay]);
 
     // MDRRMO Marker & 3D Dispatch Arcs Canvas Overlay references
     const mdrrmoMarkerRef = useRef<maplibregl.Marker | null>(null);
@@ -418,14 +473,52 @@ export default function MapContainer({
                     layout: { visibility: layersRef.current.boundaries ? 'visible' : 'none' },
                 });
 
+                // ── Glowing Blue Barangay Highlight & Hover Layers ──
+                const blueGlowTone = themeRef.current === 'light' ? '#0071E3' : '#38bdf8';
+
+                // 1. Translucent glowing electric blue fill
+                map.addLayer({
+                    id: HIGHLIGHT_FILL_LAYER_ID,
+                    type: 'fill',
+                    source: SOURCE_ID,
+                    paint: {
+                        'fill-color': blueGlowTone,
+                        'fill-opacity': 0,
+                    },
+                    filter: ['==', ['get', 'id'], -1],
+                });
+
+                // 2. Wide blurred neon bloom halo
+                map.addLayer({
+                    id: HIGHLIGHT_GLOW_LAYER_ID,
+                    type: 'line',
+                    source: SOURCE_ID,
+                    paint: {
+                        'line-color': blueGlowTone,
+                        'line-width': 8,
+                        'line-blur': 4,
+                        'line-opacity': 0,
+                    },
+                    layout: {
+                        'line-cap': 'round',
+                        'line-join': 'round',
+                    },
+                    filter: ['==', ['get', 'id'], -1],
+                });
+
+                // 3. Crisp luminous electric blue inner core stroke
                 map.addLayer({
                     id: HIGHLIGHT_LAYER_ID,
                     type: 'line',
                     source: SOURCE_ID,
                     paint: {
-                        'line-color': themeRef.current === 'light' ? '#0f172a' : '#f8fafc',
-                        'line-width': 2.5,
+                        'line-color': blueGlowTone,
+                        'line-width': 2.75,
                         'line-opacity': 0,
+                    },
+                    layout: {
+                        'line-cap': 'round',
+                        'line-join': 'round',
                     },
                     filter: ['==', ['get', 'id'], -1],
                 });
@@ -587,14 +680,12 @@ export default function MapContainer({
                 map.on('mousemove', FILL_LAYER_ID, (e: any) => {
                     if (e.features?.length > 0) {
                         const id = e.features[0].properties?.id;
-                        map.setFilter(HIGHLIGHT_LAYER_ID, ['==', ['get', 'id'], id]);
-                        map.setPaintProperty(HIGHLIGHT_LAYER_ID, 'line-opacity', 0.9);
+                        setHoveredBarangay(typeof id === 'number' ? id : parseInt(id, 10));
                     }
                 });
                 map.on('mouseleave', FILL_LAYER_ID, () => {
                     map.getCanvas().style.cursor = '';
-                    map.setFilter(HIGHLIGHT_LAYER_ID, ['==', ['get', 'id'], -1]);
-                    map.setPaintProperty(HIGHLIGHT_LAYER_ID, 'line-opacity', 0);
+                    setHoveredBarangay(null);
                 });
                 map.on('click', FILL_LAYER_ID, (e: any) => {
                     if (e.originalEvent?._pinHandled) return;
@@ -625,22 +716,33 @@ export default function MapContainer({
 
                 // 1. Regular barangays
                 regularBarangays.forEach((item) => {
-                    const el = createLabelElement(item.displayName, () => {
-                        onSelectFeatureRef.current({ type: 'barangay', id: item.id, name: item.name });
-                    });
-                    const marker = new maplibregl.Marker({ element: el, anchor: 'center' })
+                    const { wrapper, pill } = createLabelElement(
+                        item.displayName,
+                        () => {
+                            onSelectFeatureRef.current({ type: 'barangay', id: item.id, name: item.name });
+                        },
+                        false,
+                        (isHovering) => {
+                            setHoveredBarangay(isHovering ? item.id : null);
+                        }
+                    );
+                    labelPillsRef.current.set(item.id, pill);
+                    const marker = new maplibregl.Marker({ element: wrapper, anchor: 'center' })
                         .setLngLat(item.centroid)
                         .addTo(map);
                     regularMarkersRef.current.push(marker);
                 });
 
                 // 2. Poblacion overview cluster label
-                const summaryEl = createLabelElement(
+                const { wrapper: summaryEl } = createLabelElement(
                     'Poblacion',
                     () => {
                         map.flyTo({ center: poblacionCenter, zoom: 15, duration: 800, essential: true });
                     },
-                    true
+                    true,
+                    (isHovering) => {
+                        setHoveredBarangay(isHovering ? 1 : null);
+                    }
                 );
                 poblacionSummaryMarkerRef.current = new maplibregl.Marker({ element: summaryEl, anchor: 'center' })
                     .setLngLat(poblacionCenter)
@@ -648,10 +750,18 @@ export default function MapContainer({
 
                 // 3. Poblacion individual detail labels
                 poblacionBarangays.forEach((item) => {
-                    const el = createLabelElement(item.displayName, () => {
-                        onSelectFeatureRef.current({ type: 'barangay', id: item.id, name: item.name });
-                    });
-                    const marker = new maplibregl.Marker({ element: el, anchor: 'center' })
+                    const { wrapper, pill } = createLabelElement(
+                        item.displayName,
+                        () => {
+                            onSelectFeatureRef.current({ type: 'barangay', id: item.id, name: item.name });
+                        },
+                        false,
+                        (isHovering) => {
+                            setHoveredBarangay(isHovering ? item.id : null);
+                        }
+                    );
+                    labelPillsRef.current.set(item.id, pill);
+                    const marker = new maplibregl.Marker({ element: wrapper, anchor: 'center' })
                         .setLngLat(item.centroid)
                         .addTo(map);
                     poblacionDetailMarkersRef.current.push(marker);
@@ -732,6 +842,7 @@ export default function MapContainer({
                 }
 
                 // Cleanup markers
+                labelPillsRef.current.clear();
                 regularMarkersRef.current.forEach((m) => m.remove());
                 regularMarkersRef.current = [];
                 if (poblacionSummaryMarkerRef.current) {
@@ -824,8 +935,15 @@ export default function MapContainer({
         if (map.getLayer(LINE_LAYER_ID)) {
             map.setPaintProperty(LINE_LAYER_ID, 'line-color', theme === 'light' ? '#64748b' : '#94a3b8');
         }
+        const blueTone = theme === 'light' ? '#0071E3' : '#38bdf8';
+        if (map.getLayer(HIGHLIGHT_FILL_LAYER_ID)) {
+            map.setPaintProperty(HIGHLIGHT_FILL_LAYER_ID, 'fill-color', blueTone);
+        }
+        if (map.getLayer(HIGHLIGHT_GLOW_LAYER_ID)) {
+            map.setPaintProperty(HIGHLIGHT_GLOW_LAYER_ID, 'line-color', blueTone);
+        }
         if (map.getLayer(HIGHLIGHT_LAYER_ID)) {
-            map.setPaintProperty(HIGHLIGHT_LAYER_ID, 'line-color', theme === 'light' ? '#0f172a' : '#f8fafc');
+            map.setPaintProperty(HIGHLIGHT_LAYER_ID, 'line-color', blueTone);
         }
     }, [theme]);
 

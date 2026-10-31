@@ -921,7 +921,7 @@ export default function IncidentReports() {
         </AnimatePresence>
       </div>
 
-      <StaggerContainer className="flex flex-col flex-1 min-h-0 space-y-3 sm:space-y-3.5 w-full h-full">
+      <StaggerContainer className="flex flex-col flex-1 min-h-0 space-y-3 sm:space-y-3.5 w-full h-full max-w-[1600px] mx-auto">
         {/* ── Top Page Header with Integrated Segmented Tabs ── */}
         <StaggerItem>
           <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3 shrink-0">
@@ -1161,7 +1161,7 @@ export default function IncidentReports() {
           <table className="w-full min-w-[980px] text-sm text-left border-separate border-spacing-0">
             <thead className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200/70 dark:border-white/10 sticky top-0 z-30 shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
               <tr>
-                <th className="px-3.5 py-3 w-10">
+                <th className="px-3.5 py-3 w-10 shrink-0">
                   <input
                     type="checkbox"
                     checked={paginatedReports.length > 0 && paginatedReports.every(r => selectedIds.includes(r.id))}
@@ -1169,14 +1169,14 @@ export default function IncidentReports() {
                     className="rounded-md border-slate-300 dark:border-slate-600 text-[#0071E3] focus:ring-0 w-4 h-4 cursor-pointer transition-all"
                   />
                 </th>
-                <th className="px-3.5 py-3 w-28 text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400 whitespace-nowrap">ID</th>
-                <th className="px-3.5 py-3 min-w-[140px] text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400">Barangay</th>
-                <th className="px-3.5 py-3 min-w-[140px] text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400">Type</th>
-                <th className="px-3.5 py-3 w-24 text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400">Urgency</th>
-                <th className="px-3.5 py-3 w-28 text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400">Status</th>
-                <th className="px-3.5 py-3 w-20 text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400">Source</th>
-                <th className="px-3.5 py-3 w-28 min-w-[115px] text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400">Time</th>
-                <th className="px-3.5 py-3 w-32 min-w-[128px] text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400 text-left whitespace-nowrap sticky top-0 right-0 z-40 bg-slate-50 dark:bg-slate-900 border-b border-slate-200/70 dark:border-white/10 shadow-[-8px_0_12px_-4px_rgba(0,0,0,0.08)] dark:shadow-[-8px_0_12px_-4px_rgba(0,0,0,0.4)]">Action</th>
+                <th className="px-3.5 py-3 w-28 min-w-[105px] text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400 whitespace-nowrap shrink-0">ID</th>
+                <th className="px-3.5 py-3 w-[25%] min-w-[160px] text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400">Barangay</th>
+                <th className="px-3.5 py-3 w-[16%] min-w-[140px] text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400">Type</th>
+                <th className="px-3.5 py-3 w-[11%] min-w-[100px] text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400">Urgency</th>
+                <th className="px-3.5 py-3 w-[14%] min-w-[120px] text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400">Status</th>
+                <th className="px-3.5 py-3 w-[10%] min-w-[95px] text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400">Source</th>
+                <th className="px-3.5 py-3 w-[12%] min-w-[115px] text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400">Time</th>
+                <th className="px-3.5 py-3 w-28 min-w-[110px] text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400 text-left whitespace-nowrap sticky top-0 right-0 z-40 bg-slate-50 dark:bg-slate-900 border-b border-slate-200/70 dark:border-white/10 shadow-[-8px_0_12px_-4px_rgba(0,0,0,0.08)] dark:shadow-[-8px_0_12px_-4px_rgba(0,0,0,0.4)] shrink-0">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-white/5">
@@ -1211,7 +1211,7 @@ export default function IncidentReports() {
                         : ''
                       }`}
                   >
-                    <td className="px-3.5 py-3.5 w-10" onClick={(e) => e.stopPropagation()}>
+                    <td className="px-3.5 py-3.5 w-10 shrink-0" onClick={(e) => e.stopPropagation()}>
                       <input
                         type="checkbox"
                         checked={selectedIds.includes(report.id)}
@@ -1219,7 +1219,7 @@ export default function IncidentReports() {
                         className="rounded-md border-slate-300 dark:border-slate-600 text-[#0071E3] focus:ring-0 w-4 h-4 cursor-pointer transition-all"
                       />
                     </td>
-                    <td className="px-3.5 py-3.5 w-28 whitespace-nowrap">
+                    <td className="px-3.5 py-3.5 w-28 min-w-[105px] whitespace-nowrap shrink-0">
                       <div className="flex items-center gap-1.5">
                         {report.status === 'pending' && (
                           <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0 ring-4 ring-blue-500/20 animate-pulse" title="Pending" />
@@ -1232,7 +1232,7 @@ export default function IncidentReports() {
                         </span>
                       </div>
                     </td>
-                    <td className="px-3.5 py-3.5 text-slate-900 dark:text-slate-100 font-medium whitespace-nowrap group-hover:text-[#0071E3] group-active:text-[#0071E3] dark:group-hover:text-sky-400 dark:group-active:text-sky-400 transition-colors duration-150">
+                    <td className="px-3.5 py-3.5 w-[25%] min-w-[160px] text-slate-900 dark:text-slate-100 font-medium whitespace-nowrap group-hover:text-[#0071E3] group-active:text-[#0071E3] dark:group-hover:text-sky-400 dark:group-active:text-sky-400 transition-colors duration-150">
                       {(!report.barangay || report.barangay.trim().toLowerCase() === 'unknown') ? (
                         <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
                           <AlertTriangle className="w-3 h-3 text-rose-500 shrink-0" strokeWidth={1.75} />
@@ -1242,16 +1242,16 @@ export default function IncidentReports() {
                         <span>{report.barangay}</span>
                       )}
                     </td>
-                    <td className="px-3.5 py-3.5 whitespace-nowrap">
+                    <td className="px-3.5 py-3.5 w-[16%] min-w-[140px] whitespace-nowrap">
                       {getTypeBadge(report.type)}
                     </td>
-                    <td className="px-3.5 py-3.5 whitespace-nowrap">
+                    <td className="px-3.5 py-3.5 w-[11%] min-w-[100px] whitespace-nowrap">
                       {getUrgencyBadge(report.urgency)}
                     </td>
-                    <td className="px-3.5 py-3.5 whitespace-nowrap">
+                    <td className="px-3.5 py-3.5 w-[14%] min-w-[120px] whitespace-nowrap">
                       {getStatusBadge(report.status, isReportIncomplete(report))}
                     </td>
-                    <td className="px-3.5 py-3.5 whitespace-nowrap">
+                    <td className="px-3.5 py-3.5 w-[10%] min-w-[95px] whitespace-nowrap">
                       {(report.source || '').trim().toLowerCase() === 'scraper' ? (
                         <span className="inline-flex items-center justify-center gap-1.5 w-[76px] py-0.5 rounded-md text-xs font-semibold bg-purple-500/10 dark:bg-purple-500/20 text-purple-600 dark:text-purple-400 border border-purple-500/25">
                           <Globe className="w-3 h-3" strokeWidth={1.75} />
@@ -1264,10 +1264,10 @@ export default function IncidentReports() {
                         </span>
                       )}
                     </td>
-                    <td className="px-3.5 py-3.5 text-slate-500 dark:text-slate-400 text-xs whitespace-nowrap font-mono tabular-nums w-28 min-w-[115px]">
+                    <td className="px-3.5 py-3.5 w-[12%] min-w-[115px] text-slate-500 dark:text-slate-400 text-xs whitespace-nowrap font-mono tabular-nums">
                       {report.time}
                     </td>
-                    <td className="px-3.5 py-3.5 w-32 min-w-[128px] text-left whitespace-nowrap sticky right-0 z-10 bg-white dark:bg-[#111827] group-hover:bg-slate-50 dark:group-hover:bg-slate-800 transition-colors border-b border-slate-100 dark:border-white/5 shadow-[-8px_0_12px_-4px_rgba(0,0,0,0.08)] dark:shadow-[-8px_0_12px_-4px_rgba(0,0,0,0.4)]" onClick={(e) => e.stopPropagation()}>
+                    <td className="px-3.5 py-3.5 w-28 min-w-[110px] text-left whitespace-nowrap sticky right-0 z-10 bg-white dark:bg-[#111827] group-hover:bg-slate-50 dark:group-hover:bg-slate-800 transition-colors border-b border-slate-100 dark:border-white/5 shadow-[-8px_0_12px_-4px_rgba(0,0,0,0.08)] dark:shadow-[-8px_0_12px_-4px_rgba(0,0,0,0.4)] shrink-0" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-start gap-1.5">
                         {(report.status === 'pending' || report.status === 'under_review') && (
                           <button

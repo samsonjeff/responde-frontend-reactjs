@@ -15,7 +15,7 @@ import {
   BarChart3,
   Lightbulb,
   CheckCircle2,
-  XCircle,
+  Clock,
   Bot,
   Globe2,
   Filter,
@@ -24,6 +24,8 @@ import {
   Layers,
   PieChart as PieChartIcon,
 } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
+import AnimatedNumber from '../components/AnimatedNumber';
 import {
   ResponsiveContainer,
   AreaChart,
@@ -227,6 +229,7 @@ function PieTooltip({ active, payload }: CTP) {
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function Analytics() {
   const { reports } = useReports();
+  const location = useLocation();
   // MANDATORY FLOW: Incident Report -> Geospatial -> Analytics
   // Analytics MUST ONLY compute from Geospatial verified data (verified by system users).
   const data = useMemo(
@@ -612,65 +615,89 @@ export default function Analytics() {
 
           {/* ── 2. 4-STAT SOFT METRIC CARDS ── */}
           <motion.div variants={itemVariants} className="relative z-10">
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 shrink-0">
               {[
                 {
+                  key: 'total',
                   icon: Layers,
-                  iconColor: '#2563EB',
-                  iconBg: 'rgba(37,99,235,0.1)',
+                  color: '#0071E3',
                   value: stats.total,
                   label: 'Total Reports',
                   desc: 'Across all streams',
+                  pulseColor: 'bg-blue-500',
+                  hoverBorder: 'hover:border-blue-500/35 dark:hover:border-blue-500/40',
+                  hoverShadow: 'hover:shadow-[0_12px_28px_-6px_rgba(0,113,227,0.15),0_4px_12px_-2px_rgba(15,23,42,0.05)] dark:hover:shadow-[0_12px_30px_-6px_rgba(0,113,227,0.22)]',
+                  radialBg: 'bg-[radial-gradient(circle,rgba(0,113,227,0.16)_0%,rgba(0,113,227,0.05)_45%,transparent_70%)]',
+                  bottomGradient: 'via-blue-500/70',
+                  iconBg: 'bg-blue-500/10 group-hover:bg-blue-500/18 text-[#0071E3] dark:text-sky-400 border-blue-500/20 group-hover:border-blue-500/35 shadow-[0_0_16px_rgba(0,113,227,0.15)] group-hover:shadow-[0_0_24px_rgba(0,113,227,0.3)]',
                 },
                 {
+                  key: 'high',
                   icon: AlertTriangle,
-                  iconColor: '#EF4444',
-                  iconBg: 'rgba(239,68,68,0.1)',
+                  color: '#EF4444',
                   value: stats.high,
                   label: 'High Urgency',
                   desc: 'Immediate dispatch',
+                  pulseColor: 'bg-rose-500',
+                  hoverBorder: 'hover:border-rose-500/35 dark:hover:border-rose-500/40',
+                  hoverShadow: 'hover:shadow-[0_12px_28px_-6px_rgba(239,68,68,0.15),0_4px_12px_-2px_rgba(15,23,42,0.05)] dark:hover:shadow-[0_12px_30px_-6px_rgba(239,68,68,0.22)]',
+                  radialBg: 'bg-[radial-gradient(circle,rgba(239,68,68,0.16)_0%,rgba(239,68,68,0.05)_45%,transparent_70%)]',
+                  bottomGradient: 'via-rose-500/70',
+                  iconBg: 'bg-rose-500/10 group-hover:bg-rose-500/18 text-rose-600 dark:text-rose-400 border-rose-500/20 group-hover:border-rose-500/35 shadow-[0_0_16px_rgba(239,68,68,0.15)] group-hover:shadow-[0_0_24px_rgba(239,68,68,0.3)]',
                 },
                 {
+                  key: 'verified',
                   icon: CheckCircle2,
-                  iconColor: '#10B981',
-                  iconBg: 'rgba(16,185,129,0.1)',
+                  color: '#10B981',
                   value: stats.verified,
                   label: 'Verified Reports',
                   desc: 'Confirmed on field',
+                  pulseColor: 'bg-emerald-500',
+                  hoverBorder: 'hover:border-emerald-500/35 dark:hover:border-emerald-500/40',
+                  hoverShadow: 'hover:shadow-[0_12px_28px_-6px_rgba(16,185,129,0.15),0_4px_12px_-2px_rgba(15,23,42,0.05)] dark:hover:shadow-[0_12px_30px_-6px_rgba(16,185,129,0.22)]',
+                  radialBg: 'bg-[radial-gradient(circle,rgba(16,185,129,0.16)_0%,rgba(16,185,129,0.05)_45%,transparent_70%)]',
+                  bottomGradient: 'via-emerald-500/70',
+                  iconBg: 'bg-emerald-500/10 group-hover:bg-emerald-500/18 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 group-hover:border-emerald-500/35 shadow-[0_0_16px_rgba(16,185,129,0.15)] group-hover:shadow-[0_0_24px_rgba(16,185,129,0.3)]',
                 },
                 {
-                  icon: XCircle,
-                  iconColor: '#F59E0B',
-                  iconBg: 'rgba(245,158,11,0.1)',
+                  key: 'pending',
+                  icon: Clock,
+                  color: '#F59E0B',
                   value: stats.incomplete,
                   label: 'Pending Review',
                   desc: 'Under triage',
+                  pulseColor: 'bg-amber-500',
+                  hoverBorder: 'hover:border-amber-500/35 dark:hover:border-amber-500/40',
+                  hoverShadow: 'hover:shadow-[0_12px_28px_-6px_rgba(245,158,11,0.15),0_4px_12px_-2px_rgba(15,23,42,0.05)] dark:hover:shadow-[0_12px_30px_-6px_rgba(245,158,11,0.22)]',
+                  radialBg: 'bg-[radial-gradient(circle,rgba(245,158,11,0.16)_0%,rgba(245,158,11,0.05)_45%,transparent_70%)]',
+                  bottomGradient: 'via-amber-500/70',
+                  iconBg: 'bg-amber-500/10 group-hover:bg-amber-500/18 text-amber-600 dark:text-amber-400 border-amber-500/20 group-hover:border-amber-500/35 shadow-[0_0_16px_rgba(245,158,11,0.15)] group-hover:shadow-[0_0_24px_rgba(245,158,11,0.3)]',
                 },
-              ].map(({ icon: Icon, iconColor, iconBg, value, label, desc }) => (
-                <SoftCard
-                  key={label}
-                  className="p-5 flex flex-col justify-between hover:-translate-y-0.5 transition-all duration-300"
+              ].map(({ key, icon: Icon, value, label, desc, pulseColor, hoverBorder, hoverShadow, radialBg, bottomGradient, iconBg }) => (
+                <div
+                  key={key}
+                  className={`relative overflow-hidden bg-white/80 dark:bg-[#111827]/80 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)] p-3.5 sm:p-4 md:p-5 flex items-center justify-between group transition-[transform,box-shadow,border-color,background-color] duration-250 ease-[cubic-bezier(0.23,1,0.32,1)] hover:-translate-y-1 hover:bg-white/95 dark:hover:bg-[#151e31]/95 ${hoverBorder} ${hoverShadow} min-w-0`}
                 >
-                  <div className="flex items-center justify-between gap-2 mb-3">
-                    <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 truncate">
+                  <div className={`pointer-events-none absolute -right-10 -top-10 w-44 h-44 rounded-full ${radialBg} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
+                  <div className={`pointer-events-none absolute inset-x-0 bottom-0 h-[2.5px] bg-gradient-to-r from-transparent ${bottomGradient} to-transparent scale-x-0 group-hover:scale-x-100 transition-transform duration-300 ease-[cubic-bezier(0.23,1,0.32,1)]`} />
+                  
+                  <div className="relative z-10 space-y-1 min-w-0">
+                    <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors duration-200 truncate">
                       {label}
                     </p>
-                    <div
-                      className="w-8 h-8 rounded-xl border flex items-center justify-center shrink-0"
-                      style={{ background: iconBg, borderColor: `${iconColor}25`, color: iconColor }}
-                    >
-                      <Icon className="w-4 h-4" strokeWidth={1.75} />
+                    <p className="text-xl sm:text-2xl md:text-3xl font-semibold tracking-tight tabular-nums text-slate-900 dark:text-white">
+                      <AnimatedNumber key={`analytics-stat-${key}-${location.key}`} value={value} duration={2} />
+                    </p>
+                    <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 font-medium min-w-0">
+                      <span className={`w-1.5 h-1.5 rounded-full ${pulseColor} animate-pulse shrink-0 group-hover:shadow-[0_0_8px_rgba(0,0,0,0.35)] transition-shadow duration-200`} />
+                      <span className="truncate">{desc}</span>
                     </div>
                   </div>
-                  <div>
-                    <p className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white tabular-nums leading-none">
-                      {value}
-                    </p>
-                    <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-2 font-medium truncate">
-                      {desc}
-                    </p>
+
+                  <div className={`relative z-10 w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-xl sm:rounded-2xl border ${iconBg} group-hover:scale-108 transition-[transform,background-color,border-color,box-shadow] duration-250 ease-[cubic-bezier(0.23,1,0.32,1)] flex items-center justify-center shrink-0`}>
+                    <Icon className="w-4.5 h-4.5 sm:w-5 sm:h-5 md:w-6 md:h-6 transition-transform duration-250 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:scale-110" strokeWidth={1.75} />
                   </div>
-                </SoftCard>
+                </div>
               ))}
             </div>
           </motion.div>
@@ -804,36 +831,61 @@ export default function Analytics() {
                           </BarChart>
                         </ResponsiveContainer>
                       ) : (
-                        <ResponsiveContainer width="100%" height="100%">
-                          <PieChart>
-                            <Tooltip content={<PieTooltip />} />
-                            <Pie
-                              data={typeChartData.filter(d => d.value > 0)}
-                              dataKey="value"
-                              nameKey="name"
-                              cx="50%"
-                              cy="50%"
-                              innerRadius={54}
-                              outerRadius={78}
-                              paddingAngle={4}
-                              cornerRadius={4}
-                              cursor="pointer"
-                              onClick={(d: { name?: string }) => {
-                                if (!d?.name) return;
-                                setActiveType(prev => (prev === d.name ? null : (d.name ?? null)));
-                                setTypeFilter('All Types');
-                              }}
-                            >
-                              {typeChartData.filter(d => d.value > 0).map((entry) => (
-                                <Cell
-                                  key={entry.name}
-                                  fill={entry.color}
-                                  opacity={activeType && activeType !== entry.name ? 0.3 : 1}
-                                />
-                              ))}
-                            </Pie>
-                          </PieChart>
-                        </ResponsiveContainer>
+                        <div className="relative w-full h-full flex items-center justify-center">
+                          {/* Pulsing ambient halo behind donut core */}
+                          <motion.div
+                            animate={{
+                              scale: [0.94, 1.08, 0.94],
+                              opacity: [0.2, 0.45, 0.2],
+                            }}
+                            transition={{
+                              duration: 3.5,
+                              repeat: Infinity,
+                              ease: 'easeInOut',
+                            }}
+                            className="absolute w-28 h-28 rounded-full bg-violet-500/15 dark:bg-violet-400/20 blur-xl pointer-events-none"
+                          />
+
+                          <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                              <Tooltip content={<PieTooltip />} />
+                              <Pie
+                                data={typeChartData.filter(d => d.value > 0)}
+                                dataKey="value"
+                                nameKey="name"
+                                cx="50%"
+                                cy="50%"
+                                innerRadius={56}
+                                outerRadius={82}
+                                paddingAngle={5}
+                                cornerRadius={6}
+                                cursor="pointer"
+                                isAnimationActive={true}
+                                animationBegin={120}
+                                animationDuration={1400}
+                                animationEasing="ease-out"
+                                stroke="none"
+                                onClick={(d: { name?: string }) => {
+                                  if (!d?.name) return;
+                                  setActiveType(prev => (prev === d.name ? null : (d.name ?? null)));
+                                  setTypeFilter('All Types');
+                                }}
+                              >
+                                {typeChartData.filter(d => d.value > 0).map((entry) => (
+                                  <Cell
+                                    key={entry.name}
+                                    fill={entry.color}
+                                    opacity={activeType && activeType !== entry.name ? 0.35 : 1}
+                                    style={{
+                                      filter: activeType === entry.name ? `drop-shadow(0 0 8px ${entry.color})` : undefined,
+                                      transition: 'opacity 0.25s ease, filter 0.25s ease',
+                                    }}
+                                  />
+                                ))}
+                              </Pie>
+                            </PieChart>
+                          </ResponsiveContainer>
+                        </div>
                       )
                     ) : (
                       <div className="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 text-xs">
@@ -842,11 +894,15 @@ export default function Analytics() {
                       </div>
                     )}
                     {typeViewMode === 'donut' && typeChartData.some(d => d.value > 0) && (
-                      <div className="absolute flex flex-col items-center justify-center pointer-events-none">
+                      <div className="absolute flex flex-col items-center justify-center pointer-events-none z-10">
                         <span className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white tabular-nums">
-                          {activeType ? (typeChartData.find(d => d.name === activeType)?.value ?? 0) : reportsForTypeChart.length}
+                          <AnimatedNumber
+                            key={`donut-count-${activeType ?? 'all'}-${location.key}`}
+                            value={activeType ? (typeChartData.find(d => d.name === activeType)?.value ?? 0) : reportsForTypeChart.length}
+                            duration={1.8}
+                          />
                         </span>
-                        <span className="text-[10px] uppercase font-semibold text-slate-400 tracking-widest mt-0.5 max-w-[90px] truncate text-center">
+                        <span className="text-[10px] uppercase font-semibold text-slate-400 dark:text-slate-500 tracking-widest mt-0.5 max-w-[90px] truncate text-center">
                           {activeType ? activeType : 'Total'}
                         </span>
                       </div>
@@ -854,7 +910,7 @@ export default function Analytics() {
                   </div>
 
                   {/* Legend with interactive buttons */}
-                  <div className="sm:col-span-7 space-y-2">
+                  <div className="sm:col-span-7 space-y-2.5">
                     {['Search & Rescue', 'Medical', 'Food & Water', 'Infrastructure'].map(type => {
                       const c = TYPE_CONFIG[type];
                       const Icon = c.icon;
@@ -870,31 +926,42 @@ export default function Analytics() {
                             setActiveType(prev => (prev === type ? null : type));
                             setTypeFilter('All Types');
                           }}
-                          className={`w-full flex items-center justify-between p-3 rounded-xl transition-all duration-150 text-left active:scale-[0.98] border cursor-pointer ${
+                          className={`w-full p-2.5 sm:p-3 rounded-2xl border text-left transition-all duration-200 cursor-pointer group active:scale-[0.98] ${
                             isActive
-                              ? 'bg-slate-100/90 dark:bg-slate-800/90 border-slate-300 dark:border-slate-600 ring-2'
-                              : 'bg-white/60 dark:bg-slate-800/40 border-slate-200/60 dark:border-slate-700/60 hover:bg-slate-50 dark:hover:bg-slate-800/80'
+                              ? 'bg-violet-500/10 dark:bg-violet-500/15 border-violet-500/40 shadow-[0_0_16px_rgba(139,92,246,0.18)]'
+                              : 'bg-white/70 dark:bg-slate-800/40 border-slate-200/70 dark:border-white/5 hover:bg-white dark:hover:bg-slate-800/80 hover:border-slate-300 dark:hover:border-white/15 hover:-translate-y-0.5 hover:shadow-xs'
                           }`}
-                          style={isActive ? ({ '--tw-ring-color': c.color } as React.CSSProperties) : {}}
                         >
-                          <div className="flex items-center gap-3 min-w-0">
-                            <div
-                              className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 border"
-                              style={{ background: c.bg, borderColor: `${c.color}25` }}
-                            >
-                              <Icon className={`w-4 h-4 ${c.iconClass}`} strokeWidth={1.75} />
+                          <div className="flex items-center justify-between gap-2 mb-1.5">
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <div
+                                className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center shrink-0 border shadow-2xs transition-transform duration-200 group-hover:scale-105"
+                                style={{ background: c.bg, borderColor: `${c.color}30`, color: c.color }}
+                              >
+                                <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" strokeWidth={1.75} />
+                              </div>
+                              <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
+                                {type}
+                              </span>
                             </div>
-                            <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate">
-                              {type}
-                            </span>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white tabular-nums">
+                                <AnimatedNumber key={`legend-count-${type}-${location.key}`} value={count} duration={1.8} />
+                              </span>
+                              <span className="text-[10px] sm:text-[11px] text-slate-400 dark:text-slate-500 font-medium">
+                                ({pct}%)
+                              </span>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-2 shrink-0">
-                            <span className="text-sm font-bold text-slate-900 dark:text-white tabular-nums">
-                              {count}
-                            </span>
-                            <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">
-                              ({pct}%)
-                            </span>
+                          {/* Animated Miniature Progress Indicator */}
+                          <div className="w-full h-1.5 rounded-full bg-slate-100 dark:bg-slate-700/60 overflow-hidden">
+                            <motion.div
+                              initial={{ width: 0 }}
+                              animate={{ width: `${pct}%` }}
+                              transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
+                              className="h-full rounded-full"
+                              style={{ backgroundColor: c.color }}
+                            />
                           </div>
                         </button>
                       );

@@ -484,6 +484,55 @@ button:not(:disabled),
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
+   GEOSPATIAL BARANGAY MAP LABELS & GLOW EFFECTS
+   ───────────────────────────────────────────────────────────────────────────── */
+.barangay-map-label-wrapper {
+  pointer-events: auto;
+  cursor: pointer;
+  z-index: 50;
+  transform: translateZ(0);
+}
+
+.barangay-map-pill {
+  transition: all 0.22s cubic-bezier(0.23, 1, 0.32, 1);
+  will-change: transform, box-shadow, border-color, color;
+}
+
+.barangay-map-pill:hover,
+.barangay-map-pill.is-hovered {
+  border-color: #0071E3 !important;
+  color: #0071E3 !important;
+  background-color: rgba(255, 255, 255, 0.98) !important;
+  transform: scale(1.1) translateY(-2px);
+  box-shadow: 0 0 16px rgba(0, 113, 227, 0.55), 0 4px 12px rgba(0, 113, 227, 0.28) !important;
+  font-weight: 700 !important;
+}
+
+.dark .barangay-map-pill:hover,
+.dark .barangay-map-pill.is-hovered {
+  border-color: #38bdf8 !important;
+  color: #38bdf8 !important;
+  background-color: rgba(15, 23, 42, 0.96) !important;
+  box-shadow: 0 0 20px rgba(56, 189, 248, 0.75), 0 4px 14px rgba(0, 0, 0, 0.7) !important;
+}
+
+.dispatch-arc-popup .maplibregl-popup-content {
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(0, 113, 227, 0.35);
+  box-shadow: 0 8px 24px rgba(0, 113, 227, 0.2), 0 2px 6px rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+  padding: 6px 10px;
+}
+
+.dark .dispatch-arc-popup .maplibregl-popup-content {
+  background: rgba(15, 23, 42, 0.95);
+  border-color: rgba(56, 189, 248, 0.4);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), 0 0 16px rgba(56, 189, 248, 0.25);
+}
+
+
+/* ─────────────────────────────────────────────────────────────────────────────
    PROTOTYPE ANIMATIONS & HOVER STYLES (from video / prototype)
    ───────────────────────────────────────────────────────────────────────────── */
 

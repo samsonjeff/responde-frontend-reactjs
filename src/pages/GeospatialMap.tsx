@@ -1737,6 +1737,7 @@ export default function GeospatialMap() {
                 barangayCounts={barangayCounts}
                 pinReports={pinReports}
                 onSelectFeature={handleSelectFeature}
+                selectedFeature={selected}
               />
             </div>
           </div>

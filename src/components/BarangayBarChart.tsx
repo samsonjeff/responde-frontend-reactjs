@@ -7,7 +7,6 @@ import {
   YAxis,
   Tooltip,
   Bar,
-  Cell,
 } from 'recharts';
 import { MapPin, X, BarChart3, type LucideIcon } from 'lucide-react';
 import { useReports } from '../context/ReportsContext';
@@ -24,12 +23,12 @@ export type AnalyticsReport = {
 };
 
 const ACCENT_BLUE = '#0071E3';
-const RED = '#DC2626';
+const RED = '#EF4444';
 
 const URGENCY_BAR_COLOR: Record<string, string> = {
   High: RED,
   Moderate: '#F59E0B',
-  Low: '#22c55e',
+  Low: '#10B981',
 };
 
 function useIsMobile(breakpoint = 640) {
@@ -121,6 +120,121 @@ function SectionHeader({
   );
 }
 
+/**
+ * Modern fluid wave bar with dual counter-flowing waves,
+ * specular top highlight, and hover glow for Barangay frequency.
+ */
+function BarangayModernWaveBar(props: any) {
+  const { x, y, width, height, payload, activeBarangay } = props;
+  if (x == null || y == null || width == null || height == null || height <= 0 || !payload) {
+    return null;
+  }
+
+  const name: string = payload.name || 'Barangay';
+  const dominantUrgency: string = payload.dominantUrgency || 'Low';
+  const color: string = URGENCY_BAR_COLOR[dominantUrgency] ?? ACCENT_BLUE;
+  const isDimmed = activeBarangay && activeBarangay.toLowerCase() !== name.toLowerCase();
+  const isSelected = activeBarangay && activeBarangay.toLowerCase() === name.toLowerCase();
+
+  const w = Math.max(width, 14);
+  const h = Math.max(height, 6);
+  const r = Math.min(6, w / 2, h / 2);
+  const bottomY = y + h;
+
+  // Fluid water wave amplitude
+  const amp = Math.min(3.6, Math.max(1.8, Math.min(h * 0.1, w * 0.11)));
+  const waveY = y + amp + 1;
+
+  const clipId = `brgy-bar-clip-${name.replace(/[^a-zA-Z0-9]/g, '')}`;
+
+  const clipRectPath = `
+    M ${x},${bottomY}
+    L ${x},${y + r}
+    Q ${x},${y} ${x + r},${y}
+    L ${x + w - r},${y}
+    Q ${x + w},${y} ${x + w},${y + r}
+    L ${x + w},${bottomY}
+    Z
+  `;
+
+  const buildWavePath = (yLine: number, waveAmp: number) => `
+    M ${x},${yLine}
+    Q ${x + w * 0.25},${yLine - waveAmp} ${x + w * 0.5},${yLine}
+    T ${x + w},${yLine}
+    Q ${x + w * 1.25},${yLine - waveAmp} ${x + w * 1.5},${yLine}
+    T ${x + w * 2},${yLine}
+    L ${x + w * 2},${bottomY + 2}
+    L ${x},${bottomY + 2}
+    Z
+  `;
+
+  return (
+    <g
+      className="minimal-2d-bar-group cursor-pointer"
+      style={
+        {
+          opacity: isDimmed ? 0.35 : 1,
+          '--bar-hover-shadow': `${color}66`,
+          filter: isSelected ? `drop-shadow(0 0 10px ${color})` : undefined,
+        } as React.CSSProperties
+      }
+    >
+      <defs>
+        <clipPath id={clipId}>
+          <path d={clipRectPath} />
+        </clipPath>
+      </defs>
+
+      <g clipPath={`url(#${clipId})`}>
+        {/* Secondary counter-flowing water wave */}
+        <path d={buildWavePath(waveY - amp * 0.4, amp * 0.85)} fill={color} fillOpacity={0.42}>
+          <animateTransform
+            attributeName="transform"
+            type="translate"
+            from={`${-w} 0`}
+            to="0 0"
+            dur="3.4s"
+            repeatCount="indefinite"
+          />
+        </path>
+
+        {/* Primary flowing wave surface */}
+        <path d={buildWavePath(waveY, amp)} fill={color} fillOpacity={1}>
+          <animateTransform
+            attributeName="transform"
+            type="translate"
+            from="0 0"
+            to={`${-w} 0`}
+            dur="2.4s"
+            repeatCount="indefinite"
+          />
+        </path>
+
+        {/* Specular curved light sheen along upper crest */}
+        <path
+          d={`M ${x + r},${y + 1.5} Q ${x + w * 0.5},${y + 1} ${x + w - r},${y + 1.5}`}
+          fill="none"
+          stroke="rgba(255,255,255,0.55)"
+          strokeWidth={1.5}
+          strokeLinecap="round"
+          pointerEvents="none"
+        />
+      </g>
+
+      {/* Selected outline ring */}
+      {isSelected && (
+        <path
+          d={clipRectPath}
+          fill="none"
+          stroke={color}
+          strokeWidth={2}
+          strokeDasharray="4 2"
+        />
+      )}
+    </g>
+  );
+}
+
 interface CTP {
   active?: boolean;
   payload?: Array<{
@@ -138,16 +252,25 @@ function BarangayTooltip({ active, payload }: CTP) {
   if (!item) return null;
   const barColor = URGENCY_BAR_COLOR[item.dominantUrgency ?? ''] ?? ACCENT_BLUE;
   return (
-    <div className="backdrop-blur-xl bg-white/95 dark:bg-slate-850/95 border border-slate-200/80 dark:border-white/15 px-3.5 py-2.5 rounded-xl shadow-xl text-xs space-y-1">
-      <p className="font-bold text-slate-900 dark:text-white text-sm">{item.name}</p>
-      <div className="flex items-center justify-between gap-3 pt-1 border-t border-slate-100 dark:border-slate-700/60">
+    <div className="backdrop-blur-xl bg-white/95 dark:bg-slate-900/95 border border-slate-200/80 dark:border-white/15 px-3.5 py-2.5 rounded-2xl shadow-[0_12px_28px_rgba(0,0,0,0.18)] text-xs space-y-1.5 min-w-[155px]">
+      <div className="flex items-center gap-2">
+        <span
+          className="w-2.5 h-2.5 rounded-full shrink-0"
+          style={{ backgroundColor: barColor, boxShadow: `0 0 8px ${barColor}88` }}
+        />
+        <p className="font-bold text-slate-900 dark:text-white text-xs truncate">{item.name}</p>
+      </div>
+      <div className="flex items-center justify-between gap-3 pt-1 border-t border-slate-100 dark:border-slate-800">
         <span className="text-slate-500 dark:text-slate-400">Total reports:</span>
         <span className="font-bold text-slate-900 dark:text-white tabular-nums">{item.count}</span>
       </div>
       <div className="flex items-center justify-between gap-3">
-        <span className="text-slate-500 dark:text-slate-400">Dominant:</span>
-        <span className="font-semibold text-[11px] px-1.5 py-0.5 rounded" style={{ color: barColor, background: `${barColor}18` }}>
-          {item.dominantUrgency} Urgency
+        <span className="text-slate-500 dark:text-slate-400">Dominant Urgency:</span>
+        <span
+          className="font-semibold text-[11px] px-2 py-0.5 rounded-md"
+          style={{ color: barColor, background: `${barColor}18` }}
+        >
+          {item.dominantUrgency}
         </span>
       </div>
     </div>
@@ -207,8 +330,9 @@ export function BarangayBarChart({
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#0071E3]/10 text-[#0071E3] dark:text-sky-400 border border-[#0071E3]/20 text-xs font-semibold">
               <span>Filtered: {activeBarangay}</span>
               <button
+                type="button"
                 onClick={() => onSelectBarangay?.(null)}
-                className="hover:opacity-75 transition-opacity"
+                className="hover:opacity-75 transition-opacity cursor-pointer p-0.5"
               >
                 <X className="w-3 h-3" />
               </button>
@@ -218,15 +342,22 @@ export function BarangayBarChart({
       />
 
       {chartData.length ? (
-        <div className="w-full flex-1 min-w-0 min-h-0 relative">
+        <div className="w-full flex-1 min-w-0 min-h-0 relative" style={{ minHeight: 240 }}>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={chartData}
               margin={{
-                top: 8,
-                right: 8,
-                left: isMobile ? -26 : -14,
-                bottom: isMobile ? 44 : 36,
+                top: 14,
+                right: 12,
+                left: isMobile ? -24 : -12,
+                bottom: isMobile ? 48 : 38,
+              }}
+              onClick={(state: any) => {
+                if (!interactive) return;
+                if (state && state.activePayload && state.activePayload.length > 0) {
+                  const clicked = state.activePayload[0].payload.name;
+                  onSelectBarangay?.(activeBarangay === clicked ? null : clicked);
+                }
               }}
             >
               <CartesianGrid
@@ -240,7 +371,7 @@ export function BarangayBarChart({
                 tick={{ fontSize: isMobile ? 9.5 : 11, fill: '#94a3b8' }}
                 axisLine={{ stroke: '#94a3b8', strokeOpacity: 0.2 }}
                 tickLine={false}
-                angle={isMobile ? -40 : -30}
+                angle={isMobile ? -35 : -25}
                 textAnchor="end"
                 interval={0}
                 tickFormatter={(val) => formatBarangayLabel(val, isMobile)}
@@ -255,27 +386,12 @@ export function BarangayBarChart({
               <Tooltip content={<BarangayTooltip />} cursor={{ fill: 'rgba(0,113,227,0.06)' }} />
               <Bar
                 dataKey="count"
-                radius={[5, 5, 0, 0]}
-                barSize={isMobile ? 16 : 24}
-                maxBarSize={isMobile ? 18 : 28}
+                barSize={isMobile ? 22 : 32}
+                maxBarSize={38}
                 cursor={interactive ? 'pointer' : 'default'}
-                onClick={
-                  interactive
-                    ? (d: { name?: string }) => {
-                        if (!d?.name) return;
-                        onSelectBarangay?.(activeBarangay === d.name ? null : (d.name ?? null));
-                      }
-                    : undefined
-                }
-              >
-                {chartData.map((entry) => (
-                  <Cell
-                    key={entry.name}
-                    fill={URGENCY_BAR_COLOR[entry.dominantUrgency] ?? ACCENT_BLUE}
-                    opacity={interactive && activeBarangay && activeBarangay !== entry.name ? 0.35 : 1}
-                  />
-                ))}
-              </Bar>
+                isAnimationActive={false}
+                shape={<BarangayModernWaveBar activeBarangay={activeBarangay} />}
+              />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -294,7 +410,7 @@ export function BarangayBarChart({
         <div className="flex flex-wrap items-center gap-2.5 sm:gap-4">
           {Object.entries(URGENCY_BAR_COLOR).map(([level, color]) => (
             <div key={level} className="flex items-center gap-1.5">
-              <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full shrink-0" style={{ background: color }} />
+              <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full shrink-0" style={{ background: color, boxShadow: `0 0 6px ${color}66` }} />
               <span className="text-[11px] sm:text-xs text-slate-600 dark:text-slate-400 font-medium">{level}</span>
             </div>
           ))}
