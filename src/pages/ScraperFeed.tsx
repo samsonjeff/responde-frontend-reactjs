@@ -4,7 +4,7 @@ import {
   Filter, Globe, MessageCircle, AlertTriangle, MapPin, Clock,
   CheckCircle, XCircle, Brain, Users, ExternalLink,
   Loader2, Radio, X, ChevronLeft, ChevronRight, ChevronDown, RotateCcw, RefreshCw,
-  Sparkles, CheckCircle2, Layers
+  CheckCircle2, Layers
 } from "lucide-react";
 import DatePicker from "../components/DatePicker";
 import FilterDropdown from "../components/DropDown";
@@ -874,7 +874,7 @@ export default function ScraperFeed() {
                     role="tab"
                     aria-selected={viewMode === "structured"}
                     onClick={() => handleViewModeChange("structured")}
-                    className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold tracking-tight transition-colors duration-150 select-none cursor-pointer active:scale-[0.98] ${
+                    className={`group relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold tracking-tight transition-colors duration-150 select-none cursor-pointer active:scale-[0.98] ${
                       viewMode === "structured"
                         ? "text-[#0071E3] dark:text-sky-300"
                         : "text-slate-500 hover:text-[#0071E3] dark:text-slate-400 dark:hover:text-sky-300 hover:bg-blue-50/50 dark:hover:bg-blue-950/30"
@@ -888,8 +888,8 @@ export default function ScraperFeed() {
                       />
                     )}
                     <span className="relative z-10 flex items-center gap-1.5">
-                      <Sparkles className="w-3.5 h-3.5 text-[#0071E3] dark:text-sky-400" strokeWidth={1.75} />
-                      <span>Incidents</span>
+                      <AlertTriangle className="w-3.5 h-3.5 text-[#0071E3] dark:text-sky-400 transition-transform duration-200 ease-out group-hover:scale-120 group-hover:-rotate-6" strokeWidth={2} />
+                      <span className="transition-colors duration-150">Incidents</span>
                       <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold tabular-nums ${
                         viewMode === "structured"
                           ? "bg-[#0071E3] text-white"

@@ -21,6 +21,7 @@ import {
   AlertTriangle,
   ChevronRight,
   Bot,
+  Globe,
   MessageSquare,
   Compass,
   MapPinOff,
@@ -875,13 +876,25 @@ function IncidentSidebarContent({
                   key={src}
                   type="button"
                   onClick={() => setSourceFilter(src)}
-                  className={`text-[10px] font-semibold px-2.5 py-1 rounded-lg transition-all duration-150 active:scale-95 cursor-pointer ${
+                  className={`inline-flex items-center gap-1.5 text-[10px] font-semibold px-2.5 py-1 rounded-lg transition-all duration-150 active:scale-95 cursor-pointer ${
                     isSelected
-                      ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-2xs font-bold'
+                      ? 'bg-[#0071E3] text-white shadow-xs font-bold'
                       : 'bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 hover:bg-slate-200/80 dark:hover:bg-slate-700/80'
                   }`}
                 >
-                  {src === 'all' ? 'All' : src === 'Bot' ? '🤖 Bot' : '🌐 FB'}
+                  {src === 'all' ? (
+                    <span>All</span>
+                  ) : src === 'Bot' ? (
+                    <>
+                      <Bot className={`w-3 h-3 ${isSelected ? 'text-white' : 'text-[#0071E3]'}`} strokeWidth={1.75} />
+                      <span>Bot</span>
+                    </>
+                  ) : (
+                    <>
+                      <Globe className={`w-3 h-3 ${isSelected ? 'text-white' : 'text-purple-500'}`} strokeWidth={1.75} />
+                      <span>Scraper</span>
+                    </>
+                  )}
                 </button>
               );
             })}
