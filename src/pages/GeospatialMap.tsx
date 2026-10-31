@@ -161,7 +161,7 @@ function IncidentListItem({ report, index, onClick }: { report: Report; index: n
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ ...SOFT_SPRING, delay: Math.min(index * 0.03, 0.25) }}
       onClick={onClick}
-      className="group relative overflow-hidden rounded-2xl p-4 bg-white/95 dark:bg-slate-800/85 backdrop-blur-md border border-slate-200/80 dark:border-white/10 shadow-[0_2px_12px_rgba(15,23,42,0.03)] hover:shadow-[0_12px_32px_rgba(15,23,42,0.08)] dark:hover:shadow-[0_12px_32px_rgba(0,0,0,0.5)] hover:border-blue-400/50 dark:hover:border-blue-500/40 transition-all duration-200 cursor-pointer active:scale-[0.98] text-left space-y-3"
+      className="group relative overflow-hidden rounded-2xl p-4 bg-white/95 dark:bg-slate-800/85 backdrop-blur-md border border-slate-200/80 dark:border-white/10 shadow-[0_2px_12px_rgba(15,23,42,0.03)] hover:shadow-[0_12px_32px_rgba(0,113,227,0.18)] dark:hover:shadow-[0_12px_32px_rgba(0,113,227,0.30)] hover:border-blue-400/60 dark:hover:border-blue-500/50 hover:bg-blue-50/40 dark:hover:bg-blue-950/30 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer active:scale-[0.98] text-left space-y-3"
     >
       {/* Top row: Category icon, Barangay title, Urgency pill */}
       <div className="flex items-start justify-between gap-2.5">
@@ -170,7 +170,7 @@ function IncidentListItem({ report, index, onClick }: { report: Report; index: n
             {TYPE_ICONS[report.type] || <Siren className="w-4 h-4" />}
           </div>
           <div className="min-w-0">
-            <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate tracking-tight flex items-center gap-1.5">
+            <h4 className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-[#0071E3] dark:group-hover:text-sky-400 truncate tracking-tight flex items-center gap-1.5 transition-colors">
               <MapPin className="w-3 h-3 text-blue-500 shrink-0" />
               <span className="truncate">{report.barangay}</span>
             </h4>
@@ -372,7 +372,7 @@ function BarangayDetailCard({ name, reports, onClose, onViewList }: {
         <button
           type="button"
           onClick={onViewList}
-          className="w-full py-2.5 px-4 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-all flex items-center justify-center gap-2 shadow-[0_2px_8px_rgba(37,99,235,0.25)] active:scale-[0.98] cursor-pointer"
+          className="w-full py-2.5 px-4 text-xs font-semibold text-white bg-[#0071E3] hover:bg-[#0077ED] rounded-xl transition-all flex items-center justify-center gap-2 shadow-[0_2px_8px_rgba(0,113,227,0.25)] hover:shadow-[0_4px_16px_rgba(0,113,227,0.4)] hover:-translate-y-0.5 active:scale-[0.98] cursor-pointer"
         >
           <FileText className="w-3.5 h-3.5" /> View in Incident Reports
         </button>
@@ -514,7 +514,7 @@ function IncidentDetailCard({
           <button
             type="button"
             onClick={onViewInReports}
-            className="py-2 px-3 text-xs font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200/60 dark:border-white/5 rounded-xl transition-all flex items-center justify-center gap-1.5 active:scale-[0.98] cursor-pointer"
+            className="py-2 px-3 text-xs font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 hover:bg-blue-50 dark:bg-slate-800 dark:hover:bg-blue-950/40 hover:text-[#0071E3] dark:hover:text-sky-300 border border-slate-200/60 dark:border-white/5 hover:border-blue-400/40 dark:hover:border-blue-500/40 rounded-xl transition-all flex items-center justify-center gap-1.5 active:scale-[0.98] cursor-pointer hover:shadow-xs"
           >
             <FileText className="w-3.5 h-3.5" /> In Reports
           </button>
@@ -587,7 +587,7 @@ function IncompleteListItem({
       initial={{ opacity: 0, y: 12, scale: 0.98 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ ...SOFT_SPRING, delay: Math.min(index * 0.03, 0.25) }}
-      className="group relative overflow-hidden rounded-2xl p-4 bg-white/95 dark:bg-slate-800/85 backdrop-blur-md border border-slate-200/80 dark:border-white/10 shadow-[0_2px_12px_rgba(15,23,42,0.03)] hover:shadow-[0_12px_32px_rgba(15,23,42,0.08)] dark:hover:shadow-[0_12px_32px_rgba(0,0,0,0.5)] hover:border-amber-400/60 dark:hover:border-amber-500/50 transition-all duration-200 text-left space-y-3"
+      className="group relative overflow-hidden rounded-2xl p-4 bg-white/95 dark:bg-slate-800/85 backdrop-blur-md border border-slate-200/80 dark:border-white/10 shadow-[0_2px_12px_rgba(15,23,42,0.03)] hover:shadow-[0_12px_32px_rgba(0,113,227,0.16)] dark:hover:shadow-[0_12px_32px_rgba(0,113,227,0.28)] hover:border-blue-400/60 dark:hover:border-blue-500/50 hover:bg-blue-50/30 dark:hover:bg-blue-950/25 hover:-translate-y-0.5 transition-all duration-200 text-left space-y-3"
     >
       {/* Subtle top indicator bar */}
       <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-400 via-amber-500 to-rose-500 opacity-80" />

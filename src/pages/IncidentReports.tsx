@@ -1337,9 +1337,9 @@ export default function IncidentReports() {
                             <button
                               type="button"
                               onClick={() => navigate(`/geospatial?focus=${report.id}`)}
-                              className="group/btn px-3 py-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 hover:bg-emerald-600 hover:text-white border border-emerald-500/20 hover:border-emerald-600 rounded-xl transition-all duration-200 flex items-center gap-1.5 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.96] shadow-2xs hover:shadow-[0_4px_12px_rgba(16,185,129,0.25)] cursor-pointer"
+                              className="group/btn px-3 py-1.5 text-xs font-semibold text-[#0071E3] dark:text-sky-300 bg-blue-500/10 hover:bg-[#0071E3] hover:text-white border border-blue-500/25 hover:border-[#0071E3] rounded-xl transition-all duration-200 flex items-center gap-1.5 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.96] shadow-2xs hover:shadow-[0_4px_14px_rgba(0,113,227,0.35)] cursor-pointer"
                             >
-                              <MapPinned className="w-3.5 h-3.5 transition-transform duration-200 group-hover/btn:scale-110" strokeWidth={1.75} />
+                              <MapPinned className="w-3.5 h-3.5 transition-transform duration-200 group-hover/btn:scale-110 text-[#0071E3] group-hover/btn:text-white" strokeWidth={1.75} />
                               <span>Map</span>
                             </button>
                           </>
@@ -1671,12 +1671,26 @@ export default function IncidentReports() {
                         animate={coordError ? { x: [0, -6, 6, -6, 6, -3, 3, 0] } : { x: 0 }}
                         transition={{ duration: 0.4, ease: 'easeInOut' }}
                       >
-                        <label className="block text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400 mb-1">
-                          Coordinates (lat, lng)
-                          {coordError && (
-                            <span className="ml-2 text-rose-500 font-normal lowercase">— invalid format</span>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="block text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400">
+                            Coordinates (lat, lng)
+                            {coordError && (
+                              <span className="ml-2 text-rose-500 font-normal lowercase">— invalid format</span>
+                            )}
+                          </label>
+                          {editForm.coordinates && validateCoordinates(editForm.coordinates) && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                navigate(`/geospatial?focus=${reviewingReport.id}`);
+                              }}
+                              className="text-[11px] font-semibold text-[#0071E3] dark:text-sky-400 hover:text-blue-700 dark:hover:text-sky-300 flex items-center gap-1 hover:underline cursor-pointer group transition-all"
+                            >
+                              <MapPinned className="w-3 h-3 transition-transform duration-200 group-hover:scale-110" />
+                              <span>View on Map</span>
+                            </button>
                           )}
-                        </label>
+                        </div>
                         <input
                           type="text"
                           value={editForm.coordinates || ''}
