@@ -1058,17 +1058,36 @@ function LayerToggle({ active, label, activeDot, onClick }: {
   onClick: () => void;
 }) {
   return (
-    <button
+    <motion.button
+      type="button"
+      whileHover={{ y: -1, scale: 1.03 }}
+      whileTap={{ scale: 0.95 }}
+      transition={{ type: 'spring', stiffness: 400, damping: 25 }}
       onClick={onClick}
-      className={`relative flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl text-[11px] sm:text-xs font-semibold tracking-tight transition-all duration-200 active:scale-[0.96] cursor-pointer ${
+      className={`group relative flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl text-[11px] sm:text-xs font-semibold tracking-tight transition-all duration-200 cursor-pointer shrink-0 select-none ${
         active
-          ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-xs ring-1 ring-slate-950/5 dark:ring-white/10'
-          : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-white/40 dark:hover:bg-slate-800/40'
+          ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-[0_2px_8px_rgba(0,113,227,0.14)] dark:shadow-[0_2px_12px_rgba(0,0,0,0.5)] ring-1 ring-[#0071E3]/25 dark:ring-blue-400/30'
+          : 'text-slate-500 dark:text-slate-400 hover:text-[#0071E3] dark:hover:text-sky-300 hover:bg-blue-50/70 dark:hover:bg-blue-950/40 hover:shadow-xs'
       }`}
     >
-      <span className={`w-2 h-2 rounded-full transition-all ${active ? activeDot : 'bg-slate-300 dark:bg-slate-600'}`} />
-      <span>{label}</span>
-    </button>
+      <span className="relative flex h-2 w-2 items-center justify-center shrink-0">
+        {active && (
+          <span
+            className={`absolute inline-flex h-full w-full rounded-full opacity-60 animate-ping ${
+              activeDot.split(' ')[0]
+            }`}
+          />
+        )}
+        <span
+          className={`relative inline-flex h-2 w-2 rounded-full transition-all duration-300 ${
+            active
+              ? `${activeDot} scale-110`
+              : 'bg-slate-300 dark:bg-slate-600 group-hover:bg-[#0071E3] group-hover:scale-110'
+          }`}
+        />
+      </span>
+      <span className="transition-colors duration-200 whitespace-nowrap">{label}</span>
+    </motion.button>
   );
 }
 
@@ -1504,7 +1523,7 @@ export default function GeospatialMap() {
             </div>
 
             {/* ── Filters & Layer Controls ── */}
-            <div className="pt-3.5 border-t border-slate-200/60 dark:border-white/5 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+            <div className="pt-3.5 border-t border-slate-200/60 dark:border-white/5 flex flex-col xl:flex-row xl:items-center justify-between gap-3">
               {/* Left Side: Filter Dropdowns + Reset */}
               <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
                 <div className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-blue-500/10 dark:bg-blue-500/20 text-[#0071E3] dark:text-sky-400 text-xs font-semibold shrink-0 border border-blue-500/25 dark:border-blue-400/25 shadow-2xs">
@@ -1557,10 +1576,10 @@ export default function GeospatialMap() {
               </div>
 
               {/* Right Side: Segmented Layer Control */}
-              <div className="flex flex-wrap items-center justify-between lg:justify-end gap-2.5 sm:gap-3 shrink-0">
-                <div className="inline-flex items-center gap-1 p-1 bg-slate-100/90 dark:bg-slate-800/90 backdrop-blur-md rounded-2xl border border-slate-200/60 dark:border-white/5 shadow-inner">
-                  <div className="flex items-center gap-1 px-2 py-1 text-slate-400 dark:text-slate-500">
-                    <Layers className="w-3.5 h-3.5" />
+              <div className="w-full xl:w-auto overflow-x-auto no-scrollbar scroll-smooth flex items-center justify-start xl:justify-end py-0.5 shrink-0">
+                <div className="inline-flex items-center gap-1 sm:gap-1.5 p-1 bg-slate-100/90 dark:bg-slate-800/90 backdrop-blur-md rounded-2xl border border-slate-200/60 dark:border-white/5 shadow-inner min-w-max">
+                  <div className="group/layers flex items-center gap-1 px-2 py-1 text-slate-400 dark:text-slate-500 hover:text-[#0071E3] dark:hover:text-sky-400 transition-colors cursor-default select-none shrink-0">
+                    <Layers className="w-3.5 h-3.5 transition-transform duration-300 group-hover/layers:rotate-12 group-hover/layers:scale-110 text-current" strokeWidth={1.8} />
                     <span className="text-[10px] font-bold uppercase tracking-wider hidden sm:inline">Layers</span>
                   </div>
                   <LayerToggle
@@ -1572,7 +1591,7 @@ export default function GeospatialMap() {
                   <LayerToggle
                     active={layers.pins}
                     label="Pins"
-                    activeDot="bg-blue-600 shadow-[0_0_8px_rgba(37,99,235,0.7)]"
+                    activeDot="bg-[#0071E3] shadow-[0_0_8px_rgba(0,113,227,0.7)]"
                     onClick={() => toggleLayer('pins')}
                   />
                   <LayerToggle
@@ -1587,19 +1606,22 @@ export default function GeospatialMap() {
                     activeDot="bg-cyan-500 shadow-[0_0_8px_rgba(6,182,212,0.8)]"
                     onClick={() => toggleLayer('dispatchArcs')}
                   />
-                  <div className="w-[1px] h-4 bg-slate-300 dark:bg-white/10 mx-0.5 hidden sm:block" />
-                  <button
+                  <div className="w-[1px] h-4 bg-slate-300 dark:bg-white/10 mx-0.5 shrink-0" />
+                  <motion.button
                     type="button"
+                    whileHover={{ y: -1, scale: 1.03 }}
+                    whileTap={{ scale: 0.95 }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 25 }}
                     onClick={handleToggle3D}
-                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all active:scale-[0.95] cursor-pointer ${
+                    className={`group/btn inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-[11px] sm:text-xs font-semibold transition-all duration-200 cursor-pointer shrink-0 select-none ${
                       is3DMode
-                        ? 'bg-blue-600 text-white shadow-[0_2px_10px_rgba(37,99,235,0.4)]'
-                        : 'bg-white/70 dark:bg-slate-700/60 text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-700'
+                        ? 'bg-[#0071E3] hover:bg-[#0077ED] text-white shadow-[0_4px_14px_rgba(0,113,227,0.4)] ring-1 ring-[#0071E3]/40'
+                        : 'bg-white/80 dark:bg-slate-700/70 text-slate-700 dark:text-slate-200 hover:bg-blue-50/70 dark:hover:bg-blue-950/40 hover:text-[#0071E3] dark:hover:text-sky-300 ring-1 ring-slate-950/5 dark:ring-white/10 hover:ring-[#0071E3]/25 shadow-xs hover:shadow-[0_2px_10px_rgba(0,113,227,0.18)]'
                     }`}
                   >
-                    <Box className="w-3.5 h-3.5" />
-                    <span>{is3DMode ? '3D View' : '2D View'}</span>
-                  </button>
+                    <Box className="w-3.5 h-3.5 transition-transform duration-300 group-hover/btn:rotate-12 group-hover/btn:scale-110 text-current" strokeWidth={1.8} />
+                    <span className="whitespace-nowrap">{is3DMode ? '3D View' : '2D View'}</span>
+                  </motion.button>
                 </div>
               </div>
             </div>
@@ -1691,11 +1713,13 @@ export default function GeospatialMap() {
                     animate={{ opacity: 1, scale: 1, x: 0 }}
                     exit={{ opacity: 0, scale: 0.92, x: -8 }}
                     transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+                    whileHover={{ y: -1, scale: 1.02 }}
+                    whileTap={{ scale: 0.96 }}
                     onClick={() => setDrawerOpen(true)}
-                    className="absolute left-3 top-3 z-20 flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white/95 dark:bg-[#111827]/95 backdrop-blur-xl shadow-lg border border-slate-200/80 dark:border-white/10 text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-800 transition-all active:scale-[0.96] text-xs font-semibold cursor-pointer"
+                    className="group absolute left-3 top-3 z-20 flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white/95 dark:bg-[#111827]/95 backdrop-blur-xl shadow-lg hover:shadow-[0_4px_16px_rgba(0,113,227,0.22)] border border-slate-200/80 dark:border-white/10 hover:border-blue-400/50 dark:hover:border-blue-500/40 text-slate-700 dark:text-slate-200 hover:text-[#0071E3] dark:hover:text-sky-300 transition-all text-xs font-semibold cursor-pointer"
                     title="Show incident list"
                   >
-                    <Navigation className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                    <Navigation className="w-3.5 h-3.5 text-[#0071E3] dark:text-sky-400 transition-transform duration-200 group-hover:scale-110" />
                     <span>Incidents</span>
                     <span className="px-1.5 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 font-bold text-[10px] tabular-nums">
                       {pinReports.length}
