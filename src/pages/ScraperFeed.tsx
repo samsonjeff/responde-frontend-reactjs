@@ -1198,9 +1198,9 @@ export default function ScraperFeed() {
                                   <span>Extracted Incident Details</span>
                                 </h4>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                  <div className="bg-white/90 dark:bg-[#111827]/90 rounded-2xl p-3.5 sm:p-4 border border-slate-200/80 dark:border-white/10 hover:border-blue-400/60 dark:hover:border-blue-500/50 hover:bg-blue-50/20 dark:hover:bg-blue-950/20 hover:shadow-[0_4px_16px_rgba(0,113,227,0.12)] hover:-translate-y-0.5 transition-all duration-200 group/loc">
+                                  <div className="bg-white/90 dark:bg-[#111827]/90 rounded-2xl p-3.5 sm:p-4 border border-slate-200/80 dark:border-white/10 shadow-[0_1px_3px_rgba(15,23,42,0.03)]">
                                     <div className="flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
-                                      <div className="w-6 h-6 rounded-lg bg-blue-500/10 text-[#0071E3] dark:text-sky-400 flex items-center justify-center border border-blue-500/20 group-hover/loc:scale-105 transition-transform">
+                                      <div className="w-6 h-6 rounded-lg bg-blue-500/10 text-[#0071E3] dark:text-sky-400 flex items-center justify-center border border-blue-500/20">
                                         <MapPin className="w-3.5 h-3.5" strokeWidth={1.75} />
                                       </div>
                                       <span>Extracted Location</span>
@@ -1210,7 +1210,7 @@ export default function ScraperFeed() {
                                     </p>
                                   </div>
 
-                                  <div className="bg-white/90 dark:bg-[#111827]/90 rounded-2xl p-3.5 sm:p-4 border border-slate-200/80 dark:border-white/10 hover:border-amber-400/60 dark:hover:border-amber-500/50 hover:bg-amber-50/20 dark:hover:bg-amber-950/20 hover:shadow-[0_4px_16px_rgba(245,158,11,0.12)] hover:-translate-y-0.5 transition-all duration-200 group/cat">
+                                  <div className="bg-white/90 dark:bg-[#111827]/90 rounded-2xl p-3.5 sm:p-4 border border-slate-200/80 dark:border-white/10 shadow-[0_1px_3px_rgba(15,23,42,0.03)]">
                                     <div className="flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
                                       <div className="w-6 h-6 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center border border-amber-500/20">
                                         <AlertTriangle className="w-3.5 h-3.5" strokeWidth={1.75} />
@@ -1281,7 +1281,7 @@ export default function ScraperFeed() {
                                 <h4 className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">
                                   Raw Post Source Reference
                                 </h4>
-                                <div className="bg-white/90 dark:bg-[#111827]/90 rounded-2xl p-4 sm:p-5 border border-slate-200/80 dark:border-white/10 hover:border-blue-300/50 dark:hover:border-blue-500/40 hover:bg-blue-50/15 dark:hover:bg-blue-950/15 hover:shadow-xs transition-all duration-200">
+                                <div className="bg-white/90 dark:bg-[#111827]/90 rounded-2xl p-4 sm:p-5 border border-slate-200/80 dark:border-white/10 shadow-[0_1px_3px_rgba(15,23,42,0.03)]">
                                   <p className="text-xs sm:text-sm text-slate-800 dark:text-slate-200 leading-relaxed italic break-words">
                                     &ldquo;{selectedPost.rawText}&rdquo;
                                   </p>
