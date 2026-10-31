@@ -620,22 +620,28 @@ export default function Analytics() {
                 </div>
 
                 <div className="flex items-center gap-2.5 shrink-0 flex-wrap">
-                  <button
+                  <motion.button
                     type="button"
+                    whileHover={{ y: -1, scale: 1.02 }}
+                    whileTap={{ scale: 0.96 }}
+                    transition={{ type: 'spring', stiffness: 450, damping: 25 }}
                     onClick={exportCSV}
-                    className="inline-flex items-center gap-2 px-3.5 py-2 min-h-[40px] text-xs font-medium border border-slate-200/80 dark:border-slate-700/80 text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/60 rounded-xl shadow-xs transition-all duration-150 active:scale-[0.98] cursor-pointer"
+                    className="group inline-flex items-center gap-2 px-3.5 py-2 min-h-[40px] text-xs font-semibold border border-slate-200/80 dark:border-white/10 text-slate-700 dark:text-slate-200 bg-white/90 dark:bg-slate-800/90 hover:bg-blue-50/60 dark:hover:bg-blue-950/40 hover:text-[#0071E3] dark:hover:text-sky-300 hover:border-blue-400/60 dark:hover:border-blue-500/50 rounded-xl shadow-xs hover:shadow-[0_4px_16px_rgba(0,113,227,0.18)] transition-all duration-200 cursor-pointer select-none"
                   >
-                    <Download className="w-3.5 h-3.5" strokeWidth={1.75} />
+                    <Download className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 group-hover:text-[#0071E3] dark:group-hover:text-sky-300 transition-all duration-200 group-hover:-translate-y-0.5" strokeWidth={1.8} />
                     <span>Export CSV</span>
-                  </button>
-                  <button
+                  </motion.button>
+                  <motion.button
                     type="button"
+                    whileHover={{ y: -1, scale: 1.02 }}
+                    whileTap={{ scale: 0.96 }}
+                    transition={{ type: 'spring', stiffness: 450, damping: 25 }}
                     onClick={downloadPDF}
-                    className="inline-flex items-center gap-2 px-4 py-2 min-h-[40px] text-xs font-medium text-white bg-slate-900 hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100 rounded-xl shadow-xs transition-all duration-150 active:scale-[0.98] cursor-pointer"
+                    className="group inline-flex items-center gap-2 px-4 py-2 min-h-[40px] text-xs font-semibold text-white bg-[#0071E3] hover:bg-[#0077ED] border border-blue-400/30 rounded-xl shadow-[0_2px_10px_rgba(0,113,227,0.30)] hover:shadow-[0_6px_20px_rgba(0,113,227,0.45)] transition-all duration-200 cursor-pointer select-none"
                   >
-                    <FileText className="w-3.5 h-3.5" strokeWidth={1.75} />
+                    <FileText className="w-3.5 h-3.5 transition-transform duration-200 group-hover:scale-110" strokeWidth={1.8} />
                     <span>Download PDF</span>
-                  </button>
+                  </motion.button>
                 </div>
               </div>
 
