@@ -254,11 +254,14 @@ function VolumeTooltip({ active, payload, label }: CTP) {
   if (!active || !payload?.length) return null;
   const val = Number(payload[0]?.value ?? 0);
   return (
-    <div className="bg-white/95 dark:bg-slate-900/95 border border-slate-200/80 dark:border-slate-800 px-3.5 py-2.5 rounded-xl shadow-lg text-xs backdrop-blur-xs">
-      <p className="font-medium text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-wider">{label}</p>
-      <div className="flex items-baseline gap-1.5 mt-0.5">
-        <span className="text-base font-bold text-slate-900 dark:text-white tabular-nums">{val}</span>
-        <span className="text-xs text-slate-500 dark:text-slate-400">{val === 1 ? 'incident' : 'incidents'}</span>
+    <div className="bg-white/95 dark:bg-slate-900/95 border border-slate-200/80 dark:border-white/10 px-3.5 py-2.5 rounded-2xl shadow-[0_8px_24px_rgba(0,113,227,0.18)] text-xs backdrop-blur-md ring-1 ring-[#0071E3]/20 animate-in fade-in zoom-in-95 duration-150">
+      <div className="flex items-center gap-1.5 mb-1">
+        <span className="w-2 h-2 rounded-full bg-[#0071E3] shadow-[0_0_6px_rgba(0,113,227,0.8)]" />
+        <p className="font-semibold text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-wider">{label}</p>
+      </div>
+      <div className="flex items-baseline gap-1.5">
+        <span className="text-lg font-bold text-slate-900 dark:text-white tabular-nums">{val}</span>
+        <span className="text-xs font-semibold text-[#0071E3] dark:text-sky-400">{val === 1 ? 'incident' : 'incidents'}</span>
       </div>
     </div>
   );
@@ -1083,41 +1086,55 @@ export default function Analytics() {
                   icon={TrendingUp}
                   title="Incident Volume Over Time"
                   description="Daily incident intake volume and rate of submissions"
-                  iconColor="#2563EB"
+                  iconColor="#0071E3"
                 />
 
-                {/* Soft Segmented Control */}
-                <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800/80 p-1 rounded-xl shrink-0 border border-slate-200/60 dark:border-slate-700/60 self-start sm:self-auto">
+                {/* Soft Segmented Control with glowing blue hover effects */}
+                <div className="flex items-center gap-1 bg-slate-100/90 dark:bg-slate-800/80 p-1 rounded-2xl shrink-0 border border-slate-200/60 dark:border-white/5 shadow-inner self-start sm:self-auto backdrop-blur-md">
                   {(['7d', '30d', '3m'] as const).map((r) => {
                     const isActive = volumeRange === r;
                     return (
-                      <button
+                      <motion.button
                         key={r}
                         type="button"
+                        whileHover={{ y: -1, scale: 1.02 }}
+                        whileTap={{ scale: 0.96 }}
+                        transition={{ type: 'spring', stiffness: 450, damping: 25 }}
                         onClick={() => setVolumeRange(r)}
-                        className={`relative px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all duration-200 cursor-pointer active:scale-[0.98] ${
+                        className={`group relative px-3.5 py-1.5 text-xs font-semibold rounded-xl transition-all duration-200 cursor-pointer select-none ${
                           isActive
-                            ? 'bg-white text-slate-900 dark:bg-slate-700 dark:text-white shadow-xs'
-                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                            ? 'bg-white text-[#0071E3] dark:bg-slate-700 dark:text-sky-300 shadow-[0_2px_10px_rgba(0,113,227,0.18)] dark:shadow-[0_2px_12px_rgba(0,0,0,0.4)] ring-1 ring-[#0071E3]/25 dark:ring-blue-400/30'
+                            : 'text-slate-600 dark:text-slate-400 hover:text-[#0071E3] dark:hover:text-sky-300 hover:bg-blue-50/70 dark:hover:bg-blue-950/40 hover:shadow-2xs'
                         }`}
                       >
-                        <span>
+                        <span className="transition-colors duration-200">
                           {r === '7d' ? 'Last 7 Days' : r === '30d' ? 'Last 30 Days' : 'Last 3 Months'}
                         </span>
-                      </button>
+                      </motion.button>
                     );
                   })}
                 </div>
               </div>
 
               {volumeChartData.length ? (
-                <div className="h-64 w-full">
+                <motion.div
+                  key={volumeRange}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+                  className="h-64 w-full"
+                >
                   <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={volumeChartData} margin={{ top: 12, right: 12, left: -24, bottom: 0 }}>
+                    <AreaChart
+                      key={`area-chart-${volumeRange}`}
+                      data={volumeChartData}
+                      margin={{ top: 12, right: 12, left: -24, bottom: 0 }}
+                    >
                       <defs>
                         <linearGradient id="softBlueGradient" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#2563EB" stopOpacity={0.2} />
-                          <stop offset="95%" stopColor="#2563EB" stopOpacity={0.0} />
+                          <stop offset="0%" stopColor="#0071E3" stopOpacity={0.35} />
+                          <stop offset="60%" stopColor="#0071E3" stopOpacity={0.08} />
+                          <stop offset="100%" stopColor="#0071E3" stopOpacity={0.0} />
                         </linearGradient>
                       </defs>
                       <CartesianGrid
@@ -1138,20 +1155,33 @@ export default function Analytics() {
                         axisLine={false}
                         tickLine={false}
                       />
-                      <Tooltip content={<VolumeTooltip />} />
+                      <Tooltip
+                        content={<VolumeTooltip />}
+                        cursor={{ stroke: '#0071E3', strokeWidth: 1.5, strokeDasharray: '4 4', strokeOpacity: 0.5 }}
+                      />
                       <Area
                         type="monotone"
                         dataKey="count"
-                        stroke="#2563EB"
-                        strokeWidth={2}
+                        stroke="#0071E3"
+                        strokeWidth={2.5}
                         fillOpacity={1}
                         fill="url(#softBlueGradient)"
-                        dot={{ r: 3, fill: '#2563EB', strokeWidth: 1.5, stroke: '#fff' }}
-                        activeDot={{ r: 5, fill: '#2563EB', stroke: '#fff', strokeWidth: 2 }}
+                        isAnimationActive={true}
+                        animationDuration={1300}
+                        animationEasing="ease-out"
+                        animationBegin={80}
+                        dot={{ r: 3.5, fill: '#0071E3', strokeWidth: 2, stroke: '#ffffff' }}
+                        activeDot={{
+                          r: 6.5,
+                          fill: '#0071E3',
+                          stroke: '#ffffff',
+                          strokeWidth: 2.5,
+                          style: { filter: 'drop-shadow(0 0 8px rgba(0,113,227,0.7))' },
+                        }}
                       />
                     </AreaChart>
                   </ResponsiveContainer>
-                </div>
+                </motion.div>
               ) : (
                 <div className="flex flex-col items-center justify-center py-16 text-slate-400 dark:text-slate-500 text-xs gap-2">
                   <TrendingUp className="w-8 h-8 stroke-[1.5] text-slate-300 dark:text-slate-600" />
