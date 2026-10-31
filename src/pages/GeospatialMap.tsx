@@ -784,7 +784,7 @@ function IncidentSidebarContent({
               <span className="text-sm font-bold tracking-tight text-slate-900 dark:text-white truncate">
                 Live Incidents
               </span>
-              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 tabular-nums font-mono shrink-0">
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 tabular-nums font-mono shrink-0 transition-transform duration-200 hover:scale-105 cursor-default">
                 {count + incompleteReports.length} Total
               </span>
             </div>
@@ -796,7 +796,7 @@ function IncidentSidebarContent({
 
         <button
           onClick={onClose}
-          className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-slate-100/80 dark:bg-slate-800/80 hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-all active:scale-90 cursor-pointer shrink-0"
+          className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-slate-100/80 dark:bg-slate-800/80 hover:bg-rose-50 dark:hover:bg-rose-950/30 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 flex items-center justify-center transition-all duration-200 active:scale-90 hover:rotate-90 hover:scale-105 cursor-pointer shrink-0 shadow-2xs"
           title="Close incident list"
           aria-label="Close incident list"
         >
@@ -810,25 +810,25 @@ function IncidentSidebarContent({
           <button
             type="button"
             onClick={() => onTabChange('plotted')}
-            className={`relative flex-1 py-1.5 px-3 rounded-xl transition-colors duration-150 flex items-center justify-center gap-1.5 cursor-pointer z-10 select-none ${
+            className={`group relative flex-1 py-1.5 px-3 rounded-xl transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer z-10 select-none active:scale-[0.97] ${
               activeSidebarTab === 'plotted'
-                ? 'text-slate-900 dark:text-white'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                ? 'text-[#0071E3] dark:text-sky-400 font-bold'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/40 dark:hover:bg-slate-700/40'
             }`}
           >
             {activeSidebarTab === 'plotted' && (
               <motion.div
                 layoutId="sidebarActiveTabPill"
                 transition={SOFT_SPRING}
-                className="absolute inset-0 bg-white dark:bg-slate-700/90 rounded-xl shadow-xs border border-black/5 dark:border-white/10"
+                className="absolute inset-0 bg-white dark:bg-slate-700/90 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)] border border-black/[0.04] dark:border-white/10"
               />
             )}
-            <MapPin className="w-3.5 h-3.5 relative z-10" />
+            <MapPin className="w-3.5 h-3.5 relative z-10 transition-transform duration-200 ease-out group-hover:scale-115 group-hover:-translate-y-0.5" />
             <span className="relative z-10 font-bold">Plotted</span>
             <span
-              className={`relative z-10 text-[10px] px-2 py-0.2 rounded-full tabular-nums font-bold ${
+              className={`relative z-10 text-[10px] px-2 py-0.2 rounded-full tabular-nums font-bold transition-transform duration-200 group-hover:scale-105 ${
                 activeSidebarTab === 'plotted'
-                  ? 'bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400'
+                  ? 'bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 ring-1 ring-blue-500/20'
                   : 'bg-slate-300/60 dark:bg-slate-700/60 text-slate-600 dark:text-slate-400'
               }`}
             >
@@ -838,25 +838,25 @@ function IncidentSidebarContent({
           <button
             type="button"
             onClick={() => onTabChange('incomplete')}
-            className={`relative flex-1 py-1.5 px-3 rounded-xl transition-colors duration-150 flex items-center justify-center gap-1.5 cursor-pointer z-10 select-none ${
+            className={`group relative flex-1 py-1.5 px-3 rounded-xl transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer z-10 select-none active:scale-[0.97] ${
               activeSidebarTab === 'incomplete'
-                ? 'text-slate-900 dark:text-white'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                ? 'text-sky-700 dark:text-sky-300 font-bold'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/40 dark:hover:bg-slate-700/40'
             }`}
           >
             {activeSidebarTab === 'incomplete' && (
               <motion.div
                 layoutId="sidebarActiveTabPill"
                 transition={SOFT_SPRING}
-                className="absolute inset-0 bg-white dark:bg-slate-700/90 rounded-xl shadow-xs border border-black/5 dark:border-white/10"
+                className="absolute inset-0 bg-white dark:bg-slate-700/90 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)] border border-black/[0.04] dark:border-white/10"
               />
             )}
-            <AlertTriangle className="w-3.5 h-3.5 relative z-10 text-amber-500" />
+            <AlertTriangle className="w-3.5 h-3.5 relative z-10 text-sky-500 dark:text-sky-400 transition-transform duration-200 ease-out group-hover:scale-115 group-hover:-rotate-6" />
             <span className="relative z-10 font-bold">Incomplete</span>
             <span
-              className={`relative z-10 text-[10px] px-2 py-0.2 rounded-full tabular-nums font-bold ${
+              className={`relative z-10 text-[10px] px-2 py-0.2 rounded-full tabular-nums font-bold transition-transform duration-200 group-hover:scale-105 ${
                 activeSidebarTab === 'incomplete'
-                  ? 'bg-amber-50 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400'
+                  ? 'bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 ring-1 ring-sky-500/20'
                   : 'bg-slate-300/60 dark:bg-slate-700/60 text-slate-600 dark:text-slate-400'
               }`}
             >
@@ -876,23 +876,23 @@ function IncidentSidebarContent({
                   key={src}
                   type="button"
                   onClick={() => setSourceFilter(src)}
-                  className={`inline-flex items-center gap-1.5 text-[10px] font-semibold px-2.5 py-1 rounded-lg transition-all duration-150 active:scale-95 cursor-pointer ${
+                  className={`group inline-flex items-center gap-1.5 text-[10px] font-semibold px-2.5 py-1 rounded-lg transition-all duration-200 ease-out cursor-pointer select-none ${
                     isSelected
-                      ? 'bg-[#0071E3] text-white shadow-xs font-bold'
-                      : 'bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 hover:bg-slate-200/80 dark:hover:bg-slate-700/80'
+                      ? 'bg-[#0071E3] text-white shadow-[0_2px_8px_rgba(0,113,227,0.35)] font-bold scale-[1.02]'
+                      : 'bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 border border-slate-200/70 dark:border-white/10 hover:border-slate-300/80 hover:bg-white dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white hover:-translate-y-0.5 hover:shadow-2xs active:translate-y-0 active:scale-95'
                   }`}
                 >
                   {src === 'all' ? (
-                    <span>All</span>
+                    <span className="transition-colors">All</span>
                   ) : src === 'Bot' ? (
                     <>
-                      <Bot className={`w-3 h-3 ${isSelected ? 'text-white' : 'text-[#0071E3]'}`} strokeWidth={1.75} />
-                      <span>Bot</span>
+                      <Bot className={`w-3 h-3 transition-transform duration-200 ease-out group-hover:scale-115 ${isSelected ? 'text-white' : 'text-[#0071E3]'}`} strokeWidth={1.75} />
+                      <span className="transition-colors">Bot</span>
                     </>
                   ) : (
                     <>
-                      <Globe className={`w-3 h-3 ${isSelected ? 'text-white' : 'text-purple-500'}`} strokeWidth={1.75} />
-                      <span>Scraper</span>
+                      <Globe className={`w-3 h-3 transition-transform duration-200 ease-out group-hover:scale-115 ${isSelected ? 'text-white' : 'text-purple-500'}`} strokeWidth={1.75} />
+                      <span className="transition-colors">Scraper</span>
                     </>
                   )}
                 </button>
@@ -904,7 +904,7 @@ function IncidentSidebarContent({
             <button
               type="button"
               onClick={() => setSourceFilter('all')}
-              className="text-[10px] font-semibold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+              className="text-[10px] font-semibold text-[#0071E3] dark:text-sky-400 hover:underline hover:text-blue-700 dark:hover:text-sky-300 transition-colors cursor-pointer active:scale-95"
             >
               Reset ({filteredTotal}/{activeTotal})
             </button>
@@ -919,17 +919,17 @@ function IncidentSidebarContent({
           <div className="flex items-center justify-between px-4 py-2 border-b border-slate-200/40 dark:border-white/5 shrink-0 bg-white/40 dark:bg-[#0f172a]/40 text-[11px] text-slate-500 dark:text-slate-400">
             <span className="font-semibold text-slate-400 uppercase tracking-wider text-[10px]">Priority Levels:</span>
             <div className="flex items-center gap-3">
-              <div className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-[#22c55e] ring-2 ring-green-500/20" />
-                <span className="text-[10px]">Low</span>
+              <div className="group flex items-center gap-1 cursor-default transition-all duration-150 hover:scale-105">
+                <span className="w-2 h-2 rounded-full bg-[#22c55e] ring-2 ring-green-500/20 transition-transform duration-200 group-hover:scale-125" />
+                <span className="text-[10px] group-hover:text-slate-700 dark:group-hover:text-slate-200 transition-colors">Low</span>
               </div>
-              <div className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-amber-500 ring-2 ring-amber-500/20" />
-                <span className="text-[10px]">Mod</span>
+              <div className="group flex items-center gap-1 cursor-default transition-all duration-150 hover:scale-105">
+                <span className="w-2 h-2 rounded-full bg-amber-500 ring-2 ring-amber-500/20 transition-transform duration-200 group-hover:scale-125" />
+                <span className="text-[10px] group-hover:text-slate-700 dark:group-hover:text-slate-200 transition-colors">Mod</span>
               </div>
-              <div className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-rose-500 ring-2 ring-rose-500/20 animate-pulse" />
-                <span className="text-[10px]">High</span>
+              <div className="group flex items-center gap-1 cursor-default transition-all duration-150 hover:scale-105">
+                <span className="w-2 h-2 rounded-full bg-rose-500 ring-2 ring-rose-500/20 animate-pulse transition-transform duration-200 group-hover:scale-125" />
+                <span className="text-[10px] font-semibold text-rose-600 dark:text-rose-400 transition-colors">High</span>
               </div>
             </div>
           </div>
