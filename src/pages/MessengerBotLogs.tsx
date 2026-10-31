@@ -310,6 +310,8 @@ export default function MessengerBotLogs() {
     hasBelow: boolean;
     prevTargetIdx: number;
     nextTargetIdx: number;
+    firstDistressIdx: number;
+    canScrollUp: boolean;
   }>({
     show: false,
     direction: 'up',
@@ -320,6 +322,8 @@ export default function MessengerBotLogs() {
     hasBelow: false,
     prevTargetIdx: -1,
     nextTargetIdx: -1,
+    firstDistressIdx: -1,
+    canScrollUp: false,
   });
 
   // Track seen conversations (persisted in localStorage)
@@ -719,6 +723,9 @@ export default function MessengerBotLogs() {
       ? elements[elements.findIndex((e) => e.idx === currentDistress.idx) + 1].idx
       : -1;
 
+    const canScrollUp = (container.scrollTop > 15) || hasAbove;
+    const firstDistressIdx = indices.length > 0 ? indices[0] : -1;
+
     setDistressNav({
       show: true,
       direction,
@@ -729,6 +736,8 @@ export default function MessengerBotLogs() {
       hasBelow,
       prevTargetIdx: prevTarget,
       nextTargetIdx: nextTarget,
+      firstDistressIdx,
+      canScrollUp,
     });
   }, [selectedConversation]);
 
@@ -758,6 +767,38 @@ export default function MessengerBotLogs() {
     },
     [updateDistressNav]
   );
+
+  const handleJumpToTop = () => {
+    const container = chatScrollRef.current;
+    if (!container) return;
+
+    // If multiple distress messages and we are below the first one (e.g. at #2 or #3),
+    // jump straight to the first (topmost) distress signal in one click!
+    const firstIdx = distressNav.firstDistressIdx;
+    if (firstIdx !== -1 && distressNav.currentNumber > 1) {
+      jumpToMessageIndex(firstIdx);
+      return;
+    }
+
+    // If first distress is scrolled above out of view, jump straight to it
+    if (firstIdx !== -1) {
+      const firstEl = container.querySelector<HTMLElement>(`[data-distress-idx="${firstIdx}"]`);
+      if (firstEl) {
+        const containerRect = container.getBoundingClientRect();
+        const elRect = firstEl.getBoundingClientRect();
+        if (elRect.bottom < containerRect.top + 60) {
+          jumpToMessageIndex(firstIdx);
+          return;
+        }
+      }
+    }
+
+    // If already at or past the first distress, scroll smoothly to the very top of the chat
+    container.scrollTo({ top: 0, behavior: 'smooth' });
+    setTimeout(() => {
+      updateDistressNav();
+    }, 450);
+  };
 
   const handleJumpDirection = (dir: 'up' | 'down') => {
     preferredDirectionRef.current = dir;
@@ -1419,14 +1460,15 @@ export default function MessengerBotLogs() {
                           className="absolute bottom-3 left-1/2 -translate-x-1/2 z-30 pointer-events-auto"
                         >
                           <div className="group flex items-center gap-1 p-1 rounded-full bg-white/95 dark:bg-[#242526]/95 backdrop-blur-xl border border-rose-500/35 dark:border-rose-500/40 shadow-[0_8px_24px_rgba(244,63,94,0.24)] dark:shadow-[0_8px_24px_rgba(244,63,94,0.3)] text-xs font-semibold select-none">
-                            {/* Scroll up to previous distress */}
+                            {/* Instant jump to top / first distress */}
                             {distressNav.total > 1 && (
                               <button
                                 type="button"
-                                onClick={() => handleJumpDirection('up')}
-                                disabled={!distressNav.hasAbove}
+                                onClick={handleJumpToTop}
+                                disabled={!distressNav.canScrollUp}
                                 className="flex items-center justify-center w-6 h-6 rounded-full text-rose-600 dark:text-rose-400 hover:bg-rose-500/15 active:scale-90 disabled:opacity-25 disabled:pointer-events-none transition-all cursor-pointer"
-                                title="Previous distress signal (scroll up)"
+                                title="Go on top / First distress signal"
+                                aria-label="Go on top / First distress signal"
                               >
                                 <ArrowUp className="w-3.5 h-3.5" strokeWidth={2.2} />
                               </button>
