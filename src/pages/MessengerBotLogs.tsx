@@ -1161,14 +1161,14 @@ export default function MessengerBotLogs() {
                                 <span
                                   className={`inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-semibold rounded-md px-1.5 sm:px-2 py-0.5 border transition-colors duration-200 ${
                                     isIncomplete
-                                      ? "bg-sky-500/10 dark:bg-sky-500/20 text-sky-700 dark:text-sky-300 border-sky-500/20"
+                                      ? "bg-amber-500/10 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/20"
                                       : "bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/20"
                                   }`}
                                 >
                                   <span
                                     className={`w-1.5 h-1.5 rounded-full ${
                                       isIncomplete
-                                        ? "bg-sky-500 animate-pulse"
+                                        ? "bg-amber-500 animate-pulse"
                                         : "bg-emerald-500"
                                     }`}
                                   />
@@ -1196,7 +1196,7 @@ export default function MessengerBotLogs() {
                                       animate={{ scale: 1, opacity: 1 }}
                                       exit={{ scale: 0, opacity: 0 }}
                                       transition={APPLE_SPRING}
-                                      className="w-2 h-2 rounded-full bg-sky-500 shadow-[0_0_8px_rgba(14,165,233,0.45)] shrink-0"
+                                      className="w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.45)] shrink-0"
                                       title="Incomplete conversation"
                                     />
                                   )}
@@ -1304,20 +1304,16 @@ export default function MessengerBotLogs() {
                         <div
                           role="group"
                           aria-label="Conversation Status"
-                          className={`inline-flex items-center p-1 rounded-full backdrop-blur-md transition-all duration-300 shadow-xs border ${
-                            selectedConversation.status === "Incomplete"
-                              ? "bg-sky-500/10 dark:bg-sky-950/30 border-sky-300/80 dark:border-sky-500/30 ring-2 ring-sky-500/15 shadow-[0_2px_12px_rgba(14,165,233,0.15)]"
-                              : "bg-emerald-500/10 dark:bg-emerald-950/30 border-emerald-300/80 dark:border-emerald-500/30 ring-2 ring-emerald-500/15 shadow-[0_2px_12px_rgba(16,185,129,0.12)]"
-                          }`}
+                          className="inline-flex items-center p-0.5 sm:p-1 bg-slate-100/90 dark:bg-slate-800/80 backdrop-blur-md rounded-full border border-slate-200/70 dark:border-white/10 shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]"
                         >
                           {/* Incomplete Option */}
                           <button
                             type="button"
                             onClick={() => updateConversationStatus(selectedConversation.id, "Incomplete")}
-                            className={`relative flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-full text-xs font-bold tracking-tight transition-all duration-200 select-none active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 cursor-pointer ${
+                            className={`relative flex items-center gap-1.5 px-3 sm:px-3.5 py-1 sm:py-1.5 rounded-full text-xs font-semibold tracking-tight transition-all duration-200 select-none active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 cursor-pointer ${
                               selectedConversation.status === "Incomplete"
                                 ? "text-white"
-                                : "text-slate-600 dark:text-slate-400 hover:text-[#0071E3] dark:hover:text-sky-300 hover:bg-black/5 dark:hover:bg-white/5"
+                                : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-black/[0.03] dark:hover:bg-white/[0.04]"
                             }`}
                             title="Mark conversation as Incomplete"
                           >
@@ -1325,14 +1321,14 @@ export default function MessengerBotLogs() {
                               <motion.div
                                 layoutId="activeStatusCapsule"
                                 transition={APPLE_SPRING}
-                                className="absolute inset-0 bg-gradient-to-r from-sky-500 to-[#0071E3] rounded-full shadow-[0_2px_10px_rgba(0,113,227,0.38)]"
+                                className="absolute inset-0 bg-gradient-to-r from-amber-500 to-amber-600 rounded-full shadow-[0_1px_4px_rgba(245,158,11,0.35)]"
                               />
                             )}
                             <span
-                              className={`relative z-10 w-2 h-2 rounded-full transition-colors ${
+                              className={`relative z-10 w-1.5 h-1.5 rounded-full transition-colors ${
                                 selectedConversation.status === "Incomplete"
-                                  ? "bg-white shadow-xs animate-pulse"
-                                  : "bg-sky-500"
+                                  ? "bg-white animate-pulse"
+                                  : "bg-amber-500"
                               }`}
                             />
                             <span className="relative z-10">Incomplete</span>
@@ -1342,10 +1338,10 @@ export default function MessengerBotLogs() {
                           <button
                             type="button"
                             onClick={() => updateConversationStatus(selectedConversation.id, "Complete")}
-                            className={`relative flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-full text-xs font-bold tracking-tight transition-all duration-200 select-none active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 cursor-pointer ${
+                            className={`relative flex items-center gap-1.5 px-3 sm:px-3.5 py-1 sm:py-1.5 rounded-full text-xs font-semibold tracking-tight transition-all duration-200 select-none active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 cursor-pointer ${
                               selectedConversation.status === "Complete"
                                 ? "text-white"
-                                : "text-slate-600 dark:text-slate-400 hover:text-emerald-700 dark:hover:text-emerald-300 hover:bg-black/5 dark:hover:bg-white/5"
+                                : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-black/[0.03] dark:hover:bg-white/[0.04]"
                             }`}
                             title="Mark conversation as Complete"
                           >
@@ -1353,16 +1349,16 @@ export default function MessengerBotLogs() {
                               <motion.div
                                 layoutId="activeStatusCapsule"
                                 transition={APPLE_SPRING}
-                                className="absolute inset-0 bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-full shadow-[0_2px_8px_rgba(16,185,129,0.4)]"
+                                className="absolute inset-0 bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-full shadow-[0_1px_4px_rgba(16,185,129,0.35)]"
                               />
                             )}
                             <CheckCircle2
                               className={`relative z-10 w-3.5 h-3.5 transition-colors ${
                                 selectedConversation.status === "Complete"
                                   ? "text-white"
-                                  : "text-emerald-600 dark:text-emerald-400"
+                                  : "text-emerald-500"
                               }`}
-                              strokeWidth={2.25}
+                              strokeWidth={2}
                             />
                             <span className="relative z-10">Complete</span>
                           </button>
