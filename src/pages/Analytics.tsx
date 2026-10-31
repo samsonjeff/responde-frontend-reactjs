@@ -1279,10 +1279,14 @@ export default function Analytics() {
                   count: stats.bot,
                   desc: 'Direct citizen conversational submissions',
                   bg: 'bg-indigo-500/10 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 border-indigo-500/20',
-                  hoverBorder: 'hover:border-indigo-400/60 dark:hover:border-indigo-500/50',
-                  hoverShadow: 'hover:shadow-[0_12px_32px_rgba(99,102,241,0.20)]',
-                  barGradient: 'bg-gradient-to-r from-indigo-500 via-indigo-600 to-purple-600 shadow-[0_0_10px_rgba(99,102,241,0.5)]',
-                  badgeBg: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20',
+                  hoverBorder: 'hover:border-indigo-400 dark:hover:border-indigo-400 ring-1 ring-transparent hover:ring-indigo-400/30',
+                  hoverShadow: 'hover:shadow-[0_0_24px_rgba(99,102,241,0.22),0_12px_28px_rgba(99,102,241,0.14)] dark:hover:shadow-[0_0_30px_rgba(99,102,241,0.32),0_12px_28px_rgba(0,0,0,0.5)]',
+                  hoverBg: 'hover:bg-indigo-50/40 dark:hover:bg-indigo-950/20',
+                  iconHover: 'group-hover:shadow-[0_0_16px_rgba(99,102,241,0.35)] group-hover:border-indigo-400/50',
+                  barGradient: 'bg-gradient-to-r from-indigo-500 via-indigo-600 to-purple-600 shadow-[0_0_10px_rgba(99,102,241,0.5)] group-hover:shadow-[0_0_14px_rgba(99,102,241,0.8)]',
+                  badgeBg: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20 group-hover:border-indigo-400/50 group-hover:bg-indigo-500/15',
+                  glowOrb: 'bg-indigo-500/0 group-hover:bg-indigo-500/15 dark:group-hover:bg-indigo-500/20',
+                  topBar: 'from-indigo-500 via-purple-500 to-indigo-500',
                 },
                 {
                   icon: Globe2,
@@ -1290,12 +1294,16 @@ export default function Analytics() {
                   count: stats.scraper,
                   desc: 'AI-mined community social feeds and groups',
                   bg: 'bg-blue-500/10 dark:bg-blue-500/20 text-[#0071E3] dark:text-sky-400 border-blue-500/20',
-                  hoverBorder: 'hover:border-blue-400/60 dark:hover:border-blue-500/50',
-                  hoverShadow: 'hover:shadow-[0_12px_32px_rgba(0,113,227,0.20)]',
-                  barGradient: 'bg-gradient-to-r from-[#0071E3] via-blue-500 to-sky-400 shadow-[0_0_10px_rgba(0,113,227,0.5)]',
-                  badgeBg: 'bg-blue-500/10 text-[#0071E3] dark:text-sky-400 border-blue-500/20',
+                  hoverBorder: 'hover:border-[#0071E3] dark:hover:border-sky-400 ring-1 ring-transparent hover:ring-[#0071E3]/30',
+                  hoverShadow: 'hover:shadow-[0_0_24px_rgba(0,113,227,0.22),0_12px_28px_rgba(0,113,227,0.14)] dark:hover:shadow-[0_0_30px_rgba(0,113,227,0.32),0_12px_28px_rgba(0,0,0,0.5)]',
+                  hoverBg: 'hover:bg-blue-50/40 dark:hover:bg-blue-950/20',
+                  iconHover: 'group-hover:shadow-[0_0_16px_rgba(0,113,227,0.35)] group-hover:border-blue-400/50',
+                  barGradient: 'bg-gradient-to-r from-[#0071E3] via-blue-500 to-sky-400 shadow-[0_0_10px_rgba(0,113,227,0.5)] group-hover:shadow-[0_0_14px_rgba(0,113,227,0.8)]',
+                  badgeBg: 'bg-blue-500/10 text-[#0071E3] dark:text-sky-400 border-blue-500/20 group-hover:border-blue-400/50 group-hover:bg-blue-500/15',
+                  glowOrb: 'bg-blue-500/0 group-hover:bg-blue-500/15 dark:group-hover:bg-blue-500/20',
+                  topBar: 'from-[#0071E3] via-sky-400 to-[#0071E3]',
                 },
-              ].map(({ icon: Icon, label, count, desc, bg, hoverBorder, hoverShadow, barGradient, badgeBg }) => {
+              ].map(({ icon: Icon, label, count, desc, bg, hoverBorder, hoverShadow, hoverBg, iconHover, barGradient, badgeBg, glowOrb, topBar }) => {
                 const pct = stats.total > 0 ? Math.round((count / stats.total) * 100) : 0;
                 return (
                   <motion.div
@@ -1303,16 +1311,22 @@ export default function Analytics() {
                     whileHover={{ y: -3, scale: 1.01 }}
                     transition={{ type: 'spring', stiffness: 400, damping: 25 }}
                   >
-                    <SoftCard className={`group p-6 flex items-center gap-5 transition-all duration-300 border border-slate-200/80 dark:border-white/10 ${hoverBorder} ${hoverShadow} cursor-default`}>
-                      <div className={`w-14 h-14 rounded-2xl border flex items-center justify-center shrink-0 transition-transform duration-300 group-hover:scale-105 shadow-2xs ${bg}`}>
+                    <SoftCard className={`group relative overflow-hidden p-6 flex items-center gap-5 transition-all duration-300 border border-slate-200/80 dark:border-white/10 ${hoverBorder} ${hoverShadow} ${hoverBg} cursor-default backdrop-blur-md`}>
+                      {/* Top Accent Gradient Line with Hover Bloom */}
+                      <div className={`absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r ${topBar} opacity-0 group-hover:opacity-100 group-hover:h-1 transition-all duration-300`} />
+
+                      {/* Ambient Light Glow Orb */}
+                      <div className={`pointer-events-none absolute -top-12 -right-12 w-44 h-44 rounded-full blur-2xl transition-all duration-500 ${glowOrb}`} />
+
+                      <div className={`w-14 h-14 rounded-2xl border flex items-center justify-center shrink-0 transition-all duration-300 group-hover:scale-105 shadow-2xs relative z-10 ${bg} ${iconHover}`}>
                         <Icon className="w-7 h-7" strokeWidth={1.8} />
                       </div>
-                      <div className="flex-1 min-w-0">
+                      <div className="flex-1 min-w-0 relative z-10">
                         <div className="flex items-center justify-between gap-2">
                           <p className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
                             {label}
                           </p>
-                          <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold border shadow-2xs tabular-nums ${badgeBg}`}>
+                          <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold border shadow-2xs tabular-nums transition-all duration-300 ${badgeBg}`}>
                             {pct}% intake
                           </span>
                         </div>
