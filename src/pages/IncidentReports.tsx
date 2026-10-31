@@ -32,6 +32,40 @@ export const BASE_INCIDENT_TYPES = ['Earthquake', 'Fire', 'Flood', 'General', 'L
 
 const formatBubbleTime = (iso?: string) => formatPhilippineTimeOnly(iso);
 
+// ── Perfectly Aligned Datetime Component (Apple Tabular Layout) ──
+function AlignedTableTime({ rawTime }: { rawTime?: string }) {
+  if (!rawTime) return <span className="text-slate-400 dark:text-slate-500">—</span>;
+
+  // Match: (date part) (time part) (AM/PM)
+  // e.g. "10/31 6:32 PM", "10/31 12:20 PM", "1/5 9:00 AM"
+  const match = rawTime.trim().match(/^(.*?)\s+(\d{1,2}:\d{2}(?::\d{2})?)\s*([AaPp][Mm])$/);
+  if (!match) {
+    return <span className="font-mono tabular-nums">{rawTime}</span>;
+  }
+
+  const [, rawDate, time, period] = match;
+  let displayDate = rawDate;
+  const slashMatch = rawDate.match(/^(\d{1,2})\/(\d{1,2})$/);
+  if (slashMatch) {
+    displayDate = slashMatch[1].padStart(2, "0") + "/" + slashMatch[2].padStart(2, "0");
+  }
+
+  const isLongTime = time.length > 5;
+
+  return (
+    <span className="inline-flex items-center gap-1.5 font-mono tabular-nums text-xs">
+      <span className="text-slate-400 dark:text-slate-500 shrink-0">{displayDate}</span>
+      <span className={(isLongTime ? "w-[8ch]" : "w-[5ch]") + " text-right font-medium text-slate-700 dark:text-slate-200 shrink-0"}>
+        {time}
+      </span>
+      <span className="w-[2.5ch] text-left font-medium text-slate-500 dark:text-slate-400 shrink-0">
+        {period.toUpperCase()}
+      </span>
+    </span>
+  );
+}
+
+
 // ── Apple Design Spring Physics & Ease curves ──
 const APPLE_SPRING = { type: 'spring', stiffness: 340, damping: 34, mass: 0.8 } as const;
 const APPLE_SLIDE_SPRING = { type: 'spring', stiffness: 380, damping: 36, mass: 0.9 } as const;
@@ -45,10 +79,16 @@ const backdropVariants = {
 };
 
 const modalVariants = {
-  hidden: { opacity: 0, scale: 0.97, y: 12 },
+  hidden: { opacity: 0, scale: 0.95, y: 16 },
   visible: { opacity: 1, scale: 1, y: 0 },
-  exit: { opacity: 0, scale: 0.97, y: 12 },
+  exit: { opacity: 0, scale: 0.95, y: 10 },
 };
+
+const MODAL_TRANSITION = {
+  opacity: { duration: 0.35, ease: [0.16, 1, 0.3, 1] },
+  scale: { type: 'spring', stiffness: 220, damping: 26, mass: 0.8 },
+  y: { type: 'spring', stiffness: 220, damping: 26, mass: 0.8 },
+} as const;
 
 // ── Bulk bar: hardware-accelerated transform + opacity only ──
 const barActionVariants = {
@@ -1264,8 +1304,8 @@ export default function IncidentReports() {
                         </span>
                       )}
                     </td>
-                    <td className="px-3.5 py-3.5 w-[12%] min-w-[115px] text-slate-500 dark:text-slate-400 text-xs whitespace-nowrap font-mono tabular-nums">
-                      {report.time}
+                    <td className="px-3.5 py-3.5 w-[12%] min-w-[115px] text-slate-500 dark:text-slate-400 text-xs whitespace-nowrap">
+                      <AlignedTableTime rawTime={report.time} />
                     </td>
                     <td className="px-3.5 py-3.5 w-28 min-w-[110px] text-left whitespace-nowrap sticky right-0 z-10 bg-white dark:bg-[#111827] group-hover:bg-slate-50 dark:group-hover:bg-slate-800 transition-colors border-b border-slate-100 dark:border-white/5 shadow-[-8px_0_12px_-4px_rgba(0,0,0,0.08)] dark:shadow-[-8px_0_12px_-4px_rgba(0,0,0,0.4)] shrink-0" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-start gap-1.5">
@@ -1362,7 +1402,7 @@ export default function IncidentReports() {
             initial="hidden"
             animate="visible"
             exit="exit"
-            transition={{ duration: 0.2 }}
+            transition={{ duration: 0.28, ease: 'easeOut' }}
             className="fixed inset-0 z-[200] flex items-center justify-center p-3 sm:p-6 bg-slate-900/50 dark:bg-black/70 backdrop-blur-md"
             onClick={closeReview}
           >
@@ -1371,7 +1411,7 @@ export default function IncidentReports() {
               initial="hidden"
               animate="visible"
               exit="exit"
-              transition={APPLE_SPRING}
+              transition={MODAL_TRANSITION}
               className="bg-white dark:bg-[#111827] rounded-2xl sm:rounded-3xl border border-slate-200/80 dark:border-white/10 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.3)] w-full max-w-4xl max-h-[92vh] sm:max-h-[88vh] overflow-hidden flex flex-col transform-gpu will-change-transform"
               onClick={(e) => e.stopPropagation()}
             >

@@ -186,6 +186,7 @@ export default function Layout() {
     toasts,
     unreadCount,
     markAllRead,
+    markTypeRead,
     markNotificationRead,
     markMultipleRead,
     deleteNotification,
@@ -217,6 +218,15 @@ export default function Layout() {
   const viewedNotifIdsRef = useRef<Set<string>>(new Set());
   viewedNotifIdsRef.current = viewedNotifIds;
 
+
+  // Clear unread notifications when viewing the corresponding page
+  useEffect(() => {
+    if (location.pathname === '/scraper-feed') {
+      markTypeRead('scraper');
+    } else if (location.pathname === '/messenger-bot-logs') {
+      markTypeRead('messenger');
+    }
+  }, [location.pathname, markTypeRead]);
 
   // Keep notifications bold & highlighted while the notification panel is open.
   // When the user closes the panel, mark ONLY the notifications that were actually scrolled/viewed as read.
@@ -701,11 +711,19 @@ export default function Layout() {
                   {notifOpen && (
                     <motion.div
                       id="notification-dropdown"
-                      initial={{ opacity: 0, y: -12, scale: 0.98 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: -8, scale: 0.98 }}
-                      transition={{ duration: 0.28, ease: APPLE_DECEL_EASE }}
-                      className="fixed sm:absolute left-3 right-3 sm:left-auto sm:right-0 top-20 sm:top-full mt-0 sm:mt-2 w-auto sm:w-100 max-w-[calc(100vw-1.5rem)] sm:max-w-none bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-[0_24px_60px_rgba(0,0,0,0.25)] dark:shadow-[0_24px_60px_rgba(0,0,0,0.85)] z-[110] overflow-hidden flex flex-col"
+                      initial={{ opacity: 0, x: 16, scale: 0.97 }}
+                      animate={{ opacity: 1, x: 0, scale: 1 }}
+                      exit={{
+                        opacity: 0,
+                        x: 12,
+                        scale: 0.97,
+                        transition: { duration: 0.18, ease: [0.4, 0, 1, 1] },
+                      }}
+                      transition={{
+                        duration: 0.36,
+                        ease: APPLE_DECEL_EASE,
+                      }}
+                      className="origin-top-right fixed sm:absolute left-3 right-3 sm:left-auto sm:right-0 top-20 sm:top-full mt-0 sm:mt-2 w-auto sm:w-100 max-w-[calc(100vw-1.5rem)] sm:max-w-none bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-[0_24px_60px_rgba(0,0,0,0.25)] dark:shadow-[0_24px_60px_rgba(0,0,0,0.85)] z-[110] overflow-hidden flex flex-col"
                     >
                       {/* ── Stage 1: Header (Ambatubazz Cascade) ── */}
                       <motion.div
@@ -942,17 +960,25 @@ export default function Layout() {
                   {profileOpen && (
                     <motion.div
                       id="profile-dropdown-menu"
-                      initial={{ opacity: 0, y: -12, scale: 0.98 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: -8, scale: 0.98 }}
-                      transition={{ duration: 0.28, ease: APPLE_DECEL_EASE }}
-                      className="absolute right-0 top-full mt-2 w-72 sm:w-80 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-[0_24px_60px_rgba(0,0,0,0.25)] dark:shadow-[0_24px_60px_rgba(0,0,0,0.85)] z-[110] p-2.5 overflow-hidden flex flex-col"
+                      initial={{ opacity: 0, x: 16, scale: 0.97 }}
+                      animate={{ opacity: 1, x: 0, scale: 1 }}
+                      exit={{
+                        opacity: 0,
+                        x: 12,
+                        scale: 0.97,
+                        transition: { duration: 0.18, ease: [0.4, 0, 1, 1] },
+                      }}
+                      transition={{
+                        duration: 0.36,
+                        ease: APPLE_DECEL_EASE,
+                      }}
+                      className="origin-top-right absolute right-0 top-full mt-2 w-72 sm:w-80 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-[0_24px_60px_rgba(0,0,0,0.25)] dark:shadow-[0_24px_60px_rgba(0,0,0,0.85)] z-[110] p-2.5 overflow-hidden flex flex-col"
                     >
                       {/* ── Stage 1: Identity Card ── */}
                       <motion.div
-                        initial={{ opacity: 0, y: -6 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.22, delay: 0.03, ease: APPLE_DECEL_EASE }}
+                        initial={{ opacity: 0, x: 12 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.28, delay: 0.04, ease: APPLE_DECEL_EASE }}
                         className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/90 border border-slate-100 dark:border-slate-700/60 mb-2"
                       >
                         <div className="flex items-center gap-3">
@@ -1017,9 +1043,9 @@ export default function Layout() {
 
                       {/* ── Stage 2: Quick Actions ── */}
                       <motion.div
-                        initial={{ opacity: 0, y: -4 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.22, delay: 0.06, ease: APPLE_DECEL_EASE }}
+                        initial={{ opacity: 0, x: 12 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.26, delay: 0.08, ease: APPLE_DECEL_EASE }}
                         className="space-y-0.5"
                       >
                         <Link
@@ -1062,9 +1088,9 @@ export default function Layout() {
 
                       {/* ── Stage 3: Sign Out ── */}
                       <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ duration: 0.2, delay: 0.09, ease: APPLE_DECEL_EASE }}
+                        initial={{ opacity: 0, x: 12 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.24, delay: 0.12, ease: APPLE_DECEL_EASE }}
                         className="border-t border-slate-100 dark:border-slate-800/80 mt-1 pt-1"
                       >
                         <button
@@ -1628,10 +1654,19 @@ function DeleteNotificationModal({
             aria-modal="true"
             aria-labelledby="delete-notification-title"
             aria-describedby="delete-notification-desc"
-            initial={{ scale: 0.95, opacity: 0, y: 12 }}
+            initial={{ scale: 0.94, opacity: 0, y: 16 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.95, opacity: 0, y: 8 }}
-            transition={{ duration: 0.25, ease: APPLE_DECEL_EASE }}
+            exit={{
+              scale: 0.94,
+              opacity: 0,
+              y: 8,
+              transition: { duration: 0.18, ease: [0.16, 1, 0.3, 1] },
+            }}
+            transition={{
+              opacity: { duration: 0.32, ease: [0.16, 1, 0.3, 1] },
+              scale: { type: 'spring', stiffness: 220, damping: 26, mass: 0.8 },
+              y: { type: 'spring', stiffness: 220, damping: 26, mass: 0.8 },
+            }}
             onClick={(e) => e.stopPropagation()}
             className="w-full max-w-sm bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl border border-slate-200 dark:border-slate-800 shadow-[0_24px_60px_rgba(0,0,0,0.3)] dark:shadow-[0_24px_60px_rgba(0,0,0,0.9)] p-5 sm:p-6 text-center relative overflow-hidden"
           >

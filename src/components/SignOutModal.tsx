@@ -20,15 +20,15 @@ const backdropVariants = {
 };
 
 const modalVariants = {
-  hidden: { opacity: 0, scale: 0.94, y: 12 },
+  hidden: { opacity: 0, scale: 0.94, y: 16 },
   visible: { opacity: 1, scale: 1, y: 0 },
-  exit: { opacity: 0, scale: 0.94, y: 12 },
+  exit: { opacity: 0, scale: 0.94, y: 10 },
 };
 
 const springTransition: Transition = {
-  type: 'spring',
-  damping: 26,
-  stiffness: 340,
+  opacity: { duration: 0.32, ease: [0.16, 1, 0.3, 1] },
+  scale: { type: 'spring', damping: 26, stiffness: 220, mass: 0.8 },
+  y: { type: 'spring', damping: 26, stiffness: 220, mass: 0.8 },
 };
 
 function formatRole(role?: string | null): string {
@@ -113,7 +113,7 @@ export default function SignOutModal({
           initial="hidden"
           animate="visible"
           exit="exit"
-          transition={{ duration: 0.18 }}
+          transition={{ duration: 0.28, ease: 'easeOut' }}
           className="fixed inset-0 z-[120] flex items-center justify-center p-4 sm:p-6 bg-slate-950/50 dark:bg-black/70 backdrop-blur-sm"
           onClick={() => {
             if (!isLoading) onClose();

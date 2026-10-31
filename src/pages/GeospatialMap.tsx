@@ -245,7 +245,7 @@ function BarangayDetailCard({ name, reports, onClose, onViewList }: {
       animate={{ opacity: 1, scale: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.96, y: 14 }}
       transition={SOFT_SPRING}
-      className="absolute z-30 flex flex-col overflow-hidden rounded-2xl backdrop-blur-2xl bg-white/95 dark:bg-[#111827]/95 shadow-[0_20px_60px_rgba(15,23,42,0.18)] dark:shadow-[0_20px_60px_rgba(0,0,0,0.65)] border border-slate-200/80 dark:border-white/10 border-t-white/90 dark:border-t-white/20 transform-gpu will-change-transform bottom-2 left-2 right-2 max-h-[calc(100%-1rem)] sm:bottom-auto sm:top-3 sm:right-3 sm:left-auto sm:w-[360px] sm:max-w-[calc(100vw-2rem)] sm:max-h-[calc(100%-1.5rem)]"
+      className="absolute z-50 flex flex-col overflow-hidden rounded-2xl backdrop-blur-2xl bg-white/95 dark:bg-[#111827]/95 shadow-[0_20px_60px_rgba(15,23,42,0.18)] dark:shadow-[0_20px_60px_rgba(0,0,0,0.65)] border border-slate-200/80 dark:border-white/10 border-t-white/90 dark:border-t-white/20 transform-gpu will-change-transform bottom-2 left-2 right-2 max-h-[calc(100%-1rem)] sm:bottom-auto sm:top-3 sm:right-3 sm:left-auto sm:w-[360px] sm:max-w-[calc(100vw-2rem)] sm:max-h-[calc(100%-1.5rem)]"
     >
       {/* Mobile sheet grab handle */}
       <div className="w-10 h-1 rounded-full bg-slate-300/80 dark:bg-slate-600/80 mx-auto mt-2 -mb-1 sm:hidden shrink-0" />
@@ -402,7 +402,7 @@ function IncidentDetailCard({
       animate={{ opacity: 1, scale: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.96, y: 14 }}
       transition={SOFT_SPRING}
-      className="absolute z-30 flex flex-col overflow-hidden rounded-2xl backdrop-blur-2xl bg-white/95 dark:bg-[#111827]/95 shadow-[0_20px_60px_rgba(15,23,42,0.18)] dark:shadow-[0_20px_60px_rgba(0,0,0,0.65)] border border-slate-200/80 dark:border-white/10 border-t-white/90 dark:border-t-white/20 transform-gpu will-change-transform bottom-2 left-2 right-2 max-h-[calc(100%-1rem)] sm:bottom-auto sm:top-3 sm:right-3 sm:left-auto sm:w-[360px] sm:max-w-[calc(100vw-2rem)] sm:max-h-[calc(100%-1.5rem)]"
+      className="absolute z-50 flex flex-col overflow-hidden rounded-2xl backdrop-blur-2xl bg-white/95 dark:bg-[#111827]/95 shadow-[0_20px_60px_rgba(15,23,42,0.18)] dark:shadow-[0_20px_60px_rgba(0,0,0,0.65)] border border-slate-200/80 dark:border-white/10 border-t-white/90 dark:border-t-white/20 transform-gpu will-change-transform bottom-2 left-2 right-2 max-h-[calc(100%-1rem)] sm:bottom-auto sm:top-3 sm:right-3 sm:left-auto sm:w-[360px] sm:max-w-[calc(100vw-2rem)] sm:max-h-[calc(100%-1.5rem)]"
     >
       {/* Mobile sheet grab handle */}
       <div className="w-10 h-1 rounded-full bg-slate-300/80 dark:bg-slate-600/80 mx-auto mt-2 -mb-1 sm:hidden shrink-0" />
@@ -1696,7 +1696,17 @@ export default function GeospatialMap() {
                 )}
               </AnimatePresence>
 
-              {/* Overlaid Floating Detail Inspector Sheets */}
+              {/* Map Canvas (Underlay) */}
+              <MapContainer
+                theme={mapTheme}
+                layers={layers}
+                barangayCounts={barangayCounts}
+                pinReports={pinReports}
+                onSelectFeature={handleSelectFeature}
+                selectedFeature={selected}
+              />
+
+              {/* Overlaid Floating Detail Inspector Sheets (Overlay) */}
               <AnimatePresence>
                 {selected?.type === 'barangay' && (
                   <BarangayDetailCard
@@ -1729,16 +1739,6 @@ export default function GeospatialMap() {
                   />
                 )}
               </AnimatePresence>
-
-              {/* Map Canvas */}
-              <MapContainer
-                theme={mapTheme}
-                layers={layers}
-                barangayCounts={barangayCounts}
-                pinReports={pinReports}
-                onSelectFeature={handleSelectFeature}
-                selectedFeature={selected}
-              />
             </div>
           </div>
         </StaggerItem>

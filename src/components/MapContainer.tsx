@@ -984,6 +984,6 @@ export default function MapContainer({
     }, [layers, drawArcsCanvas, updateLabelsVisibility]);
 
     return (
-        <div ref={mapContainerRef} className="absolute inset-0 w-full h-full" style={{ minHeight: '100%' }} />
+        <div ref={mapContainerRef} className="absolute inset-0 w-full h-full z-0 isolate" style={{ minHeight: '100%' }} />
     );
 }

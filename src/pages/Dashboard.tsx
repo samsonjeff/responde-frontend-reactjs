@@ -16,6 +16,7 @@ import {
   ArrowRight, X,
   MapPin, Clock, BarChart3, ListFilter, CheckCircle2, ShieldCheck
 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 import { useReports } from '../context/ReportsContext';
 import { formatReportCode, getTypeHexColor } from '../services/incidentService';
 import PageLoader from '../components/PageLoader';
@@ -185,11 +186,25 @@ function TypeTooltip({ active, payload }: TypeTooltipProps) {
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const location = useLocation();
   const { reports, loading: reportsLoading } = useReports();
   const [filterUrgency, setFilterUrgency] = useState<'All' | 'High' | 'Mod' | 'Low'>('All');
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'chart' | 'bars'>('chart');
+
+  const userGreeting = useMemo(() => {
+    const fullName = user?.full_name?.trim();
+    if (fullName) {
+      const firstName = fullName.split(/\s+/)[0];
+      return `Hello, ${firstName}`;
+    }
+    const username = user?.username?.trim();
+    if (username) {
+      return `Hello, ${username}`;
+    }
+    return 'Welcome back';
+  }, [user]);
 
   useEffect(() => {
     if (reports.length > 0 && !risenChartKeys.has(location.key)) {
@@ -420,7 +435,7 @@ export default function Dashboard() {
           </div>
           <div>
             <h1 className="text-lg sm:text-[22px] font-semibold tracking-[-0.025em] leading-tight text-slate-900 dark:text-white">
-              Dashboard
+              {userGreeting}
             </h1>
             <p className="text-[11px] sm:text-xs font-normal tracking-[0.005em] text-slate-500/90 dark:text-slate-400/90 mt-0.5 leading-relaxed">
               Command center overview <span className="text-slate-300 dark:text-slate-600 mx-1">·</span> Real-time metrics &amp; incident triage
@@ -740,7 +755,7 @@ export default function Dashboard() {
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
                     data={typeSummary}
-                    margin={{ top: 12, right: 8, left: -24, bottom: 24 }}
+                    margin={{ top: 12, right: 12, left: 8, bottom: 30 }}
                     onClick={(state: any) => {
                       if (state && state.activePayload && state.activePayload.length > 0) {
                         const clickedType = state.activePayload[0].payload.name;
@@ -762,13 +777,14 @@ export default function Dashboard() {
                       interval={0}
                       angle={-25}
                       textAnchor="end"
+                      height={36}
                     />
                     <YAxis
                       allowDecimals={false}
                       tick={{ fontSize: 9.5, fill: '#94a3b8' }}
                       axisLine={false}
                       tickLine={false}
-                      width={28}
+                      width={24}
                     />
                     <Tooltip content={<TypeTooltip />} cursor={{ fill: 'rgba(0,113,227,0.06)' }} />
                     <Bar

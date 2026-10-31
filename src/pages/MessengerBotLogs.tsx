@@ -1,9 +1,9 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { motion, AnimatePresence, type Variants } from "framer-motion";
 import {
   Filter, AlertCircle, X, CheckCircle2, RefreshCw, MessageSquare,
   ChevronRight, ChevronLeft, ChevronDown, Bot, RotateCcw,
-  Sparkles, Layers, AlertTriangle
+  Layers, AlertTriangle, ArrowUp, ArrowDown
 } from "lucide-react";
 import DatePicker from "../components/DatePicker";
 import FilterDropdown from "../components/DropDown";
@@ -25,6 +25,7 @@ export interface ConvoNLPAnalysis {
   actionableNeeds: string[];
   extractedLocation: string;
   distressMessageIdx: number;
+  distressMessageIndices: number[];
 }
 
 export type AnalyzedConversation = Conversation & {
@@ -82,15 +83,20 @@ export function analyzeConvoNLP(convo: Conversation): ConvoNLPAnalysis {
     actionableNeeds.push("On-Site Verification");
   }
 
-  const distressMessageIdx = (convo.messages || []).findIndex(
-    (m) =>
-      m.sender === "user" &&
-      (hasHigh
-        ? highKeywords.some((k) => m.text.toLowerCase().includes(k))
-        : hasModerate
-        ? moderateKeywords.some((k) => m.text.toLowerCase().includes(k))
-        : false)
-  );
+  const distressMessageIndices: number[] = [];
+  (convo.messages || []).forEach((m, idx) => {
+    if (m.sender === "user") {
+      const text = m.text.toLowerCase();
+      const isDistress =
+        highKeywords.some((k) => text.includes(k)) ||
+        moderateKeywords.some((k) => text.includes(k));
+      if (isDistress) {
+        distressMessageIndices.push(idx);
+      }
+    }
+  });
+
+  const distressMessageIdx = distressMessageIndices.length > 0 ? distressMessageIndices[0] : -1;
 
   const isIncident = (hasHigh || hasModerate || typeLower === "emergency" || typeLower === "medical" || typeLower === "search & rescue") && !isExplicitNoise;
   const urgency: "High" | "Moderate" | "Low" = hasHigh ? "High" : hasModerate ? "Moderate" : "Low";
@@ -115,6 +121,7 @@ export function analyzeConvoNLP(convo: Conversation): ConvoNLPAnalysis {
     actionableNeeds,
     extractedLocation: convo.barangay || "Talisay",
     distressMessageIdx,
+    distressMessageIndices,
   };
 }
 
@@ -291,6 +298,29 @@ export default function MessengerBotLogs() {
     setCurrentPage(1);
   }, [debouncedBarangay, debouncedType, debouncedUrgency, debouncedStatus, debouncedFromDate, debouncedToDate]);
   const chatScrollRef = useRef<HTMLDivElement>(null);
+  const [highlightedDistressIdx, setHighlightedDistressIdx] = useState<number | null>(null);
+  const preferredDirectionRef = useRef<'up' | 'down'>('up');
+  const [distressNav, setDistressNav] = useState<{
+    show: boolean;
+    direction: 'up' | 'down';
+    targetIdx: number;
+    total: number;
+    currentNumber: number;
+    hasAbove: boolean;
+    hasBelow: boolean;
+    prevTargetIdx: number;
+    nextTargetIdx: number;
+  }>({
+    show: false,
+    direction: 'up',
+    targetIdx: -1,
+    total: 0,
+    currentNumber: 0,
+    hasAbove: false,
+    hasBelow: false,
+    prevTargetIdx: -1,
+    nextTargetIdx: -1,
+  });
 
   // Track seen conversations (persisted in localStorage)
   const [seenConvoIds, setSeenConvoIds] = useState<Set<string>>(() => {
@@ -565,6 +595,186 @@ export default function MessengerBotLogs() {
   }
 
 
+  const updateDistressNav = useCallback(() => {
+    const container = chatScrollRef.current;
+    if (!container || !selectedConversation?.nlp?.isIncident) {
+      setDistressNav((prev) => (prev.show ? { ...prev, show: false } : prev));
+      return;
+    }
+
+    const indices = selectedConversation.nlp.distressMessageIndices || [];
+    if (indices.length === 0) {
+      setDistressNav((prev) => (prev.show ? { ...prev, show: false } : prev));
+      return;
+    }
+
+    const containerRect = container.getBoundingClientRect();
+    const containerCenter = (containerRect.top + containerRect.bottom) / 2;
+
+    const elements = indices
+      .map((idx, order) => {
+        const el = container.querySelector<HTMLElement>(`[data-distress-idx="${idx}"]`);
+        if (!el) return null;
+        const elRect = el.getBoundingClientRect();
+        const elCenter = (elRect.top + elRect.bottom) / 2;
+        const offsetFromCenter = elCenter - containerCenter;
+
+        const isAbove = elRect.bottom < containerRect.top + 36;
+        const isBelow = elRect.top > containerRect.bottom - 36;
+        const isVisible = !isAbove && !isBelow;
+        const isCentered = isVisible && Math.abs(offsetFromCenter) < 130;
+
+        return {
+          idx,
+          order: order + 1,
+          offsetFromCenter,
+          isAbove,
+          isBelow,
+          isVisible,
+          isCentered,
+        };
+      })
+      .filter(Boolean) as Array<{
+        idx: number;
+        order: number;
+        offsetFromCenter: number;
+        isAbove: boolean;
+        isBelow: boolean;
+        isVisible: boolean;
+        isCentered: boolean;
+      }>;
+
+    if (elements.length === 0) {
+      setDistressNav((prev) => (prev.show ? { ...prev, show: false } : prev));
+      return;
+    }
+
+    const visibleElements = elements.filter((e) => e.isVisible);
+    const currentDistress = visibleElements.sort(
+      (a, b) => Math.abs(a.offsetFromCenter) - Math.abs(b.offsetFromCenter)
+    )[0];
+
+    const itemsAbove = elements.filter((e) => e.isAbove);
+    const itemsBelow = elements.filter((e) => e.isBelow);
+
+    const nearestAbove = itemsAbove.length > 0 ? itemsAbove[itemsAbove.length - 1] : null;
+    const nearestBelow = itemsBelow.length > 0 ? itemsBelow[0] : null;
+
+    let targetIdx = -1;
+    let direction: 'up' | 'down' = 'up';
+    let currentNumber = 1;
+
+    if (currentDistress) {
+      currentNumber = currentDistress.order;
+      const currIndexInList = elements.findIndex((e) => e.idx === currentDistress.idx);
+      const prevInList = currIndexInList > 0 ? elements[currIndexInList - 1] : null;
+      const nextInList = currIndexInList < elements.length - 1 ? elements[currIndexInList + 1] : null;
+
+      if (preferredDirectionRef.current === 'down' && nextInList) {
+        direction = 'down';
+        targetIdx = nextInList.idx;
+      } else if (prevInList) {
+        direction = 'up';
+        targetIdx = prevInList.idx;
+      } else if (nextInList) {
+        direction = 'down';
+        targetIdx = nextInList.idx;
+      } else {
+        targetIdx = currentDistress.idx;
+      }
+    } else {
+      if (itemsAbove.length > 0) {
+        direction = 'up';
+        targetIdx = nearestAbove!.idx;
+        currentNumber = nearestAbove!.order;
+      } else if (itemsBelow.length > 0) {
+        direction = 'down';
+        targetIdx = nearestBelow!.idx;
+        currentNumber = nearestBelow!.order;
+      }
+    }
+
+    const currentOrder = currentDistress
+      ? currentDistress.order
+      : direction === 'up'
+      ? nearestAbove
+        ? nearestAbove.order + 1
+        : 1
+      : nearestBelow
+      ? nearestBelow.order - 1
+      : 1;
+
+    const hasAbove = elements.some((e) => e.order < currentOrder || e.isAbove);
+    const hasBelow = elements.some((e) => e.order > currentOrder || e.isBelow);
+
+    const prevTarget = nearestAbove
+      ? nearestAbove.idx
+      : currentDistress && elements.findIndex((e) => e.idx === currentDistress.idx) > 0
+      ? elements[elements.findIndex((e) => e.idx === currentDistress.idx) - 1].idx
+      : -1;
+
+    const nextTarget = nearestBelow
+      ? nearestBelow.idx
+      : currentDistress && elements.findIndex((e) => e.idx === currentDistress.idx) < elements.length - 1
+      ? elements[elements.findIndex((e) => e.idx === currentDistress.idx) + 1].idx
+      : -1;
+
+    setDistressNav({
+      show: true,
+      direction,
+      targetIdx,
+      total: indices.length,
+      currentNumber: Math.min(Math.max(1, currentNumber), indices.length),
+      hasAbove,
+      hasBelow,
+      prevTargetIdx: prevTarget,
+      nextTargetIdx: nextTarget,
+    });
+  }, [selectedConversation]);
+
+  // Re-check distress positions when selected conversation changes or on resize
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      updateDistressNav();
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [selectedConversation?.id, updateDistressNav]);
+
+  const jumpToMessageIndex = useCallback(
+    (targetIdx: number) => {
+      const container = chatScrollRef.current;
+      if (!container || targetIdx === -1) return;
+      const targetEl = container.querySelector<HTMLElement>(`[data-distress-idx="${targetIdx}"]`);
+      if (targetEl) {
+        targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setHighlightedDistressIdx(targetIdx);
+        setTimeout(() => {
+          setHighlightedDistressIdx((prev) => (prev === targetIdx ? null : prev));
+        }, 2500);
+        setTimeout(() => {
+          updateDistressNav();
+        }, 450);
+      }
+    },
+    [updateDistressNav]
+  );
+
+  const handleJumpDirection = (dir: 'up' | 'down') => {
+    preferredDirectionRef.current = dir;
+    const target = dir === 'up' ? distressNav.prevTargetIdx : distressNav.nextTargetIdx;
+    if (target !== -1) {
+      jumpToMessageIndex(target);
+    } else if (distressNav.targetIdx !== -1) {
+      jumpToMessageIndex(distressNav.targetIdx);
+    }
+  };
+
+  const handleJumpToDistress = () => {
+    if (distressNav.targetIdx !== -1) {
+      jumpToMessageIndex(distressNav.targetIdx);
+    }
+  };
+
   return (
     <div className="messenger-soft flex flex-col flex-1 min-h-0 space-y-3 sm:space-y-3.5 w-full h-full relative">
       {/* Toast Notifications — Top Right */}
@@ -724,10 +934,10 @@ export default function MessengerBotLogs() {
                     role="tab"
                     aria-selected={viewMode === "structured"}
                     onClick={() => handleViewModeChange("structured")}
-                    className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold tracking-tight transition-colors duration-150 select-none cursor-pointer active:scale-[0.98] ${
+                    className={`group relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold tracking-tight transition-all duration-200 select-none cursor-pointer active:scale-[0.98] ${
                       viewMode === "structured"
                         ? "text-[#0071E3] dark:text-sky-300"
-                        : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
+                        : "text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100/70 dark:hover:bg-slate-800/60"
                     }`}
                   >
                     {viewMode === "structured" && (
@@ -738,9 +948,9 @@ export default function MessengerBotLogs() {
                       />
                     )}
                     <span className="relative z-10 flex items-center gap-1.5">
-                      <Sparkles className="w-3.5 h-3.5 text-[#0071E3] dark:text-sky-400" strokeWidth={1.75} />
-                      <span>Incidents</span>
-                      <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold tabular-nums ${
+                      <AlertTriangle className="w-3.5 h-3.5 text-[#0071E3] dark:text-sky-400 transition-transform duration-200 ease-out group-hover:scale-120 group-hover:-rotate-6" strokeWidth={2} />
+                      <span className="transition-colors duration-150">Incidents</span>
+                      <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold tabular-nums transition-transform duration-200 group-hover:scale-105 ${
                         viewMode === "structured"
                           ? "bg-[#0071E3] text-white"
                           : "bg-slate-200/80 dark:bg-slate-700 text-slate-600 dark:text-slate-300"
@@ -859,28 +1069,12 @@ export default function MessengerBotLogs() {
                               >
                                 {getInitials(convo.name)}
                               </div>
-                              <AnimatePresence>
-                                {isIncomplete && (
-                                  <motion.span
-                                    initial={{ scale: 0, opacity: 0 }}
-                                    animate={{ scale: 1, opacity: 1 }}
-                                    exit={{ scale: 0, opacity: 0 }}
-                                    transition={APPLE_SPRING}
-                                    className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-amber-500 border-2 border-white dark:border-slate-800 rounded-full shadow-xs"
-                                  />
-                                )}
-                              </AnimatePresence>
+
                             </div>
 
                             {/* Content */}
                             <div className="flex-1 min-w-0 pr-1">
                               <div className="flex items-center gap-1.5 mb-0.5">
-                                {!isSeen && (
-                                  <span
-                                    className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0 shadow-[0_0_8px_rgba(59,130,246,0.6)] animate-pulse"
-                                    title="New unread message"
-                                  />
-                                )}
                                 <h4
                                   className={`text-xs sm:text-[13px] tracking-tight truncate transition-colors ${
                                     !isSeen
@@ -894,7 +1088,7 @@ export default function MessengerBotLogs() {
                               <p
                                 className={`text-[11px] sm:text-xs truncate mt-0.5 leading-snug transition-colors ${
                                   !isSeen
-                                    ? "font-medium text-slate-900 dark:text-slate-100"
+                                    ? "font-bold text-slate-900 dark:text-slate-100"
                                     : "font-normal text-slate-500 dark:text-slate-400"
                                 }`}
                               >
@@ -1101,7 +1295,9 @@ export default function MessengerBotLogs() {
 
                     {/* Messages — Apple Messages Thread with Edge Fade */}
                     <div
-                      className="flex-1 overflow-y-auto min-h-0 p-3 sm:p-6 pb-12 bg-slate-50/40 dark:bg-[#0B0F17]/40 space-y-3 sm:space-y-4 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800"
+                      ref={chatScrollRef}
+                      onScroll={updateDistressNav}
+                      className="flex-1 overflow-y-auto min-h-0 p-3 sm:p-6 pb-16 bg-slate-50/40 dark:bg-[#0B0F17]/40 space-y-3 sm:space-y-4 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800"
                       style={{
                         maskImage: 'linear-gradient(to bottom, black calc(100% - 48px), transparent 100%)',
                         WebkitMaskImage: 'linear-gradient(to bottom, black calc(100% - 48px), transparent 100%)',
@@ -1133,7 +1329,11 @@ export default function MessengerBotLogs() {
                               </div>
                             </div>
                           ) : (
-                            <div key={idx}>
+                            <div
+                              key={idx}
+                              data-distress-idx={selectedConversation.nlp.isIncident && (selectedConversation.nlp.distressMessageIndices?.includes(idx) || idx === selectedConversation.nlp.distressMessageIdx) ? idx : undefined}
+                              className="relative"
+                            >
                               <div className="flex items-end gap-1.5 sm:gap-2 justify-start">
                                 <div
                                   className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full ${selectedColor} flex items-center justify-center text-[9px] sm:text-[10px] font-bold text-white shrink-0 mb-3 sm:mb-4 shadow-xs ring-1 ring-black/5`}
@@ -1142,13 +1342,17 @@ export default function MessengerBotLogs() {
                                 </div>
                                 <div className="flex flex-col items-start max-w-[85%] sm:max-w-[74%]">
                                   {/* Emergency Distress Tag on User Message */}
-                                  {selectedConversation.nlp.isIncident && idx === selectedConversation.nlp.distressMessageIdx && (
-                                    <span className="inline-flex items-center gap-1 text-[9px] font-bold text-rose-600 dark:text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-md px-1.5 py-0.5 mb-1">
+                                  {selectedConversation.nlp.isIncident && (selectedConversation.nlp.distressMessageIndices?.includes(idx) || idx === selectedConversation.nlp.distressMessageIdx) && (
+                                    <span className="inline-flex items-center gap-1 text-[9px] font-bold text-rose-600 dark:text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-md px-1.5 py-0.5 mb-1 shadow-2xs">
                                       <AlertTriangle className="w-2.5 h-2.5" strokeWidth={1.75} />
                                       <span>Distress Intent Extracted</span>
                                     </span>
                                   )}
-                                  <div className="bg-white/90 dark:bg-[#111827]/90 border border-slate-200/80 dark:border-white/10 text-slate-800 dark:text-slate-100 rounded-[18px] sm:rounded-[20px] rounded-bl-[4px] px-3.5 sm:px-4 py-2 sm:py-2.5 shadow-[0_1px_3px_rgba(15,23,42,0.03)]">
+                                  <div className={`bg-white/90 dark:bg-[#111827]/90 border text-slate-800 dark:text-slate-100 rounded-[18px] sm:rounded-[20px] rounded-bl-[4px] px-3.5 sm:px-4 py-2 sm:py-2.5 shadow-[0_1px_3px_rgba(15,23,42,0.03)] transition-all duration-300 ${
+                                    highlightedDistressIdx === idx
+                                      ? "border-rose-500/80 ring-2 ring-rose-500/50 shadow-[0_0_18px_rgba(244,63,94,0.35)] scale-[1.01]"
+                                      : "border-slate-200/80 dark:border-white/10"
+                                  }`}>
                                     <p className="text-xs sm:text-sm leading-relaxed whitespace-pre-wrap break-words">{msg.text}</p>
                                   </div>
                                   <span className="text-[9px] sm:text-[10px] text-slate-400 dark:text-slate-500 mt-1 ml-1 font-medium flex items-center gap-1">
@@ -1167,6 +1371,69 @@ export default function MessengerBotLogs() {
                         )}
                       </div>
                     </div>
+
+                    {/* Floating Jump to Distress Signal Pill Button */}
+                    <AnimatePresence>
+                      {distressNav.show && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 14, scale: 0.94 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: 10, scale: 0.94 }}
+                          transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+                          className="absolute bottom-3 left-1/2 -translate-x-1/2 z-30 pointer-events-auto"
+                        >
+                          <div className="group flex items-center gap-1 p-1 rounded-full bg-white/95 dark:bg-[#111827]/95 backdrop-blur-xl border border-rose-500/35 shadow-[0_8px_24px_rgba(244,63,94,0.24)] text-xs font-semibold select-none">
+                            {/* Scroll up to previous distress */}
+                            {distressNav.total > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => handleJumpDirection('up')}
+                                disabled={!distressNav.hasAbove}
+                                className="flex items-center justify-center w-6 h-6 rounded-full text-rose-600 dark:text-rose-400 hover:bg-rose-500/15 active:scale-90 disabled:opacity-25 disabled:pointer-events-none transition-all cursor-pointer"
+                                title="Previous distress signal (scroll up)"
+                              >
+                                <ArrowUp className="w-3.5 h-3.5" strokeWidth={2.2} />
+                              </button>
+                            )}
+
+                            {/* Main action pill */}
+                            <button
+                              type="button"
+                              onClick={handleJumpToDistress}
+                              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 active:scale-95 transition-all cursor-pointer"
+                              title={distressNav.direction === 'up' ? 'Scroll up to distress chat' : 'Scroll down to distress chat'}
+                            >
+                              <span className="flex items-center justify-center w-4 h-4 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400">
+                                {distressNav.direction === 'up' ? (
+                                  <ArrowUp className="w-3 h-3 animate-bounce" strokeWidth={2.5} />
+                                ) : (
+                                  <ArrowDown className="w-3 h-3 animate-bounce" strokeWidth={2.5} />
+                                )}
+                              </span>
+                              <span>Go to Distress</span>
+                              {distressNav.total > 1 && (
+                                <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/15 text-rose-700 dark:text-rose-300 tabular-nums">
+                                  {distressNav.currentNumber}/{distressNav.total}
+                                </span>
+                              )}
+                            </button>
+
+                            {/* Scroll down to next distress */}
+                            {distressNav.total > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => handleJumpDirection('down')}
+                                disabled={!distressNav.hasBelow}
+                                className="flex items-center justify-center w-6 h-6 rounded-full text-rose-600 dark:text-rose-400 hover:bg-rose-500/15 active:scale-90 disabled:opacity-25 disabled:pointer-events-none transition-all cursor-pointer"
+                                title="Next distress signal (scroll down)"
+                              >
+                                <ArrowDown className="w-3.5 h-3.5" strokeWidth={2.2} />
+                              </button>
+                            )}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </motion.div>
                 ) : (
                   <motion.div
