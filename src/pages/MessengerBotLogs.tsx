@@ -937,7 +937,7 @@ export default function MessengerBotLogs() {
                     className={`group relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold tracking-tight transition-all duration-200 select-none cursor-pointer active:scale-[0.98] ${
                       viewMode === "structured"
                         ? "text-[#0071E3] dark:text-sky-300"
-                        : "text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100/70 dark:hover:bg-slate-800/60"
+                        : "text-slate-500 hover:text-[#0071E3] dark:text-slate-400 dark:hover:text-sky-300 hover:bg-blue-50/50 dark:hover:bg-blue-950/30"
                     }`}
                   >
                     {viewMode === "structured" && (
@@ -948,7 +948,7 @@ export default function MessengerBotLogs() {
                       />
                     )}
                     <span className="relative z-10 flex items-center gap-1.5">
-                      <AlertTriangle className="w-3.5 h-3.5 text-[#0866FF] dark:text-sky-400 transition-transform duration-200 ease-out group-hover:scale-120 group-hover:-rotate-6" strokeWidth={2} />
+                      <AlertTriangle className="w-3.5 h-3.5 text-[#0071E3] dark:text-sky-400 transition-transform duration-200 ease-out group-hover:scale-120 group-hover:-rotate-6" strokeWidth={2} />
                       <span className="transition-colors duration-150">Incidents</span>
                       <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold tabular-nums transition-transform duration-200 group-hover:scale-105 ${
                         viewMode === "structured"
@@ -997,7 +997,7 @@ export default function MessengerBotLogs() {
                     <button
                       type="button"
                       onClick={markAllSeen}
-                      className="text-[11px] font-semibold text-[#0866FF] dark:text-sky-400 hover:underline hover:brightness-110 transition-all cursor-pointer"
+                      className="text-[11px] font-semibold text-[#0071E3] dark:text-sky-400 hover:underline hover:text-blue-700 dark:hover:text-sky-300 transition-colors cursor-pointer"
                     >
                       Mark all read
                     </button>
@@ -1040,19 +1040,19 @@ export default function MessengerBotLogs() {
                           <button
                             type="button"
                             onClick={() => handleSelectConversation(convo.id)}
-                            className={`w-full flex items-center gap-2.5 sm:gap-3.5 p-2.5 sm:p-3 rounded-xl transition-all duration-150 text-left relative group active:scale-[0.985] cursor-pointer ${
+                            className={`w-full flex items-center gap-2.5 sm:gap-3.5 p-2.5 sm:p-3 rounded-xl transition-all duration-200 text-left relative group active:scale-[0.985] cursor-pointer ${
                               isSelected
-                                ? "bg-[#E7F3FF]/85 dark:bg-[#18283E]/85 shadow-xs border border-[#0866FF]/35 dark:border-[#2D88FF]/50 text-slate-900 dark:text-white"
+                                ? "bg-blue-500/[0.12] dark:bg-blue-500/[0.22] shadow-[0_2px_12px_rgba(0,113,227,0.14)] border border-blue-500/40 dark:border-blue-400/50 text-slate-900 dark:text-white"
                                 : !isSeen
-                                ? "bg-blue-50/50 dark:bg-blue-950/20 hover:bg-[#F0F2F5] dark:hover:bg-[#242526] border border-blue-200/60 dark:border-blue-900/40 hover:border-blue-300 dark:hover:border-white/10 text-slate-900 dark:text-white hover:shadow-xs"
-                                : "hover:bg-[#F0F2F5] dark:hover:bg-[#242526] border border-transparent hover:border-slate-200/70 dark:hover:border-white/10 text-slate-600 dark:text-slate-400 hover:shadow-xs opacity-90"
+                                ? "bg-blue-50/50 dark:bg-blue-950/25 border border-blue-200/70 dark:border-blue-900/50 hover:bg-blue-50/90 dark:hover:bg-blue-950/45 hover:border-blue-400/60 dark:hover:border-blue-400/50 hover:shadow-[0_4px_16px_rgba(0,113,227,0.12)] hover:-translate-y-0.5 text-slate-900 dark:text-white"
+                                : "hover:bg-blue-50/40 dark:hover:bg-blue-950/30 border border-transparent hover:border-blue-300/40 dark:hover:border-blue-500/30 hover:shadow-[0_2px_10px_rgba(0,113,227,0.08)] hover:-translate-y-0.5 text-slate-600 dark:text-slate-400 opacity-90"
                             }`}
                           >
                             {/* Active pill accent bar */}
                             {isSelected && (
                               <motion.div
                                 layoutId="activeConvoIndicator"
-                                className="absolute left-1 top-2.5 bottom-2.5 w-1 bg-[#0866FF] dark:bg-[#2D88FF] rounded-full"
+                                className="absolute left-1 top-2.5 bottom-2.5 w-1 bg-[#0071E3] dark:bg-sky-400 shadow-[0_0_8px_rgba(0,113,227,0.6)] rounded-full"
                                 transition={APPLE_SPRING}
                               />
                             )}
@@ -1063,7 +1063,7 @@ export default function MessengerBotLogs() {
                                 className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full ${getAvatarColor(
                                   convo.name,
                                   index
-                                )} flex items-center justify-center font-bold text-xs text-white shadow-xs ring-1 group-hover:scale-105 transition-transform duration-200 ${
+                                )} flex items-center justify-center font-bold text-xs text-white shadow-xs ring-1 group-hover:scale-105 group-hover:ring-2 group-hover:ring-blue-400/70 dark:group-hover:ring-blue-400/70 transition-all duration-200 ${
                                   !isSeen ? "ring-blue-400/80 dark:ring-blue-500/80" : "ring-black/5 dark:ring-white/10 opacity-80"
                                 }`}
                               >
@@ -1076,7 +1076,7 @@ export default function MessengerBotLogs() {
                             <div className="flex-1 min-w-0 pr-1">
                               <div className="flex items-center gap-1.5 mb-0.5">
                                 <h4
-                                  className={`text-xs sm:text-[13px] tracking-tight truncate transition-colors group-hover:text-[#0866FF] dark:group-hover:text-sky-400 ${
+                                  className={`text-xs sm:text-[13px] tracking-tight truncate transition-colors group-hover:text-[#0071E3] dark:group-hover:text-sky-400 ${
                                     !isSeen
                                       ? "font-bold text-slate-900 dark:text-white"
                                       : "font-semibold text-slate-700 dark:text-slate-300"
@@ -1143,7 +1143,7 @@ export default function MessengerBotLogs() {
                                   )}
                                 </AnimatePresence>
                               </div>
-                              <ChevronRight className="w-3.5 h-3.5 text-slate-300 dark:text-slate-600 group-hover:text-[#0866FF] dark:group-hover:text-sky-400 group-hover:translate-x-0.5 transition-all duration-150" />
+                              <ChevronRight className="w-3.5 h-3.5 text-slate-300 dark:text-slate-600 group-hover:text-[#0071E3] dark:group-hover:text-sky-400 group-hover:translate-x-0.5 transition-all duration-150" />
                             </div>
                           </button>
                         </div>
@@ -1297,7 +1297,7 @@ export default function MessengerBotLogs() {
                     <div
                       ref={chatScrollRef}
                       onScroll={updateDistressNav}
-                      className="flex-1 overflow-y-auto min-h-0 p-3 sm:p-6 pb-16 bg-slate-50/50 dark:bg-[#18191A]/95 space-y-3 sm:space-y-4 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800"
+                      className="flex-1 overflow-y-auto min-h-0 p-3 sm:p-6 pb-16 bg-slate-50/50 dark:bg-[#0B0F17]/50 space-y-3 sm:space-y-4 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800"
                       style={{
                         maskImage: 'linear-gradient(to bottom, black calc(100% - 48px), transparent 100%)',
                         WebkitMaskImage: 'linear-gradient(to bottom, black calc(100% - 48px), transparent 100%)',
@@ -1309,7 +1309,7 @@ export default function MessengerBotLogs() {
                             <div key={idx}>
                               <div className="flex items-end gap-1.5 sm:gap-2 justify-end">
                                 <div className="flex flex-col items-end max-w-[85%] sm:max-w-[74%]">
-                                  <div className="bg-[#0084FF] hover:brightness-105 text-white rounded-[18px] sm:rounded-[20px] rounded-br-[4px] px-3.5 sm:px-4 py-2 sm:py-2.5 shadow-[0_2px_8px_rgba(0,132,255,0.25)] transition-all">
+                                  <div className="bg-[#0071E3] hover:bg-[#0077ED] text-white rounded-[18px] sm:rounded-[20px] rounded-br-[4px] px-3.5 sm:px-4 py-2 sm:py-2.5 shadow-[0_2px_10px_rgba(0,113,227,0.25)] transition-all">
                                     <p className="text-xs sm:text-sm leading-relaxed whitespace-pre-wrap break-words">{msg.text}</p>
                                   </div>
                                   <span className="text-[9px] sm:text-[10px] text-slate-400 dark:text-slate-500 mt-1 mr-1 font-medium flex items-center gap-1">
@@ -1323,7 +1323,7 @@ export default function MessengerBotLogs() {
                                     )}
                                   </span>
                                 </div>
-                                <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-blue-100 dark:bg-blue-950/80 flex items-center justify-center text-[10px] sm:text-[11px] font-bold text-[#0084FF] dark:text-blue-400 shrink-0 mb-3 sm:mb-4 ring-1 ring-blue-500/20 shadow-2xs hover:scale-110 transition-transform">
+                                <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-blue-100 dark:bg-blue-950/80 flex items-center justify-center text-[10px] sm:text-[11px] font-bold text-[#0071E3] dark:text-blue-400 shrink-0 mb-3 sm:mb-4 ring-1 ring-blue-500/20 shadow-2xs hover:scale-110 transition-transform">
                                   <Bot className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#0071E3]" strokeWidth={1.75} />
                                 </div>
                               </div>
@@ -1348,7 +1348,7 @@ export default function MessengerBotLogs() {
                                       <span>Distress Intent Extracted</span>
                                     </span>
                                   )}
-                                  <div className={`bg-[#F0F2F5] dark:bg-[#242526] text-slate-900 dark:text-[#E4E6EB] rounded-[18px] sm:rounded-[20px] rounded-bl-[4px] px-3.5 sm:px-4 py-2 sm:py-2.5 shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:shadow-xs transition-all duration-200 border ${
+                                  <div className={`bg-white/95 dark:bg-[#111827]/95 text-slate-900 dark:text-slate-100 rounded-[18px] sm:rounded-[20px] rounded-bl-[4px] px-3.5 sm:px-4 py-2 sm:py-2.5 shadow-[0_1px_3px_rgba(15,23,42,0.04)] hover:border-blue-400/50 dark:hover:border-blue-500/40 hover:bg-blue-50/20 dark:hover:bg-blue-950/20 hover:shadow-[0_2px_12px_rgba(0,113,227,0.10)] transition-all duration-200 border ${
                                     highlightedDistressIdx === idx
                                       ? "border-rose-500/80 ring-2 ring-rose-500/50 shadow-[0_0_18px_rgba(244,63,94,0.35)] scale-[1.01]"
                                       : "border-slate-200/50 dark:border-white/5"

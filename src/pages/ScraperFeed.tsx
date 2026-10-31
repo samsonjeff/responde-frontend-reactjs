@@ -877,7 +877,7 @@ export default function ScraperFeed() {
                     className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold tracking-tight transition-colors duration-150 select-none cursor-pointer active:scale-[0.98] ${
                       viewMode === "structured"
                         ? "text-[#0071E3] dark:text-sky-300"
-                        : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
+                        : "text-slate-500 hover:text-[#0071E3] dark:text-slate-400 dark:hover:text-sky-300 hover:bg-blue-50/50 dark:hover:bg-blue-950/30"
                     }`}
                   >
                     {viewMode === "structured" && (
@@ -888,7 +888,7 @@ export default function ScraperFeed() {
                       />
                     )}
                     <span className="relative z-10 flex items-center gap-1.5">
-                      <Sparkles className="w-3.5 h-3.5 text-[#0866FF] dark:text-sky-400" strokeWidth={1.75} />
+                      <Sparkles className="w-3.5 h-3.5 text-[#0071E3] dark:text-sky-400" strokeWidth={1.75} />
                       <span>Incidents</span>
                       <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold tabular-nums ${
                         viewMode === "structured"
@@ -937,7 +937,7 @@ export default function ScraperFeed() {
                     <button
                       type="button"
                       onClick={markAllSeen}
-                      className="text-[11px] font-semibold text-[#0866FF] dark:text-sky-400 hover:underline hover:brightness-110 transition-all cursor-pointer"
+                      className="text-[11px] font-semibold text-[#0071E3] dark:text-sky-400 hover:underline hover:text-blue-700 dark:hover:text-sky-300 transition-colors cursor-pointer"
                     >
                       Mark all read
                     </button>
@@ -982,19 +982,19 @@ export default function ScraperFeed() {
                           <button
                             type="button"
                             onClick={() => handleSelectPost(post.id)}
-                            className={`w-full text-left p-2.5 sm:p-3 rounded-xl transition-all duration-150 relative group active:scale-[0.985] cursor-pointer ${
+                            className={`w-full text-left p-2.5 sm:p-3 rounded-xl transition-all duration-200 relative group active:scale-[0.985] cursor-pointer ${
                               isSelected
-                                ? "bg-[#E7F3FF]/85 dark:bg-[#18283E]/85 shadow-xs border border-[#0866FF]/35 dark:border-[#2D88FF]/50 text-slate-900 dark:text-white"
+                                ? "bg-blue-500/[0.12] dark:bg-blue-500/[0.22] shadow-[0_2px_12px_rgba(0,113,227,0.14)] border border-blue-500/40 dark:border-blue-400/50 text-slate-900 dark:text-white"
                                 : !isSeen
-                                ? "bg-blue-50/50 dark:bg-blue-950/20 hover:bg-[#F0F2F5] dark:hover:bg-[#242526] border border-blue-200/60 dark:border-blue-900/40 hover:border-blue-300 dark:hover:border-white/10 text-slate-900 dark:text-white hover:shadow-xs"
-                                : "hover:bg-[#F0F2F5] dark:hover:bg-[#242526] border border-transparent hover:border-slate-200/70 dark:hover:border-white/10 text-slate-600 dark:text-slate-400 hover:shadow-xs opacity-90"
+                                ? "bg-blue-50/50 dark:bg-blue-950/25 border border-blue-200/70 dark:border-blue-900/50 hover:bg-blue-50/90 dark:hover:bg-blue-950/45 hover:border-blue-400/60 dark:hover:border-blue-400/50 hover:shadow-[0_4px_16px_rgba(0,113,227,0.12)] hover:-translate-y-0.5 text-slate-900 dark:text-white"
+                                : "hover:bg-blue-50/40 dark:hover:bg-blue-950/30 border border-transparent hover:border-blue-300/40 dark:hover:border-blue-500/30 hover:shadow-[0_2px_10px_rgba(0,113,227,0.08)] hover:-translate-y-0.5 text-slate-600 dark:text-slate-400 opacity-90"
                             }`}
                           >
                             {/* Sliding active indicator bar */}
                             {isSelected && (
                               <motion.div
                                 layoutId="activePostIndicator"
-                                className="absolute left-1 top-2.5 bottom-2.5 w-1 bg-[#0866FF] dark:bg-[#2D88FF] rounded-full"
+                                className="absolute left-1 top-2.5 bottom-2.5 w-1 bg-[#0071E3] dark:bg-sky-400 shadow-[0_0_8px_rgba(0,113,227,0.6)] rounded-full"
                                 transition={APPLE_SPRING}
                               />
                             )}
@@ -1003,7 +1003,7 @@ export default function ScraperFeed() {
                               <div
                                 className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full ${getAvatarColor(
                                   post.author
-                                )} flex items-center justify-center font-bold text-xs text-white shrink-0 shadow-xs ring-1 group-hover:scale-105 transition-transform duration-200 ${
+                                )} flex items-center justify-center font-bold text-xs text-white shrink-0 shadow-xs ring-1 group-hover:scale-105 group-hover:ring-2 group-hover:ring-blue-400/70 dark:group-hover:ring-blue-400/70 transition-all duration-200 ${
                                   !isSeen ? "ring-blue-400/80 dark:ring-blue-500/80" : "ring-black/5 dark:ring-white/10 opacity-80"
                                 }`}
                               >
@@ -1076,7 +1076,7 @@ export default function ScraperFeed() {
                       type="button"
                       disabled={currentPage <= 1}
                       onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                      className="p-1.5 rounded-lg border border-blue-500/25 dark:border-blue-400/25 bg-blue-500/10 dark:bg-blue-500/20 text-[#0071E3] dark:text-sky-400 disabled:opacity-30 disabled:pointer-events-none hover:bg-[#0866FF] hover:text-white dark:hover:bg-[#0866FF] dark:hover:text-white hover:border-[#0866FF] active:scale-95 transition-all cursor-pointer shadow-2xs"
+                      className="p-1.5 rounded-lg border border-blue-500/25 dark:border-blue-400/25 bg-blue-500/10 dark:bg-blue-500/20 text-[#0071E3] dark:text-sky-400 disabled:opacity-30 disabled:pointer-events-none hover:bg-[#0071E3] hover:text-white dark:hover:bg-[#0071E3] dark:hover:text-white hover:border-[#0071E3] hover:shadow-[0_2px_8px_rgba(0,113,227,0.3)] active:scale-95 transition-all cursor-pointer shadow-2xs"
                       title="Previous Page"
                     >
                       <ChevronLeft className="w-3.5 h-3.5" strokeWidth={1.75} />
@@ -1180,9 +1180,9 @@ export default function ScraperFeed() {
                                   <span>Extracted Incident Details</span>
                                 </h4>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                  <div className="bg-white/90 dark:bg-[#18191A]/90 hover:bg-[#F0F2F5]/60 dark:hover:bg-[#242526]/80 rounded-2xl p-3.5 sm:p-4 border border-slate-200/80 dark:border-white/10 hover:border-[#0866FF]/30 dark:hover:border-blue-500/30 shadow-[0_1px_3px_rgba(15,23,42,0.03)] hover:shadow-xs transition-all duration-150 group/loc">
+                                  <div className="bg-white/90 dark:bg-[#111827]/90 rounded-2xl p-3.5 sm:p-4 border border-slate-200/80 dark:border-white/10 hover:border-blue-400/60 dark:hover:border-blue-500/50 hover:bg-blue-50/20 dark:hover:bg-blue-950/20 hover:shadow-[0_4px_16px_rgba(0,113,227,0.12)] hover:-translate-y-0.5 transition-all duration-200 group/loc">
                                     <div className="flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
-                                      <div className="w-6 h-6 rounded-lg bg-blue-500/10 text-[#0866FF] dark:text-sky-400 flex items-center justify-center border border-blue-500/20 group-hover/loc:scale-105 transition-transform">
+                                      <div className="w-6 h-6 rounded-lg bg-blue-500/10 text-[#0071E3] dark:text-sky-400 flex items-center justify-center border border-blue-500/20 group-hover/loc:scale-105 transition-transform">
                                         <MapPin className="w-3.5 h-3.5" strokeWidth={1.75} />
                                       </div>
                                       <span>Extracted Location</span>
@@ -1192,7 +1192,7 @@ export default function ScraperFeed() {
                                     </p>
                                   </div>
 
-                                  <div className="bg-white/90 dark:bg-[#18191A]/90 hover:bg-[#F0F2F5]/60 dark:hover:bg-[#242526]/80 rounded-2xl p-3.5 sm:p-4 border border-slate-200/80 dark:border-white/10 hover:border-amber-400/40 dark:hover:border-amber-500/30 shadow-[0_1px_3px_rgba(15,23,42,0.03)] hover:shadow-xs transition-all duration-150 group/cat">
+                                  <div className="bg-white/90 dark:bg-[#111827]/90 rounded-2xl p-3.5 sm:p-4 border border-slate-200/80 dark:border-white/10 hover:border-amber-400/60 dark:hover:border-amber-500/50 hover:bg-amber-50/20 dark:hover:bg-amber-950/20 hover:shadow-[0_4px_16px_rgba(245,158,11,0.12)] hover:-translate-y-0.5 transition-all duration-200 group/cat">
                                     <div className="flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
                                       <div className="w-6 h-6 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center border border-amber-500/20">
                                         <AlertTriangle className="w-3.5 h-3.5" strokeWidth={1.75} />
@@ -1263,7 +1263,7 @@ export default function ScraperFeed() {
                                 <h4 className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">
                                   Raw Post Source Reference
                                 </h4>
-                                <div className="bg-white/90 dark:bg-[#18191A]/90 hover:bg-[#F0F2F5]/50 dark:hover:bg-[#242526]/70 rounded-2xl p-4 sm:p-5 border border-slate-200/80 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/15 shadow-[0_1px_3px_rgba(15,23,42,0.03)] transition-all duration-150">
+                                <div className="bg-white/90 dark:bg-[#111827]/90 rounded-2xl p-4 sm:p-5 border border-slate-200/80 dark:border-white/10 hover:border-blue-300/50 dark:hover:border-blue-500/40 hover:bg-blue-50/15 dark:hover:bg-blue-950/15 hover:shadow-xs transition-all duration-200">
                                   <p className="text-xs sm:text-sm text-slate-800 dark:text-slate-200 leading-relaxed italic break-words">
                                     &ldquo;{selectedPost.rawText}&rdquo;
                                   </p>
@@ -1330,7 +1330,7 @@ export default function ScraperFeed() {
                           <button
                             type="button"
                             onClick={() => togglePostIncidentOverride(selectedPost.id)}
-                            className="px-3 py-2 bg-slate-100 hover:bg-slate-200/90 dark:bg-[#242526] dark:hover:bg-[#3A3B3C] text-slate-700 dark:text-slate-300 text-xs font-semibold rounded-xl active:scale-[0.97] transition-all cursor-pointer border border-slate-200/70 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20 shadow-2xs"
+                            className="px-3 py-2 bg-slate-100 hover:bg-slate-200/90 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold rounded-xl active:scale-[0.97] transition-all cursor-pointer border border-slate-200/70 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20 shadow-2xs"
                           >
                             Demote to Noise
                           </button>
@@ -1342,7 +1342,7 @@ export default function ScraperFeed() {
                           <button
                             type="button"
                             onClick={() => handleUpdateStatus(selectedPost.id, "Verified")}
-                            className="px-3.5 sm:px-4 py-2 sm:py-2.5 bg-[#00A854] hover:bg-[#009249] text-white text-xs font-semibold rounded-xl flex items-center gap-2 shadow-xs hover:shadow-[0_4px_12px_rgba(0,168,84,0.3)] active:scale-[0.97] transition-all cursor-pointer"
+                            className="px-3.5 sm:px-4 py-2 sm:py-2.5 bg-[#0071E3] hover:bg-[#0077ED] text-white text-xs font-semibold rounded-xl flex items-center gap-2 shadow-xs hover:shadow-[0_4px_14px_rgba(0,113,227,0.35)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.97] transition-all cursor-pointer"
                           >
                             <CheckCircle2 className="w-3.5 h-3.5" strokeWidth={1.75} />
                             <span>Verify Incident</span>
@@ -1352,7 +1352,7 @@ export default function ScraperFeed() {
                         <button
                           type="button"
                           onClick={() => handleUpdateStatus(selectedPost.id, "Resolved")}
-                          className="px-3.5 sm:px-4 py-2 sm:py-2.5 bg-white hover:bg-rose-50/80 dark:bg-[#18191A] dark:hover:bg-rose-950/20 text-slate-700 dark:text-slate-300 hover:text-rose-600 dark:hover:text-rose-400 border border-slate-200/70 dark:border-white/10 hover:border-rose-300 dark:hover:border-rose-800/40 text-xs font-semibold rounded-xl flex items-center gap-2 active:scale-[0.97] transition-all cursor-pointer shadow-2xs"
+                          className="px-3.5 sm:px-4 py-2 sm:py-2.5 bg-white hover:bg-rose-50/80 dark:bg-[#111827] dark:hover:bg-rose-950/20 text-slate-700 dark:text-slate-300 hover:text-rose-600 dark:hover:text-rose-400 border border-slate-200/70 dark:border-white/10 hover:border-rose-300 dark:hover:border-rose-800/40 text-xs font-semibold rounded-xl flex items-center gap-2 active:scale-[0.97] transition-all cursor-pointer shadow-2xs"
                         >
                           <XCircle className="w-3.5 h-3.5" strokeWidth={1.75} />
                           <span>Dismiss / Resolve</span>
