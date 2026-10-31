@@ -1454,52 +1454,88 @@ export default function Analytics() {
               />
 
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                {recommendations.map((item) => (
-                  <div
-                    key={item.barangay}
-                    className="rounded-xl border border-slate-200/80 dark:border-slate-800 p-5 bg-white/50 dark:bg-slate-900/40 hover:-translate-y-0.5 transition-all duration-300 flex flex-col justify-between"
-                  >
-                    <div>
-                      <div className="flex items-center justify-between gap-3 mb-3">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <MapPin className="w-4 h-4 text-blue-600 dark:text-sky-400 shrink-0" strokeWidth={1.75} />
-                          <span className="font-bold text-sm text-slate-900 dark:text-white truncate">
-                            {item.barangay}
+                {recommendations.map((item) => {
+                  const need = getDominantNeedMeta(item.dominantType);
+                  const NeedIcon = need.icon;
+                  const isHigh = item.priority === 'High';
+                  const isModerate = item.priority === 'Moderate';
+
+                  const hoverStyles = isHigh
+                    ? 'hover:border-rose-400/80 dark:hover:border-rose-500/70 hover:shadow-[0_12px_32px_rgba(244,63,94,0.18)] dark:hover:shadow-[0_12px_32px_rgba(244,63,94,0.26)] hover:bg-rose-50/30 dark:hover:bg-rose-950/20'
+                    : isModerate
+                    ? 'hover:border-amber-400/80 dark:hover:border-amber-500/70 hover:shadow-[0_12px_32px_rgba(245,158,11,0.18)] dark:hover:shadow-[0_12px_32px_rgba(245,158,11,0.26)] hover:bg-amber-50/30 dark:hover:bg-amber-950/20'
+                    : 'hover:border-blue-400/80 dark:hover:border-blue-500/70 hover:shadow-[0_12px_32px_rgba(0,113,227,0.18)] dark:hover:shadow-[0_12px_32px_rgba(0,113,227,0.26)] hover:bg-blue-50/30 dark:hover:bg-blue-950/20';
+
+                  const topBarGradient = isHigh
+                    ? 'from-rose-500 to-amber-500'
+                    : isModerate
+                    ? 'from-amber-500 to-yellow-400'
+                    : 'from-[#0071E3] to-sky-400';
+
+                  return (
+                    <motion.div
+                      key={item.barangay}
+                      whileHover={{ y: -3, scale: 1.015 }}
+                      whileTap={{ scale: 0.99 }}
+                      transition={{ type: 'spring', stiffness: 450, damping: 25 }}
+                      className={`group relative overflow-hidden rounded-2xl border border-slate-200/80 dark:border-white/10 p-5 bg-white/70 dark:bg-slate-900/60 backdrop-blur-md transition-all duration-300 flex flex-col justify-between cursor-default ${hoverStyles}`}
+                    >
+                      {/* Top Accent Gradient Bar with Hover Expansion */}
+                      <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${topBarGradient} opacity-75 group-hover:opacity-100 group-hover:h-1.5 transition-all duration-300`} />
+
+                      <div>
+                        <div className="flex items-center justify-between gap-3 mb-3 pt-1">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <div className="w-7 h-7 rounded-lg bg-blue-500/10 dark:bg-blue-500/20 border border-blue-500/20 flex items-center justify-center shrink-0 transition-transform duration-300 group-hover:scale-110">
+                              <MapPin className="w-3.5 h-3.5 text-[#0071E3] dark:text-sky-400" strokeWidth={2} />
+                            </div>
+                            <span className="font-bold text-sm text-slate-900 dark:text-white truncate group-hover:text-[#0071E3] dark:group-hover:text-sky-400 transition-colors">
+                              {item.barangay}
+                            </span>
+                          </div>
+                          <span
+                            className={`shrink-0 inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-[11px] font-bold shadow-2xs ${
+                              isHigh
+                                ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/25'
+                                : isModerate
+                                ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/25'
+                                : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30'
+                            }`}
+                          >
+                            <span className="relative flex h-2 w-2 items-center justify-center">
+                              {isHigh && (
+                                <span className="absolute inline-flex h-full w-full rounded-full bg-rose-500 opacity-60 animate-ping" />
+                              )}
+                              <span
+                                className={`relative inline-flex h-1.5 w-1.5 rounded-full shrink-0 ${
+                                  isHigh
+                                    ? 'bg-rose-500'
+                                    : isModerate
+                                    ? 'bg-amber-500'
+                                    : 'bg-[#10b981]'
+                                }`}
+                              />
+                            </span>
+                            <span>{item.priority} Urgency</span>
                           </span>
                         </div>
-                        <span className={`shrink-0 inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-[11px] font-semibold ${
-                          item.priority === 'High'
-                            ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20'
-                            : item.priority === 'Moderate'
-                            ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
-                            : 'bg-green-500/15 text-green-700 dark:text-green-300 border-green-500/30'
-                        }`}>
-                          <span
-                            className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                              item.priority === 'High'
-                                ? 'bg-rose-500'
-                                : item.priority === 'Moderate'
-                                ? 'bg-amber-500'
-                                : 'bg-[#22c55e]'
-                            }`}
-                          />
-                          <span>{item.priority} Urgency</span>
+                        <p className="text-xs leading-relaxed text-slate-600 dark:text-slate-300 font-normal">
+                          {item.text}
+                        </p>
+                      </div>
+
+                      <div className="mt-4 pt-3 border-t border-slate-100 dark:border-white/5 flex items-center justify-between text-[11px]">
+                        <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg border text-[11px] font-semibold ${need.pill}`}>
+                          <NeedIcon className="w-3 h-3 shrink-0" strokeWidth={1.8} />
+                          <span>{need.label}</span>
+                        </span>
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg font-mono font-bold text-xs bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200/60 dark:border-white/5 shadow-2xs tabular-nums group-hover:border-[#0071E3]/30 transition-colors">
+                          {item.incidents} {item.incidents === 1 ? 'event' : 'events'}
                         </span>
                       </div>
-                      <p className="text-xs leading-relaxed text-slate-600 dark:text-slate-300">
-                        {item.text}
-                      </p>
-                    </div>
-                    <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px] text-slate-400">
-                      <span className="font-medium text-slate-500 dark:text-slate-400">
-                        Dominant: {item.dominantType}
-                      </span>
-                      <span className="font-semibold text-slate-700 dark:text-slate-300 font-mono">
-                        {item.incidents} {item.incidents === 1 ? 'event' : 'events'}
-                      </span>
-                    </div>
-                  </div>
-                ))}
+                    </motion.div>
+                  );
+                })}
                 {!recommendations.length && (
                   <div className="lg:col-span-3 text-center py-10 text-xs text-slate-400">
                     Prescriptive dispatch recommendations will populate dynamically as reports are verified.
