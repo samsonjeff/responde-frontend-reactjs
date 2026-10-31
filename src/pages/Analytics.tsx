@@ -511,6 +511,14 @@ export default function Analytics() {
       .map(([date, count]) => ({ date, count }));
   }, [filtered, volumeRange]);
 
+  const volumeStats = useMemo(() => {
+    if (!volumeChartData.length) return { total: 0, peak: null, avg: '0' };
+    const total = volumeChartData.reduce((acc, d) => acc + d.count, 0);
+    const peak = volumeChartData.reduce((max, d) => (d.count > max.count ? d : max), volumeChartData[0]);
+    const avg = (total / volumeChartData.length).toFixed(1);
+    return { total, peak, avg };
+  }, [volumeChartData]);
+
   // ── Risk table ───────────────────────────────────────────────────────────
   const riskData = useMemo(() => {
     const grouped: Record<string, { incidents: number; score: number; high: number; types: Record<string, number> }> = {};
@@ -1125,13 +1133,30 @@ export default function Analytics() {
 
           {/* ── 4. INCIDENT VOLUME TIME-SERIES ── */}
           <motion.div variants={itemVariants} className="relative z-10">
-            <SoftCard className="p-6">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+            <SoftCard className="p-6 relative overflow-hidden bg-gradient-to-br from-blue-500/[0.04] via-sky-500/[0.015] to-indigo-500/[0.03] dark:from-blue-950/25 dark:via-slate-900/90 dark:to-indigo-950/20 border-blue-500/20 dark:border-blue-500/20 shadow-sm">
+              {/* Top Accent Gradient Bar */}
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#0071E3] via-sky-400 to-indigo-500 opacity-90" />
+
+              {/* Subtle ambient light glow orbs */}
+              <div className="pointer-events-none absolute -top-16 -right-16 w-60 h-60 bg-blue-400/10 dark:bg-blue-400/5 rounded-full blur-3xl" />
+              <div className="pointer-events-none absolute -bottom-16 -left-16 w-60 h-60 bg-indigo-500/10 dark:bg-indigo-400/5 rounded-full blur-3xl" />
+
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4 relative z-10">
                 <SectionHeader
                   icon={TrendingUp}
                   title="Incident Volume Over Time"
                   description="Daily incident intake volume and rate of submissions"
                   iconColor="#0071E3"
+                  iconBg="rgba(0, 113, 227, 0.12)"
+                  badge={
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-500/10 dark:bg-blue-500/20 text-[#0071E3] dark:text-sky-300 border border-blue-500/25 shadow-2xs">
+                      <span className="relative flex h-1.5 w-1.5">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#0071E3] opacity-60" />
+                        <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[#0071E3]" />
+                      </span>
+                      <span>Live Volume</span>
+                    </span>
+                  }
                 />
 
                 {/* Soft Segmented Control with glowing blue hover effects */}
@@ -1161,31 +1186,63 @@ export default function Analytics() {
                 </div>
               </div>
 
+              {/* Volume Summary KPI Highlights */}
+              {volumeChartData.length > 0 && (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-5 relative z-10">
+                  <div className="flex items-center gap-2.5 px-3.5 py-2 rounded-xl bg-blue-500/[0.06] dark:bg-blue-500/15 border border-blue-500/20 text-xs shadow-2xs">
+                    <div className="w-2 h-2 rounded-full bg-[#0071E3] shadow-[0_0_8px_rgba(0,113,227,0.8)] shrink-0" />
+                    <span className="text-slate-600 dark:text-slate-400 font-medium">Total In Range</span>
+                    <span className="font-bold text-slate-900 dark:text-white tabular-nums ml-auto font-mono">{volumeStats.total}</span>
+                  </div>
+
+                  <div className="flex items-center gap-2.5 px-3.5 py-2 rounded-xl bg-indigo-500/[0.06] dark:bg-indigo-500/15 border border-indigo-500/20 text-xs shadow-2xs">
+                    <div className="w-2 h-2 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.8)] shrink-0" />
+                    <span className="text-slate-600 dark:text-slate-400 font-medium">Peak Activity</span>
+                    <span className="font-bold text-slate-900 dark:text-white tabular-nums ml-auto font-mono">
+                      {volumeStats.peak ? `${volumeStats.peak.count} on ${volumeStats.peak.date}` : '0'}
+                    </span>
+                  </div>
+
+                  <div className="col-span-2 sm:col-span-1 flex items-center gap-2.5 px-3.5 py-2 rounded-xl bg-sky-500/[0.06] dark:bg-sky-500/15 border border-sky-500/20 text-xs shadow-2xs">
+                    <div className="w-2 h-2 rounded-full bg-sky-500 shadow-[0_0_8px_rgba(14,165,233,0.8)] shrink-0" />
+                    <span className="text-slate-600 dark:text-slate-400 font-medium">Daily Avg</span>
+                    <span className="font-bold text-slate-900 dark:text-white tabular-nums ml-auto font-mono">{volumeStats.avg} / day</span>
+                  </div>
+                </div>
+              )}
+
               {volumeChartData.length ? (
-                <div className="h-64 w-full">
+                <div className="h-64 w-full relative z-10">
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={volumeChartData} margin={{ top: 12, right: 12, left: -24, bottom: 0 }}>
                       <defs>
-                        <linearGradient id="softBlueGradient" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#2563EB" stopOpacity={0.2} />
-                          <stop offset="95%" stopColor="#2563EB" stopOpacity={0.0} />
+                        <linearGradient id="volumeAreaGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#0071E3" stopOpacity={0.38} />
+                          <stop offset="40%" stopColor="#38BDF8" stopOpacity={0.18} />
+                          <stop offset="80%" stopColor="#6366F1" stopOpacity={0.05} />
+                          <stop offset="100%" stopColor="#0071E3" stopOpacity={0.0} />
+                        </linearGradient>
+                        <linearGradient id="volumeLineGradient" x1="0" y1="0" x2="1" y2="0">
+                          <stop offset="0%" stopColor="#0071E3" />
+                          <stop offset="50%" stopColor="#0EA5E9" />
+                          <stop offset="100%" stopColor="#6366F1" />
                         </linearGradient>
                       </defs>
                       <CartesianGrid
                         strokeDasharray="3 3"
                         vertical={false}
                         stroke="currentColor"
-                        className="text-slate-200/50 dark:text-slate-800/60"
+                        className="text-blue-500/10 dark:text-blue-400/10"
                       />
                       <XAxis
                         dataKey="date"
-                        tick={{ fontSize: 11, fill: '#94a3b8' }}
-                        axisLine={{ stroke: '#94a3b8', strokeOpacity: 0.2 }}
+                        tick={{ fontSize: 11, fill: '#64748b' }}
+                        axisLine={{ stroke: '#0071E3', strokeOpacity: 0.2 }}
                         tickLine={false}
                       />
                       <YAxis
                         allowDecimals={false}
-                        tick={{ fontSize: 11, fill: '#94a3b8' }}
+                        tick={{ fontSize: 11, fill: '#64748b' }}
                         axisLine={false}
                         tickLine={false}
                       />
@@ -1193,18 +1250,18 @@ export default function Analytics() {
                       <Area
                         type="monotone"
                         dataKey="count"
-                        stroke="#2563EB"
-                        strokeWidth={2}
+                        stroke="url(#volumeLineGradient)"
+                        strokeWidth={2.5}
                         fillOpacity={1}
-                        fill="url(#softBlueGradient)"
-                        dot={{ r: 3, fill: '#2563EB', strokeWidth: 1.5, stroke: '#fff' }}
-                        activeDot={{ r: 5, fill: '#2563EB', stroke: '#fff', strokeWidth: 2 }}
+                        fill="url(#volumeAreaGradient)"
+                        dot={{ r: 3.5, fill: '#0071E3', strokeWidth: 2, stroke: '#ffffff' }}
+                        activeDot={{ r: 6, fill: '#0071E3', stroke: '#ffffff', strokeWidth: 2.5 }}
                       />
                     </AreaChart>
                   </ResponsiveContainer>
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center py-16 text-slate-400 dark:text-slate-500 text-xs gap-2">
+                <div className="flex flex-col items-center justify-center py-16 text-slate-400 dark:text-slate-500 text-xs gap-2 relative z-10">
                   <TrendingUp className="w-8 h-8 stroke-[1.5] text-slate-300 dark:text-slate-600" />
                   <span>No time-series reports recorded for the chosen timeframe.</span>
                 </div>
