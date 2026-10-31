@@ -1313,10 +1313,10 @@ export default function IncidentReports() {
                           <button
                             type="button"
                             onClick={() => openReview(report)}
-                            className={`group/btn px-3 py-1.5 text-xs font-semibold rounded-xl transition-all duration-200 inline-flex items-center justify-center gap-1.5 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.96] shadow-2xs cursor-pointer ${
+                            className={`group/btn px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all duration-200 inline-flex items-center justify-center gap-1.5 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.96] backdrop-blur-sm cursor-pointer ${
                               isReportIncomplete(report)
-                                ? 'text-white bg-amber-600 hover:bg-amber-500 active:bg-amber-700 border border-amber-600 shadow-[0_2px_8px_rgba(217,119,6,0.32)] hover:shadow-[0_4px_16px_rgba(217,119,6,0.48)]'
-                                : 'text-white bg-[#0071E3] hover:bg-[#0077ED] active:bg-[#005bb5] dark:bg-[#0071E3] dark:hover:bg-[#0077ED] border border-[#0071E3] dark:border-blue-400/30 shadow-[0_2px_8px_rgba(0,113,227,0.32)] hover:shadow-[0_4px_16px_rgba(0,113,227,0.48)]'
+                                ? 'text-amber-700 dark:text-amber-300 bg-amber-500/22 hover:bg-amber-500/35 active:bg-amber-500/45 dark:bg-amber-500/30 dark:hover:bg-amber-500/45 border border-amber-500/50 hover:border-amber-500/80 dark:border-amber-400/40 shadow-[0_2px_10px_rgba(217,119,6,0.22)] hover:shadow-[0_4px_16px_rgba(217,119,6,0.35)]'
+                                : 'text-[#0071E3] dark:text-sky-300 bg-[#0071E3]/18 hover:bg-[#0071E3]/28 active:bg-[#0071E3]/38 dark:bg-[#0071E3]/25 dark:hover:bg-[#0071E3]/38 border border-[#0071E3]/45 hover:border-[#0071E3]/75 dark:border-sky-400/40 shadow-[0_2px_10px_rgba(0,113,227,0.22)] hover:shadow-[0_4px_16px_rgba(0,113,227,0.35)]'
                             }`}
                           >
                             <ShieldCheck className="w-3.5 h-3.5 transition-transform duration-200 group-hover/btn:scale-110" strokeWidth={1.75} />
