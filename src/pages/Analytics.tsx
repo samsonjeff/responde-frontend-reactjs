@@ -1168,24 +1168,13 @@ export default function Analytics() {
               </div>
 
               {volumeChartData.length ? (
-                <motion.div
-                  key={volumeRange}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-                  className="h-64 w-full"
-                >
+                <div className="h-64 w-full">
                   <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart
-                      key={`area-chart-${volumeRange}`}
-                      data={volumeChartData}
-                      margin={{ top: 12, right: 12, left: -24, bottom: 0 }}
-                    >
+                    <AreaChart data={volumeChartData} margin={{ top: 12, right: 12, left: -24, bottom: 0 }}>
                       <defs>
                         <linearGradient id="softBlueGradient" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#0071E3" stopOpacity={0.35} />
-                          <stop offset="60%" stopColor="#0071E3" stopOpacity={0.08} />
-                          <stop offset="100%" stopColor="#0071E3" stopOpacity={0.0} />
+                          <stop offset="5%" stopColor="#2563EB" stopOpacity={0.2} />
+                          <stop offset="95%" stopColor="#2563EB" stopOpacity={0.0} />
                         </linearGradient>
                       </defs>
                       <CartesianGrid
@@ -1206,33 +1195,20 @@ export default function Analytics() {
                         axisLine={false}
                         tickLine={false}
                       />
-                      <Tooltip
-                        content={<VolumeTooltip />}
-                        cursor={{ stroke: '#0071E3', strokeWidth: 1.5, strokeDasharray: '4 4', strokeOpacity: 0.5 }}
-                      />
+                      <Tooltip content={<VolumeTooltip />} />
                       <Area
                         type="monotone"
                         dataKey="count"
-                        stroke="#0071E3"
-                        strokeWidth={2.5}
+                        stroke="#2563EB"
+                        strokeWidth={2}
                         fillOpacity={1}
                         fill="url(#softBlueGradient)"
-                        isAnimationActive={true}
-                        animationDuration={1300}
-                        animationEasing="ease-out"
-                        animationBegin={80}
-                        dot={{ r: 3.5, fill: '#0071E3', strokeWidth: 2, stroke: '#ffffff' }}
-                        activeDot={{
-                          r: 6.5,
-                          fill: '#0071E3',
-                          stroke: '#ffffff',
-                          strokeWidth: 2.5,
-                          style: { filter: 'drop-shadow(0 0 8px rgba(0,113,227,0.7))' },
-                        }}
+                        dot={{ r: 3, fill: '#2563EB', strokeWidth: 1.5, stroke: '#fff' }}
+                        activeDot={{ r: 5, fill: '#2563EB', stroke: '#fff', strokeWidth: 2 }}
                       />
                     </AreaChart>
                   </ResponsiveContainer>
-                </motion.div>
+                </div>
               ) : (
                 <div className="flex flex-col items-center justify-center py-16 text-slate-400 dark:text-slate-500 text-xs gap-2">
                   <TrendingUp className="w-8 h-8 stroke-[1.5] text-slate-300 dark:text-slate-600" />
