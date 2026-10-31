@@ -652,7 +652,7 @@ export default function Dashboard() {
                           <button
                             type="button"
                             onClick={() => navigate(`/incident-reports?focus=${report.id}`)}
-                            className="group/btn px-3 py-1.5 text-xs font-semibold text-[#0071E3] dark:text-sky-300 bg-blue-500/10 hover:bg-[#0071E3] hover:text-white dark:hover:bg-[#0071E3] dark:hover:text-white border border-blue-500/25 hover:border-[#0071E3] rounded-xl transition-all duration-200 inline-flex items-center justify-center gap-1.5 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.96] shadow-2xs hover:shadow-[0_4px_12px_rgba(0,113,227,0.25)] cursor-pointer"
+                            className="group/btn px-3.5 py-1.5 text-xs font-semibold text-white bg-[#0071E3] hover:bg-[#0077ED] active:bg-[#005bb5] dark:bg-[#0071E3] dark:hover:bg-[#0077ED] border border-[#0071E3] dark:border-blue-400/30 rounded-xl transition-all duration-200 inline-flex items-center justify-center gap-1.5 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.96] shadow-[0_2px_8px_rgba(0,113,227,0.32)] hover:shadow-[0_4px_16px_rgba(0,113,227,0.48)] cursor-pointer"
                           >
                             <ShieldCheck className="w-3.5 h-3.5 transition-transform duration-200 group-hover/btn:scale-110" strokeWidth={1.75} />
                             <span>Review</span>
