@@ -1238,20 +1238,27 @@ export default function MessengerBotLogs() {
                       </div>
 
                       {/* Apple Segmented 1-Click Status Switcher Capsule */}
-                      <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                      <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+                        <span className="hidden sm:inline-flex items-center text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 select-none">
+                          Status
+                        </span>
                         <div
                           role="group"
                           aria-label="Conversation Status"
-                          className="inline-flex items-center p-0.5 sm:p-1 bg-slate-100/90 dark:bg-slate-800/90 backdrop-blur-md rounded-full border border-slate-200/70 dark:border-white/10 shadow-[inset_0_1px_2px_rgba(0,0,0,0.06)]"
+                          className={`inline-flex items-center p-1 rounded-full backdrop-blur-md transition-all duration-300 shadow-xs border ${
+                            selectedConversation.status === "Incomplete"
+                              ? "bg-amber-500/10 dark:bg-amber-950/30 border-amber-300/80 dark:border-amber-500/30 ring-2 ring-amber-500/15 shadow-[0_2px_12px_rgba(245,158,11,0.12)]"
+                              : "bg-emerald-500/10 dark:bg-emerald-950/30 border-emerald-300/80 dark:border-emerald-500/30 ring-2 ring-emerald-500/15 shadow-[0_2px_12px_rgba(16,185,129,0.12)]"
+                          }`}
                         >
                           {/* Incomplete Option */}
                           <button
                             type="button"
                             onClick={() => updateConversationStatus(selectedConversation.id, "Incomplete")}
-                            className={`relative flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 rounded-full text-[11px] sm:text-xs font-semibold tracking-tight transition-colors duration-200 select-none active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 cursor-pointer ${
+                            className={`relative flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-full text-xs font-bold tracking-tight transition-all duration-200 select-none active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 cursor-pointer ${
                               selectedConversation.status === "Incomplete"
-                                ? "text-amber-700 dark:text-amber-300"
-                                : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+                                ? "text-white"
+                                : "text-slate-600 dark:text-slate-400 hover:text-amber-700 dark:hover:text-amber-300 hover:bg-black/5 dark:hover:bg-white/5"
                             }`}
                             title="Mark conversation as Incomplete"
                           >
@@ -1259,22 +1266,27 @@ export default function MessengerBotLogs() {
                               <motion.div
                                 layoutId="activeStatusCapsule"
                                 transition={APPLE_SPRING}
-                                className="absolute inset-0 bg-white dark:bg-slate-700/90 rounded-full shadow-[0_1px_4px_rgba(0,0,0,0.1),0_1px_2px_rgba(0,0,0,0.06)] border border-black/[0.04] dark:border-white/10"
+                                className="absolute inset-0 bg-gradient-to-r from-amber-500 to-amber-600 rounded-full shadow-[0_2px_8px_rgba(245,158,11,0.4)]"
                               />
                             )}
-                            <span className="relative z-10 w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                            <span className="relative z-10 hidden xs:inline">Incomplete</span>
-                            <span className="relative z-10 xs:hidden">Inc.</span>
+                            <span
+                              className={`relative z-10 w-2 h-2 rounded-full transition-colors ${
+                                selectedConversation.status === "Incomplete"
+                                  ? "bg-white shadow-xs animate-pulse"
+                                  : "bg-amber-500"
+                              }`}
+                            />
+                            <span className="relative z-10">Incomplete</span>
                           </button>
 
                           {/* Complete Option */}
                           <button
                             type="button"
                             onClick={() => updateConversationStatus(selectedConversation.id, "Complete")}
-                            className={`relative flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 rounded-full text-[11px] sm:text-xs font-semibold tracking-tight transition-colors duration-200 select-none active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 cursor-pointer ${
+                            className={`relative flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-full text-xs font-bold tracking-tight transition-all duration-200 select-none active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 cursor-pointer ${
                               selectedConversation.status === "Complete"
-                                ? "text-emerald-700 dark:text-emerald-300"
-                                : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+                                ? "text-white"
+                                : "text-slate-600 dark:text-slate-400 hover:text-emerald-700 dark:hover:text-emerald-300 hover:bg-black/5 dark:hover:bg-white/5"
                             }`}
                             title="Mark conversation as Complete"
                           >
@@ -1282,12 +1294,18 @@ export default function MessengerBotLogs() {
                               <motion.div
                                 layoutId="activeStatusCapsule"
                                 transition={APPLE_SPRING}
-                                className="absolute inset-0 bg-white dark:bg-slate-700/90 rounded-full shadow-[0_1px_4px_rgba(0,0,0,0.1),0_1px_2px_rgba(0,0,0,0.06)] border border-black/[0.04] dark:border-white/10"
+                                className="absolute inset-0 bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-full shadow-[0_2px_8px_rgba(16,185,129,0.4)]"
                               />
                             )}
-                            <CheckCircle2 className="relative z-10 w-3 h-3 sm:w-3.5 sm:h-3.5 text-emerald-500" strokeWidth={1.75} />
-                            <span className="relative z-10 hidden xs:inline">Complete</span>
-                            <span className="relative z-10 xs:hidden">Done</span>
+                            <CheckCircle2
+                              className={`relative z-10 w-3.5 h-3.5 transition-colors ${
+                                selectedConversation.status === "Complete"
+                                  ? "text-white"
+                                  : "text-emerald-600 dark:text-emerald-400"
+                              }`}
+                              strokeWidth={2.25}
+                            />
+                            <span className="relative z-10">Complete</span>
                           </button>
                         </div>
                       </div>
