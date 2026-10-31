@@ -1416,13 +1416,9 @@ export default function Analytics() {
                               </span>
                             </td>
                             <td className="py-3.5 px-3 text-center whitespace-nowrap">
-                              {item.high > 0 ? (
-                                <span className="inline-flex items-center justify-center min-w-[32px] px-2.5 py-0.5 rounded-lg font-mono font-extrabold text-xs bg-rose-500/10 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/25 shadow-2xs tabular-nums">
-                                  {item.high}
-                                </span>
-                              ) : (
-                                <span className="font-mono text-xs text-slate-400 dark:text-slate-500 tabular-nums">0</span>
-                              )}
+                              <span className="inline-flex items-center justify-center min-w-[32px] px-2.5 py-0.5 rounded-lg font-mono font-extrabold text-xs bg-rose-500/10 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/25 shadow-2xs tabular-nums">
+                                {item.high}
+                              </span>
                             </td>
                             <td className="py-3.5 px-3 text-center whitespace-nowrap">
                               <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border shadow-2xs ${
