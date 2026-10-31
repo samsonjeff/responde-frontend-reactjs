@@ -18,7 +18,6 @@ import {
   Clock,
   Bot,
   Globe2,
-  Flame,
   Filter,
   X,
   RotateCcw,
@@ -288,44 +287,38 @@ function PieTooltip({ active, payload }: CTP) {
 // ── Main Component ────────────────────────────────────────────────────────────
 function getDominantNeedMeta(type: string) {
   const norm = (type || '').toLowerCase();
+  if (norm.includes('fire')) {
+    return {
+      label: 'Fire',
+      pill: 'bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/25',
+    };
+  }
   if (norm.includes('search') || norm.includes('rescue')) {
     return {
-      label: 'Search & Rescue',
-      icon: Siren,
+      label: 'Rescue',
       pill: 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/25',
     };
   }
   if (norm.includes('medic') || norm.includes('casualty') || norm.includes('sugat')) {
     return {
-      label: 'Medical Triage',
-      icon: HeartPulse,
+      label: 'Medical',
       pill: 'bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/25',
     };
   }
   if (norm.includes('food') || norm.includes('water') || norm.includes('relief')) {
     return {
-      label: 'Food & Water',
-      icon: Droplets,
+      label: 'Relief',
       pill: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/25',
-    };
-  }
-  if (norm.includes('fire')) {
-    return {
-      label: 'Fire Incident',
-      icon: Flame,
-      pill: 'bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/25',
     };
   }
   if (norm.includes('infra') || norm.includes('poste') || norm.includes('road') || norm.includes('kuryente')) {
     return {
-      label: 'Infrastructure',
-      icon: HardHat,
+      label: 'Infra',
       pill: 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border-indigo-500/25',
     };
   }
   return {
-    label: type || 'General Triage',
-    icon: AlertTriangle,
+    label: 'General',
     pill: 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200/80 dark:border-white/10',
   };
 }
@@ -1083,7 +1076,7 @@ export default function Analytics() {
                                   boxShadow: isHovered || isActive ? `0 0 12px ${c.color}45` : undefined,
                                 }}
                               >
-                                <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 transition-transform duration-300 group-hover:rotate-6" strokeWidth={1.8} />
+                                <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 transition-transform duration-300 group-hover:scale-105" strokeWidth={1.8} />
                               </div>
                               <span
                                 className={`text-xs font-semibold truncate transition-colors duration-200 ${
@@ -1253,7 +1246,7 @@ export default function Analytics() {
                     transition={{ type: 'spring', stiffness: 400, damping: 25 }}
                   >
                     <SoftCard className={`group p-6 flex items-center gap-5 transition-all duration-300 border border-slate-200/80 dark:border-white/10 ${hoverBorder} ${hoverShadow} cursor-default`}>
-                      <div className={`w-14 h-14 rounded-2xl border flex items-center justify-center shrink-0 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6 shadow-2xs ${bg}`}>
+                      <div className={`w-14 h-14 rounded-2xl border flex items-center justify-center shrink-0 transition-transform duration-300 group-hover:scale-105 shadow-2xs ${bg}`}>
                         <Icon className="w-7 h-7" strokeWidth={1.8} />
                       </div>
                       <div className="flex-1 min-w-0">
@@ -1332,21 +1325,11 @@ export default function Analytics() {
                     {riskData.length > 0 ? (
                       riskData.map((item, index) => {
                         const need = getDominantNeedMeta(item.dominantType);
-                        const NeedIcon = need.icon;
-                        const isFiltered = activeBarangay === item.barangay;
 
                         return (
                           <tr
                             key={item.barangay}
-                            onClick={() => {
-                              setActiveBarangay(prev => (prev === item.barangay ? null : item.barangay));
-                              setBarangayFilter(item.barangay);
-                            }}
-                            className={`group transition-all duration-200 cursor-pointer select-none ${
-                              isFiltered
-                                ? 'bg-blue-50/80 dark:bg-blue-950/40 border-l-4 border-l-[#0071E3]'
-                                : 'hover:bg-blue-50/40 dark:hover:bg-blue-950/20 hover:shadow-2xs'
-                            }`}
+                            className="border-b border-slate-100/80 dark:border-white/5 last:border-b-0"
                           >
                             <td className="py-3.5 px-4 whitespace-nowrap">
                               <div className="flex items-center gap-2.5">
@@ -1363,14 +1346,14 @@ export default function Analytics() {
                                 </span>
                                 <div className="flex items-center gap-1.5 min-w-0">
                                   <MapPin className="w-3.5 h-3.5 text-[#0071E3] shrink-0" />
-                                  <span className="font-semibold text-slate-800 dark:text-slate-200 group-hover:text-[#0071E3] dark:group-hover:text-sky-400 transition-colors">
+                                  <span className="font-semibold text-slate-800 dark:text-slate-200">
                                     {item.barangay}
                                   </span>
                                 </div>
                               </div>
                             </td>
                             <td className="py-3.5 px-3 text-center whitespace-nowrap">
-                              <span className="inline-flex items-center justify-center min-w-[32px] px-2.5 py-0.5 rounded-lg font-mono font-bold text-xs bg-slate-100 dark:bg-slate-800/90 text-slate-800 dark:text-slate-200 border border-slate-200/60 dark:border-white/5 shadow-2xs tabular-nums group-hover:border-[#0071E3]/30 transition-colors">
+                              <span className="inline-flex items-center justify-center min-w-[32px] px-2.5 py-0.5 rounded-lg font-mono font-bold text-xs bg-slate-100 dark:bg-slate-800/90 text-slate-800 dark:text-slate-200 border border-slate-200/60 dark:border-white/5 shadow-2xs tabular-nums">
                                 {item.incidents}
                               </span>
                             </td>
@@ -1380,7 +1363,7 @@ export default function Analytics() {
                                   {item.high}
                                 </span>
                               ) : (
-                                <span className="text-slate-400 dark:text-slate-500 text-xs font-mono tabular-nums">—</span>
+                                <span className="font-mono text-xs text-slate-400 dark:text-slate-500 tabular-nums">0</span>
                               )}
                             </td>
                             <td className="py-3.5 px-3 text-center whitespace-nowrap">
@@ -1394,7 +1377,7 @@ export default function Analytics() {
                                 <span
                                   className={`w-1.5 h-1.5 rounded-full shrink-0 ${
                                     item.priority === 'High'
-                                      ? 'bg-rose-500 animate-pulse'
+                                      ? 'bg-rose-500'
                                       : item.priority === 'Moderate'
                                       ? 'bg-amber-500'
                                       : 'bg-[#10b981]'
@@ -1404,8 +1387,7 @@ export default function Analytics() {
                               </span>
                             </td>
                             <td className="py-3.5 px-4 whitespace-nowrap">
-                              <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-semibold border shadow-2xs ${need.pill}`}>
-                                <NeedIcon className="w-3.5 h-3.5 shrink-0" strokeWidth={1.8} />
+                              <span className={`w-20 inline-flex items-center justify-center py-1 rounded-full text-xs font-semibold border shadow-2xs ${need.pill}`}>
                                 <span>{need.label}</span>
                               </span>
                             </td>
@@ -1438,7 +1420,6 @@ export default function Analytics() {
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 {recommendations.map((item) => {
                   const need = getDominantNeedMeta(item.dominantType);
-                  const NeedIcon = need.icon;
                   const isHigh = item.priority === 'High';
                   const isModerate = item.priority === 'Moderate';
 
@@ -1507,8 +1488,7 @@ export default function Analytics() {
                       </div>
 
                       <div className="mt-4 pt-3 border-t border-slate-100 dark:border-white/5 flex items-center justify-between text-[11px]">
-                        <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg border text-[11px] font-semibold ${need.pill}`}>
-                          <NeedIcon className="w-3 h-3 shrink-0" strokeWidth={1.8} />
+                        <span className={`w-20 inline-flex items-center justify-center py-0.5 rounded-full border text-[11px] font-semibold shadow-2xs ${need.pill}`}>
                           <span>{need.label}</span>
                         </span>
                         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg font-mono font-bold text-xs bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200/60 dark:border-white/5 shadow-2xs tabular-nums group-hover:border-[#0071E3]/30 transition-colors">

@@ -1579,7 +1579,7 @@ export default function GeospatialMap() {
               <div className="w-full xl:w-auto overflow-x-auto no-scrollbar scroll-smooth flex items-center justify-start xl:justify-end py-0.5 shrink-0">
                 <div className="inline-flex items-center gap-1 sm:gap-1.5 p-1 bg-slate-100/90 dark:bg-slate-800/90 backdrop-blur-md rounded-2xl border border-slate-200/60 dark:border-white/5 shadow-inner min-w-max">
                   <div className="group/layers flex items-center gap-1 px-2 py-1 text-slate-400 dark:text-slate-500 hover:text-[#0071E3] dark:hover:text-sky-400 transition-colors cursor-default select-none shrink-0">
-                    <Layers className="w-3.5 h-3.5 transition-transform duration-300 group-hover/layers:rotate-12 group-hover/layers:scale-110 text-current" strokeWidth={1.8} />
+                    <Layers className="w-3.5 h-3.5 transition-transform duration-300 group-hover/layers:scale-110 text-current" strokeWidth={1.8} />
                     <span className="text-[10px] font-bold uppercase tracking-wider hidden sm:inline">Layers</span>
                   </div>
                   <LayerToggle
@@ -1619,7 +1619,7 @@ export default function GeospatialMap() {
                         : 'bg-white/80 dark:bg-slate-700/70 text-slate-700 dark:text-slate-200 hover:bg-blue-50/70 dark:hover:bg-blue-950/40 hover:text-[#0071E3] dark:hover:text-sky-300 ring-1 ring-slate-950/5 dark:ring-white/10 hover:ring-[#0071E3]/25 shadow-xs hover:shadow-[0_2px_10px_rgba(0,113,227,0.18)]'
                     }`}
                   >
-                    <Box className="w-3.5 h-3.5 transition-transform duration-300 group-hover/btn:rotate-12 group-hover/btn:scale-110 text-current" strokeWidth={1.8} />
+                    <Box className="w-3.5 h-3.5 transition-transform duration-300 group-hover/btn:scale-110 text-current" strokeWidth={1.8} />
                     <span className="whitespace-nowrap">{is3DMode ? '3D View' : '2D View'}</span>
                   </motion.button>
                 </div>
