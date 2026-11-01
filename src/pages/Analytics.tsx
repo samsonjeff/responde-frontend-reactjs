@@ -636,7 +636,8 @@ export default function Analytics() {
 
               {/* Filter Bar with DatePicker and FilterDropdown */}
               <div className="pt-3.5 border-t border-slate-200/60 dark:border-white/5 flex flex-col md:flex-row md:flex-wrap lg:flex-nowrap items-stretch md:items-center justify-between gap-2.5 sm:gap-3 relative z-50">
-                <div className="flex flex-wrap items-center gap-2.5 relative z-50">
+                {/* Left Filter Scope Container */}
+                <div className="flex flex-wrap sm:inline-flex sm:items-center gap-2 sm:gap-1.5 sm:p-1 sm:bg-slate-100/70 sm:dark:bg-white/[0.05] sm:backdrop-blur-xl sm:rounded-2xl sm:border sm:border-slate-200/70 sm:dark:border-white/10 sm:shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] relative z-50">
                   <div className="flex items-center gap-1 px-2.5 py-1 text-[#0071E3] dark:text-sky-400 cursor-default select-none shrink-0">
                     <Filter className="w-3.5 h-3.5 transition-transform duration-300 group-hover/filters:scale-110 text-[#0071E3] dark:text-sky-400" strokeWidth={1.8} />
                     <span className="text-[10px] font-bold uppercase tracking-wider">Filters</span>
@@ -670,19 +671,21 @@ export default function Analytics() {
                   />
                 </div>
 
-                {/* Date Pickers & Reset */}
+                {/* Right Date Scope Container + Preserved Reset Option */}
                 <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 sm:gap-3 md:ml-auto w-full md:w-auto relative z-40">
-                  <div className="flex items-center gap-2 flex-1 sm:flex-initial min-w-[130px]">
-                    <span className="text-xs font-medium uppercase tracking-wider text-slate-400 dark:text-slate-500 whitespace-nowrap">
-                      From:
-                    </span>
-                    <DatePicker value={fromDate} onChange={setFromDate} placeholder="Select Date" />
-                  </div>
-                  <div className="flex items-center gap-2 flex-1 sm:flex-initial min-w-[130px]">
-                    <span className="text-xs font-medium uppercase tracking-wider text-slate-400 dark:text-slate-500 whitespace-nowrap">
-                      To:
-                    </span>
-                    <DatePicker value={toDate} onChange={setToDate} placeholder="Select Date" />
+                  <div className="flex flex-wrap sm:inline-flex sm:items-center gap-2 sm:gap-2.5 p-1 bg-slate-100/70 dark:bg-white/[0.05] backdrop-blur-xl rounded-2xl border border-slate-200/70 dark:border-white/10 shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] px-2.5">
+                    <div className="flex items-center gap-1.5 min-w-[130px]">
+                      <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 whitespace-nowrap pl-0.5">
+                        From:
+                      </span>
+                      <DatePicker value={fromDate} onChange={setFromDate} placeholder="Select Date" />
+                    </div>
+                    <div className="flex items-center gap-1.5 min-w-[130px]">
+                      <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 whitespace-nowrap">
+                        To:
+                      </span>
+                      <DatePicker value={toDate} onChange={setToDate} placeholder="Select Date" />
+                    </div>
                   </div>
 
                   {hasActiveFilters && (
