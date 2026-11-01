@@ -982,9 +982,9 @@ export default function Settings() {
                     <button
                       type="button"
                       onClick={() => { setProfileDraft(profile); setIsEditingProfile(true); }}
-                      className="group/edit self-start sm:self-auto inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold bg-white hover:bg-slate-50 dark:bg-white/10 dark:hover:bg-white/15 text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white border border-slate-200/80 hover:border-slate-300 dark:border-white/10 dark:hover:border-white/20 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] active:translate-y-0 active:scale-95 cursor-pointer shadow-2xs"
+                      className="group/edit self-start sm:self-auto inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold bg-white hover:bg-blue-50/70 dark:bg-white/10 dark:hover:bg-blue-500/10 text-slate-700 dark:text-slate-200 hover:text-[#0071E3] dark:hover:text-sky-400 border border-slate-200/80 hover:border-blue-300/80 dark:border-white/10 dark:hover:border-sky-500/40 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_4px_14px_rgba(0,113,227,0.12)] active:translate-y-0 active:scale-95 cursor-pointer shadow-2xs"
                     >
-                      <Pencil className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 transition-transform duration-200 ease-out group-hover/edit:rotate-12 group-hover/edit:scale-110" strokeWidth={2} />
+                      <Pencil className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 group-hover/edit:text-[#0071E3] dark:group-hover/edit:text-sky-400 transition-colors duration-200 shrink-0" strokeWidth={2} />
                       <span>Edit Profile</span>
                     </button>
                   )}
