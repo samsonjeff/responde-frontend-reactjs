@@ -1433,33 +1433,26 @@ export default function Settings() {
                   </div>
                 )}
 
-                {/* Clean Apple Table with iOS Scroll Fade */}
-                <div className="mt-3 relative rounded-2xl border border-slate-200/80 dark:border-white/10 bg-white/70 dark:bg-slate-900/40 shadow-xs overflow-hidden">
-                  <div
-                    className="overflow-x-auto overflow-y-auto max-h-[300px] sm:max-h-[340px] w-full scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700"
-                    style={{
-                      maskImage: 'linear-gradient(to bottom, black calc(100% - 40px), transparent 100%)',
-                      WebkitMaskImage: 'linear-gradient(to bottom, black calc(100% - 40px), transparent 100%)',
-                    }}
-                  >
-                    <table className="w-full text-xs sm:text-sm text-left border-separate border-spacing-0">
-                      <thead className="bg-slate-50/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200/70 dark:border-white/10 sticky top-0 z-20 shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
-                        <tr>
-                          <th className="px-4 py-3 font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-[11px] whitespace-nowrap border-b border-slate-200/70 dark:border-white/10">
-                            User
-                          </th>
-                          <th className="px-4 py-3 font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-[11px] whitespace-nowrap border-b border-slate-200/70 dark:border-white/10">
-                            Role
-                          </th>
-                          <th className="px-4 py-3 font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-[11px] hidden md:table-cell whitespace-nowrap border-b border-slate-200/70 dark:border-white/10">
-                            Last Login
-                          </th>
-                          <th className="px-3.5 py-3 w-32 min-w-[120px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-[11px] text-left whitespace-nowrap sticky top-0 right-0 z-30 bg-slate-50/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200/70 dark:border-white/10 shadow-[-6px_0_10px_-3px_rgba(0,0,0,0.05)] dark:shadow-[-6px_0_10px_-3px_rgba(0,0,0,0.3)] shrink-0">
-                            Actions
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100 dark:divide-white/5">
+                {/* Clean Apple Table */}
+                <div className="mt-3 overflow-x-auto rounded-2xl border border-slate-200/80 dark:border-white/10 bg-white/50 dark:bg-slate-900/40">
+                  <table className="w-full text-xs sm:text-sm text-left border-separate border-spacing-0">
+                    <thead className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200/70 dark:border-white/10">
+                      <tr>
+                        <th className="px-4 py-3 font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-[11px] whitespace-nowrap border-b border-slate-200/70 dark:border-white/10">
+                          User
+                        </th>
+                        <th className="px-4 py-3 font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-[11px] whitespace-nowrap border-b border-slate-200/70 dark:border-white/10">
+                          Role
+                        </th>
+                        <th className="px-4 py-3 font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-[11px] hidden md:table-cell whitespace-nowrap border-b border-slate-200/70 dark:border-white/10">
+                          Last Login
+                        </th>
+                        <th className="px-3.5 py-3 w-32 min-w-[120px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-[11px] text-left whitespace-nowrap sticky top-0 right-0 z-20 bg-slate-50 dark:bg-slate-900 border-b border-slate-200/70 dark:border-white/10 shadow-[-6px_0_10px_-3px_rgba(0,0,0,0.05)] dark:shadow-[-6px_0_10px_-3px_rgba(0,0,0,0.3)] shrink-0">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-white/5">
                       {loadingUsers ? (
                         <tr>
                           <td colSpan={4} className="py-10 text-center text-slate-400">
@@ -1569,18 +1562,9 @@ export default function Settings() {
                           );
                         })
                       )}
-                      {filteredUsers.length > 0 && (
-                        <tr aria-hidden="true" className="h-6 pointer-events-none border-none">
-                          <td colSpan={4} className="p-0 border-0" />
-                        </tr>
-                      )}
                     </tbody>
                   </table>
                 </div>
-
-                {/* White gradient overlay indicating more content underneath */}
-                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-white via-white/60 to-transparent dark:from-[#111827] dark:via-[#111827]/60 dark:to-transparent z-25 rounded-b-2xl" />
-              </div>
             </SoftCard>
 
               {/* Sub-Card: Activity & Audit Log */}
