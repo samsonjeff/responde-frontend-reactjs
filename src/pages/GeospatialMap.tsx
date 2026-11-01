@@ -784,7 +784,7 @@ function IncidentSidebarContent({
               <span className="text-sm font-bold tracking-tight text-slate-900 dark:text-white truncate">
                 Live Incidents
               </span>
-              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 tabular-nums font-mono shrink-0 transition-transform duration-200 hover:scale-105 cursor-default">
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 tabular-nums font-mono shrink-0">
                 {count + incompleteReports.length} Total
               </span>
             </div>
@@ -919,17 +919,17 @@ function IncidentSidebarContent({
           <div className="flex items-center justify-between px-4 py-2 border-b border-slate-200/40 dark:border-white/5 shrink-0 bg-white/40 dark:bg-[#0f172a]/40 text-[11px] text-slate-500 dark:text-slate-400">
             <span className="font-semibold text-slate-400 uppercase tracking-wider text-[10px]">Priority Levels:</span>
             <div className="flex items-center gap-3">
-              <div className="group flex items-center gap-1 cursor-default transition-all duration-150 hover:scale-105">
-                <span className="w-2 h-2 rounded-full bg-[#22c55e] ring-2 ring-green-500/20 transition-transform duration-200 group-hover:scale-125" />
-                <span className="text-[10px] group-hover:text-slate-700 dark:group-hover:text-slate-200 transition-colors">Low</span>
+              <div className="flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-[#22c55e] ring-2 ring-green-500/20" />
+                <span className="text-[10px]">Low</span>
               </div>
-              <div className="group flex items-center gap-1 cursor-default transition-all duration-150 hover:scale-105">
-                <span className="w-2 h-2 rounded-full bg-amber-500 ring-2 ring-amber-500/20 transition-transform duration-200 group-hover:scale-125" />
-                <span className="text-[10px] group-hover:text-slate-700 dark:group-hover:text-slate-200 transition-colors">Mod</span>
+              <div className="flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-amber-500 ring-2 ring-amber-500/20" />
+                <span className="text-[10px]">Mod</span>
               </div>
-              <div className="group flex items-center gap-1 cursor-default transition-all duration-150 hover:scale-105">
-                <span className="w-2 h-2 rounded-full bg-rose-500 ring-2 ring-rose-500/20 animate-pulse transition-transform duration-200 group-hover:scale-125" />
-                <span className="text-[10px] font-semibold text-rose-600 dark:text-rose-400 transition-colors">High</span>
+              <div className="flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-rose-500 ring-2 ring-rose-500/20 animate-pulse" />
+                <span className="text-[10px]">High</span>
               </div>
             </div>
           </div>
@@ -1509,12 +1509,8 @@ export default function GeospatialMap() {
               </div>
 
               {/* Apple Maps Live Telemetry Status Capsule */}
-              <button
-                type="button"
-                onClick={() => setDrawerOpen((prev) => !prev)}
-                className="group relative inline-flex items-center gap-2.5 px-3.5 py-2 rounded-2xl bg-white/80 dark:bg-slate-800/80 backdrop-blur-md border border-slate-200/80 dark:border-white/10 shadow-xs hover:shadow-sm hover:border-[#0071E3]/40 dark:hover:border-sky-500/40 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] transition-all duration-200 cursor-pointer select-none shrink-0"
-                title={drawerOpen ? "Click to toggle live incidents drawer" : "Click to view live incidents drawer"}
-                aria-label="Toggle Live Incidents Drawer"
+              <div
+                className="inline-flex items-center gap-2.5 px-3.5 py-2 rounded-2xl bg-white/80 dark:bg-slate-800/80 backdrop-blur-md border border-slate-200/80 dark:border-white/10 shadow-xs select-none shrink-0"
               >
                 {/* Active Radar Beacon */}
                 <span className="relative flex h-2 w-2 shrink-0">
@@ -1523,7 +1519,7 @@ export default function GeospatialMap() {
                 </span>
 
                 <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300">
-                  <MapPin className="w-3.5 h-3.5 text-[#0071E3] dark:text-sky-400 transition-transform duration-200 group-hover:scale-115 group-hover:-translate-y-0.5" strokeWidth={2} />
+                  <MapPin className="w-3.5 h-3.5 text-[#0071E3] dark:text-sky-400" strokeWidth={2} />
                   <span className="font-medium">
                     <strong className="text-slate-900 dark:text-white font-bold tabular-nums mr-1">
                       {pinReports.length}
@@ -1542,7 +1538,7 @@ export default function GeospatialMap() {
                     </div>
                   </>
                 )}
-              </button>
+              </div>
             </div>
 
             {/* ── Filters & Layer Controls ── */}
