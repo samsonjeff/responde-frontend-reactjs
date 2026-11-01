@@ -1232,15 +1232,27 @@ export default function Settings() {
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={fetchUsers}
-                      disabled={loadingUsers}
-                      className="p-2.5 text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white bg-slate-100 hover:bg-slate-200/80 dark:bg-white/10 dark:hover:bg-white/15 border border-slate-200/60 dark:border-white/10 rounded-xl transition-all duration-150 cursor-pointer hover:-translate-y-0.5 active:translate-y-0 active:scale-95 disabled:opacity-50 shadow-2xs hover:shadow-xs"
-                      title="Refresh user list"
-                    >
-                      <RefreshCw className={`w-4 h-4 transition-transform duration-300 ${loadingUsers ? 'animate-spin text-[#0071E3]' : ''}`} strokeWidth={1.75} />
-                    </button>
+                    <div className="relative group/refresh">
+                      <button
+                        type="button"
+                        onClick={fetchUsers}
+                        disabled={loadingUsers}
+                        aria-label="Refresh user list"
+                        className="p-2.5 text-slate-500 hover:text-[#0071E3] dark:text-slate-400 dark:hover:text-sky-400 bg-slate-100/80 hover:bg-[#0071E3]/10 dark:bg-white/10 dark:hover:bg-[#0071E3]/20 border border-slate-200/70 hover:border-[#0071E3]/35 dark:border-white/10 dark:hover:border-[#0071E3]/40 rounded-xl transition-all duration-200 cursor-pointer hover:-translate-y-0.5 active:translate-y-0 active:scale-90 disabled:opacity-40 shadow-2xs hover:shadow-xs flex items-center justify-center"
+                      >
+                        <RefreshCw
+                          className={`w-4 h-4 transition-transform duration-500 ease-out group-hover/refresh:rotate-180 ${
+                            loadingUsers ? 'animate-spin text-[#0071E3]' : ''
+                          }`}
+                          strokeWidth={1.85}
+                        />
+                      </button>
+                      <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-full mt-2 z-30 opacity-0 group-hover/refresh:opacity-100 transition-all duration-200 ease-out translate-y-1 group-hover/refresh:translate-y-0 whitespace-nowrap">
+                        <div className="px-2.5 py-1 rounded-lg text-[11px] font-medium bg-slate-900/90 text-white dark:bg-white/95 dark:text-slate-900 shadow-md backdrop-blur-md border border-white/10 dark:border-slate-200/20">
+                          Refresh user list
+                        </div>
+                      </div>
+                    </div>
 
                     {currentUser?.role === 'super_admin' && (
                       <CleanButton
