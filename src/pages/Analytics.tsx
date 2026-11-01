@@ -1314,11 +1314,8 @@ export default function Analytics() {
                           <th className="py-3 px-4 text-[11px] uppercase tracking-wider font-bold text-slate-500 dark:text-slate-400 whitespace-nowrap">
                             Risk Priority
                           </th>
-                          <th className="py-3 px-4 text-[11px] uppercase tracking-wider font-bold text-slate-500 dark:text-slate-400 whitespace-nowrap">
-                            Dominant Need
-                          </th>
                           <th className="py-3 px-4 sm:px-5 text-[11px] uppercase tracking-wider font-bold text-slate-500 dark:text-slate-400 whitespace-nowrap">
-                            Dispatch Protocol
+                            Dominant Need
                           </th>
                         </tr>
                       </thead>
@@ -1345,15 +1342,10 @@ export default function Analytics() {
                                     }`}>
                                       {index + 1}
                                     </span>
-                                    <div className="min-w-0">
-                                      <div className="flex items-center gap-1.5">
-                                        <MapPin className="w-3.5 h-3.5 text-[#0071E3] shrink-0" />
-                                        <span className="font-semibold text-slate-900 dark:text-white truncate">
-                                          {item.barangay}
-                                        </span>
-                                      </div>
-                                      <span className="text-[10px] text-slate-400 dark:text-slate-500 block pl-5 font-mono">
-                                        Score: {item.score} pts
+                                    <div className="flex items-center gap-1.5 min-w-0">
+                                      <MapPin className="w-3.5 h-3.5 text-[#0071E3] shrink-0" />
+                                      <span className="font-semibold text-slate-900 dark:text-white truncate">
+                                        {item.barangay}
                                       </span>
                                     </div>
                                   </div>
@@ -1412,27 +1404,9 @@ export default function Analytics() {
                                   </span>
                                 </td>
 
-                                <td className="py-3.5 px-4 whitespace-nowrap">
-                                  <span className={`inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-semibold border shadow-2xs ${need.pill}`}>
-                                    <span>{need.label}</span>
-                                  </span>
-                                </td>
-
                                 <td className="py-3.5 px-4 sm:px-5 whitespace-nowrap">
-                                  <span className={`inline-flex items-center gap-1.5 text-xs font-semibold ${
-                                    item.priority === 'High'
-                                      ? 'text-rose-600 dark:text-rose-400'
-                                      : item.priority === 'Moderate'
-                                      ? 'text-amber-600 dark:text-amber-400'
-                                      : 'text-slate-500 dark:text-slate-400'
-                                  }`}>
-                                    <span>
-                                      {item.priority === 'High'
-                                        ? '⚡ Pre-position Units'
-                                        : item.priority === 'Moderate'
-                                        ? '👁 Active Patrol'
-                                        : '✓ Routine Monitoring'}
-                                    </span>
+                                  <span className={`inline-flex items-center justify-center w-24 py-1 rounded-full text-xs font-semibold border shadow-2xs text-center ${need.pill}`}>
+                                    <span>{need.label}</span>
                                   </span>
                                 </td>
                               </tr>
@@ -1440,7 +1414,7 @@ export default function Analytics() {
                           })
                         ) : (
                           <tr>
-                            <td colSpan={6} className="py-8 text-center text-xs text-slate-400 dark:text-slate-500">
+                            <td colSpan={5} className="py-8 text-center text-xs text-slate-400 dark:text-slate-500">
                               No verified geospatial risk data recorded yet.
                             </td>
                           </tr>
