@@ -990,66 +990,84 @@ export default function Settings() {
                   )}
                 </div>
 
-                {/* Body: Left Avatar Column + Right Details Grid */}
-                <div className="pt-6 flex flex-col md:flex-row items-center md:items-start gap-6 lg:gap-8">
-                  {/* Left Column: Avatar & Meta */}
-                  <div className="flex flex-col items-center shrink-0 w-full md:w-36 text-center">
-                    <div className="relative mb-3">
-                      {currentUser?.avatar_url && !userAvatarError ? (
-                        <img
-                          src={currentUser.avatar_url}
-                          alt={profile.fullName || 'User'}
-                          referrerPolicy="no-referrer"
-                          onError={() => setUserAvatarError(true)}
-                          className="w-22 h-22 sm:w-24 sm:h-24 rounded-3xl object-cover ring-4 ring-white dark:ring-slate-800 shadow-[0_8px_18px_rgba(0,0,0,0.08)]"
-                        />
-                      ) : (
-                        <div className="w-22 h-22 sm:w-24 sm:h-24 rounded-3xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white font-bold text-2xl sm:text-3xl flex items-center justify-center ring-4 ring-white dark:ring-slate-800 shadow-[0_8px_18px_rgba(37,99,235,0.25)] select-none">
-                          {(profile.fullName || currentUser?.email || 'U')[0].toUpperCase()}
-                        </div>
-                      )}
-                      <span
-                        className="absolute bottom-0 right-0 w-4.5 h-4.5 rounded-full bg-emerald-500 ring-3 ring-white dark:ring-slate-900 shadow-2xs"
-                        title="Active Status"
-                      />
-                    </div>
-
-                    <div className="space-y-2 flex flex-col items-center">
-                      <UserRoleBadge role={userRole} />
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const id = currentUser?.user_id ? String(currentUser.user_id) : 'e8b29cab';
-                          navigator.clipboard.writeText(id);
-                          setCopiedId(true);
-                          setTimeout(() => setCopiedId(false), 2000);
-                        }}
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100/80 hover:bg-slate-200/70 dark:bg-white/5 dark:hover:bg-white/10 text-slate-600 dark:text-slate-400 font-mono text-[11px] transition-colors cursor-pointer border border-slate-200/50 dark:border-white/5"
-                        title="Click to copy account ID"
-                      >
-                        {copiedId ? (
-                          <>
-                            <Check className="w-3 h-3 text-emerald-500" strokeWidth={2.5} />
-                            <span className="text-emerald-600 dark:text-emerald-400 font-semibold">Copied</span>
-                          </>
+                {/* Body: 40% Profile Area + 60% Details Grid */}
+                <div className="pt-6 flex flex-col md:flex-row items-stretch gap-5 lg:gap-6">
+                  {/* Left Column: Profile Card (40% width) */}
+                  <div className="w-full md:w-[38%] lg:w-[36%] xl:w-[35%] shrink-0">
+                    <div className="h-full rounded-2xl bg-slate-50/70 hover:bg-slate-100/50 dark:bg-white/[0.02] dark:hover:bg-white/[0.03] border border-slate-200/60 dark:border-white/10 p-5 sm:p-6 flex flex-col items-center justify-center text-center transition-all duration-150 shadow-2xs">
+                      {/* Avatar */}
+                      <div className="relative mb-3.5">
+                        {currentUser?.avatar_url && !userAvatarError ? (
+                          <img
+                            src={currentUser.avatar_url}
+                            alt={profile.fullName || 'User'}
+                            referrerPolicy="no-referrer"
+                            onError={() => setUserAvatarError(true)}
+                            className="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl object-cover ring-4 ring-white dark:ring-slate-800 shadow-[0_8px_20px_rgba(0,0,0,0.08)]"
+                          />
                         ) : (
-                          <>
-                            <Copy className="w-3 h-3 text-slate-400" strokeWidth={2} />
-                            <span>ID: {currentUser?.user_id ? String(currentUser.user_id).slice(0, 8) : 'e8b29cab'}</span>
-                          </>
+                          <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white font-bold text-2xl sm:text-3xl flex items-center justify-center ring-4 ring-white dark:ring-slate-800 shadow-[0_8px_18px_rgba(37,99,235,0.25)] select-none">
+                            {(profile.fullName || currentUser?.email || 'U')[0].toUpperCase()}
+                          </div>
                         )}
-                      </button>
+                        <span
+                          className="absolute bottom-0 right-0 w-4 h-4 rounded-full bg-emerald-500 ring-2.5 ring-white dark:ring-slate-900 shadow-2xs"
+                          title="Active Status"
+                        />
+                      </div>
+
+                      {/* Name & Username */}
+                      <h3 className="text-sm sm:text-base font-bold tracking-tight text-slate-900 dark:text-white truncate max-w-full">
+                        {profile.fullName || 'Command Center User'}
+                      </h3>
+                      <p className="text-xs font-mono text-slate-400 dark:text-slate-500 mt-0.5 truncate max-w-full">
+                        @{usernameDisplay}
+                      </p>
+
+                      {/* Meta Badges */}
+                      <div className="mt-3.5 flex flex-wrap items-center justify-center gap-2">
+                        <UserRoleBadge role={userRole} />
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const id = currentUser?.user_id ? String(currentUser.user_id) : 'e8b29cab';
+                            navigator.clipboard.writeText(id);
+                            setCopiedId(true);
+                            setTimeout(() => setCopiedId(false), 2000);
+                          }}
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-200/60 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-600 dark:text-slate-400 font-mono text-[11px] transition-colors cursor-pointer border border-slate-300/50 dark:border-white/5 shadow-2xs"
+                          title="Click to copy account ID"
+                        >
+                          {copiedId ? (
+                            <>
+                              <Check className="w-3 h-3 text-emerald-500" strokeWidth={2.5} />
+                              <span className="text-emerald-600 dark:text-emerald-400 font-semibold">Copied</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-3 h-3 text-slate-400" strokeWidth={2} />
+                              <span>ID: {currentUser?.user_id ? String(currentUser.user_id).slice(0, 8) : 'e8b29cab'}</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+
+                      {/* Verified Dispatch Access Tag */}
+                      <div className="mt-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-[11px] font-medium select-none">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                        <span>Verified Dispatch Access</span>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Right Column: 5 Information Boxes (with Urgency Color Labels) */}
+                  {/* Right Column: 5 Information Boxes (60% width) */}
                   <div className="flex-1 w-full min-w-0">
                     {isEditingProfile ? (
-                      <form onSubmit={handleSaveProfile} className="space-y-4">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                      <form onSubmit={handleSaveProfile} className="space-y-3.5">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           {/* Full Name */}
-                          <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-50/70 dark:bg-white/[0.02] border border-slate-200/70 dark:border-white/10 space-y-1.5">
+                          <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-50/70 dark:bg-white/[0.02] border border-slate-200/70 dark:border-white/10 space-y-1">
                             <label className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 block select-none">
                               Full Name <span className="text-rose-500">*</span>
                             </label>
@@ -1064,7 +1082,7 @@ export default function Settings() {
                           </div>
 
                           {/* Username */}
-                          <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-50/70 dark:bg-white/[0.02] border border-slate-200/70 dark:border-white/10 space-y-1.5">
+                          <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-50/70 dark:bg-white/[0.02] border border-slate-200/70 dark:border-white/10 space-y-1">
                             <label className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 block select-none">
                               Username
                             </label>
@@ -1078,7 +1096,7 @@ export default function Settings() {
                           </div>
 
                           {/* Email */}
-                          <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-50/70 dark:bg-white/[0.02] border border-slate-200/70 dark:border-white/10 space-y-1.5">
+                          <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-50/70 dark:bg-white/[0.02] border border-slate-200/70 dark:border-white/10 space-y-1">
                             <label className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 block select-none">
                               Email Address
                             </label>
@@ -1092,7 +1110,7 @@ export default function Settings() {
                           </div>
 
                           {/* Contact Phone */}
-                          <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-50/70 dark:bg-white/[0.02] border border-slate-200/70 dark:border-white/10 space-y-1.5">
+                          <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-50/70 dark:bg-white/[0.02] border border-slate-200/70 dark:border-white/10 space-y-1">
                             <label className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 block select-none">
                               Contact Phone
                             </label>
@@ -1106,7 +1124,7 @@ export default function Settings() {
                           </div>
 
                           {/* Official Role & Unit */}
-                          <div className="sm:col-span-2 p-3.5 sm:p-4 rounded-2xl bg-slate-50/70 dark:bg-white/[0.02] border border-slate-200/70 dark:border-white/10 space-y-1.5">
+                          <div className="sm:col-span-2 p-3 sm:p-3.5 rounded-2xl bg-slate-50/70 dark:bg-white/[0.02] border border-slate-200/70 dark:border-white/10 space-y-1">
                             <label className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 block select-none">
                               Official Role &amp; Assignment
                             </label>
@@ -1121,7 +1139,7 @@ export default function Settings() {
                         </div>
 
                         {profileError && (
-                          <div className="p-3.5 rounded-xl bg-rose-50/80 dark:bg-rose-950/40 text-xs text-rose-700 dark:text-rose-300 flex items-center gap-2">
+                          <div className="p-3 rounded-xl bg-rose-50/80 dark:bg-rose-950/40 text-xs text-rose-700 dark:text-rose-300 flex items-center gap-2">
                             <AlertCircle className="w-4 h-4 shrink-0 text-rose-500" strokeWidth={2} />
                             <span>{profileError}</span>
                           </div>
@@ -1156,54 +1174,54 @@ export default function Settings() {
                         </div>
                       </form>
                     ) : (
-                      /* Viewing Mode: 5 Sleek Apple Inset Tiles with Urgency Badges */
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                      /* Viewing Mode: 5 Sleek Apple Inset Tiles */
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 h-full">
                         {/* 1. Full Name */}
-                        <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-50/70 hover:bg-slate-100/60 dark:bg-white/[0.02] dark:hover:bg-white/[0.04] border border-slate-200/60 dark:border-white/10 transition-all duration-150 shadow-2xs">
+                        <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-50/70 hover:bg-slate-100/60 dark:bg-white/[0.02] dark:hover:bg-white/[0.04] border border-slate-200/60 dark:border-white/10 transition-all duration-150 shadow-2xs flex flex-col justify-center">
                           <span className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 block mb-1 select-none">
                             Full Name
                           </span>
-                          <span className="text-sm sm:text-[15px] font-semibold text-slate-900 dark:text-white block truncate">
+                          <span className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white block truncate">
                             {profile.fullName || 'Not provided'}
                           </span>
                         </div>
 
                         {/* 2. Username */}
-                        <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-50/70 hover:bg-slate-100/60 dark:bg-white/[0.02] dark:hover:bg-white/[0.04] border border-slate-200/60 dark:border-white/10 transition-all duration-150 shadow-2xs">
+                        <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-50/70 hover:bg-slate-100/60 dark:bg-white/[0.02] dark:hover:bg-white/[0.04] border border-slate-200/60 dark:border-white/10 transition-all duration-150 shadow-2xs flex flex-col justify-center">
                           <span className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 block mb-1 select-none">
                             Username
                           </span>
-                          <span className="text-sm sm:text-[15px] font-mono font-medium text-slate-900 dark:text-white block truncate">
+                          <span className="text-xs sm:text-sm font-mono font-medium text-slate-900 dark:text-white block truncate">
                             @{usernameDisplay}
                           </span>
                         </div>
 
                         {/* 3. Email Address */}
-                        <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-50/70 hover:bg-slate-100/60 dark:bg-white/[0.02] dark:hover:bg-white/[0.04] border border-slate-200/60 dark:border-white/10 transition-all duration-150 shadow-2xs">
+                        <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-50/70 hover:bg-slate-100/60 dark:bg-white/[0.02] dark:hover:bg-white/[0.04] border border-slate-200/60 dark:border-white/10 transition-all duration-150 shadow-2xs flex flex-col justify-center">
                           <span className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 block mb-1 select-none">
                             Email Address
                           </span>
-                          <span className="text-sm sm:text-[15px] font-mono font-medium text-slate-900 dark:text-white block truncate">
+                          <span className="text-xs sm:text-sm font-mono font-medium text-slate-900 dark:text-white block truncate">
                             {currentUser?.email || 'No email attached'}
                           </span>
                         </div>
 
                         {/* 4. Contact Phone */}
-                        <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-50/70 hover:bg-slate-100/60 dark:bg-white/[0.02] dark:hover:bg-white/[0.04] border border-slate-200/60 dark:border-white/10 transition-all duration-150 shadow-2xs">
+                        <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-50/70 hover:bg-slate-100/60 dark:bg-white/[0.02] dark:hover:bg-white/[0.04] border border-slate-200/60 dark:border-white/10 transition-all duration-150 shadow-2xs flex flex-col justify-center">
                           <span className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 block mb-1 select-none">
                             Contact Phone
                           </span>
-                          <span className="text-sm sm:text-[15px] font-mono font-medium text-slate-900 dark:text-white block truncate">
+                          <span className="text-xs sm:text-sm font-mono font-medium text-slate-900 dark:text-white block truncate">
                             {profile.phone || 'None recorded'}
                           </span>
                         </div>
 
                         {/* 5. Official Role & Unit */}
-                        <div className="sm:col-span-2 p-3.5 sm:p-4 rounded-2xl bg-slate-50/70 hover:bg-slate-100/60 dark:bg-white/[0.02] dark:hover:bg-white/[0.04] border border-slate-200/60 dark:border-white/10 transition-all duration-150 shadow-2xs">
+                        <div className="sm:col-span-2 p-3 sm:p-3.5 rounded-2xl bg-slate-50/70 hover:bg-slate-100/60 dark:bg-white/[0.02] dark:hover:bg-white/[0.04] border border-slate-200/60 dark:border-white/10 transition-all duration-150 shadow-2xs flex flex-col justify-center">
                           <span className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 block mb-1 select-none">
                             Official Role &amp; Unit
                           </span>
-                          <span className="text-sm sm:text-[15px] font-semibold text-slate-900 dark:text-white block">
+                          <span className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white block truncate">
                             {profile.position || 'Super Admin • MDRRMO'}
                           </span>
                         </div>
