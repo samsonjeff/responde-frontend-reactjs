@@ -810,12 +810,16 @@ export default function MessengerBotLogs() {
         }, 2500);
         setTimeout(() => {
           updateDistressNav();
-        }, 450);
+        }, 200);
+        setTimeout(() => {
+          updateDistressNav();
+        }, 500);
       }
     },
     [updateDistressNav]
   );
 
+  // Step strictly distress by distress (1/N -> 2/N -> 3/N -> ...) so NO distress word is missed!
   const handleJumpDirection = useCallback((dir: 'up' | 'down') => {
     preferredDirectionRef.current = dir;
     const container = chatScrollRef.current;
@@ -824,27 +828,15 @@ export default function MessengerBotLogs() {
     const indices = selectedConversation?.nlp?.distressMessageIndices || [];
     if (indices.length === 0) return;
 
-    const containerRect = container.getBoundingClientRect();
-    const containerCenter = (containerRect.top + containerRect.bottom) / 2;
+    const currentOrder = distressNav.currentNumber; // 1-based order
 
     if (dir === 'down') {
-      // Find all distress elements that are below the current container center
-      const belowElements = indices
-        .map((idx, order) => {
-          const el = container.querySelector<HTMLElement>(`[data-distress-idx="${idx}"]`);
-          if (!el) return null;
-          const elRect = el.getBoundingClientRect();
-          const elCenter = (elRect.top + elRect.bottom) / 2;
-          return { idx, order: order + 1, elCenter, diff: elCenter - containerCenter };
-        })
-        .filter((e): e is NonNullable<typeof e> => e !== null && e.diff > 35)
-        .sort((a, b) => a.diff - b.diff);
-
-      if (belowElements.length > 0) {
-        // Step down to next distress signal
-        jumpToMessageIndex(belowElements[0].idx);
+      if (currentOrder < indices.length) {
+        // Advance strictly to the next distress message (currentOrder in 0-based is index for next distress)
+        const nextIdx = indices[currentOrder];
+        jumpToMessageIndex(nextIdx);
       } else {
-        // Past the last distress: scroll all the way to the bottom of the chat conversation
+        // At the last distress message: scroll to the bottom of the chat conversation
         const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 35;
         if (!isNearBottom) {
           container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
@@ -856,22 +848,12 @@ export default function MessengerBotLogs() {
       }
     } else {
       // dir === 'up'
-      const aboveElements = indices
-        .map((idx, order) => {
-          const el = container.querySelector<HTMLElement>(`[data-distress-idx="${idx}"]`);
-          if (!el) return null;
-          const elRect = el.getBoundingClientRect();
-          const elCenter = (elRect.top + elRect.bottom) / 2;
-          return { idx, order: order + 1, elCenter, diff: containerCenter - elCenter };
-        })
-        .filter((e): e is NonNullable<typeof e> => e !== null && e.diff > 35)
-        .sort((a, b) => a.diff - b.diff);
-
-      if (aboveElements.length > 0) {
-        // Step up to previous distress signal
-        jumpToMessageIndex(aboveElements[0].idx);
+      if (currentOrder > 1) {
+        // Step strictly back to the previous distress message
+        const prevIdx = indices[currentOrder - 2];
+        jumpToMessageIndex(prevIdx);
       } else {
-        // Past the first distress: scroll all the way to the top of the chat
+        // At the first distress message: scroll to the very top of the chat
         const isNearTop = container.scrollTop < 35;
         if (!isNearTop) {
           container.scrollTo({ top: 0, behavior: 'smooth' });
@@ -882,15 +864,11 @@ export default function MessengerBotLogs() {
         }
       }
     }
-  }, [selectedConversation, jumpToMessageIndex, updateDistressNav]);
+  }, [selectedConversation, distressNav.currentNumber, jumpToMessageIndex, updateDistressNav]);
 
   const handleJumpToDistress = useCallback(() => {
-    if (distressNav.targetIdx !== -1) {
-      jumpToMessageIndex(distressNav.targetIdx);
-    } else {
-      handleJumpDirection('down');
-    }
-  }, [distressNav.targetIdx, jumpToMessageIndex, handleJumpDirection]);
+    handleJumpDirection('down');
+  }, [handleJumpDirection]);
 
   return (
     <div className="messenger-soft flex flex-col flex-1 min-h-0 space-y-3 sm:space-y-3.5 w-full h-full relative">
@@ -1555,20 +1533,13 @@ export default function MessengerBotLogs() {
                               </button>
                             )}
 
-                            {/* Main action pill */}
+                            {/* Main action pill — clean, no redundant middle arrow */}
                             <button
                               type="button"
                               onClick={handleJumpToDistress}
-                              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 active:scale-95 transition-all cursor-pointer"
-                              title={distressNav.direction === 'up' ? 'Scroll up to distress chat' : 'Scroll down to distress chat'}
+                              className="flex items-center gap-1.5 px-3 py-1 rounded-full text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 active:scale-95 transition-all cursor-pointer"
+                              title="Go to next distress signal"
                             >
-                              <span className="flex items-center justify-center w-4 h-4 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400">
-                                {distressNav.direction === 'up' ? (
-                                  <ArrowUp className="w-3 h-3 animate-bounce" strokeWidth={2.5} />
-                                ) : (
-                                  <ArrowDown className="w-3 h-3 animate-bounce" strokeWidth={2.5} />
-                                )}
-                              </span>
                               <span>Go to Distress</span>
                               {distressNav.total > 1 && (
                                 <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/15 text-rose-700 dark:text-rose-300 tabular-nums">
