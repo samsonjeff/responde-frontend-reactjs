@@ -226,6 +226,45 @@ function SoftToggle({
 /**
  * UserRoleBadge: Clean, low-saturation pill badge with a subtle 6px status dot.
  */
+/**
+ * TeamMemberAvatar: Robust avatar component with error fallback and referrerPolicy.
+ * Prevents broken image icons if Google CDN blocks referrers or if a stored image URL expires/404s.
+ */
+function TeamMemberAvatar({
+  avatarUrl,
+  name,
+  email,
+}: {
+  avatarUrl?: string | null;
+  name?: string;
+  email?: string;
+}) {
+  const [hasError, setHasError] = useState(false);
+  const initial = (name || email || 'U')[0].toUpperCase();
+
+  useEffect(() => {
+    setHasError(false);
+  }, [avatarUrl]);
+
+  if (!avatarUrl || hasError) {
+    return (
+      <div className="w-8 h-8 rounded-xl bg-blue-500/10 dark:bg-blue-500/20 text-[#0071E3] dark:text-sky-400 font-semibold text-xs flex items-center justify-center border border-blue-500/20 shrink-0 select-none">
+        {initial}
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={avatarUrl}
+      alt={name || 'User avatar'}
+      referrerPolicy="no-referrer"
+      onError={() => setHasError(true)}
+      className="w-8 h-8 rounded-xl object-cover border border-slate-200 dark:border-white/10 shrink-0"
+    />
+  );
+}
+
 function UserRoleBadge({ role }: { role: string }) {
   let badgeClasses = 'bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 border-emerald-500/20 dark:border-emerald-500/30';
   let dotColor = 'bg-emerald-500';
@@ -959,6 +998,7 @@ export default function Settings() {
                         <img
                           src={currentUser.avatar_url}
                           alt={profile.fullName || 'User'}
+                          referrerPolicy="no-referrer"
                           className="w-22 h-22 sm:w-24 sm:h-24 rounded-3xl object-cover ring-4 ring-white dark:ring-slate-800 shadow-[0_8px_18px_rgba(0,0,0,0.08)]"
                         />
                       ) : (
@@ -1341,17 +1381,11 @@ export default function Settings() {
                             <tr key={u.user_id} className="group hover:bg-slate-50/70 dark:hover:bg-white/[0.025] transition-colors duration-150">
                               <td className="px-4 py-3.5 border-b border-slate-100 dark:border-white/5">
                                 <div className="flex items-center gap-3">
-                                  {u.avatar_url ? (
-                                    <img
-                                      src={u.avatar_url}
-                                      alt={u.full_name}
-                                      className="w-8 h-8 rounded-xl object-cover border border-slate-200 dark:border-white/10"
-                                    />
-                                  ) : (
-                                    <div className="w-8 h-8 rounded-xl bg-blue-500/10 dark:bg-blue-500/20 text-[#0071E3] dark:text-sky-400 font-semibold text-xs flex items-center justify-center border border-blue-500/20">
-                                      {(u.full_name || u.email || 'U')[0].toUpperCase()}
-                                    </div>
-                                  )}
+                                  <TeamMemberAvatar
+                                    avatarUrl={u.avatar_url}
+                                    name={u.full_name}
+                                    email={u.email}
+                                  />
                                   <div>
                                     <div className="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2">
                                       <span>{u.full_name || 'Unnamed Personnel'}</span>
