@@ -1735,7 +1735,7 @@ export default function Settings() {
         {activeTab === 'security' && (
           <StaggerItem>
             <div className="w-full space-y-6">
-              <SoftCard className="w-full p-5 sm:p-7 md:p-8">
+              <SoftCard className="w-full">
                 <div className="flex items-center gap-3.5 pb-5 sm:pb-6 border-b border-slate-100 dark:border-white/5">
                   <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-300 flex items-center justify-center shrink-0 border border-slate-200/60 dark:border-white/10 shadow-2xs">
                     <Lock className="w-5 h-5" strokeWidth={1.75} />
@@ -1751,102 +1751,100 @@ export default function Settings() {
                 </div>
 
                 <form onSubmit={handlePasswordSubmit} className="pt-6 sm:pt-7">
-                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-stretch">
-                    {/* Left/Main Column: Fill-up Container (Password Fields & Update Button) */}
-                    <div className="lg:col-span-7 flex flex-col justify-between space-y-5">
-                      <div className="space-y-4 sm:space-y-4.5">
-                        {/* Current Password */}
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
+                    {/* Left/Main Column: Password Fields & Update Button */}
+                    <div className="lg:col-span-7 space-y-4">
+                      {/* Current Password */}
+                      <div className="space-y-1.5">
+                        <label className="block text-[11px] font-bold tracking-wider uppercase text-slate-500 dark:text-slate-400">
+                          Current Password <span className="text-rose-500">*</span>
+                        </label>
+                        <div className="relative">
+                          <input
+                            type={showCurrentPassword ? 'text' : 'password'}
+                            value={currentPassword}
+                            onChange={(e) => setCurrentPassword(e.target.value)}
+                            placeholder="Enter current password"
+                            required
+                            className="w-full px-4 py-3 pr-11 rounded-2xl text-xs sm:text-sm bg-slate-50/80 hover:bg-slate-100/70 focus:bg-white dark:bg-white/[0.04] dark:hover:bg-white/[0.07] dark:focus:bg-white/[0.09] border border-slate-200/70 dark:border-white/10 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0071E3]/20 focus:border-[#0071E3] transition-all shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)]"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                            className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-white/10 transition-colors cursor-pointer active:scale-90"
+                            aria-label={showCurrentPassword ? 'Hide current password' : 'Show current password'}
+                          >
+                            {showCurrentPassword ? <EyeOff className="w-4 h-4" strokeWidth={1.75} /> : <Eye className="w-4 h-4" strokeWidth={1.75} />}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* New Password & Confirm Password */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
                           <label className="block text-[11px] font-bold tracking-wider uppercase text-slate-500 dark:text-slate-400">
-                            Current Password <span className="text-rose-500">*</span>
+                            New Password <span className="text-rose-500">*</span>
                           </label>
                           <div className="relative">
                             <input
-                              type={showCurrentPassword ? 'text' : 'password'}
-                              value={currentPassword}
-                              onChange={(e) => setCurrentPassword(e.target.value)}
-                              placeholder="Enter current password"
+                              type={showNewPassword ? 'text' : 'password'}
+                              value={newPassword}
+                              onChange={(e) => setNewPassword(e.target.value)}
+                              placeholder="At least 8 characters"
                               required
-                              className="w-full px-4 py-3 sm:py-3.5 pr-11 rounded-2xl text-xs sm:text-sm bg-slate-50/80 hover:bg-slate-100/70 focus:bg-white dark:bg-white/[0.04] dark:hover:bg-white/[0.07] dark:focus:bg-white/[0.09] border border-slate-200/70 dark:border-white/10 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0071E3]/20 focus:border-[#0071E3] transition-all shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)]"
+                              className="w-full px-4 py-3 pr-11 rounded-2xl text-xs sm:text-sm bg-slate-50/80 hover:bg-slate-100/70 focus:bg-white dark:bg-white/[0.04] dark:hover:bg-white/[0.07] dark:focus:bg-white/[0.09] border border-slate-200/70 dark:border-white/10 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0071E3]/20 focus:border-[#0071E3] transition-all shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)]"
                             />
                             <button
                               type="button"
-                              onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                              className="absolute right-2.5 top-1/2 -translate-y-1/2 p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-white/10 transition-colors cursor-pointer active:scale-90"
-                              aria-label={showCurrentPassword ? 'Hide current password' : 'Show current password'}
+                              onClick={() => setShowNewPassword(!showNewPassword)}
+                              className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-white/10 transition-colors cursor-pointer active:scale-90"
+                              aria-label={showNewPassword ? 'Hide new password' : 'Show new password'}
                             >
-                              {showCurrentPassword ? <EyeOff className="w-4 h-4" strokeWidth={1.75} /> : <Eye className="w-4 h-4" strokeWidth={1.75} />}
+                              {showNewPassword ? <EyeOff className="w-4 h-4" strokeWidth={1.75} /> : <Eye className="w-4 h-4" strokeWidth={1.75} />}
                             </button>
                           </div>
                         </div>
 
-                        {/* New Password & Confirm Password */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          <div className="space-y-1.5">
-                            <label className="block text-[11px] font-bold tracking-wider uppercase text-slate-500 dark:text-slate-400">
-                              New Password <span className="text-rose-500">*</span>
-                            </label>
-                            <div className="relative">
-                              <input
-                                type={showNewPassword ? 'text' : 'password'}
-                                value={newPassword}
-                                onChange={(e) => setNewPassword(e.target.value)}
-                                placeholder="At least 8 characters"
-                                required
-                                className="w-full px-4 py-3 sm:py-3.5 pr-11 rounded-2xl text-xs sm:text-sm bg-slate-50/80 hover:bg-slate-100/70 focus:bg-white dark:bg-white/[0.04] dark:hover:bg-white/[0.07] dark:focus:bg-white/[0.09] border border-slate-200/70 dark:border-white/10 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0071E3]/20 focus:border-[#0071E3] transition-all shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)]"
-                              />
-                              <button
-                                type="button"
-                                onClick={() => setShowNewPassword(!showNewPassword)}
-                                className="absolute right-2.5 top-1/2 -translate-y-1/2 p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-white/10 transition-colors cursor-pointer active:scale-90"
-                                aria-label={showNewPassword ? 'Hide new password' : 'Show new password'}
-                              >
-                                {showNewPassword ? <EyeOff className="w-4 h-4" strokeWidth={1.75} /> : <Eye className="w-4 h-4" strokeWidth={1.75} />}
-                              </button>
-                            </div>
-                          </div>
-
-                          <div className="space-y-1.5">
-                            <label className="block text-[11px] font-bold tracking-wider uppercase text-slate-500 dark:text-slate-400">
-                              Confirm New Password <span className="text-rose-500">*</span>
-                            </label>
-                            <div className="relative">
-                              <input
-                                type={showConfirmPassword ? 'text' : 'password'}
-                                value={confirmPassword}
-                                onChange={(e) => setConfirmPassword(e.target.value)}
-                                placeholder="Re-enter new password"
-                                required
-                                className="w-full px-4 py-3 sm:py-3.5 pr-11 rounded-2xl text-xs sm:text-sm bg-slate-50/80 hover:bg-slate-100/70 focus:bg-white dark:bg-white/[0.04] dark:hover:bg-white/[0.07] dark:focus:bg-white/[0.09] border border-slate-200/70 dark:border-white/10 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0071E3]/20 focus:border-[#0071E3] transition-all shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)]"
-                              />
-                              <button
-                                type="button"
-                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                className="absolute right-2.5 top-1/2 -translate-y-1/2 p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-white/10 transition-colors cursor-pointer active:scale-90"
-                                aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
-                              >
-                                {showConfirmPassword ? <EyeOff className="w-4 h-4" strokeWidth={1.75} /> : <Eye className="w-4 h-4" strokeWidth={1.75} />}
-                              </button>
-                            </div>
+                        <div className="space-y-1.5">
+                          <label className="block text-[11px] font-bold tracking-wider uppercase text-slate-500 dark:text-slate-400">
+                            Confirm New Password <span className="text-rose-500">*</span>
+                          </label>
+                          <div className="relative">
+                            <input
+                              type={showConfirmPassword ? 'text' : 'password'}
+                              value={confirmPassword}
+                              onChange={(e) => setConfirmPassword(e.target.value)}
+                              placeholder="Re-enter new password"
+                              required
+                              className="w-full px-4 py-3 pr-11 rounded-2xl text-xs sm:text-sm bg-slate-50/80 hover:bg-slate-100/70 focus:bg-white dark:bg-white/[0.04] dark:hover:bg-white/[0.07] dark:focus:bg-white/[0.09] border border-slate-200/70 dark:border-white/10 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0071E3]/20 focus:border-[#0071E3] transition-all shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)]"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                              className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-white/10 transition-colors cursor-pointer active:scale-90"
+                              aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
+                            >
+                              {showConfirmPassword ? <EyeOff className="w-4 h-4" strokeWidth={1.75} /> : <Eye className="w-4 h-4" strokeWidth={1.75} />}
+                            </button>
                           </div>
                         </div>
-
-                        {passwordError && (
-                          <div className="p-3.5 rounded-2xl bg-rose-50/80 dark:bg-rose-950/40 border border-rose-200/70 text-xs text-rose-700 dark:text-rose-300 flex items-center gap-2">
-                            <AlertCircle className="w-4 h-4 shrink-0 text-rose-500" strokeWidth={1.75} />
-                            <span>{passwordError}</span>
-                          </div>
-                        )}
-
-                        {passwordSuccess && (
-                          <div className="p-3.5 rounded-2xl bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200/70 text-xs text-emerald-700 dark:text-emerald-300 flex items-center gap-2">
-                            <Check className="w-4 h-4 shrink-0 text-emerald-600" strokeWidth={2} />
-                            <span>{passwordSuccess}</span>
-                          </div>
-                        )}
                       </div>
 
-                      <div className="pt-2 sm:pt-3">
+                      {passwordError && (
+                        <div className="p-3.5 rounded-2xl bg-rose-50/80 dark:bg-rose-950/40 border border-rose-200/70 text-xs text-rose-700 dark:text-rose-300 flex items-center gap-2">
+                          <AlertCircle className="w-4 h-4 shrink-0 text-rose-500" strokeWidth={1.75} />
+                          <span>{passwordError}</span>
+                        </div>
+                      )}
+
+                      {passwordSuccess && (
+                        <div className="p-3.5 rounded-2xl bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200/70 text-xs text-emerald-700 dark:text-emerald-300 flex items-center gap-2">
+                          <Check className="w-4 h-4 shrink-0 text-emerald-600" strokeWidth={2} />
+                          <span>{passwordSuccess}</span>
+                        </div>
+                      )}
+
+                      <div className="pt-2">
                         <motion.button
                           type="submit"
                           disabled={isSubmittingPassword}
@@ -1854,7 +1852,7 @@ export default function Settings() {
                           whileHover="hover"
                           whileTap={{ scale: 0.97 }}
                           animate="rest"
-                          className="group w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl px-6 py-3 text-xs sm:text-sm font-semibold text-white bg-[#0071E3] hover:bg-[#0077ED] shadow-[0_2px_8px_rgba(0,113,227,0.25)] hover:shadow-[0_6px_20px_rgba(0,113,227,0.42)] hover:-translate-y-0.5 active:translate-y-0 active:scale-95 transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed select-none"
+                          className="group inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-xs sm:text-sm font-semibold text-white bg-[#0071E3] hover:bg-[#0077ED] shadow-[0_2px_8px_rgba(0,113,227,0.25)] hover:shadow-[0_6px_20px_rgba(0,113,227,0.42)] hover:-translate-y-0.5 active:translate-y-0 active:scale-95 transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed select-none"
                         >
                           {isSubmittingPassword ? (
                             <>
@@ -1873,46 +1871,33 @@ export default function Settings() {
                       </div>
                     </div>
 
-                    {/* Right Column: Password Security List (Fills height and matches left column) */}
-                    <div className="lg:col-span-5 h-full flex flex-col justify-between p-5 sm:p-6 lg:p-7 rounded-2xl sm:rounded-3xl bg-slate-50/70 hover:bg-slate-50/90 dark:bg-white/[0.03] dark:hover:bg-white/[0.05] border border-slate-200/60 dark:border-white/5 space-y-4 shadow-2xs transition-colors">
-                      <div className="space-y-3.5">
-                        <div className="flex items-center gap-2.5 text-slate-800 dark:text-slate-200">
-                          <div className="w-7 h-7 rounded-lg bg-slate-200/80 dark:bg-white/10 text-slate-600 dark:text-slate-300 flex items-center justify-center shrink-0">
-                            <Shield className="w-4 h-4" strokeWidth={1.75} />
-                          </div>
-                          <span className="text-xs font-semibold uppercase tracking-wider">
-                            Password Security
-                          </span>
+                    {/* Right Column: iOS Frosted Credential Guidelines Card */}
+                    <div className="lg:col-span-5 p-5 sm:p-6 rounded-2xl bg-slate-50/70 dark:bg-white/[0.03] border border-slate-200/60 dark:border-white/5 space-y-3.5 shadow-2xs">
+                      <div className="flex items-center gap-2.5 text-slate-800 dark:text-slate-200">
+                        <div className="w-7 h-7 rounded-lg bg-slate-200/80 dark:bg-white/10 text-slate-600 dark:text-slate-300 flex items-center justify-center shrink-0">
+                          <Shield className="w-4 h-4" strokeWidth={1.75} />
                         </div>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                          To protect incident records and console operations, please ensure your credentials follow these baseline protocols:
-                        </p>
-                        <ul className="space-y-3 text-xs text-slate-600 dark:text-slate-300 pt-1">
-                          <li className="flex items-start gap-2.5">
-                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0 mt-1.5" />
-                            <span className="leading-relaxed">Minimum 8 characters in length</span>
-                          </li>
-                          <li className="flex items-start gap-2.5">
-                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0 mt-1.5" />
-                            <span className="leading-relaxed">Use a combination of letters, numbers, and symbols</span>
-                          </li>
-                          <li className="flex items-start gap-2.5">
-                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0 mt-1.5" />
-                            <span className="leading-relaxed">Avoid sharing console credentials with other personnel</span>
-                          </li>
-                          <li className="flex items-start gap-2.5">
-                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0 mt-1.5" />
-                            <span className="leading-relaxed">Active sessions refresh and authenticate automatically</span>
-                          </li>
-                        </ul>
+                        <span className="text-xs font-semibold uppercase tracking-wider">
+                          Password Security
+                        </span>
                       </div>
-
-                      <div className="pt-4 mt-3 border-t border-slate-200/60 dark:border-white/5 flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400">
-                        <div className="w-2 h-2 rounded-full bg-emerald-500 shrink-0 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-                        <span className="font-medium text-slate-700 dark:text-slate-300">Encrypted Transmission</span>
-                        <span>·</span>
-                        <span>Authorized Personnel Only</span>
-                      </div>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                        To protect incident records and console operations, please ensure your credentials follow these baseline protocols:
+                      </p>
+                      <ul className="space-y-2.5 text-xs text-slate-600 dark:text-slate-300">
+                        <li className="flex items-center gap-2">
+                          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                          <span>Minimum 8 characters in length</span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                          <span>Avoid sharing with other team members</span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                          <span>Active sessions refresh automatically</span>
+                        </li>
+                      </ul>
                     </div>
                   </div>
                 </form>
