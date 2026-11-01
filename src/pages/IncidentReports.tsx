@@ -1446,7 +1446,14 @@ export default function IncidentReports() {
               </div>
 
               {/* Modal Body */}
-              <div className="px-4 sm:px-6 py-4 sm:py-5 space-y-5 sm:space-y-6 overflow-y-auto" style={{ maxHeight: 'calc(92vh - 130px)' }}>
+              <div
+                className="px-4 sm:px-6 py-4 sm:py-5 pb-10 space-y-5 sm:space-y-6 overflow-y-auto"
+                style={{
+                  maxHeight: 'calc(92vh - 130px)',
+                  maskImage: 'linear-gradient(to bottom, black calc(100% - 48px), transparent 100%)',
+                  WebkitMaskImage: 'linear-gradient(to bottom, black calc(100% - 48px), transparent 100%)',
+                }}
+              >
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6">
                   {/* LEFT: Original Report / Chat Thread */}
                   <div className="space-y-3">
@@ -1474,7 +1481,13 @@ export default function IncidentReports() {
                         </div>
 
                         {/* Scrollable chat thread */}
-                        <div className="h-72 overflow-y-auto p-4 space-y-3 bg-slate-50/40 dark:bg-[#0B0F17]/40">
+                        <div
+                          className="h-72 overflow-y-auto p-4 pb-8 space-y-3 bg-slate-50/40 dark:bg-[#0B0F17]/40"
+                          style={{
+                            maskImage: 'linear-gradient(to bottom, black calc(100% - 40px), transparent 100%)',
+                            WebkitMaskImage: 'linear-gradient(to bottom, black calc(100% - 40px), transparent 100%)',
+                          }}
+                        >
                           {botThread.map((msg, idx) =>
                             msg.sender === 'bot' ? (
                               <div key={idx} className="flex items-end gap-2 justify-end">

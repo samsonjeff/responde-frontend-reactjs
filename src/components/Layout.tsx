@@ -854,7 +854,11 @@ export default function Layout() {
                       >
                         <div
                           ref={listContainerRef}
-                          className="h-[340px] sm:h-[360px] overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/60 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700 bg-white dark:bg-slate-900"
+                          className="h-[340px] sm:h-[360px] overflow-y-auto pb-6 divide-y divide-slate-100 dark:divide-slate-800/60 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700 bg-white dark:bg-slate-900"
+                          style={{
+                            maskImage: 'linear-gradient(to bottom, black calc(100% - 40px), transparent 100%)',
+                            WebkitMaskImage: 'linear-gradient(to bottom, black calc(100% - 40px), transparent 100%)',
+                          }}
                         >
                           <AnimatePresence initial={false} mode="wait">
                             <motion.div
