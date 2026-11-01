@@ -3,7 +3,7 @@ import { motion, AnimatePresence, type Variants } from "framer-motion";
 import {
   Filter, AlertCircle, X, CheckCircle2, RefreshCw, MessageSquare,
   ChevronRight, ChevronLeft, ChevronDown, Bot, RotateCcw,
-  Layers, AlertTriangle, ArrowUp, ArrowDown
+  Layers, AlertTriangle, ArrowUp, ArrowDown, Brain, MapPin
 } from "lucide-react";
 import DatePicker from "../components/DatePicker";
 import FilterDropdown from "../components/DropDown";
@@ -1147,19 +1147,21 @@ export default function MessengerBotLogs() {
                               <p
                                 className={`text-[11px] sm:text-xs truncate mt-0.5 leading-snug transition-colors ${
                                   !isSeen
-                                    ? "font-bold text-slate-900 dark:text-slate-100"
+                                    ? "font-medium text-slate-800 dark:text-slate-200"
                                     : "font-normal text-slate-500 dark:text-slate-400"
                                 }`}
                               >
                                 {getLastMessage(convo)}
                               </p>
-                              <div className="mt-1 flex items-center gap-1 sm:gap-1.5 flex-wrap">
-                                <span className="inline-flex items-center text-[9px] sm:text-[10px] font-medium bg-slate-100/90 dark:bg-white/[0.06] text-slate-600 dark:text-slate-400 rounded-md px-1.5 sm:px-2 py-0.5 border border-slate-200/50 dark:border-white/[0.06] truncate max-w-[130px] sm:max-w-none">
-                                  {convo.type} · {convo.barangay}
+                              <div className="mt-1 flex items-center gap-1.5 flex-wrap text-[11px] text-slate-400 dark:text-slate-500 font-medium">
+                                <span className="truncate max-w-[140px] sm:max-w-none flex items-center gap-1">
+                                  <span>{convo.type}</span>
+                                  <span className="text-slate-300 dark:text-slate-600">•</span>
+                                  <span className={convo.barangay === "Unknown" ? "italic text-slate-400" : ""}>{convo.barangay}</span>
                                 </span>
 
                                 <span
-                                  className={`inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-semibold rounded-md px-1.5 sm:px-2 py-0.5 border transition-colors duration-200 ${
+                                  className={`inline-flex items-center gap-1 text-[10px] font-semibold rounded-full px-2 py-0.5 border transition-colors duration-200 ${
                                     isIncomplete
                                       ? "bg-amber-500/10 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/20"
                                       : "bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/20"
@@ -1377,13 +1379,71 @@ export default function MessengerBotLogs() {
                       }}
                     >
                       <div className="space-y-3 sm:space-y-4">
+                        {/* Apple iOS Incident Assessment Header Banner (Structured / Incident Mode) */}
+                        {selectedConversation.nlp.isIncident && (
+                          <div className="mx-auto max-w-[92%] sm:max-w-[80%] mb-3 sm:mb-4 bg-white/80 dark:bg-slate-800/60 backdrop-blur-md rounded-2xl p-3.5 sm:p-4 border border-slate-200/70 dark:border-white/10 shadow-2xs">
+                            <div className="flex items-center justify-between text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2.5 px-0.5">
+                              <span className="flex items-center gap-1.5">
+                                <Brain className="w-3.5 h-3.5 text-purple-500/90 dark:text-purple-400" strokeWidth={2} />
+                                <span>Incident Assessment</span>
+                              </span>
+                              <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold ${
+                                selectedConversation.nlp.urgency === 'High'
+                                  ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
+                                  : selectedConversation.nlp.urgency === 'Moderate'
+                                  ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'
+                                  : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                              }`}>
+                                <span className={`w-1.5 h-1.5 rounded-full ${
+                                  selectedConversation.nlp.urgency === 'High' ? 'bg-rose-500 animate-pulse' : selectedConversation.nlp.urgency === 'Moderate' ? 'bg-amber-500' : 'bg-emerald-500'
+                                }`} />
+                                {selectedConversation.nlp.urgency} Priority
+                              </span>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                              <div className="bg-slate-50/70 dark:bg-white/[0.03] rounded-xl p-2.5 border border-slate-200/50 dark:border-white/5">
+                                <div className="flex items-center gap-1.5 text-[11px] font-medium text-slate-400 dark:text-slate-500 mb-0.5">
+                                  <MapPin className="w-3 h-3 text-[#0071E3] dark:text-sky-400 shrink-0" strokeWidth={2} />
+                                  <span>Location</span>
+                                </div>
+                                <p className={`text-xs sm:text-[13px] tracking-tight truncate ${
+                                  !selectedConversation.barangay || selectedConversation.barangay === "Unknown"
+                                    ? "text-slate-400 dark:text-slate-500 italic font-normal"
+                                    : "font-semibold text-slate-800 dark:text-slate-100"
+                                }`}>
+                                  {selectedConversation.barangay || "Unknown"}
+                                </p>
+                              </div>
+                              <div className="bg-slate-50/70 dark:bg-white/[0.03] rounded-xl p-2.5 border border-slate-200/50 dark:border-white/5">
+                                <div className="flex items-center gap-1.5 text-[11px] font-medium text-slate-400 dark:text-slate-500 mb-0.5">
+                                  <AlertTriangle className="w-3 h-3 text-amber-500 shrink-0" strokeWidth={2} />
+                                  <span>Category</span>
+                                </div>
+                                <p className="text-xs sm:text-[13px] font-semibold text-slate-800 dark:text-slate-100 tracking-tight truncate">
+                                  {selectedConversation.nlp.incidentType}
+                                </p>
+                              </div>
+                            </div>
+                            {selectedConversation.nlp.actionableNeeds && selectedConversation.nlp.actionableNeeds.length > 0 && (
+                              <div className="mt-2.5 pt-2 border-t border-slate-100 dark:border-white/5 flex items-center gap-1.5 flex-wrap">
+                                <span className="text-[10px] uppercase font-semibold text-slate-400 dark:text-slate-500 mr-1">Needs:</span>
+                                {selectedConversation.nlp.actionableNeeds.map((need, nIdx) => (
+                                  <span key={nIdx} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
+                                    {need}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )}
+
                         {(selectedConversation.messages ?? []).map((msg, idx) =>
                           msg.sender === "bot" ? (
                             <div key={idx}>
                               <div className="flex items-end gap-1.5 sm:gap-2 justify-end">
                                 <div className="flex flex-col items-end max-w-[85%] sm:max-w-[74%]">
-                                  <div className="bg-[#0071E3] hover:bg-[#0077ED] text-white rounded-[18px] sm:rounded-[20px] rounded-br-[4px] px-3.5 sm:px-4 py-2 sm:py-2.5 shadow-[0_2px_10px_rgba(0,113,227,0.25)] transition-all">
-                                    <p className="text-xs sm:text-sm leading-relaxed whitespace-pre-wrap break-words">{msg.text}</p>
+                                  <div className="bg-[#0071E3] text-white rounded-[18px] sm:rounded-[20px] rounded-br-[4px] px-3.5 sm:px-4 py-2 sm:py-2.5 shadow-[0_2px_10px_rgba(0,113,227,0.22)] transition-all">
+                                    <p className="text-xs sm:text-[13.5px] leading-relaxed whitespace-pre-wrap break-words font-normal">{msg.text}</p>
                                   </div>
                                   <span className="text-[9px] sm:text-[10px] text-slate-400 dark:text-slate-500 mt-1 mr-1 font-medium flex items-center gap-1">
                                     <Bot className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-[#0071E3]" strokeWidth={1.75} />
@@ -1396,7 +1456,7 @@ export default function MessengerBotLogs() {
                                     )}
                                   </span>
                                 </div>
-                                <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-blue-100 dark:bg-blue-950/80 flex items-center justify-center text-[10px] sm:text-[11px] font-bold text-[#0071E3] dark:text-blue-400 shrink-0 mb-3 sm:mb-4 ring-1 ring-blue-500/20 shadow-2xs hover:scale-110 transition-transform">
+                                <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-blue-100 dark:bg-blue-950/80 flex items-center justify-center text-[10px] sm:text-[11px] font-bold text-[#0071E3] dark:text-blue-400 shrink-0 mb-3 sm:mb-4 ring-1 ring-blue-500/20 shadow-2xs">
                                   <Bot className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#0071E3]" strokeWidth={1.75} />
                                 </div>
                               </div>
@@ -1416,17 +1476,17 @@ export default function MessengerBotLogs() {
                                 <div className="flex flex-col items-start max-w-[85%] sm:max-w-[74%]">
                                   {/* Emergency Distress Tag on User Message */}
                                   {selectedConversation.nlp.isIncident && (selectedConversation.nlp.distressMessageIndices?.includes(idx) || idx === selectedConversation.nlp.distressMessageIdx) && (
-                                    <span className="inline-flex items-center gap-1 text-[9px] font-bold text-rose-600 dark:text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-md px-1.5 py-0.5 mb-1 shadow-2xs">
-                                      <AlertTriangle className="w-2.5 h-2.5" strokeWidth={1.75} />
-                                      <span>Distress Intent Extracted</span>
+                                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-rose-600 dark:text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-full px-2 py-0.5 mb-1 shadow-2xs">
+                                      <AlertTriangle className="w-3 h-3" strokeWidth={2} />
+                                      <span>Distress Detected</span>
                                     </span>
                                   )}
-                                  <div className={`bg-white/95 dark:bg-[#111827]/95 text-slate-900 dark:text-slate-100 rounded-[18px] sm:rounded-[20px] rounded-bl-[4px] px-3.5 sm:px-4 py-2 sm:py-2.5 shadow-[0_1px_3px_rgba(15,23,42,0.04)] hover:border-blue-400/50 dark:hover:border-blue-500/40 hover:bg-blue-50/20 dark:hover:bg-blue-950/20 hover:shadow-[0_2px_12px_rgba(0,113,227,0.10)] transition-all duration-200 border ${
+                                  <div className={`bg-white/95 dark:bg-[#111827]/95 text-slate-800 dark:text-slate-100 rounded-[18px] sm:rounded-[20px] rounded-bl-[4px] px-3.5 sm:px-4 py-2 sm:py-2.5 shadow-[0_1px_3px_rgba(15,23,42,0.04)] border transition-all duration-200 ${
                                     highlightedDistressIdx === idx
                                       ? "border-rose-500/80 ring-2 ring-rose-500/50 shadow-[0_0_18px_rgba(244,63,94,0.35)] scale-[1.01]"
-                                      : "border-slate-200/50 dark:border-white/5"
+                                      : "border-slate-200/60 dark:border-white/5"
                                   }`}>
-                                    <p className="text-xs sm:text-sm leading-relaxed whitespace-pre-wrap break-words">{msg.text}</p>
+                                    <p className="text-xs sm:text-[13.5px] leading-relaxed whitespace-pre-wrap break-words font-normal">{msg.text}</p>
                                   </div>
                                   <span className="text-[9px] sm:text-[10px] text-slate-400 dark:text-slate-500 mt-1 ml-1 font-medium flex items-center gap-1">
                                     <span>{selectedConversation.name}</span>
