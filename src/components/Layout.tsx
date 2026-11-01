@@ -84,6 +84,12 @@ const prefetchedRoutes = new Set<string>();
 
 const APPLE_DECEL_EASE = [0.25, 0.46, 0.45, 0.94] as const;
 
+export interface LayoutOutletContext {
+  collapsed: boolean;
+  setCollapsed: React.Dispatch<React.SetStateAction<boolean>>;
+  toggleSidebar: () => void;
+}
+
 export function prefetchRoute(path: string) {
   if (!path || prefetchedRoutes.has(path)) return;
   const loader = ROUTE_PRELOADERS[path];
@@ -1198,7 +1204,7 @@ export default function Layout() {
               }}
               className="flex-1 flex flex-col min-h-full h-full w-full"
             >
-              <Outlet />
+              <Outlet context={{ collapsed, setCollapsed, toggleSidebar: () => setCollapsed((prev) => !prev) } satisfies LayoutOutletContext} />
             </motion.div>
           </AnimatePresence>
         </div>

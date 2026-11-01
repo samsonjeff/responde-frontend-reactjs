@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useOutletContext } from 'react-router-dom';
+import type { LayoutOutletContext } from '../components/Layout';
 import { useTheme } from '../components/ThemeContent';
 import { useAuth } from '../context/AuthContext';
 import {
+  Menu,
   Settings as SettingsIcon,
   UserCircle,
   Shield,
@@ -376,6 +378,7 @@ function AuditActionBadge({ action }: { action: AuditAction }) {
 }
 
 export default function Settings() {
+  const { collapsed, toggleSidebar } = useOutletContext<LayoutOutletContext>() || {};
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
   const isDark = theme === 'dark';
@@ -965,6 +968,18 @@ export default function Settings() {
         <StaggerItem className="shrink-0">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pt-1">
             <div className="flex items-center gap-3 shrink-0">
+              {toggleSidebar && (
+                <button
+                  type="button"
+                  id="settings-sidebar-toggle-btn"
+                  aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                  onClick={toggleSidebar}
+                  className="hidden md:flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-white/80 dark:bg-slate-800/80 hover:bg-white dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white border border-slate-200/80 dark:border-white/10 shadow-xs backdrop-blur-md transition-all active:scale-95 cursor-pointer shrink-0"
+                  title={collapsed ? 'Expand sidebar' : 'Collapse sidebar for full screen'}
+                >
+                  <Menu className="w-5 h-5" strokeWidth={1.8} />
+                </button>
+              )}
               <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-blue-500/10 dark:bg-blue-500/20 text-[#0071E3] dark:text-sky-400 flex items-center justify-center shrink-0 border border-blue-500/20 shadow-xs">
                 <SettingsIcon className="w-5 h-5 sm:w-5.5 sm:h-5.5" strokeWidth={1.75} />
               </div>
