@@ -819,56 +819,78 @@ export default function MessengerBotLogs() {
     [updateDistressNav]
   );
 
+  const canGoUp = useMemo(() => {
+    if (distressNav.total <= 1) {
+      return distressNav.direction === 'up' || distressNav.hasAbove;
+    }
+    return distressNav.currentNumber > 1;
+  }, [distressNav.total, distressNav.direction, distressNav.hasAbove, distressNav.currentNumber]);
+
+  const canGoDown = useMemo(() => {
+    if (distressNav.total <= 1) {
+      return distressNav.direction === 'down' || distressNav.hasBelow;
+    }
+    return distressNav.currentNumber < distressNav.total;
+  }, [distressNav.total, distressNav.direction, distressNav.hasBelow, distressNav.currentNumber]);
+
   // Step strictly distress by distress (1/N -> 2/N -> 3/N -> ...) so NO distress word is missed!
-  const handleJumpDirection = useCallback((dir: 'up' | 'down') => {
-    preferredDirectionRef.current = dir;
-    const container = chatScrollRef.current;
-    if (!container) return;
+  const handleJumpDirection = useCallback(
+    (dir: 'up' | 'down') => {
+      preferredDirectionRef.current = dir;
+      const container = chatScrollRef.current;
+      if (!container) return;
 
-    const indices = selectedConversation?.nlp?.distressMessageIndices || [];
-    if (indices.length === 0) return;
+      const indices = selectedConversation?.nlp?.distressMessageIndices || [];
+      if (indices.length === 0) return;
 
-    const currentOrder = distressNav.currentNumber; // 1-based order
+      if (indices.length === 1) {
+        // Single distress message: jump directly to it
+        jumpToMessageIndex(indices[0]);
+        return;
+      }
 
-    if (dir === 'down') {
-      if (currentOrder < indices.length) {
-        // Advance strictly to the next distress message (currentOrder in 0-based is index for next distress)
-        const nextIdx = indices[currentOrder];
-        jumpToMessageIndex(nextIdx);
-      } else {
-        // At the last distress message: scroll to the bottom of the chat conversation
-        const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 35;
-        if (!isNearBottom) {
-          container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
-          setTimeout(() => updateDistressNav(), 400);
+      const currentOrder = distressNav.currentNumber; // 1-based order
+
+      if (dir === 'down') {
+        if (currentOrder < indices.length) {
+          // Advance strictly to the next distress message
+          const nextIdx = indices[currentOrder];
+          jumpToMessageIndex(nextIdx);
         } else {
-          // Wrap around seamlessly from bottom to top (first distress signal)
+          // At the last distress message: STOP THERE! Keep last distress message in view.
+          jumpToMessageIndex(indices[indices.length - 1]);
+        }
+      } else {
+        // dir === 'up'
+        if (currentOrder > 1) {
+          // Step strictly back to the previous distress message
+          const prevIdx = indices[currentOrder - 2];
+          jumpToMessageIndex(prevIdx);
+        } else {
+          // At the first distress message: STOP THERE! Keep first distress message in view.
           jumpToMessageIndex(indices[0]);
         }
       }
-    } else {
-      // dir === 'up'
-      if (currentOrder > 1) {
-        // Step strictly back to the previous distress message
-        const prevIdx = indices[currentOrder - 2];
-        jumpToMessageIndex(prevIdx);
-      } else {
-        // At the first distress message: scroll to the very top of the chat
-        const isNearTop = container.scrollTop < 35;
-        if (!isNearTop) {
-          container.scrollTo({ top: 0, behavior: 'smooth' });
-          setTimeout(() => updateDistressNav(), 400);
-        } else {
-          // Wrap around seamlessly from top to bottom (last distress signal)
-          jumpToMessageIndex(indices[indices.length - 1]);
-        }
-      }
-    }
-  }, [selectedConversation, distressNav.currentNumber, jumpToMessageIndex, updateDistressNav]);
+    },
+    [selectedConversation, distressNav.currentNumber, jumpToMessageIndex]
+  );
 
   const handleJumpToDistress = useCallback(() => {
-    handleJumpDirection('down');
-  }, [handleJumpDirection]);
+    const indices = selectedConversation?.nlp?.distressMessageIndices || [];
+    if (indices.length === 0) return;
+
+    if (indices.length === 1) {
+      jumpToMessageIndex(indices[0]);
+      return;
+    }
+
+    if (distressNav.currentNumber < indices.length) {
+      handleJumpDirection('down');
+    } else {
+      // Reached the bottom distress: stop there!
+      jumpToMessageIndex(indices[indices.length - 1]);
+    }
+  }, [selectedConversation, distressNav.currentNumber, jumpToMessageIndex, handleJumpDirection]);
 
   return (
     <div className="messenger-soft flex flex-col flex-1 min-h-0 space-y-3 sm:space-y-3.5 w-full h-full relative">
@@ -1521,24 +1543,31 @@ export default function MessengerBotLogs() {
                         >
                           <div className="group flex items-center gap-1 p-1 rounded-full bg-white/95 dark:bg-[#242526]/95 backdrop-blur-xl border border-rose-500/35 dark:border-rose-500/40 shadow-[0_8px_24px_rgba(244,63,94,0.24)] dark:shadow-[0_8px_24px_rgba(244,63,94,0.3)] text-xs font-semibold select-none">
                             {/* Scroll up / Previous distress signal */}
-                            {distressNav.total > 1 && (
-                              <button
-                                type="button"
-                                onClick={() => handleJumpDirection('up')}
-                                className="flex items-center justify-center w-6 h-6 rounded-full text-rose-600 dark:text-rose-400 hover:bg-rose-500/15 active:scale-90 transition-all cursor-pointer"
-                                title="Previous distress signal (scroll up)"
-                                aria-label="Previous distress signal"
-                              >
-                                <ArrowUp className="w-3.5 h-3.5" strokeWidth={2.2} />
-                              </button>
-                            )}
+                            <button
+                              type="button"
+                              onClick={() => handleJumpDirection('up')}
+                              disabled={!canGoUp}
+                              className={`flex items-center justify-center w-6 h-6 rounded-full transition-all cursor-pointer ${
+                                canGoUp
+                                  ? 'text-rose-600 dark:text-rose-400 hover:bg-rose-500/15 active:scale-90'
+                                  : 'text-rose-300/40 dark:text-rose-500/30 cursor-not-allowed opacity-35'
+                              }`}
+                              title={canGoUp ? 'Previous distress signal (scroll up)' : 'Already at topmost distress signal'}
+                              aria-label="Previous distress signal"
+                            >
+                              <ArrowUp className="w-3.5 h-3.5" strokeWidth={2.2} />
+                            </button>
 
-                            {/* Main action pill — clean, no redundant middle arrow */}
+                            {/* Main action pill */}
                             <button
                               type="button"
                               onClick={handleJumpToDistress}
                               className="flex items-center gap-1.5 px-3 py-1 rounded-full text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 active:scale-95 transition-all cursor-pointer"
-                              title="Go to next distress signal"
+                              title={
+                                distressNav.total > 1
+                                  ? `Go to Distress (${distressNav.currentNumber}/${distressNav.total})`
+                                  : 'Go to Distress signal'
+                              }
                             >
                               <span>Go to Distress</span>
                               {distressNav.total > 1 && (
@@ -1548,18 +1577,21 @@ export default function MessengerBotLogs() {
                               )}
                             </button>
 
-                            {/* Scroll down to next distress signal (unlimited navigation) */}
-                            {distressNav.total > 1 && (
-                              <button
-                                type="button"
-                                onClick={() => handleJumpDirection('down')}
-                                className="flex items-center justify-center w-6 h-6 rounded-full text-rose-600 dark:text-rose-400 hover:bg-rose-500/15 active:scale-90 transition-all cursor-pointer"
-                                title="Next distress signal (scroll down)"
-                                aria-label="Next distress signal"
-                              >
-                                <ArrowDown className="w-3.5 h-3.5" strokeWidth={2.2} />
-                              </button>
-                            )}
+                            {/* Scroll down to next distress signal */}
+                            <button
+                              type="button"
+                              onClick={() => handleJumpDirection('down')}
+                              disabled={!canGoDown}
+                              className={`flex items-center justify-center w-6 h-6 rounded-full transition-all cursor-pointer ${
+                                canGoDown
+                                  ? 'text-rose-600 dark:text-rose-400 hover:bg-rose-500/15 active:scale-90'
+                                  : 'text-rose-300/40 dark:text-rose-500/30 cursor-not-allowed opacity-35'
+                              }`}
+                              title={canGoDown ? 'Next distress signal (scroll down)' : 'Already at bottommost distress signal'}
+                              aria-label="Next distress signal"
+                            >
+                              <ArrowDown className="w-3.5 h-3.5" strokeWidth={2.2} />
+                            </button>
                           </div>
                         </motion.div>
                       )}
