@@ -184,19 +184,22 @@ function SoftToggle({
  * UserRoleBadge: Clean, low-saturation pill badge with a subtle 6px status dot.
  */
 function UserRoleBadge({ role }: { role: string }) {
-  let dotColor = 'bg-slate-400';
+  let badgeClasses = 'bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 border-emerald-500/20 dark:border-emerald-500/30';
+  let dotColor = 'bg-emerald-500';
   let label = 'Staff';
 
   if (role === 'super_admin') {
+    badgeClasses = 'bg-purple-500/10 text-purple-600 dark:bg-purple-500/20 dark:text-purple-300 border-purple-500/20 dark:border-purple-500/30';
     dotColor = 'bg-purple-500';
     label = 'Super Admin';
   } else if (role === 'admin') {
-    dotColor = 'bg-sky-500';
+    badgeClasses = 'bg-blue-500/10 text-[#0071E3] dark:bg-blue-500/20 dark:text-sky-400 border-blue-500/20 dark:border-blue-500/30';
+    dotColor = 'bg-[#0071E3]';
     label = 'Admin';
   }
 
   return (
-    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200/60 dark:border-slate-700/60 whitespace-nowrap">
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border whitespace-nowrap shadow-2xs ${badgeClasses}`}>
       <span className={`w-1.5 h-1.5 rounded-full ${dotColor} shrink-0`} />
       <span>{label}</span>
     </span>
@@ -1232,7 +1235,7 @@ export default function Settings() {
                         <th className="px-4 py-3 font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-[11px] hidden md:table-cell whitespace-nowrap">
                           Last Login
                         </th>
-                        <th className="px-4 py-3 font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-[11px] text-right whitespace-nowrap">
+                        <th className="px-4 py-3 font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-[11px] text-right whitespace-nowrap sticky right-0 z-20 bg-slate-50/95 dark:bg-slate-900/95 backdrop-blur-md shadow-[-8px_0_12px_-4px_rgba(0,0,0,0.08)] dark:shadow-[-8px_0_12px_-4px_rgba(0,0,0,0.4)] shrink-0">
                           Actions
                         </th>
                       </tr>
@@ -1265,7 +1268,7 @@ export default function Settings() {
                           }
 
                           return (
-                            <tr key={u.user_id} className="hover:bg-slate-50/70 dark:hover:bg-white/[0.025] transition-colors duration-150">
+                            <tr key={u.user_id} className="group hover:bg-slate-50/70 dark:hover:bg-white/[0.025] transition-colors duration-150">
                               <td className="px-4 py-3">
                                 <div className="flex items-center gap-3">
                                   {u.avatar_url ? (
@@ -1283,7 +1286,7 @@ export default function Settings() {
                                     <div className="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2">
                                       <span>{u.full_name || 'Unnamed Personnel'}</span>
                                       {isSelf && (
-                                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-600 dark:bg-white/10 dark:text-slate-300">
+                                        <span className="text-[10px] font-semibold tracking-wide px-2 py-0.5 rounded-full bg-blue-500/10 text-[#0071E3] dark:bg-blue-500/20 dark:text-sky-400 border border-blue-500/20 shadow-2xs">
                                           You
                                         </span>
                                       )}
@@ -1306,8 +1309,8 @@ export default function Settings() {
                                   : 'Never'}
                               </td>
 
-                              <td className="px-4 py-3 text-right whitespace-nowrap">
-                                <div className="flex items-center justify-end gap-2">
+                              <td className="px-4 py-3 text-right whitespace-nowrap sticky right-0 z-10 bg-white/95 dark:bg-[#111827]/95 group-hover:bg-slate-50 dark:group-hover:bg-slate-800 transition-colors shadow-[-8px_0_12px_-4px_rgba(0,0,0,0.08)] dark:shadow-[-8px_0_12px_-4px_rgba(0,0,0,0.4)] shrink-0">
+                                <div className="flex items-center justify-end gap-2.5">
                                   {isEditDisabled ? (
                                     <span className="text-xs text-slate-400 italic">
                                       {disabledReason}
@@ -1327,21 +1330,25 @@ export default function Settings() {
                                         isSelf ||
                                         (currentUser?.role === 'admin' && u.role === 'super_admin')
                                       }
-                                      className="px-3 py-1 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-slate-100 hover:bg-slate-200/90 dark:bg-white/10 dark:hover:bg-white/15 border border-slate-200/60 dark:border-white/10 rounded-full transition-all duration-150 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0 cursor-pointer shadow-2xs hover:shadow-xs"
+                                      className="px-3 py-1 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-slate-100 hover:bg-slate-200/90 dark:bg-white/10 dark:hover:bg-white/15 rounded-full transition-all duration-150 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0 cursor-pointer shadow-2xs hover:shadow-xs"
                                     >
                                       Edit Role
                                     </button>
                                   )}
 
-                                  {currentUser?.role === 'super_admin' && !isSelf && u.role !== 'super_admin' && (
-                                    <button
-                                      type="button"
-                                      onClick={() => setDeleteModalUser(u)}
-                                      className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-lg transition-all duration-150 active:scale-90 cursor-pointer"
-                                      title="Delete personnel account"
-                                    >
-                                      <Trash2 className="w-4 h-4" strokeWidth={1.75} />
-                                    </button>
+                                  {currentUser?.role === 'super_admin' && (
+                                    <div className="w-8 h-8 flex items-center justify-center shrink-0">
+                                      {!isSelf && u.role !== 'super_admin' ? (
+                                        <button
+                                          type="button"
+                                          onClick={() => setDeleteModalUser(u)}
+                                          className="p-1.5 text-rose-500 hover:text-rose-600 dark:text-rose-400 dark:hover:text-rose-300 bg-rose-500/10 hover:bg-rose-500/20 dark:bg-rose-500/15 dark:hover:bg-rose-500/25 rounded-xl transition-all duration-150 active:scale-90 cursor-pointer"
+                                          title="Delete personnel account"
+                                        >
+                                          <Trash2 className="w-4 h-4" strokeWidth={1.75} />
+                                        </button>
+                                      ) : null}
+                                    </div>
                                   )}
                                 </div>
                               </td>
