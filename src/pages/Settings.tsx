@@ -33,7 +33,6 @@ import {
   Loader2,
   ChevronDown,
   Filter,
-  Sliders,
 } from 'lucide-react';
 import SignOutModal from '../components/SignOutModal';
 import { StaggerContainer, StaggerItem } from '../components/Stagger';
@@ -963,141 +962,52 @@ export default function Settings() {
 
   return (
     <div className="settings-soft flex flex-col flex-1 min-h-0 w-full h-full pb-8 md:pb-6">
-      <StaggerContainer className="flex flex-col flex-1 min-h-0 space-y-5 sm:space-y-6 w-full max-w-6xl mx-auto">
+      <StaggerContainer className="flex flex-col flex-1 min-h-0 space-y-5 sm:space-y-6 w-full">
 
-        {/* ── 1. PAGE HEADER & NAVIGATION CAPSULE CARD (iOS PREMIUM GLASS) ── */}
-        <StaggerItem className="shrink-0 relative z-50">
-          <div className="rounded-3xl border border-slate-200/80 dark:border-white/10 bg-white/95 dark:bg-[#1C1C1E]/95 backdrop-blur-2xl shadow-[0_12px_36px_-8px_rgba(0,0,0,0.06),0_2px_8px_rgba(0,0,0,0.03)] dark:shadow-[0_16px_40px_-8px_rgba(0,0,0,0.6)] p-5 md:p-6 space-y-5 relative z-50 transition-all duration-300">
-            {/* Title, Hamburger and Primary Actions */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div className="flex items-center gap-3.5">
-                {toggleSidebar && (
-                  <motion.button
-                    type="button"
-                    id="settings-sidebar-toggle-btn"
-                    aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-                    onClick={toggleSidebar}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="hidden md:flex items-center justify-center w-11 h-11 rounded-2xl bg-slate-100/80 dark:bg-white/[0.08] hover:bg-slate-200/80 dark:hover:bg-white/[0.12] text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white border border-slate-200/80 dark:border-white/10 shadow-xs backdrop-blur-md transition-colors cursor-pointer shrink-0"
-                    title={collapsed ? 'Expand sidebar' : 'Collapse sidebar for full screen'}
-                  >
-                    <Menu className="w-5 h-5" strokeWidth={1.8} />
-                  </motion.button>
-                )}
-                <div className="w-11 h-11 rounded-2xl bg-blue-500/10 dark:bg-blue-500/20 text-[#0071E3] dark:text-sky-400 border border-blue-500/20 flex items-center justify-center shrink-0 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]">
-                  <SettingsIcon className="w-5 h-5 sm:w-5.5 sm:h-5.5" strokeWidth={1.75} />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2.5">
-                    <h1 className="text-lg sm:text-[22px] font-semibold text-slate-900 dark:text-white tracking-[-0.025em] leading-tight">
-                      Settings
-                    </h1>
-                    {actionSuccess && (
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800 text-[11px] font-medium text-emerald-700 dark:text-emerald-300 shadow-2xs"
-                      >
-                        <Check className="w-3 h-3 text-emerald-600 dark:text-emerald-400" strokeWidth={2} />
-                        <span>{actionSuccess}</span>
-                      </motion.div>
-                    )}
-                  </div>
-                  <p className="text-[11px] sm:text-xs font-normal tracking-[0.005em] text-slate-500/90 dark:text-slate-400/90 mt-0.5 leading-relaxed">
-                    Personal profile <span className="text-slate-300 dark:text-slate-600 mx-1">·</span> Team access &amp; security preferences
-                  </p>
-                </div>
-              </div>
-
-              {/* Top Right Contextual Actions & Controls */}
-              <div className="flex items-center gap-2.5 shrink-0 flex-wrap">
-                {activeTab === 'profile' && !isEditingProfile && (
-                  <motion.button
-                    type="button"
-                    whileHover={{ y: -1, scale: 1.02 }}
-                    whileTap={{ scale: 0.96 }}
-                    transition={{ type: 'spring', stiffness: 450, damping: 25 }}
-                    onClick={() => { setProfileDraft(profile); setIsEditingProfile(true); }}
-                    className="group inline-flex items-center gap-2 px-3.5 py-2 min-h-[40px] text-xs font-semibold border border-slate-200/80 dark:border-white/10 text-slate-700 dark:text-slate-200 bg-white/90 dark:bg-slate-800/90 hover:bg-blue-50/60 dark:hover:bg-blue-950/40 hover:text-[#0071E3] dark:hover:text-sky-300 hover:border-blue-400/60 dark:hover:border-blue-500/50 rounded-xl shadow-xs hover:shadow-[0_4px_16px_rgba(0,113,227,0.18)] transition-all duration-200 cursor-pointer select-none"
-                  >
-                    <Pencil className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 group-hover:text-[#0071E3] dark:group-hover:text-sky-300 transition-colors" strokeWidth={1.8} />
-                    <span>Edit Profile</span>
-                  </motion.button>
-                )}
-
-                {activeTab === 'profile' && isEditingProfile && (
-                  <>
-                    <motion.button
-                      type="button"
-                      whileHover={{ y: -1, scale: 1.02 }}
-                      whileTap={{ scale: 0.96 }}
-                      transition={{ type: 'spring', stiffness: 450, damping: 25 }}
-                      onClick={() => { setIsEditingProfile(false); setProfileDraft(profile); }}
-                      className="inline-flex items-center gap-2 px-3.5 py-2 min-h-[40px] text-xs font-semibold border border-slate-200/80 dark:border-white/10 text-slate-700 dark:text-slate-200 bg-white/90 dark:bg-slate-800/90 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl shadow-xs transition-all duration-200 cursor-pointer select-none"
-                    >
-                      <span>Cancel</span>
-                    </motion.button>
-                    <motion.button
-                      type="button"
-                      whileHover={{ y: -1, scale: 1.02 }}
-                      whileTap={{ scale: 0.96 }}
-                      transition={{ type: 'spring', stiffness: 450, damping: 25 }}
-                      onClick={() => handleSaveProfile()}
-                      disabled={isSavingProfile}
-                      className="group inline-flex items-center gap-2 px-4 py-2 min-h-[40px] text-xs font-semibold text-white bg-[#0071E3] hover:bg-[#0077ED] border border-blue-400/30 rounded-xl shadow-[0_2px_10px_rgba(0,113,227,0.30)] hover:shadow-[0_6px_20px_rgba(0,113,227,0.45)] transition-all duration-200 cursor-pointer select-none disabled:opacity-50"
-                    >
-                      <Check className="w-3.5 h-3.5" strokeWidth={2} />
-                      <span>{isSavingProfile ? 'Saving...' : 'Save Profile'}</span>
-                    </motion.button>
-                  </>
-                )}
-
-                {activeTab === 'team' && currentUser?.role === 'super_admin' && (
-                  <motion.button
-                    type="button"
-                    whileHover={{ y: -1, scale: 1.02 }}
-                    whileTap={{ scale: 0.96 }}
-                    transition={{ type: 'spring', stiffness: 450, damping: 25 }}
-                    onClick={() => {
-                      setInviteModalOpen(true);
-                      setGeneratedInvite(null);
-                      setCopied(false);
-                    }}
-                    className="group inline-flex items-center gap-2 px-4 py-2 min-h-[40px] text-xs font-semibold text-white bg-[#0071E3] hover:bg-[#0077ED] border border-blue-400/30 rounded-xl shadow-[0_2px_10px_rgba(0,113,227,0.30)] hover:shadow-[0_6px_20px_rgba(0,113,227,0.45)] transition-all duration-200 cursor-pointer select-none"
-                  >
-                    <UserPlus className="w-3.5 h-3.5 transition-transform duration-200 group-hover:scale-110" strokeWidth={1.8} />
-                    <span>Invite Personnel</span>
-                  </motion.button>
-                )}
-
-                <motion.button
+        {/* ── UNIFIED APPLE macOS / iOS PAGE HEADER WITH INTEGRATED SEGMENTED TABS ── */}
+        <StaggerItem className="shrink-0 w-full">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pt-1">
+            <div className="flex items-center gap-3 shrink-0">
+              {toggleSidebar && (
+                <button
                   type="button"
-                  whileHover={{ y: -1, scale: 1.02 }}
-                  whileTap={{ scale: 0.96 }}
-                  transition={{ type: 'spring', stiffness: 450, damping: 25 }}
-                  onClick={toggleTheme}
-                  className="group inline-flex items-center gap-2 px-3.5 py-2 min-h-[40px] text-xs font-semibold border border-slate-200/80 dark:border-white/10 text-slate-700 dark:text-slate-200 bg-white/90 dark:bg-slate-800/90 hover:bg-blue-50/60 dark:hover:bg-blue-950/40 hover:text-[#0071E3] dark:hover:text-sky-300 hover:border-blue-400/60 dark:hover:border-blue-500/50 rounded-xl shadow-xs hover:shadow-[0_4px_16px_rgba(0,113,227,0.18)] transition-all duration-200 cursor-pointer select-none"
-                  title="Toggle Light / Dark mode"
+                  id="settings-sidebar-toggle-btn"
+                  aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                  onClick={toggleSidebar}
+                  className="hidden md:flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-white/80 dark:bg-slate-800/80 hover:bg-white dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white border border-slate-200/80 dark:border-white/10 shadow-xs backdrop-blur-md transition-all active:scale-95 cursor-pointer shrink-0"
+                  title={collapsed ? 'Expand sidebar' : 'Collapse sidebar for full screen'}
                 >
-                  {theme === 'dark' ? (
-                    <Sun className="w-3.5 h-3.5 text-amber-500 group-hover:rotate-45 transition-transform duration-300" strokeWidth={1.8} />
-                  ) : (
-                    <Moon className="w-3.5 h-3.5 text-blue-500 group-hover:-rotate-12 transition-transform duration-300" strokeWidth={1.8} />
+                  <Menu className="w-5 h-5" strokeWidth={1.8} />
+                </button>
+              )}
+              <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-blue-500/10 dark:bg-blue-500/20 text-[#0071E3] dark:text-sky-400 flex items-center justify-center shrink-0 border border-blue-500/20 shadow-xs">
+                <SettingsIcon className="w-5 h-5 sm:w-5.5 sm:h-5.5" strokeWidth={1.75} />
+              </div>
+              <div>
+                <div className="flex items-center gap-2.5">
+                  <h1 className="text-lg sm:text-[22px] font-semibold tracking-[-0.025em] leading-tight text-slate-900 dark:text-white">
+                    Settings
+                  </h1>
+                  {actionSuccess && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800 text-[11px] font-medium text-emerald-700 dark:text-emerald-300 shadow-2xs"
+                    >
+                      <Check className="w-3 h-3 text-emerald-600 dark:text-emerald-400" strokeWidth={2} />
+                      <span>{actionSuccess}</span>
+                    </motion.div>
                   )}
-                  <span className="hidden sm:inline">{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
-                </motion.button>
+                </div>
+                <p className="text-[11px] sm:text-xs font-normal tracking-[0.005em] text-slate-500/90 dark:text-slate-400/90 mt-0.5 leading-relaxed">
+                  Personal profile <span className="text-slate-300 dark:text-slate-600 mx-1">·</span> Team access &amp; security preferences
+                </p>
               </div>
             </div>
 
-            {/* Hairline Divider & Segmented Navigation Tabs */}
-            <div className="pt-3.5 border-t border-slate-200/60 dark:border-white/5 flex flex-col md:flex-row md:items-center justify-between gap-3 relative z-50">
-              {/* Left: Navigation Scope Capsule with Sliding Active Tab */}
-              <div className="p-1 bg-slate-100/70 dark:bg-white/[0.05] backdrop-blur-xl rounded-2xl border border-slate-200/70 dark:border-white/10 shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] inline-flex items-center gap-1 overflow-x-auto max-w-full scrollbar-none">
-                <div className="hidden sm:flex items-center gap-1 px-2.5 py-1 text-[#0071E3] dark:text-sky-400 cursor-default select-none shrink-0">
-                  <Sliders className="w-3.5 h-3.5 text-[#0071E3] dark:text-sky-400" strokeWidth={1.8} />
-                  <span className="text-[10px] font-bold uppercase tracking-wider">Navigation</span>
-                </div>
+            {/* ── Apple iOS / macOS Fluid Segmented Navigation Tabs ── */}
+            <div className="overflow-x-auto scrollbar-none -mx-1 px-1 py-0.5 shrink-0 max-w-full">
+              <div className="p-1 bg-slate-200/60 dark:bg-slate-800/60 backdrop-blur-md rounded-2xl border border-slate-200/60 dark:border-white/5 inline-flex items-center gap-1 shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]">
                 {settingsTabs.map((tab) => {
                   const isActive = activeTab === tab.key;
                   const Icon = tab.icon;
@@ -1109,7 +1019,7 @@ export default function Settings() {
                       initial="rest"
                       whileHover="hover"
                       animate="rest"
-                      className={`group relative px-3.5 py-1.5 sm:px-4 sm:py-1.5 rounded-xl text-xs sm:text-sm font-semibold transition-colors duration-150 inline-flex items-center justify-center gap-2 select-none active:scale-[0.97] cursor-pointer whitespace-nowrap shrink-0 ${
+                      className={`group relative px-3.5 py-1.5 sm:px-4 sm:py-1.5 rounded-xl text-xs sm:text-sm font-semibold transition-colors duration-150 inline-flex items-center justify-center gap-2 select-none active:scale-[0.97] cursor-pointer whitespace-nowrap ${
                         isActive
                           ? "text-slate-900 dark:text-white"
                           : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-700/60 hover:shadow-2xs"
@@ -1144,14 +1054,6 @@ export default function Settings() {
                     </motion.button>
                   );
                 })}
-              </div>
-
-              {/* Right: Dispatch Console Telemetry Capsule */}
-              <div className="hidden sm:inline-flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-slate-100/70 dark:bg-white/[0.05] backdrop-blur-xl border border-slate-200/70 dark:border-white/10 shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] text-xs text-slate-600 dark:text-slate-300 shrink-0 self-start md:self-auto select-none">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-                <span className="font-semibold text-slate-700 dark:text-slate-200">Dispatch Session Secure</span>
-                <span className="text-slate-300 dark:text-slate-600">·</span>
-                <span className="text-slate-500 dark:text-slate-400 capitalize">{effectiveRole.replace('_', ' ') || 'Personnel'}</span>
               </div>
             </div>
           </div>
