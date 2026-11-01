@@ -1055,9 +1055,9 @@ export default function Settings() {
 
                 {/* Body: 40% Profile Area + 60% Details Grid */}
                 <div className="pt-6 flex flex-col md:flex-row items-stretch gap-5 lg:gap-6">
-                  {/* Left Column: Profile Card (40% width) */}
+                  {/* Left Column: Profile Card (40% width with Glass iOS UI) */}
                   <div className="w-full md:w-[38%] lg:w-[36%] xl:w-[35%] shrink-0">
-                    <div className="h-full rounded-2xl bg-slate-50/70 hover:bg-slate-100/50 dark:bg-white/[0.02] dark:hover:bg-white/[0.03] border border-slate-200/60 dark:border-white/10 p-5 sm:p-6 flex flex-col items-center justify-center text-center transition-all duration-150 shadow-2xs">
+                    <div className="h-full rounded-2xl sm:rounded-3xl bg-white/75 hover:bg-white/90 dark:bg-slate-900/60 dark:hover:bg-slate-900/80 backdrop-blur-xl border border-slate-200/80 hover:border-slate-300/90 dark:border-white/15 dark:hover:border-white/25 p-5 sm:p-6 flex flex-col items-center justify-center text-center transition-all duration-200 shadow-[0_4px_20px_rgba(0,0,0,0.03),0_1px_2px_rgba(0,0,0,0.02),inset_0_1px_1px_rgba(255,255,255,0.95)] hover:shadow-[0_8px_28px_rgba(0,113,227,0.08),inset_0_1px_1px_rgba(255,255,255,1)]">
                       {/* Avatar */}
                       <div className="relative mb-3.5">
                         {currentUser?.avatar_url && !userAvatarError ? (
@@ -1099,7 +1099,7 @@ export default function Settings() {
                             setCopiedId(true);
                             setTimeout(() => setCopiedId(false), 2000);
                           }}
-                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-200/60 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-600 dark:text-slate-400 font-mono text-[11px] transition-colors cursor-pointer border border-slate-300/50 dark:border-white/5 shadow-2xs"
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/80 hover:bg-white dark:bg-white/10 dark:hover:bg-white/15 text-slate-600 dark:text-slate-300 font-mono text-[11px] transition-colors cursor-pointer border border-slate-200 dark:border-white/10 shadow-[0_1px_3px_rgba(0,0,0,0.04),inset_0_1px_1px_rgba(255,255,255,0.9)]"
                           title="Click to copy account ID"
                         >
                           {copiedId ? (
@@ -1115,12 +1115,6 @@ export default function Settings() {
                           )}
                         </button>
                       </div>
-
-                      {/* Verified Dispatch Access Tag */}
-                      <div className="mt-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-[11px] font-medium select-none">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-                        <span>Verified Dispatch Access</span>
-                      </div>
                     </div>
                   </div>
 
@@ -1130,8 +1124,8 @@ export default function Settings() {
                       <form onSubmit={handleSaveProfile} className="space-y-3.5">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           {/* Full Name */}
-                          <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-50/70 dark:bg-white/[0.02] border border-slate-200/70 dark:border-white/10 space-y-1">
-                            <label className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 block select-none">
+                          <div className="p-3.5 sm:p-4 rounded-2xl bg-white/75 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/80 dark:border-white/15 shadow-[0_2px_10px_rgba(0,0,0,0.03),inset_0_1px_1px_rgba(255,255,255,0.95)] space-y-1.5">
+                            <label className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 block select-none">
                               Full Name <span className="text-rose-500">*</span>
                             </label>
                             <input
@@ -1140,13 +1134,13 @@ export default function Settings() {
                               onChange={(e) => setProfileDraft({ ...profileDraft, fullName: e.target.value })}
                               required
                               placeholder="Enter your full name"
-                              className="w-full px-3 py-1.5 text-xs sm:text-sm rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0071E3]/20 focus:border-[#0071E3] transition-all"
+                              className="w-full px-3 py-1.5 text-xs sm:text-sm rounded-xl bg-slate-50/80 focus:bg-white dark:bg-slate-800/80 dark:focus:bg-slate-800 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0071E3]/20 focus:border-[#0071E3] transition-all"
                             />
                           </div>
 
                           {/* Username */}
-                          <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-50/70 dark:bg-white/[0.02] border border-slate-200/70 dark:border-white/10 space-y-1">
-                            <label className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 block select-none">
+                          <div className="p-3.5 sm:p-4 rounded-2xl bg-white/75 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/80 dark:border-white/15 shadow-[0_2px_10px_rgba(0,0,0,0.03),inset_0_1px_1px_rgba(255,255,255,0.95)] space-y-1.5">
+                            <label className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 block select-none">
                               Username
                             </label>
                             <input
@@ -1159,8 +1153,8 @@ export default function Settings() {
                           </div>
 
                           {/* Email */}
-                          <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-50/70 dark:bg-white/[0.02] border border-slate-200/70 dark:border-white/10 space-y-1">
-                            <label className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 block select-none">
+                          <div className="p-3.5 sm:p-4 rounded-2xl bg-white/75 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/80 dark:border-white/15 shadow-[0_2px_10px_rgba(0,0,0,0.03),inset_0_1px_1px_rgba(255,255,255,0.95)] space-y-1.5">
+                            <label className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 block select-none">
                               Email Address
                             </label>
                             <input
@@ -1173,8 +1167,8 @@ export default function Settings() {
                           </div>
 
                           {/* Contact Phone */}
-                          <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-50/70 dark:bg-white/[0.02] border border-slate-200/70 dark:border-white/10 space-y-1">
-                            <label className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 block select-none">
+                          <div className="p-3.5 sm:p-4 rounded-2xl bg-white/75 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/80 dark:border-white/15 shadow-[0_2px_10px_rgba(0,0,0,0.03),inset_0_1px_1px_rgba(255,255,255,0.95)] space-y-1.5">
+                            <label className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 block select-none">
                               Contact Phone
                             </label>
                             <input
@@ -1182,13 +1176,13 @@ export default function Settings() {
                               value={profileDraft.phone}
                               onChange={(e) => setProfileDraft({ ...profileDraft, phone: e.target.value })}
                               placeholder="09XX-XXX-XXXX"
-                              className="w-full px-3 py-1.5 text-xs sm:text-sm font-mono rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0071E3]/20 focus:border-[#0071E3] transition-all"
+                              className="w-full px-3 py-1.5 text-xs sm:text-sm font-mono rounded-xl bg-slate-50/80 focus:bg-white dark:bg-slate-800/80 dark:focus:bg-slate-800 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0071E3]/20 focus:border-[#0071E3] transition-all"
                             />
                           </div>
 
                           {/* Official Role & Unit */}
-                          <div className="sm:col-span-2 p-3 sm:p-3.5 rounded-2xl bg-slate-50/70 dark:bg-white/[0.02] border border-slate-200/70 dark:border-white/10 space-y-1">
-                            <label className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 block select-none">
+                          <div className="sm:col-span-2 p-3.5 sm:p-4 rounded-2xl bg-white/75 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/80 dark:border-white/15 shadow-[0_2px_10px_rgba(0,0,0,0.03),inset_0_1px_1px_rgba(255,255,255,0.95)] space-y-1.5">
+                            <label className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 block select-none">
                               Official Role &amp; Assignment
                             </label>
                             <input
@@ -1196,7 +1190,7 @@ export default function Settings() {
                               value={profileDraft.position}
                               onChange={(e) => setProfileDraft({ ...profileDraft, position: e.target.value })}
                               placeholder="e.g. Lead Dispatcher • MDRRMO Command"
-                              className="w-full px-3 py-1.5 text-xs sm:text-sm rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0071E3]/20 focus:border-[#0071E3] transition-all"
+                              className="w-full px-3 py-1.5 text-xs sm:text-sm rounded-xl bg-slate-50/80 focus:bg-white dark:bg-slate-800/80 dark:focus:bg-slate-800 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0071E3]/20 focus:border-[#0071E3] transition-all"
                             />
                           </div>
                         </div>
@@ -1237,11 +1231,11 @@ export default function Settings() {
                         </div>
                       </form>
                     ) : (
-                      /* Viewing Mode: 5 Sleek Apple Inset Tiles */
+                      /* Viewing Mode: 5 Premium iOS Glass Tiles */
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 h-full">
                         {/* 1. Full Name */}
-                        <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-50/70 hover:bg-slate-100/60 dark:bg-white/[0.02] dark:hover:bg-white/[0.04] border border-slate-200/60 dark:border-white/10 transition-all duration-150 shadow-2xs flex flex-col justify-center">
-                          <span className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 block mb-1 select-none">
+                        <div className="p-3.5 sm:p-4 rounded-2xl bg-white/75 hover:bg-white/95 dark:bg-slate-900/60 dark:hover:bg-slate-900/80 backdrop-blur-xl border border-slate-200/80 hover:border-[#0071E3]/40 dark:border-white/15 dark:hover:border-sky-400/40 shadow-[0_2px_10px_rgba(0,0,0,0.03),0_1px_2px_rgba(0,0,0,0.02),inset_0_1px_1px_rgba(255,255,255,0.95)] hover:shadow-[0_6px_20px_rgba(0,113,227,0.1),inset_0_1px_1px_rgba(255,255,255,1)] dark:shadow-[0_2px_10px_rgba(0,0,0,0.25),inset_0_1px_1px_rgba(255,255,255,0.06)] transition-all duration-200 hover:-translate-y-0.5 group/tile flex flex-col justify-center">
+                          <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 group-hover/tile:text-[#0071E3] dark:group-hover/tile:text-sky-400 transition-colors duration-150 block mb-1 select-none">
                             Full Name
                           </span>
                           <span className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white block truncate">
@@ -1250,8 +1244,8 @@ export default function Settings() {
                         </div>
 
                         {/* 2. Username */}
-                        <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-50/70 hover:bg-slate-100/60 dark:bg-white/[0.02] dark:hover:bg-white/[0.04] border border-slate-200/60 dark:border-white/10 transition-all duration-150 shadow-2xs flex flex-col justify-center">
-                          <span className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 block mb-1 select-none">
+                        <div className="p-3.5 sm:p-4 rounded-2xl bg-white/75 hover:bg-white/95 dark:bg-slate-900/60 dark:hover:bg-slate-900/80 backdrop-blur-xl border border-slate-200/80 hover:border-[#0071E3]/40 dark:border-white/15 dark:hover:border-sky-400/40 shadow-[0_2px_10px_rgba(0,0,0,0.03),0_1px_2px_rgba(0,0,0,0.02),inset_0_1px_1px_rgba(255,255,255,0.95)] hover:shadow-[0_6px_20px_rgba(0,113,227,0.1),inset_0_1px_1px_rgba(255,255,255,1)] dark:shadow-[0_2px_10px_rgba(0,0,0,0.25),inset_0_1px_1px_rgba(255,255,255,0.06)] transition-all duration-200 hover:-translate-y-0.5 group/tile flex flex-col justify-center">
+                          <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 group-hover/tile:text-[#0071E3] dark:group-hover/tile:text-sky-400 transition-colors duration-150 block mb-1 select-none">
                             Username
                           </span>
                           <span className="text-xs sm:text-sm font-mono font-medium text-slate-900 dark:text-white block truncate">
@@ -1260,8 +1254,8 @@ export default function Settings() {
                         </div>
 
                         {/* 3. Email Address */}
-                        <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-50/70 hover:bg-slate-100/60 dark:bg-white/[0.02] dark:hover:bg-white/[0.04] border border-slate-200/60 dark:border-white/10 transition-all duration-150 shadow-2xs flex flex-col justify-center">
-                          <span className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 block mb-1 select-none">
+                        <div className="p-3.5 sm:p-4 rounded-2xl bg-white/75 hover:bg-white/95 dark:bg-slate-900/60 dark:hover:bg-slate-900/80 backdrop-blur-xl border border-slate-200/80 hover:border-[#0071E3]/40 dark:border-white/15 dark:hover:border-sky-400/40 shadow-[0_2px_10px_rgba(0,0,0,0.03),0_1px_2px_rgba(0,0,0,0.02),inset_0_1px_1px_rgba(255,255,255,0.95)] hover:shadow-[0_6px_20px_rgba(0,113,227,0.1),inset_0_1px_1px_rgba(255,255,255,1)] dark:shadow-[0_2px_10px_rgba(0,0,0,0.25),inset_0_1px_1px_rgba(255,255,255,0.06)] transition-all duration-200 hover:-translate-y-0.5 group/tile flex flex-col justify-center">
+                          <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 group-hover/tile:text-[#0071E3] dark:group-hover/tile:text-sky-400 transition-colors duration-150 block mb-1 select-none">
                             Email Address
                           </span>
                           <span className="text-xs sm:text-sm font-mono font-medium text-slate-900 dark:text-white block truncate">
@@ -1270,8 +1264,8 @@ export default function Settings() {
                         </div>
 
                         {/* 4. Contact Phone */}
-                        <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-50/70 hover:bg-slate-100/60 dark:bg-white/[0.02] dark:hover:bg-white/[0.04] border border-slate-200/60 dark:border-white/10 transition-all duration-150 shadow-2xs flex flex-col justify-center">
-                          <span className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 block mb-1 select-none">
+                        <div className="p-3.5 sm:p-4 rounded-2xl bg-white/75 hover:bg-white/95 dark:bg-slate-900/60 dark:hover:bg-slate-900/80 backdrop-blur-xl border border-slate-200/80 hover:border-[#0071E3]/40 dark:border-white/15 dark:hover:border-sky-400/40 shadow-[0_2px_10px_rgba(0,0,0,0.03),0_1px_2px_rgba(0,0,0,0.02),inset_0_1px_1px_rgba(255,255,255,0.95)] hover:shadow-[0_6px_20px_rgba(0,113,227,0.1),inset_0_1px_1px_rgba(255,255,255,1)] dark:shadow-[0_2px_10px_rgba(0,0,0,0.25),inset_0_1px_1px_rgba(255,255,255,0.06)] transition-all duration-200 hover:-translate-y-0.5 group/tile flex flex-col justify-center">
+                          <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 group-hover/tile:text-[#0071E3] dark:group-hover/tile:text-sky-400 transition-colors duration-150 block mb-1 select-none">
                             Contact Phone
                           </span>
                           <span className="text-xs sm:text-sm font-mono font-medium text-slate-900 dark:text-white block truncate">
@@ -1280,8 +1274,8 @@ export default function Settings() {
                         </div>
 
                         {/* 5. Official Role & Unit */}
-                        <div className="sm:col-span-2 p-3 sm:p-3.5 rounded-2xl bg-slate-50/70 hover:bg-slate-100/60 dark:bg-white/[0.02] dark:hover:bg-white/[0.04] border border-slate-200/60 dark:border-white/10 transition-all duration-150 shadow-2xs flex flex-col justify-center">
-                          <span className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 block mb-1 select-none">
+                        <div className="sm:col-span-2 p-3.5 sm:p-4 rounded-2xl bg-white/75 hover:bg-white/95 dark:bg-slate-900/60 dark:hover:bg-slate-900/80 backdrop-blur-xl border border-slate-200/80 hover:border-[#0071E3]/40 dark:border-white/15 dark:hover:border-sky-400/40 shadow-[0_2px_10px_rgba(0,0,0,0.03),0_1px_2px_rgba(0,0,0,0.02),inset_0_1px_1px_rgba(255,255,255,0.95)] hover:shadow-[0_6px_20px_rgba(0,113,227,0.1),inset_0_1px_1px_rgba(255,255,255,1)] dark:shadow-[0_2px_10px_rgba(0,0,0,0.25),inset_0_1px_1px_rgba(255,255,255,0.06)] transition-all duration-200 hover:-translate-y-0.5 group/tile flex flex-col justify-center">
+                          <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 group-hover/tile:text-[#0071E3] dark:group-hover/tile:text-sky-400 transition-colors duration-150 block mb-1 select-none">
                             Official Role &amp; Unit
                           </span>
                           <span className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white block truncate">
