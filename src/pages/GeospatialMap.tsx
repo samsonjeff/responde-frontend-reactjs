@@ -29,6 +29,11 @@ import {
   CheckCircle2,
   Trash2,
   Box,
+  Flame,
+  Wind,
+  Mountain,
+  Waves,
+  Activity,
 } from 'lucide-react';
 
 import { useTheme } from '../components/ThemeContent';
@@ -56,14 +61,56 @@ const PANEL_TRANSITION = { duration: 0.38, ease: [0.16, 1, 0.3, 1] } as const;
 
 // Standard Line Icons for Incident Types
 const TYPE_ICONS: Record<string, React.ReactNode> = {
-  'Search & Rescue': <Siren className="w-4 h-4 stroke-[1.75]" />,
-  'Medical': <HeartPulse className="w-4 h-4 stroke-[1.75]" />,
-  'Food & Water': <Droplets className="w-4 h-4 stroke-[1.75]" />,
-  'Infrastructure': <HardHat className="w-4 h-4 stroke-[1.75]" />,
+  'General': <FileText className="w-3.5 h-3.5 stroke-[1.75]" />,
+  'Flood': <Waves className="w-3.5 h-3.5 stroke-[1.75]" />,
+  'Volcanic Eruption': <Flame className="w-3.5 h-3.5 stroke-[1.75]" />,
+  'Typhoon': <Wind className="w-3.5 h-3.5 stroke-[1.75]" />,
+  'Landslide': <Mountain className="w-3.5 h-3.5 stroke-[1.75]" />,
+  'Fire': <Flame className="w-3.5 h-3.5 stroke-[1.75]" />,
+  'Earthquake': <Activity className="w-3.5 h-3.5 stroke-[1.75]" />,
+  'Search & Rescue': <Siren className="w-3.5 h-3.5 stroke-[1.75]" />,
+  'Medical': <HeartPulse className="w-3.5 h-3.5 stroke-[1.75]" />,
+  'Food & Water': <Droplets className="w-3.5 h-3.5 stroke-[1.75]" />,
+  'Infrastructure': <HardHat className="w-3.5 h-3.5 stroke-[1.75]" />,
 };
 
 // Calm, non-glaring pastel tones
 const CATEGORY_STYLES: Record<string, { text: string; bg: string; border: string }> = {
+  'General': {
+    text: 'text-slate-600 dark:text-slate-300',
+    bg: 'bg-slate-100 dark:bg-white/[0.08]',
+    border: 'border-slate-200/80 dark:border-white/10',
+  },
+  'Flood': {
+    text: 'text-blue-600 dark:text-blue-400',
+    bg: 'bg-blue-500/10 dark:bg-blue-500/15',
+    border: 'border-blue-500/20',
+  },
+  'Volcanic Eruption': {
+    text: 'text-orange-600 dark:text-orange-400',
+    bg: 'bg-orange-500/10 dark:bg-orange-500/15',
+    border: 'border-orange-500/20',
+  },
+  'Typhoon': {
+    text: 'text-indigo-600 dark:text-indigo-400',
+    bg: 'bg-indigo-500/10 dark:bg-indigo-500/15',
+    border: 'border-indigo-500/20',
+  },
+  'Landslide': {
+    text: 'text-amber-600 dark:text-amber-400',
+    bg: 'bg-amber-500/10 dark:bg-amber-500/15',
+    border: 'border-amber-500/20',
+  },
+  'Fire': {
+    text: 'text-rose-600 dark:text-rose-400',
+    bg: 'bg-rose-500/10 dark:bg-rose-500/15',
+    border: 'border-rose-500/20',
+  },
+  'Earthquake': {
+    text: 'text-purple-600 dark:text-purple-400',
+    bg: 'bg-purple-500/10 dark:bg-purple-500/15',
+    border: 'border-purple-500/20',
+  },
   'Search & Rescue': {
     text: 'text-rose-600 dark:text-rose-400',
     bg: 'bg-rose-500/10 dark:bg-rose-500/15',
@@ -157,61 +204,58 @@ function IncidentListItem({ report, index, onClick }: { report: Report; index: n
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12, scale: 0.98 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ ...SOFT_SPRING, delay: Math.min(index * 0.03, 0.25) }}
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ ...SOFT_SPRING, delay: Math.min(index * 0.02, 0.2) }}
       onClick={onClick}
-      className="group relative overflow-hidden rounded-2xl p-4 bg-white/95 dark:bg-slate-800/85 backdrop-blur-md border border-slate-200/80 dark:border-white/10 shadow-[0_2px_12px_rgba(15,23,42,0.03)] hover:shadow-[0_12px_32px_rgba(0,113,227,0.18)] dark:hover:shadow-[0_12px_32px_rgba(0,113,227,0.30)] hover:border-blue-400/60 dark:hover:border-blue-500/50 hover:bg-blue-50/40 dark:hover:bg-blue-950/30 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer active:scale-[0.98] text-left space-y-3"
+      className="group relative overflow-hidden rounded-2xl p-3 bg-white/90 dark:bg-slate-800/80 backdrop-blur-md border border-slate-200/70 dark:border-white/10 shadow-[0_1px_3px_rgba(0,0,0,0.03)] hover:border-blue-400/50 hover:bg-white dark:hover:bg-slate-800 transition-all duration-150 cursor-pointer active:scale-[0.99] text-left space-y-2.5"
     >
-      {/* Top row: Category icon, Barangay title, Urgency pill */}
-      <div className="flex items-start justify-between gap-2.5">
+      {/* Top row: Category round glyph + Barangay title + Urgency capsule */}
+      <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className={`w-8.5 h-8.5 rounded-xl flex items-center justify-center shrink-0 border shadow-2xs ${catStyle.bg} ${catStyle.border} ${catStyle.text}`}>
-            {TYPE_ICONS[report.type] || <Siren className="w-4 h-4" />}
+          <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 border ${catStyle.bg} ${catStyle.border} ${catStyle.text}`}>
+            {TYPE_ICONS[report.type] || <Siren className="w-3.5 h-3.5" />}
           </div>
           <div className="min-w-0">
-            <h4 className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-[#0071E3] dark:group-hover:text-sky-400 truncate tracking-tight flex items-center gap-1.5 transition-colors">
-              <MapPin className="w-3 h-3 text-blue-500 shrink-0" />
-              <span className="truncate">{report.barangay}</span>
+            <h4 className="text-[13px] font-semibold text-slate-900 dark:text-slate-100 group-hover:text-[#0071E3] dark:group-hover:text-sky-400 truncate tracking-tight transition-colors">
+              {report.barangay}
             </h4>
-            <span className={`text-[10px] font-semibold tracking-tight uppercase ${catStyle.text}`}>
+            <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate">
               {report.type}
-            </span>
+            </p>
           </div>
         </div>
 
-        <span className={`inline-flex items-center gap-1.5 text-[10px] font-semibold px-2.5 py-0.5 rounded-full border shrink-0 ${badge.bg} ${badge.text} ${badge.border}`}>
+        <span className={`inline-flex items-center gap-1.5 text-[10px] font-medium px-2 py-0.5 rounded-full border shrink-0 ${badge.bg} ${badge.text} ${badge.border}`}>
           <span className={`w-1.5 h-1.5 rounded-full ${badge.dot} ${report.urgency === 'High' ? 'animate-pulse' : ''}`} />
           {report.urgency}
         </span>
       </div>
 
-      {/* Quoted description snippet in soft well */}
+      {/* Quoted description snippet in soft speech well */}
       {report.description && (
-        <div className="rounded-xl p-2.5 bg-slate-50/80 dark:bg-slate-900/50 border border-slate-200/50 dark:border-white/5 pl-3 border-l-2 border-l-blue-500/40">
-          <p className="text-[11px] text-slate-600 dark:text-slate-300 line-clamp-2 italic leading-relaxed">
+        <div className="rounded-xl px-3 py-2 bg-slate-50/90 dark:bg-white/[0.03] border border-slate-100 dark:border-white/5">
+          <p className="text-[11.5px] text-slate-600 dark:text-slate-300 line-clamp-2 leading-relaxed">
             &ldquo;{report.description}&rdquo;
           </p>
         </div>
       )}
 
       {/* Bottom metadata row */}
-      <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-100 dark:border-white/5 text-[11px]">
-        <div className="flex items-center gap-2 min-w-0">
-          <span
-            className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-900/60 text-slate-700 dark:text-slate-300 border border-slate-200/60 dark:border-white/10 shrink-0"
-            title={`Source ID: ${report.id}`}
-          >
+      <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-100/80 dark:border-white/5 text-[11px]">
+        <div className="flex items-center gap-1.5 min-w-0 text-slate-400 dark:text-slate-500 text-[10.5px]">
+          <span className="font-mono font-medium text-slate-600 dark:text-slate-400">
             {formattedCode}
           </span>
-          <span className="text-slate-500 dark:text-slate-400 truncate font-medium text-xs">{report.reporter}</span>
+          <span>&bull;</span>
+          <span className="truncate">{report.reporter || 'Anonymous'}</span>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <span className="text-[10px] text-slate-400 dark:text-slate-500 tabular-nums font-mono flex items-center gap-1">
             <Clock className="w-2.5 h-2.5" />
             {report.time}
           </span>
-          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-600 dark:text-blue-400 group-hover:translate-x-0.5 transition-transform">
+          <span className="text-blue-600 dark:text-sky-400 opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all">
             <Compass className="w-3.5 h-3.5" />
           </span>
         </div>
@@ -415,30 +459,30 @@ function IncidentDetailCard({
       <div className="w-10 h-1 rounded-full bg-slate-300/80 dark:bg-slate-600/80 mx-auto mt-2 -mb-1 sm:hidden shrink-0" />
 
       {/* Pinned Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200/60 dark:border-slate-800/60 bg-white/60 dark:bg-[#111827]/60 backdrop-blur-md shrink-0">
+      <div className="flex items-center justify-between px-3.5 py-3 border-b border-slate-200/50 dark:border-white/5 bg-white/60 dark:bg-[#111827]/60 backdrop-blur-md shrink-0">
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-8.5 h-8.5 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center border border-blue-500/20 shrink-0">
-            {TYPE_ICONS[report.type] || <Siren className="w-4 h-4" />}
+          <div className="w-7 h-7 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center border border-blue-500/20 shrink-0">
+            {TYPE_ICONS[report.type] || <Siren className="w-3.5 h-3.5" />}
           </div>
           <div className="min-w-0">
-            <h3 className="text-sm font-bold text-slate-900 dark:text-white tracking-tight truncate">{report.type}</h3>
+            <h3 className="text-[13px] font-semibold text-slate-900 dark:text-white tracking-tight truncate">{report.type}</h3>
             <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500 block truncate" title={`Original ID: ${report.id}`}>
-              ID: {formatReportCode(report.id, report.source)}
+              {formatReportCode(report.id, report.source)}
             </span>
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2.5 py-0.5 rounded-full border ${badge.bg} ${badge.text} ${badge.border}`}>
+          <span className={`inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full border ${badge.bg} ${badge.text} ${badge.border}`}>
             <span className={`w-1.5 h-1.5 rounded-full ${badge.dot}`} />
             {report.urgency}
           </span>
           <button
             type="button"
             onClick={onClose}
-            className="w-7 h-7 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all active:scale-90 cursor-pointer"
+            className="w-7 h-7 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all active:scale-90 cursor-pointer"
             title="Close"
           >
-            <X className="w-4 h-4" />
+            <X className="w-3.5 h-3.5" />
           </button>
         </div>
       </div>
@@ -596,37 +640,34 @@ function IncompleteListItem({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12, scale: 0.98 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ ...SOFT_SPRING, delay: Math.min(index * 0.03, 0.25) }}
-      className="group relative overflow-hidden rounded-2xl p-4 bg-white/95 dark:bg-slate-800/85 backdrop-blur-md border border-slate-200/80 dark:border-white/10 shadow-[0_2px_12px_rgba(15,23,42,0.03)] hover:shadow-[0_12px_32px_rgba(0,113,227,0.16)] dark:hover:shadow-[0_12px_32px_rgba(0,113,227,0.28)] hover:border-blue-400/60 dark:hover:border-blue-500/50 hover:bg-blue-50/30 dark:hover:bg-blue-950/25 hover:-translate-y-0.5 transition-all duration-200 text-left space-y-3"
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ ...SOFT_SPRING, delay: Math.min(index * 0.02, 0.2) }}
+      className="group relative overflow-hidden rounded-2xl p-3 bg-white/90 dark:bg-slate-800/80 backdrop-blur-md border border-slate-200/70 dark:border-white/10 shadow-[0_1px_3px_rgba(0,0,0,0.03)] hover:border-amber-400/50 hover:bg-white dark:hover:bg-slate-800 transition-all duration-150 text-left space-y-2.5"
     >
-      {/* Subtle top indicator bar */}
-      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-400 via-amber-500 to-rose-500 opacity-80" />
-
       {/* Top Header Row: Avatar + Reporter + Ticket Badge */}
-      <div className="flex items-center justify-between gap-2 pt-0.5">
-        <div className="flex items-center gap-2.5 min-w-0">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 min-w-0">
           <div className="relative shrink-0">
-            <div className={`w-8.5 h-8.5 rounded-xl flex items-center justify-center text-xs font-bold shadow-2xs ${
+            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold shadow-2xs ${
               isBot
                 ? 'bg-blue-600 text-white'
                 : 'bg-sky-600 text-white'
             }`}>
               {initials}
             </div>
-            <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center border-2 border-white dark:border-slate-800 text-[8px] ${
+            <div className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full flex items-center justify-center border border-white dark:border-slate-800 text-[7px] ${
               isBot ? 'bg-blue-600 text-white' : 'bg-sky-600 text-white'
             }`}>
-              {isBot ? <Bot className="w-2.5 h-2.5" /> : <MessageSquare className="w-2.5 h-2.5" />}
+              {isBot ? <Bot className="w-2 h-2" /> : <MessageSquare className="w-2 h-2" />}
             </div>
           </div>
 
           <div className="min-w-0">
-            <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate tracking-tight">
+            <h4 className="text-[13px] font-semibold text-slate-900 dark:text-slate-100 truncate tracking-tight">
               {report.reporter || 'Anonymous Citizen'}
             </h4>
-            <div className="flex items-center gap-1.5 text-[10px] text-slate-400 dark:text-slate-500 font-mono tabular-nums">
+            <div className="flex items-center gap-1.5 text-[10.5px] text-slate-400 dark:text-slate-500 font-mono tabular-nums">
               <Clock className="w-2.5 h-2.5" />
               <span>{report.time}</span>
             </div>
@@ -634,36 +675,33 @@ function IncompleteListItem({
         </div>
 
         {/* Formatted Ticket Badge */}
-        <div className="flex flex-col items-end shrink-0">
+        <div className="flex items-center gap-1 shrink-0">
           <span
-            className="font-mono text-[11px] font-bold px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-900/80 text-slate-800 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700/80 shadow-2xs"
+            className="font-mono text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-300"
             title={`Source ID: ${report.id}`}
           >
             {formattedCode}
-          </span>
-          <span className="text-[9px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mt-0.5">
-            {report.source || 'Report'}
           </span>
         </div>
       </div>
 
       {/* Diagnostics / Missing Reason Pills */}
-      <div className="flex flex-wrap gap-1.5">
+      <div className="flex flex-wrap gap-1">
         {reasons.map((reason) => {
           const isUnknownBarangay = reason.toLowerCase().includes('barangay');
           return (
             <span
               key={reason}
-              className={`inline-flex items-center gap-1.5 text-[10px] font-semibold px-2.5 py-1 rounded-full border shadow-2xs ${
+              className={`inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full border ${
                 isUnknownBarangay
-                  ? 'bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/20'
-                  : 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20'
+                  ? 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border-rose-500/20'
+                  : 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-500/20'
               }`}
             >
               {isUnknownBarangay ? (
-                <MapPinOff className="w-3 h-3 text-rose-500 shrink-0" />
+                <MapPinOff className="w-2.5 h-2.5 text-rose-500 shrink-0" />
               ) : (
-                <AlertCircle className="w-3 h-3 text-amber-500 shrink-0" />
+                <AlertCircle className="w-2.5 h-2.5 text-amber-500 shrink-0" />
               )}
               <span>{reason}</span>
             </span>
@@ -673,17 +711,13 @@ function IncompleteListItem({
 
       {/* Quoted Dispatch Message Transcript Bubble */}
       {report.description && (
-        <div className="relative rounded-xl p-3 bg-slate-50/90 dark:bg-slate-900/60 border border-slate-200/60 dark:border-white/5 space-y-1">
-          <div className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-            <MessageSquare className="w-2.5 h-2.5 text-blue-500" />
-            <span>Citizen Report Transcript</span>
-          </div>
-          <p className="text-xs text-slate-800 dark:text-slate-200 italic font-normal leading-relaxed line-clamp-3">
+        <div className="rounded-xl px-3 py-2 bg-slate-50/90 dark:bg-white/[0.03] border border-slate-100 dark:border-white/5 space-y-1">
+          <p className="text-[11.5px] text-slate-700 dark:text-slate-300 leading-relaxed line-clamp-2">
             &ldquo;{report.description}&rdquo;
           </p>
           {report.contact && report.contact !== 'N/A' && (
-            <div className="pt-1 flex items-center gap-1.5 text-[10px] text-slate-500 dark:text-slate-400 font-mono">
-              <Phone className="w-2.5 h-2.5 text-slate-400" />
+            <div className="flex items-center gap-1 text-[10px] text-slate-400 font-mono">
+              <Phone className="w-2.5 h-2.5" />
               <span>{report.contact}</span>
             </div>
           )}
@@ -691,24 +725,24 @@ function IncompleteListItem({
       )}
 
       {/* Actions */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 pt-0.5">
         <button
           type="button"
           onClick={onReview}
-          className="flex-1 py-2.5 px-3.5 rounded-xl text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 shadow-[0_2px_10px_rgba(37,99,235,0.25)] transition-all duration-150 flex items-center justify-between group active:scale-[0.98] cursor-pointer"
+          className="flex-1 py-1.5 px-3 rounded-xl text-xs font-semibold text-white bg-[#0071E3] hover:bg-blue-600 shadow-xs transition-all duration-150 flex items-center justify-between group active:scale-[0.98] cursor-pointer"
         >
-          <span className="flex items-center gap-2">
-            <ShieldCheck className="w-4 h-4" />
-            <span>Assign & Review</span>
+          <span className="flex items-center gap-1.5">
+            <ShieldCheck className="w-3.5 h-3.5" />
+            <span>Assign &amp; Review</span>
           </span>
-          <ChevronRight className="w-4 h-4 opacity-80 group-hover:translate-x-1 group-hover:opacity-100 transition-all" />
+          <ChevronRight className="w-3.5 h-3.5 opacity-70 group-hover:translate-x-0.5 group-hover:opacity-100 transition-all" />
         </button>
 
         {onRemove && (
           <button
             type="button"
             onClick={onRemove}
-            className="py-2.5 px-3 rounded-xl text-xs font-semibold text-rose-600 dark:text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 transition-all flex items-center justify-center shrink-0 active:scale-[0.98] cursor-pointer"
+            className="py-1.5 px-2.5 rounded-xl text-xs font-medium text-rose-600 dark:text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 transition-all flex items-center justify-center shrink-0 active:scale-[0.98] cursor-pointer"
             title="Reject / Remove from Queue"
           >
             <Trash2 className="w-3.5 h-3.5" />
@@ -772,8 +806,6 @@ function IncidentSidebarContent({
     return list;
   }, [incompleteReports, sourceFilter]);
 
-  const activeTotal = activeSidebarTab === 'plotted' ? drawerReports.length : incompleteReports.length;
-  const filteredTotal = activeSidebarTab === 'plotted' ? filteredPlotted.length : filteredIncomplete.length;
   const isFiltered = sourceFilter !== 'all';
 
   return (
@@ -785,63 +817,63 @@ function IncidentSidebarContent({
       className="w-full h-full flex flex-col overflow-hidden min-h-0 bg-slate-50/60 dark:bg-[#0f172a]/60"
     >
       {/* ── Header: Live Dispatch Feed ── */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200/60 dark:border-white/5 shrink-0 bg-white/80 dark:bg-[#0f172a]/80 backdrop-blur-md">
+      <div className="flex items-center justify-between px-3.5 py-3 border-b border-slate-200/50 dark:border-white/5 shrink-0 bg-white/80 dark:bg-[#0f172a]/80 backdrop-blur-md">
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className="relative flex h-2.5 w-2.5 shrink-0">
+          <div className="relative flex h-2 w-2 shrink-0">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.7)]" />
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <span className="text-sm font-bold tracking-tight text-slate-900 dark:text-white truncate">
+              <span className="text-[13px] font-semibold tracking-tight text-slate-900 dark:text-white truncate">
                 Live Incidents
               </span>
-              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 tabular-nums font-mono shrink-0">
-                {count + incompleteReports.length} Total
+              <span className="text-[10px] font-medium px-2 py-0.2 rounded-full bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-300 tabular-nums">
+                {count + incompleteReports.length}
               </span>
             </div>
-            <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium truncate">
-              Real-Time Talisay Dispatch Stream
+            <p className="text-[10.5px] text-slate-400 dark:text-slate-500 font-normal truncate">
+              Talisay dispatch stream
             </p>
           </div>
         </div>
 
         <button
           onClick={onClose}
-          className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-slate-100/80 dark:bg-slate-800/80 hover:bg-rose-50 dark:hover:bg-rose-950/30 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 flex items-center justify-center transition-all duration-200 active:scale-90 hover:rotate-90 hover:scale-105 cursor-pointer shrink-0 shadow-2xs"
+          className="w-7 h-7 rounded-full bg-slate-100/80 hover:bg-slate-200/80 dark:bg-slate-800/80 dark:hover:bg-slate-700/80 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 flex items-center justify-center transition-all duration-150 active:scale-95 cursor-pointer shrink-0"
           title="Close incident list"
           aria-label="Close incident list"
         >
-          <X className="w-4 h-4" />
+          <X className="w-3.5 h-3.5" />
         </button>
       </div>
 
-      {/* ── Soft Segmented Control: Plotted vs Incomplete ── */}
-      <div className="p-3 border-b border-slate-200/60 dark:border-white/5 bg-white/40 dark:bg-[#0f172a]/40 shrink-0 space-y-2.5">
-        <div className="relative p-1 bg-slate-200/70 dark:bg-slate-800/70 rounded-2xl flex items-center gap-1 text-xs font-semibold shadow-inner">
+      {/* ── Segmented Control & Integrated Utility Strip ── */}
+      <div className="p-2.5 border-b border-slate-200/50 dark:border-white/5 bg-white/40 dark:bg-[#0f172a]/40 shrink-0 space-y-2">
+        <div className="relative p-0.5 bg-slate-200/60 dark:bg-slate-800/80 rounded-xl flex items-center gap-0.5 text-xs font-medium">
           <button
             type="button"
             onClick={() => onTabChange('plotted')}
-            className={`group relative flex-1 py-1.5 px-3 rounded-xl transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer z-10 select-none active:scale-[0.97] ${
+            className={`group relative flex-1 py-1 px-2.5 rounded-[10px] transition-all duration-150 flex items-center justify-center gap-1.5 cursor-pointer z-10 select-none text-[12px] active:scale-[0.98] ${
               activeSidebarTab === 'plotted'
-                ? 'text-[#0071E3] dark:text-sky-400 font-bold'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/40 dark:hover:bg-slate-700/40'
+                ? 'text-slate-900 dark:text-white font-semibold'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
             }`}
           >
             {activeSidebarTab === 'plotted' && (
               <motion.div
                 layoutId="sidebarActiveTabPill"
                 transition={SOFT_SPRING}
-                className="absolute inset-0 bg-white dark:bg-slate-700/90 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)] border border-black/[0.04] dark:border-white/10"
+                className="absolute inset-0 bg-white dark:bg-slate-700 rounded-[10px] shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_1px_rgba(0,0,0,0.04)]"
               />
             )}
-            <MapPin className="w-3.5 h-3.5 relative z-10 transition-transform duration-200 ease-out group-hover:scale-115 group-hover:-translate-y-0.5" />
-            <span className="relative z-10 font-bold">Plotted</span>
+            <MapPin className="w-3.5 h-3.5 relative z-10 text-blue-500" />
+            <span className="relative z-10">Plotted</span>
             <span
-              className={`relative z-10 text-[10px] px-2 py-0.2 rounded-full tabular-nums font-bold transition-transform duration-200 group-hover:scale-105 ${
+              className={`relative z-10 text-[10px] px-1.5 py-0.2 rounded-full tabular-nums font-semibold ${
                 activeSidebarTab === 'plotted'
-                  ? 'bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 ring-1 ring-blue-500/20'
-                  : 'bg-slate-300/60 dark:bg-slate-700/60 text-slate-600 dark:text-slate-400'
+                  ? 'bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300'
+                  : 'bg-slate-300/50 dark:bg-slate-700/60 text-slate-600 dark:text-slate-400'
               }`}
             >
               {count}
@@ -850,26 +882,26 @@ function IncidentSidebarContent({
           <button
             type="button"
             onClick={() => onTabChange('incomplete')}
-            className={`group relative flex-1 py-1.5 px-3 rounded-xl transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer z-10 select-none active:scale-[0.97] ${
+            className={`group relative flex-1 py-1 px-2.5 rounded-[10px] transition-all duration-150 flex items-center justify-center gap-1.5 cursor-pointer z-10 select-none text-[12px] active:scale-[0.98] ${
               activeSidebarTab === 'incomplete'
-                ? 'text-amber-600 dark:text-amber-400 font-bold'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/40 dark:hover:bg-slate-700/40'
+                ? 'text-slate-900 dark:text-white font-semibold'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
             }`}
           >
             {activeSidebarTab === 'incomplete' && (
               <motion.div
                 layoutId="sidebarActiveTabPill"
                 transition={SOFT_SPRING}
-                className="absolute inset-0 bg-white dark:bg-slate-700/90 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)] border border-black/[0.04] dark:border-white/10"
+                className="absolute inset-0 bg-white dark:bg-slate-700 rounded-[10px] shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_1px_rgba(0,0,0,0.04)]"
               />
             )}
-            <AlertTriangle className="w-3.5 h-3.5 relative z-10 text-amber-500 dark:text-amber-400 transition-transform duration-200 ease-out group-hover:scale-115 group-hover:-rotate-6" />
-            <span className="relative z-10 font-bold">Incomplete</span>
+            <AlertTriangle className="w-3.5 h-3.5 relative z-10 text-amber-500" />
+            <span className="relative z-10">Incomplete</span>
             <span
-              className={`relative z-10 text-[10px] px-2 py-0.2 rounded-full tabular-nums font-bold transition-transform duration-200 group-hover:scale-105 ${
+              className={`relative z-10 text-[10px] px-1.5 py-0.2 rounded-full tabular-nums font-semibold ${
                 activeSidebarTab === 'incomplete'
-                  ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 ring-1 ring-amber-500/20'
-                  : 'bg-slate-300/60 dark:bg-slate-700/60 text-slate-600 dark:text-slate-400'
+                  ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-300'
+                  : 'bg-slate-300/50 dark:bg-slate-700/60 text-slate-600 dark:text-slate-400'
               }`}
             >
               {incompleteReports.length}
@@ -877,10 +909,9 @@ function IncidentSidebarContent({
           </button>
         </div>
 
-        {/* ── Quick Source Filter Pills ── */}
-        <div className="flex items-center justify-between gap-1.5 pt-1">
-          <div className="flex items-center gap-1.5">
-            <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider pl-1">Source:</span>
+        {/* ── Single-Row Unified Utility Strip: Source Filter + Priority Micro-Dots ── */}
+        <div className="flex items-center justify-between gap-1 pt-0.5">
+          <div className="inline-flex items-center p-0.5 bg-slate-200/50 dark:bg-slate-800/60 rounded-lg">
             {(['all', 'Bot', 'Scraper'] as const).map((src) => {
               const isSelected = sourceFilter === src;
               return (
@@ -888,23 +919,23 @@ function IncidentSidebarContent({
                   key={src}
                   type="button"
                   onClick={() => setSourceFilter(src)}
-                  className={`group inline-flex items-center gap-1.5 text-[10px] font-semibold px-2.5 py-1 rounded-lg transition-all duration-200 ease-out cursor-pointer select-none ${
+                  className={`inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-[6px] transition-all duration-150 cursor-pointer select-none ${
                     isSelected
-                      ? 'bg-[#0071E3] text-white shadow-[0_2px_8px_rgba(0,113,227,0.35)] font-bold scale-[1.02]'
-                      : 'bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 border border-slate-200/70 dark:border-white/10 hover:border-slate-300/80 hover:bg-white dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white hover:-translate-y-0.5 hover:shadow-2xs active:translate-y-0 active:scale-95'
+                      ? 'bg-white dark:bg-slate-700 text-[#0071E3] dark:text-sky-300 font-semibold shadow-2xs'
+                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
                   }`}
                 >
                   {src === 'all' ? (
-                    <span className="transition-colors">All</span>
+                    'All'
                   ) : src === 'Bot' ? (
                     <>
-                      <Bot className={`w-3 h-3 transition-transform duration-200 ease-out group-hover:scale-115 ${isSelected ? 'text-white' : 'text-[#0071E3]'}`} strokeWidth={1.75} />
-                      <span className="transition-colors">Bot</span>
+                      <Bot className="w-3 h-3 text-[#0071E3] dark:text-sky-400" strokeWidth={1.75} />
+                      <span>Bot</span>
                     </>
                   ) : (
                     <>
-                      <Globe className={`w-3 h-3 transition-transform duration-200 ease-out group-hover:scale-115 ${isSelected ? 'text-white' : 'text-purple-500'}`} strokeWidth={1.75} />
-                      <span className="transition-colors">Scraper</span>
+                      <Globe className="w-3 h-3 text-purple-500" strokeWidth={1.75} />
+                      <span>Scraper</span>
                     </>
                   )}
                 </button>
@@ -912,40 +943,35 @@ function IncidentSidebarContent({
             })}
           </div>
 
-          {isFiltered && (
-            <button
-              type="button"
-              onClick={() => setSourceFilter('all')}
-              className="text-[10px] font-semibold text-[#0071E3] dark:text-sky-400 hover:underline hover:text-blue-700 dark:hover:text-sky-300 transition-colors cursor-pointer active:scale-95"
-            >
-              Reset ({filteredTotal}/{activeTotal})
-            </button>
-          )}
+          <div className="flex items-center gap-2 text-[10px] text-slate-400 dark:text-slate-500 pr-1 select-none">
+            <span className="flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#22c55e]" />
+              <span>Low</span>
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+              <span>Mod</span>
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
+              <span>High</span>
+            </span>
+            {isFiltered && (
+              <button
+                type="button"
+                onClick={() => setSourceFilter('all')}
+                className="text-[#0071E3] dark:text-sky-400 hover:underline font-medium ml-1 cursor-pointer"
+              >
+                Reset
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
       {/* ── Body Content ── */}
       {activeSidebarTab === 'plotted' ? (
         <>
-          {/* Priority Legend */}
-          <div className="flex items-center justify-between px-4 py-2 border-b border-slate-200/40 dark:border-white/5 shrink-0 bg-white/40 dark:bg-[#0f172a]/40 text-[11px] text-slate-500 dark:text-slate-400">
-            <span className="font-semibold text-slate-400 uppercase tracking-wider text-[10px]">Priority Levels:</span>
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-[#22c55e] ring-2 ring-green-500/20" />
-                <span className="text-[10px]">Low</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-amber-500 ring-2 ring-amber-500/20" />
-                <span className="text-[10px]">Mod</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-rose-500 ring-2 ring-rose-500/20 animate-pulse" />
-                <span className="text-[10px]">High</span>
-              </div>
-            </div>
-          </div>
-
           {/* Plotted Incident List */}
           <div
             className="flex-1 overflow-y-auto p-3 pb-10 space-y-3 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800"
