@@ -1257,20 +1257,20 @@ export default function Settings() {
 
                 {/* Clean Apple Table */}
                 <div className="mt-3 overflow-x-auto rounded-2xl border border-slate-200/80 dark:border-white/10 bg-white/50 dark:bg-slate-900/40">
-                  <table className="w-full text-xs sm:text-sm text-left border-collapse">
-                    <thead className="bg-slate-50/75 dark:bg-white/[0.02] border-b border-slate-200/70 dark:border-white/5">
+                  <table className="w-full text-xs sm:text-sm text-left border-separate border-spacing-0">
+                    <thead className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200/70 dark:border-white/10">
                       <tr>
-                        <th className="px-4 py-3 font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-[11px] whitespace-nowrap">
+                        <th className="px-4 py-3 font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-[11px] whitespace-nowrap border-b border-slate-200/70 dark:border-white/10">
                           User
                         </th>
-                        <th className="px-4 py-3 font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-[11px] whitespace-nowrap">
+                        <th className="px-4 py-3 font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-[11px] whitespace-nowrap border-b border-slate-200/70 dark:border-white/10">
                           Role
                         </th>
-                        <th className="px-4 py-3 font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-[11px] hidden md:table-cell whitespace-nowrap">
+                        <th className="px-4 py-3 font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-[11px] hidden md:table-cell whitespace-nowrap border-b border-slate-200/70 dark:border-white/10">
                           Last Login
                         </th>
-                        <th className="px-4 py-3 w-40 min-w-[150px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-[11px] text-left whitespace-nowrap sticky right-0 z-20 bg-slate-50/95 dark:bg-slate-900/95 backdrop-blur-md shadow-[-8px_0_12px_-4px_rgba(0,0,0,0.08)] dark:shadow-[-8px_0_12px_-4px_rgba(0,0,0,0.4)] shrink-0">
-                          Actions
+                        <th className="px-4 py-3 w-44 min-w-[170px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-[11px] text-left whitespace-nowrap sticky top-0 right-0 z-20 bg-slate-50 dark:bg-slate-900 border-b border-slate-200/70 dark:border-white/10 shadow-[-8px_0_12px_-4px_rgba(0,0,0,0.08)] dark:shadow-[-8px_0_12px_-4px_rgba(0,0,0,0.4)] shrink-0">
+                          Action
                         </th>
                       </tr>
                     </thead>
@@ -1303,7 +1303,7 @@ export default function Settings() {
 
                           return (
                             <tr key={u.user_id} className="group hover:bg-slate-50/70 dark:hover:bg-white/[0.025] transition-colors duration-150">
-                              <td className="px-4 py-3">
+                              <td className="px-4 py-3.5 border-b border-slate-100 dark:border-white/5">
                                 <div className="flex items-center gap-3">
                                   {u.avatar_url ? (
                                     <img
@@ -1333,18 +1333,18 @@ export default function Settings() {
                                 </div>
                               </td>
 
-                              <td className="px-4 py-3 whitespace-nowrap">
+                              <td className="px-4 py-3.5 whitespace-nowrap border-b border-slate-100 dark:border-white/5">
                                 <UserRoleBadge role={u.role} />
                               </td>
 
-                              <td className="px-4 py-3 text-xs text-slate-400 font-mono hidden md:table-cell whitespace-nowrap">
+                              <td className="px-4 py-3.5 text-xs text-slate-400 font-mono hidden md:table-cell whitespace-nowrap border-b border-slate-100 dark:border-white/5">
                                 {u.last_login_at
                                   ? formatPhilippineDateTime(u.last_login_at, { includeYear: true })
                                   : 'Never'}
                               </td>
 
-                              <td className="px-4 py-3 w-40 min-w-[150px] text-left whitespace-nowrap sticky right-0 z-10 bg-white/95 dark:bg-[#111827]/95 group-hover:bg-slate-50 dark:group-hover:bg-slate-800 transition-colors shadow-[-8px_0_12px_-4px_rgba(0,0,0,0.08)] dark:shadow-[-8px_0_12px_-4px_rgba(0,0,0,0.4)] shrink-0">
-                                <div className="flex items-center justify-start gap-2.5">
+                              <td className="px-4 py-3.5 w-44 min-w-[170px] text-left whitespace-nowrap sticky right-0 z-10 bg-white dark:bg-[#111827] group-hover:bg-slate-50 dark:group-hover:bg-slate-800 transition-colors border-b border-slate-100 dark:border-white/5 shadow-[-8px_0_12px_-4px_rgba(0,0,0,0.08)] dark:shadow-[-8px_0_12px_-4px_rgba(0,0,0,0.4)] shrink-0">
+                                <div className="flex items-center justify-start gap-2">
                                   {isEditDisabled ? (
                                     <span className="text-xs text-slate-400 italic">
                                       {disabledReason}
@@ -1364,9 +1364,10 @@ export default function Settings() {
                                         isSelf ||
                                         (currentUser?.role === 'admin' && u.role === 'super_admin')
                                       }
-                                      className="px-3 py-1 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-slate-100 hover:bg-slate-200/90 dark:bg-white/10 dark:hover:bg-white/15 rounded-full transition-all duration-150 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0 cursor-pointer shadow-2xs hover:shadow-xs"
+                                      className="group/btn px-3 py-1.5 text-xs font-bold rounded-xl transition-all duration-200 inline-flex items-center justify-center gap-1.5 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.96] backdrop-blur-sm cursor-pointer text-[#0071E3] dark:text-sky-300 bg-[#0071E3]/18 hover:bg-[#0071E3]/28 active:bg-[#0071E3]/38 dark:bg-[#0071E3]/25 dark:hover:bg-[#0071E3]/38 border border-[#0071E3]/45 hover:border-[#0071E3]/75 dark:border-sky-400/40 shadow-[0_2px_10px_rgba(0,113,227,0.22)] hover:shadow-[0_4px_16px_rgba(0,113,227,0.35)] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:shadow-none disabled:border-slate-200/60 dark:disabled:border-white/10 disabled:bg-slate-100 dark:disabled:bg-white/5 disabled:text-slate-400"
                                     >
-                                      Edit Role
+                                      <Pencil className="w-3.5 h-3.5 transition-transform duration-200 group-hover/btn:scale-110 shrink-0" strokeWidth={1.75} />
+                                      <span>Edit Role</span>
                                     </button>
                                   )}
 
@@ -1376,7 +1377,7 @@ export default function Settings() {
                                         <button
                                           type="button"
                                           onClick={() => setDeleteModalUser(u)}
-                                          className="p-1.5 text-rose-500 hover:text-rose-600 dark:text-rose-400 dark:hover:text-rose-300 bg-rose-500/10 hover:bg-rose-500/20 dark:bg-rose-500/15 dark:hover:bg-rose-500/25 rounded-xl transition-all duration-150 active:scale-90 cursor-pointer"
+                                          className="p-1.5 text-rose-500 hover:text-rose-600 dark:text-rose-400 dark:hover:text-rose-300 bg-rose-500/10 hover:bg-rose-500/20 active:bg-rose-500/30 dark:bg-rose-500/15 dark:hover:bg-rose-500/25 rounded-xl transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.96] hover:shadow-[0_2px_10px_rgba(244,63,94,0.2)] cursor-pointer"
                                           title="Delete personnel account"
                                         >
                                           <Trash2 className="w-4 h-4" strokeWidth={1.75} />
