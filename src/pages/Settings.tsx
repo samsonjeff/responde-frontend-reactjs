@@ -1733,189 +1733,174 @@ export default function Settings() {
 
         {/* TAB 3: SECURITY */}
         {activeTab === 'security' && (
-          <StaggerItem className="flex-1 flex flex-col min-h-0">
-            <div className="w-full flex-1 flex flex-col min-h-0">
-              <SoftCard className="w-full flex-1 flex flex-col justify-between min-h-[calc(100vh-14.5rem)] sm:min-h-[520px]">
-                <div>
-                  <div className="flex items-center gap-3.5 pb-5 sm:pb-6 border-b border-slate-100 dark:border-white/5">
-                    <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-300 flex items-center justify-center shrink-0 border border-slate-200/60 dark:border-white/10 shadow-2xs">
-                      <Lock className="w-5 h-5" strokeWidth={1.75} />
-                    </div>
-                    <div>
-                      <h2 className="text-base sm:text-lg font-bold tracking-tight text-slate-900 dark:text-white">
-                        Password &amp; Authentication
-                      </h2>
-                      <p className="text-xs sm:text-[13px] text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">
-                        Update your account password to protect access to the incident dispatch console.
-                      </p>
-                    </div>
+          <StaggerItem>
+            <div className="w-full space-y-6">
+              <SoftCard className="w-full">
+                <div className="flex items-center gap-3.5 pb-5 sm:pb-6 border-b border-slate-100 dark:border-white/5">
+                  <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-300 flex items-center justify-center shrink-0 border border-slate-200/60 dark:border-white/10 shadow-2xs">
+                    <Lock className="w-5 h-5" strokeWidth={1.75} />
                   </div>
+                  <div>
+                    <h2 className="text-base sm:text-lg font-bold tracking-tight text-slate-900 dark:text-white">
+                      Password &amp; Authentication
+                    </h2>
+                    <p className="text-xs sm:text-[13px] text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">
+                      Update your account password to protect access to the incident dispatch console.
+                    </p>
+                  </div>
+                </div>
 
-                  <form onSubmit={handlePasswordSubmit} className="pt-6 sm:pt-7">
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
-                      {/* Left/Main Column: Password Fields & Update Button */}
-                      <div className="lg:col-span-7 space-y-4">
-                        {/* Current Password */}
+                <form onSubmit={handlePasswordSubmit} className="pt-6 sm:pt-7">
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
+                    {/* Left/Main Column: Password Fields & Update Button */}
+                    <div className="lg:col-span-7 space-y-4">
+                      {/* Current Password */}
+                      <div className="space-y-1.5">
+                        <label className="block text-[11px] font-bold tracking-wider uppercase text-slate-500 dark:text-slate-400">
+                          Current Password <span className="text-rose-500">*</span>
+                        </label>
+                        <div className="relative">
+                          <input
+                            type={showCurrentPassword ? 'text' : 'password'}
+                            value={currentPassword}
+                            onChange={(e) => setCurrentPassword(e.target.value)}
+                            placeholder="Enter current password"
+                            required
+                            className="w-full px-4 py-3 pr-11 rounded-2xl text-xs sm:text-sm bg-slate-50/80 hover:bg-slate-100/70 focus:bg-white dark:bg-white/[0.04] dark:hover:bg-white/[0.07] dark:focus:bg-white/[0.09] border border-slate-200/70 dark:border-white/10 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0071E3]/20 focus:border-[#0071E3] transition-all shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)]"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                            className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-white/10 transition-colors cursor-pointer active:scale-90"
+                            aria-label={showCurrentPassword ? 'Hide current password' : 'Show current password'}
+                          >
+                            {showCurrentPassword ? <EyeOff className="w-4 h-4" strokeWidth={1.75} /> : <Eye className="w-4 h-4" strokeWidth={1.75} />}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* New Password & Confirm Password */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
                           <label className="block text-[11px] font-bold tracking-wider uppercase text-slate-500 dark:text-slate-400">
-                            Current Password <span className="text-rose-500">*</span>
+                            New Password <span className="text-rose-500">*</span>
                           </label>
                           <div className="relative">
                             <input
-                              type={showCurrentPassword ? 'text' : 'password'}
-                              value={currentPassword}
-                              onChange={(e) => setCurrentPassword(e.target.value)}
-                              placeholder="Enter current password"
+                              type={showNewPassword ? 'text' : 'password'}
+                              value={newPassword}
+                              onChange={(e) => setNewPassword(e.target.value)}
+                              placeholder="At least 8 characters"
                               required
                               className="w-full px-4 py-3 pr-11 rounded-2xl text-xs sm:text-sm bg-slate-50/80 hover:bg-slate-100/70 focus:bg-white dark:bg-white/[0.04] dark:hover:bg-white/[0.07] dark:focus:bg-white/[0.09] border border-slate-200/70 dark:border-white/10 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0071E3]/20 focus:border-[#0071E3] transition-all shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)]"
                             />
                             <button
                               type="button"
-                              onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                              onClick={() => setShowNewPassword(!showNewPassword)}
                               className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-white/10 transition-colors cursor-pointer active:scale-90"
-                              aria-label={showCurrentPassword ? 'Hide current password' : 'Show current password'}
+                              aria-label={showNewPassword ? 'Hide new password' : 'Show new password'}
                             >
-                              {showCurrentPassword ? <EyeOff className="w-4 h-4" strokeWidth={1.75} /> : <Eye className="w-4 h-4" strokeWidth={1.75} />}
+                              {showNewPassword ? <EyeOff className="w-4 h-4" strokeWidth={1.75} /> : <Eye className="w-4 h-4" strokeWidth={1.75} />}
                             </button>
                           </div>
                         </div>
 
-                        {/* New Password & Confirm Password */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          <div className="space-y-1.5">
-                            <label className="block text-[11px] font-bold tracking-wider uppercase text-slate-500 dark:text-slate-400">
-                              New Password <span className="text-rose-500">*</span>
-                            </label>
-                            <div className="relative">
-                              <input
-                                type={showNewPassword ? 'text' : 'password'}
-                                value={newPassword}
-                                onChange={(e) => setNewPassword(e.target.value)}
-                                placeholder="At least 8 characters"
-                                required
-                                className="w-full px-4 py-3 pr-11 rounded-2xl text-xs sm:text-sm bg-slate-50/80 hover:bg-slate-100/70 focus:bg-white dark:bg-white/[0.04] dark:hover:bg-white/[0.07] dark:focus:bg-white/[0.09] border border-slate-200/70 dark:border-white/10 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0071E3]/20 focus:border-[#0071E3] transition-all shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)]"
-                              />
-                              <button
-                                type="button"
-                                onClick={() => setShowNewPassword(!showNewPassword)}
-                                className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-white/10 transition-colors cursor-pointer active:scale-90"
-                                aria-label={showNewPassword ? 'Hide new password' : 'Show new password'}
-                              >
-                                {showNewPassword ? <EyeOff className="w-4 h-4" strokeWidth={1.75} /> : <Eye className="w-4 h-4" strokeWidth={1.75} />}
-                              </button>
-                            </div>
+                        <div className="space-y-1.5">
+                          <label className="block text-[11px] font-bold tracking-wider uppercase text-slate-500 dark:text-slate-400">
+                            Confirm New Password <span className="text-rose-500">*</span>
+                          </label>
+                          <div className="relative">
+                            <input
+                              type={showConfirmPassword ? 'text' : 'password'}
+                              value={confirmPassword}
+                              onChange={(e) => setConfirmPassword(e.target.value)}
+                              placeholder="Re-enter new password"
+                              required
+                              className="w-full px-4 py-3 pr-11 rounded-2xl text-xs sm:text-sm bg-slate-50/80 hover:bg-slate-100/70 focus:bg-white dark:bg-white/[0.04] dark:hover:bg-white/[0.07] dark:focus:bg-white/[0.09] border border-slate-200/70 dark:border-white/10 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0071E3]/20 focus:border-[#0071E3] transition-all shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)]"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                              className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-white/10 transition-colors cursor-pointer active:scale-90"
+                              aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
+                            >
+                              {showConfirmPassword ? <EyeOff className="w-4 h-4" strokeWidth={1.75} /> : <Eye className="w-4 h-4" strokeWidth={1.75} />}
+                            </button>
                           </div>
-
-                          <div className="space-y-1.5">
-                            <label className="block text-[11px] font-bold tracking-wider uppercase text-slate-500 dark:text-slate-400">
-                              Confirm New Password <span className="text-rose-500">*</span>
-                            </label>
-                            <div className="relative">
-                              <input
-                                type={showConfirmPassword ? 'text' : 'password'}
-                                value={confirmPassword}
-                                onChange={(e) => setConfirmPassword(e.target.value)}
-                                placeholder="Re-enter new password"
-                                required
-                                className="w-full px-4 py-3 pr-11 rounded-2xl text-xs sm:text-sm bg-slate-50/80 hover:bg-slate-100/70 focus:bg-white dark:bg-white/[0.04] dark:hover:bg-white/[0.07] dark:focus:bg-white/[0.09] border border-slate-200/70 dark:border-white/10 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0071E3]/20 focus:border-[#0071E3] transition-all shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)]"
-                              />
-                              <button
-                                type="button"
-                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-white/10 transition-colors cursor-pointer active:scale-90"
-                                aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
-                              >
-                                {showConfirmPassword ? <EyeOff className="w-4 h-4" strokeWidth={1.75} /> : <Eye className="w-4 h-4" strokeWidth={1.75} />}
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-
-                        {passwordError && (
-                          <div className="p-3.5 rounded-2xl bg-rose-50/80 dark:bg-rose-950/40 border border-rose-200/70 text-xs text-rose-700 dark:text-rose-300 flex items-center gap-2">
-                            <AlertCircle className="w-4 h-4 shrink-0 text-rose-500" strokeWidth={1.75} />
-                            <span>{passwordError}</span>
-                          </div>
-                        )}
-
-                        {passwordSuccess && (
-                          <div className="p-3.5 rounded-2xl bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200/70 text-xs text-emerald-700 dark:text-emerald-300 flex items-center gap-2">
-                            <Check className="w-4 h-4 shrink-0 text-emerald-600" strokeWidth={2} />
-                            <span>{passwordSuccess}</span>
-                          </div>
-                        )}
-
-                        <div className="pt-2">
-                          <motion.button
-                            type="submit"
-                            disabled={isSubmittingPassword}
-                            initial="rest"
-                            whileHover="hover"
-                            whileTap={{ scale: 0.97 }}
-                            animate="rest"
-                            className="group inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-xs sm:text-sm font-semibold text-white bg-[#0071E3] hover:bg-[#0077ED] shadow-[0_2px_8px_rgba(0,113,227,0.25)] hover:shadow-[0_6px_20px_rgba(0,113,227,0.42)] hover:-translate-y-0.5 active:translate-y-0 active:scale-95 transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed select-none"
-                          >
-                            {isSubmittingPassword ? (
-                              <>
-                                <Loader2 className="w-4 h-4 animate-spin shrink-0" />
-                                <span>Updating Password...</span>
-                              </>
-                            ) : (
-                              <>
-                                <motion.span variants={LOCK_BTN_VARIANTS} className="inline-flex items-center justify-center">
-                                  <Lock className="w-4 h-4 shrink-0" strokeWidth={1.75} />
-                                </motion.span>
-                                <span>Update Password</span>
-                              </>
-                            )}
-                          </motion.button>
                         </div>
                       </div>
 
-                      {/* Right Column: iOS Frosted Credential Guidelines Card */}
-                      <div className="lg:col-span-5 p-5 sm:p-6 rounded-2xl bg-slate-50/70 dark:bg-white/[0.03] border border-slate-200/60 dark:border-white/5 space-y-3.5 shadow-2xs">
-                        <div className="flex items-center gap-2.5 text-slate-800 dark:text-slate-200">
-                          <div className="w-7 h-7 rounded-lg bg-slate-200/80 dark:bg-white/10 text-slate-600 dark:text-slate-300 flex items-center justify-center shrink-0">
-                            <Shield className="w-4 h-4" strokeWidth={1.75} />
-                          </div>
-                          <span className="text-xs font-semibold uppercase tracking-wider">
-                            Password Security
-                          </span>
+                      {passwordError && (
+                        <div className="p-3.5 rounded-2xl bg-rose-50/80 dark:bg-rose-950/40 border border-rose-200/70 text-xs text-rose-700 dark:text-rose-300 flex items-center gap-2">
+                          <AlertCircle className="w-4 h-4 shrink-0 text-rose-500" strokeWidth={1.75} />
+                          <span>{passwordError}</span>
                         </div>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                          To protect incident records and console operations, please ensure your credentials follow these baseline protocols:
-                        </p>
-                        <ul className="space-y-2.5 text-xs text-slate-600 dark:text-slate-300">
-                          <li className="flex items-center gap-2">
-                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-                            <span>Minimum 8 characters in length</span>
-                          </li>
-                          <li className="flex items-center gap-2">
-                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-                            <span>Avoid sharing with other team members</span>
-                          </li>
-                          <li className="flex items-center gap-2">
-                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-                            <span>Active sessions refresh automatically</span>
-                          </li>
-                        </ul>
+                      )}
+
+                      {passwordSuccess && (
+                        <div className="p-3.5 rounded-2xl bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200/70 text-xs text-emerald-700 dark:text-emerald-300 flex items-center gap-2">
+                          <Check className="w-4 h-4 shrink-0 text-emerald-600" strokeWidth={2} />
+                          <span>{passwordSuccess}</span>
+                        </div>
+                      )}
+
+                      <div className="pt-2">
+                        <motion.button
+                          type="submit"
+                          disabled={isSubmittingPassword}
+                          initial="rest"
+                          whileHover="hover"
+                          whileTap={{ scale: 0.97 }}
+                          animate="rest"
+                          className="group inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-xs sm:text-sm font-semibold text-white bg-[#0071E3] hover:bg-[#0077ED] shadow-[0_2px_8px_rgba(0,113,227,0.25)] hover:shadow-[0_6px_20px_rgba(0,113,227,0.42)] hover:-translate-y-0.5 active:translate-y-0 active:scale-95 transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed select-none"
+                        >
+                          {isSubmittingPassword ? (
+                            <>
+                              <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+                              <span>Updating Password...</span>
+                            </>
+                          ) : (
+                            <>
+                              <motion.span variants={LOCK_BTN_VARIANTS} className="inline-flex items-center justify-center">
+                                <Lock className="w-4 h-4 shrink-0" strokeWidth={1.75} />
+                              </motion.span>
+                              <span>Update Password</span>
+                            </>
+                          )}
+                        </motion.button>
                       </div>
                     </div>
-                  </form>
-                </div>
 
-                {/* iOS Frosted Security Status Footer Bar (Anchors bottom gracefully) */}
-                <div className="mt-8 pt-5 border-t border-slate-100/80 dark:border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-500 dark:text-slate-400 shrink-0">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)] animate-pulse shrink-0" />
-                    <span className="font-medium text-slate-700 dark:text-slate-300">Dispatch Session Secure</span>
-                    <span className="text-slate-300 dark:text-slate-600 hidden sm:inline">·</span>
-                    <span className="hidden sm:inline">Talisay City MDRRMO Console Authorization</span>
+                    {/* Right Column: iOS Frosted Credential Guidelines Card */}
+                    <div className="lg:col-span-5 p-5 sm:p-6 rounded-2xl bg-slate-50/70 dark:bg-white/[0.03] border border-slate-200/60 dark:border-white/5 space-y-3.5 shadow-2xs">
+                      <div className="flex items-center gap-2.5 text-slate-800 dark:text-slate-200">
+                        <div className="w-7 h-7 rounded-lg bg-slate-200/80 dark:bg-white/10 text-slate-600 dark:text-slate-300 flex items-center justify-center shrink-0">
+                          <Shield className="w-4 h-4" strokeWidth={1.75} />
+                        </div>
+                        <span className="text-xs font-semibold uppercase tracking-wider">
+                          Password Security
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                        To protect incident records and console operations, please ensure your credentials follow these baseline protocols:
+                      </p>
+                      <ul className="space-y-2.5 text-xs text-slate-600 dark:text-slate-300">
+                        <li className="flex items-center gap-2">
+                          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                          <span>Minimum 8 characters in length</span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                          <span>Avoid sharing with other team members</span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                          <span>Active sessions refresh automatically</span>
+                        </li>
+                      </ul>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 text-[11px] text-slate-400 dark:text-slate-500">
-                    <span>End-to-end token authenticated</span>
-                  </div>
-                </div>
+                </form>
               </SoftCard>
             </div>
           </StaggerItem>
@@ -1923,137 +1908,122 @@ export default function Settings() {
 
         {/* TAB 4: PREFERENCES */}
         {activeTab === 'preferences' && (
-          <StaggerItem className="flex-1 flex flex-col min-h-0">
-            <div className="w-full flex-1 flex flex-col min-h-0">
-              <SoftCard className="w-full flex-1 flex flex-col justify-between min-h-[calc(100vh-14.5rem)] sm:min-h-[520px]">
-                <div>
-                  <div className="pb-5 sm:pb-6 border-b border-slate-100/80 dark:border-white/5">
-                    <h2 className="text-lg sm:text-xl font-bold tracking-tight text-slate-900 dark:text-white">
-                      System Preferences
-                    </h2>
-                    <p className="text-xs sm:text-[13px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-                      Customize your local display mode, alert triggers, and refresh intervals.
-                    </p>
-                  </div>
-
-                  <div className="pt-2 divide-y divide-slate-100/80 dark:divide-white/5">
-                    {/* Theme Mode */}
-                    <div className="py-4.5 sm:py-5 -mx-2 sm:-mx-3 px-3 sm:px-4 rounded-2xl hover:bg-slate-50/70 dark:hover:bg-white/[0.025] transition-colors duration-150 flex items-center justify-between gap-4">
-                      <div className="flex items-center gap-3.5">
-                        <div className="w-10 h-10 rounded-2xl bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-slate-400 flex items-center justify-center shrink-0 border border-slate-200/60 dark:border-white/5 shadow-2xs">
-                          {isDark ? <Moon className="w-5 h-5" strokeWidth={1.75} /> : <Sun className="w-5 h-5" strokeWidth={1.75} />}
-                        </div>
-                        <div>
-                          <span className="text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 block">
-                            Appearance Mode
-                          </span>
-                          <span className="text-xs text-slate-400 block mt-0.5">
-                            {isDark ? 'Dark theme active' : 'Light theme active'}
-                          </span>
-                        </div>
-                      </div>
-                      <motion.button
-                        type="button"
-                        initial="rest"
-                        whileHover="hover"
-                        whileTap={{ scale: 0.96 }}
-                        animate="rest"
-                        onClick={toggleTheme}
-                        className="group inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-200 bg-slate-100/80 dark:bg-white/10 hover:bg-slate-200/70 dark:hover:bg-white/15 border border-slate-200/70 dark:border-white/10 hover:border-[#0071E3]/40 dark:hover:border-sky-400/40 hover:text-[#0071E3] dark:hover:text-sky-400 shadow-2xs hover:shadow-xs transition-colors duration-150 cursor-pointer select-none"
-                        title={isDark ? 'Switch to Light theme' : 'Switch to Dark theme'}
-                      >
-                        <motion.span
-                          variants={isDark ? SUN_BTN_VARIANTS : MOON_BTN_VARIANTS}
-                          className="inline-flex items-center justify-center"
-                        >
-                          {isDark ? (
-                            <Sun className="w-4 h-4 shrink-0 text-amber-500" strokeWidth={1.75} />
-                          ) : (
-                            <Moon className="w-4 h-4 shrink-0 text-indigo-500 dark:text-indigo-400" strokeWidth={1.75} />
-                          )}
-                        </motion.span>
-                        <span>{isDark ? 'Switch to Light' : 'Switch to Dark'}</span>
-                      </motion.button>
-                    </div>
-
-                    {/* Push Notifications */}
-                    <div className="py-4.5 sm:py-5 -mx-2 sm:-mx-3 px-3 sm:px-4 rounded-2xl hover:bg-slate-50/70 dark:hover:bg-white/[0.025] transition-colors duration-150 flex items-center justify-between gap-4">
-                      <div className="flex items-center gap-3.5">
-                        <div className="w-10 h-10 rounded-2xl bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-slate-400 flex items-center justify-center shrink-0 border border-slate-200/60 dark:border-white/5 shadow-2xs">
-                          <Bell className="w-5 h-5" strokeWidth={1.75} />
-                        </div>
-                        <div>
-                          <span className="text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 block">
-                            Desktop Notifications
-                          </span>
-                          <span className="text-xs text-slate-400 block mt-0.5">
-                            Receive browser notifications when high-priority alerts are received.
-                          </span>
-                        </div>
-                      </div>
-                      <SoftToggle
-                        checked={pushNotif}
-                        onChange={() => setPushNotif(!pushNotif)}
-                        label="Toggle Push Notifications"
-                      />
-                    </div>
-
-                    {/* Sound Alerts */}
-                    <div className="py-4.5 sm:py-5 -mx-2 sm:-mx-3 px-3 sm:px-4 rounded-2xl hover:bg-slate-50/70 dark:hover:bg-white/[0.025] transition-colors duration-150 flex items-center justify-between gap-4">
-                      <div className="flex items-center gap-3.5">
-                        <div className="w-10 h-10 rounded-2xl bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-slate-400 flex items-center justify-center shrink-0 border border-slate-200/60 dark:border-white/5 shadow-2xs">
-                          <Volume2 className="w-5 h-5" strokeWidth={1.75} />
-                        </div>
-                        <div>
-                          <span className="text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 block">
-                            Audio Alerts for Critical Incidents
-                          </span>
-                          <span className="text-xs text-slate-400 block mt-0.5">
-                            Play an audible alert when high-priority emergencies are filed.
-                          </span>
-                        </div>
-                      </div>
-                      <SoftToggle
-                        checked={criticalAlerts}
-                        onChange={() => setCriticalAlerts(!criticalAlerts)}
-                        label="Toggle Audio Alerts"
-                      />
-                    </div>
-
-                    {/* Live Auto-Refresh */}
-                    <div className="py-4.5 sm:py-5 -mx-2 sm:-mx-3 px-3 sm:px-4 rounded-2xl hover:bg-slate-50/70 dark:hover:bg-white/[0.025] transition-colors duration-150 flex items-center justify-between gap-4">
-                      <div className="flex items-center gap-3.5">
-                        <div className="w-10 h-10 rounded-2xl bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-slate-400 flex items-center justify-center shrink-0 border border-slate-200/60 dark:border-white/5 shadow-2xs">
-                          <Globe className="w-5 h-5" strokeWidth={1.75} />
-                        </div>
-                        <div>
-                          <span className="text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 block">
-                            Live Auto-Refresh
-                          </span>
-                          <span className="text-xs text-slate-400 block mt-0.5">
-                            Automatically sync telemetry and feed every 30 seconds.
-                          </span>
-                        </div>
-                      </div>
-                      <SoftToggle
-                        checked={autoRefresh}
-                        onChange={() => setAutoRefresh(!autoRefresh)}
-                        label="Toggle Auto-Refresh"
-                      />
-                    </div>
-                  </div>
+          <StaggerItem>
+            <div className="w-full space-y-6">
+              <SoftCard className="w-full">
+                <div className="pb-5 sm:pb-6 border-b border-slate-100/80 dark:border-white/5">
+                  <h2 className="text-lg sm:text-xl font-bold tracking-tight text-slate-900 dark:text-white">
+                    System Preferences
+                  </h2>
+                  <p className="text-xs sm:text-[13px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                    Customize your local display mode, alert triggers, and refresh intervals.
+                  </p>
                 </div>
 
-                {/* iOS Frosted Client Telemetry Status Footer Bar */}
-                <div className="mt-8 pt-5 border-t border-slate-100/80 dark:border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-500 dark:text-slate-400 shrink-0">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-[#0071E3] shadow-[0_0_8px_rgba(0,113,227,0.5)] shrink-0" />
-                    <span className="font-medium text-slate-700 dark:text-slate-300">Client Preferences Active</span>
-                    <span className="text-slate-300 dark:text-slate-600 hidden sm:inline">·</span>
-                    <span className="hidden sm:inline">Local overrides persisted to browser storage</span>
+                <div className="pt-2 divide-y divide-slate-100/80 dark:divide-white/5">
+                  {/* Theme Mode */}
+                  <div className="py-4.5 sm:py-5 -mx-2 sm:-mx-3 px-3 sm:px-4 rounded-2xl hover:bg-slate-50/70 dark:hover:bg-white/[0.025] transition-colors duration-150 flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3.5">
+                      <div className="w-10 h-10 rounded-2xl bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-slate-400 flex items-center justify-center shrink-0 border border-slate-200/60 dark:border-white/5 shadow-2xs">
+                        {isDark ? <Moon className="w-5 h-5" strokeWidth={1.75} /> : <Sun className="w-5 h-5" strokeWidth={1.75} />}
+                      </div>
+                      <div>
+                        <span className="text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 block">
+                          Appearance Mode
+                        </span>
+                        <span className="text-xs text-slate-400 block mt-0.5">
+                          {isDark ? 'Dark theme active' : 'Light theme active'}
+                        </span>
+                      </div>
+                    </div>
+                    <motion.button
+                      type="button"
+                      initial="rest"
+                      whileHover="hover"
+                      whileTap={{ scale: 0.96 }}
+                      animate="rest"
+                      onClick={toggleTheme}
+                      className="group inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-200 bg-slate-100/80 dark:bg-white/10 hover:bg-slate-200/70 dark:hover:bg-white/15 border border-slate-200/70 dark:border-white/10 hover:border-[#0071E3]/40 dark:hover:border-sky-400/40 hover:text-[#0071E3] dark:hover:text-sky-400 shadow-2xs hover:shadow-xs transition-colors duration-150 cursor-pointer select-none"
+                      title={isDark ? 'Switch to Light theme' : 'Switch to Dark theme'}
+                    >
+                      <motion.span
+                        variants={isDark ? SUN_BTN_VARIANTS : MOON_BTN_VARIANTS}
+                        className="inline-flex items-center justify-center"
+                      >
+                        {isDark ? (
+                          <Sun className="w-4 h-4 shrink-0 text-amber-500" strokeWidth={1.75} />
+                        ) : (
+                          <Moon className="w-4 h-4 shrink-0 text-indigo-500 dark:text-indigo-400" strokeWidth={1.75} />
+                        )}
+                      </motion.span>
+                      <span>{isDark ? 'Switch to Light' : 'Switch to Dark'}</span>
+                    </motion.button>
                   </div>
-                  <div className="flex items-center gap-2 text-[11px] text-slate-400 dark:text-slate-500">
-                    <span>Telemetry sync: 30s nominal</span>
+
+                  {/* Push Notifications */}
+                  <div className="py-4.5 sm:py-5 -mx-2 sm:-mx-3 px-3 sm:px-4 rounded-2xl hover:bg-slate-50/70 dark:hover:bg-white/[0.025] transition-colors duration-150 flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3.5">
+                      <div className="w-10 h-10 rounded-2xl bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-slate-400 flex items-center justify-center shrink-0 border border-slate-200/60 dark:border-white/5 shadow-2xs">
+                        <Bell className="w-5 h-5" strokeWidth={1.75} />
+                      </div>
+                      <div>
+                        <span className="text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 block">
+                          Desktop Notifications
+                        </span>
+                        <span className="text-xs text-slate-400 block mt-0.5">
+                          Receive browser notifications when high-priority alerts are received.
+                        </span>
+                      </div>
+                    </div>
+                    <SoftToggle
+                      checked={pushNotif}
+                      onChange={() => setPushNotif(!pushNotif)}
+                      label="Toggle Push Notifications"
+                    />
+                  </div>
+
+                  {/* Sound Alerts */}
+                  <div className="py-4.5 sm:py-5 -mx-2 sm:-mx-3 px-3 sm:px-4 rounded-2xl hover:bg-slate-50/70 dark:hover:bg-white/[0.025] transition-colors duration-150 flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3.5">
+                      <div className="w-10 h-10 rounded-2xl bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-slate-400 flex items-center justify-center shrink-0 border border-slate-200/60 dark:border-white/5 shadow-2xs">
+                        <Volume2 className="w-5 h-5" strokeWidth={1.75} />
+                      </div>
+                      <div>
+                        <span className="text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 block">
+                          Audio Alerts for Critical Incidents
+                        </span>
+                        <span className="text-xs text-slate-400 block mt-0.5">
+                          Play an audible alert when high-priority emergencies are filed.
+                        </span>
+                      </div>
+                    </div>
+                    <SoftToggle
+                      checked={criticalAlerts}
+                      onChange={() => setCriticalAlerts(!criticalAlerts)}
+                      label="Toggle Audio Alerts"
+                    />
+                  </div>
+
+                  {/* Live Auto-Refresh */}
+                  <div className="py-4.5 sm:py-5 -mx-2 sm:-mx-3 px-3 sm:px-4 rounded-2xl hover:bg-slate-50/70 dark:hover:bg-white/[0.025] transition-colors duration-150 flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3.5">
+                      <div className="w-10 h-10 rounded-2xl bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-slate-400 flex items-center justify-center shrink-0 border border-slate-200/60 dark:border-white/5 shadow-2xs">
+                        <Globe className="w-5 h-5" strokeWidth={1.75} />
+                      </div>
+                      <div>
+                        <span className="text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 block">
+                          Live Auto-Refresh
+                        </span>
+                        <span className="text-xs text-slate-400 block mt-0.5">
+                          Automatically sync telemetry and feed every 30 seconds.
+                        </span>
+                      </div>
+                    </div>
+                    <SoftToggle
+                      checked={autoRefresh}
+                      onChange={() => setAutoRefresh(!autoRefresh)}
+                      label="Toggle Auto-Refresh"
+                    />
                   </div>
                 </div>
               </SoftCard>
