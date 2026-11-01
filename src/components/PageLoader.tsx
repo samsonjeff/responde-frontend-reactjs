@@ -539,90 +539,105 @@ function GeospatialSkeleton() {
       aria-label="Loading geospatial map..."
     >
       <div className="flex flex-col flex-1 min-h-0 gap-3 sm:gap-4 h-full">
-        {/* Top Command Toolbar Panel */}
-        <div className="bg-white/80 dark:bg-[#111827]/80 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_1px_3px_rgba(15,23,42,0.04),0_8px_24px_rgba(15,23,42,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.3)] p-4 sm:p-5 space-y-4 shrink-0">
+        {/* Top Command Toolbar Panel — Exact mirror of SoftPanel (rounded-3xl glass) */}
+        <div className="bg-white/95 dark:bg-[#1C1C1E]/95 backdrop-blur-2xl rounded-3xl border border-slate-200/80 dark:border-white/10 shadow-[0_12px_36px_-8px_rgba(0,0,0,0.06),0_2px_8px_rgba(0,0,0,0.03)] dark:shadow-[0_16px_40px_-8px_rgba(0,0,0,0.6)] p-4 sm:p-5 space-y-4 shrink-0">
           {/* Header Row */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3.5">
             <div className="flex items-center gap-3.5">
               <Bone className="w-11 h-11 rounded-2xl shrink-0" />
               <div className="space-y-1.5">
                 <Bone className="h-6 w-36 rounded-xl" />
-                <Bone className="h-3.5 w-72 sm:w-96 rounded-md" />
+                <Bone className="h-3.5 w-64 sm:w-80 rounded-md" />
               </div>
             </div>
-            {/* Live Count Chips */}
-            <div className="flex items-center gap-2 shrink-0">
-              <Bone className="h-8 w-24 rounded-xl" />
-              <Bone className="h-8 w-24 rounded-xl" />
+            {/* Live Telemetry Status Capsule: Pins on Map */}
+            <div className="inline-flex items-center gap-2.5 px-3.5 py-2 rounded-2xl bg-slate-50/80 dark:bg-white/[0.06] border border-slate-200/70 dark:border-white/10 shrink-0">
+              <Bone className="w-2 h-2 rounded-full shrink-0" />
+              <Bone className="w-3.5 h-3.5 rounded-full shrink-0" />
+              <Bone className="h-4 w-20 rounded-md" />
             </div>
           </div>
 
           {/* Filter & Layer Controls Row */}
-          <div className="pt-3.5 border-t border-slate-200/60 dark:border-white/5 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+          <div className="pt-3.5 border-t border-slate-200/60 dark:border-white/5 flex flex-col xl:flex-row xl:items-center justify-between gap-3">
+            {/* Left: Filters badge + 3 dropdown pills */}
             <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
-              <Bone className="h-8 w-28 rounded-xl" />
-              <Bone className="h-8 w-28 rounded-xl" />
-              <Bone className="h-8 w-28 rounded-xl" />
-              <Bone className="h-8 w-28 rounded-xl" />
+              <Bone className="h-8.5 w-20 rounded-xl" />
+              <Bone className="h-8.5 w-32 rounded-xl" />
+              <Bone className="h-8.5 w-28 rounded-xl" />
+              <Bone className="h-8.5 w-32 rounded-xl" />
             </div>
-            <div className="flex items-center gap-2">
-              <Bone className="h-8 w-48 rounded-2xl" />
-              <Bone className="h-8 w-16 rounded-xl" />
+
+            {/* Right: Segmented Layer Control Bar */}
+            <div className="inline-flex items-center gap-1 sm:gap-1.5 p-1 bg-slate-100/70 dark:bg-white/[0.05] rounded-2xl border border-slate-200/70 dark:border-white/10 shrink-0">
+              <Bone className="h-7 w-16 rounded-xl" />
+              <Bone className="h-7 w-18 rounded-xl" />
+              <Bone className="h-7 w-16 rounded-xl" />
+              <Bone className="h-7 w-18 rounded-xl" />
+              <Bone className="h-7 w-16 rounded-xl" />
+              <div className="w-[1px] h-4 bg-slate-200 dark:bg-white/10 mx-0.5" />
+              <Bone className="h-7 w-18 rounded-xl" />
             </div>
           </div>
         </div>
 
-        {/* Map & Drawer Grid */}
-        <div className="grid grid-cols-12 gap-3 sm:gap-4 flex-1 min-h-0 items-stretch">
-          {/* Left Drawer (3 cols, hidden on mobile) */}
-          <div className="hidden lg:flex lg:col-span-3 bg-white/80 dark:bg-[#111827]/80 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-white/10 flex-col overflow-hidden h-full">
-            {/* Drawer Header */}
-            <div className="flex items-center justify-between px-4 py-3.5 border-b border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-slate-900/30">
-              <div className="flex items-center gap-2">
-                <Bone className="h-4 w-24 rounded-md" />
-                <Bone className="h-4 w-6 rounded-full" />
+        {/* Main Canvas Deck Area (exact flex-row layout with 370px sidebar and flex-1 map) */}
+        <div className="flex-1 min-h-[360px] sm:min-h-[460px] md:min-h-0 h-[calc(100dvh-18rem-env(safe-area-inset-bottom,0px))] md:h-full flex flex-row relative">
+          {/* Left Desktop Sidebar (exact width 370px, rounded-3xl) */}
+          <div className="w-[370px] shrink-0 h-full hidden lg:flex flex-col rounded-3xl border border-slate-200/80 dark:border-white/10 bg-white/90 dark:bg-[#0f172a]/90 backdrop-blur-2xl shadow-[0_16px_50px_rgba(15,23,42,0.06)] mr-4 overflow-hidden">
+            {/* Sidebar Header & Tabs */}
+            <div className="p-4 border-b border-slate-200/70 dark:border-white/10 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Bone className="w-5 h-5 rounded-md" />
+                  <Bone className="h-4 w-28 rounded-md" />
+                  <Bone className="h-4 w-7 rounded-full" />
+                </div>
+                <Bone className="w-6 h-6 rounded-lg" />
               </div>
-              <Bone className="h-6 w-6 rounded-lg" />
+              {/* Search Bar pill */}
+              <Bone className="h-9 w-full rounded-xl" />
+              {/* Segmented Tabs [All] [Unmapped] */}
+              <div className="flex items-center p-1 bg-slate-100/80 dark:bg-slate-800/80 rounded-xl gap-1">
+                <Bone className="h-7 flex-1 rounded-lg" />
+                <Bone className="h-7 flex-1 rounded-lg" />
+              </div>
             </div>
 
-            {/* Priority Legend */}
-            <div className="flex items-center justify-between px-4 py-2 border-b border-slate-100/60 dark:border-white/5 bg-white/40 dark:bg-[#0f172a]/40">
-              <Bone className="h-3 w-16 rounded-md" />
-              <div className="flex items-center gap-3">
-                <Bone className="h-3 w-10 rounded-md" />
-                <Bone className="h-3 w-10 rounded-md" />
-                <Bone className="h-3 w-10 rounded-md" />
-              </div>
-            </div>
-
-            {/* Incident Drawer List */}
+            {/* Incident Cards List */}
             <div className="p-3 space-y-2.5 flex-1 overflow-hidden">
               {[...Array(5)].map((_, i) => (
-                <div key={i} className="p-3 rounded-xl border border-slate-100/80 dark:border-white/5 bg-slate-50/40 dark:bg-slate-800/20 space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Bone className="w-6 h-6 rounded-lg shrink-0" />
-                    <Bone className="h-3.5 w-24 rounded-md" />
-                    <Bone className="h-4 w-12 rounded-full ml-auto" />
+                <div
+                  key={i}
+                  className="rounded-2xl p-3 bg-white/90 dark:bg-slate-800/80 border border-slate-200/70 dark:border-white/10 space-y-2.5"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2.5 flex-1">
+                      <Bone className="w-7 h-7 rounded-full shrink-0" />
+                      <div className="space-y-1 flex-1">
+                        <Bone className="h-3.5 w-24 rounded-md" />
+                        <Bone className="h-3 w-16 rounded-md" />
+                      </div>
+                    </div>
+                    <Bone className="h-5 w-14 rounded-full shrink-0" />
                   </div>
-                  <div className="flex items-center justify-between">
-                    <Bone className="h-3 w-28 rounded-md" />
-                    <Bone className="h-3 w-14 rounded-md" />
-                  </div>
+                  <Bone className="h-3 w-36 rounded-md" />
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Right Map Canvas Shell (9 cols) */}
-          <div className="col-span-12 lg:col-span-9 bg-white/80 dark:bg-[#111827]/80 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-white/10 p-3 sm:p-3.5 flex flex-col overflow-hidden h-full min-h-[500px]">
-            <div className="relative flex-1 min-h-0 w-full rounded-xl overflow-hidden border border-slate-200/70 dark:border-white/10 bg-slate-100 dark:bg-slate-900 flex items-center justify-center">
+          {/* Right Map Canvas Shell Container (flex-1 rounded-3xl with inner rounded-2xl map deck) */}
+          <div className="flex-1 min-w-0 h-full bg-white/90 dark:bg-[#111827]/90 backdrop-blur-xl rounded-3xl border border-slate-200/80 dark:border-white/10 shadow-[0_8px_30px_rgba(15,23,42,0.04)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.45)] p-2.5 sm:p-3 flex flex-col overflow-hidden min-h-0 relative">
+            <div className="relative flex-1 min-h-0 w-full rounded-2xl overflow-hidden border border-slate-200/70 dark:border-white/10 bg-slate-100 dark:bg-slate-900 flex items-center justify-center">
               <div className="flex flex-col items-center gap-3 text-slate-400 dark:text-slate-600">
                 <Bone className="w-12 h-12 rounded-2xl" />
                 <Bone className="h-3.5 w-32 rounded-md" />
               </div>
+              {/* Map Floating Zoom controls */}
               <div className="absolute top-4 right-4 flex flex-col gap-2">
-                <Bone className="h-8 w-8 rounded-lg" />
-                <Bone className="h-8 w-8 rounded-lg" />
+                <Bone className="h-8 w-8 rounded-xl" />
+                <Bone className="h-8 w-8 rounded-xl" />
               </div>
             </div>
           </div>
@@ -634,9 +649,10 @@ function GeospatialSkeleton() {
 
 /**
  * Mirrors Analytics:
- * 1. Header & Filter Bar Card
- * 2. 4-Stat Soft Metric Cards (Total Reports, High Urgency, Verified Reports, Pending Review)
- * 3. 2-column Charts Row (Incident Frequency per Barangay + Breakdown by Incident Type donut)
+ * 1. Top SoftCard Header & Filter Bar (rounded-3xl glass)
+ * 2. 4-Stat Soft Metric Cards (grid-cols-2 lg:grid-cols-4 with horizontal flex)
+ * 3. 2-column Charts Row (Barangay Bar Chart + Type Donut Chart, rounded-3xl glass)
+ * 4. High-Risk Barangays 5-Column Table Card (rounded-3xl glass)
  */
 function AnalyticsSkeleton() {
   return (
@@ -645,8 +661,8 @@ function AnalyticsSkeleton() {
       aria-busy="true"
       aria-label="Loading analytics..."
     >
-      {/* 1. Header & Filter Bar Card */}
-      <div className="bg-white/80 dark:bg-[#111827]/80 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-white/10 p-5 md:p-6 space-y-5">
+      {/* 1. Header & Filter Bar Card (exact mirror of SoftCard rounded-3xl) */}
+      <div className="bg-white/95 dark:bg-[#1C1C1E]/95 backdrop-blur-2xl rounded-3xl border border-slate-200/80 dark:border-white/10 shadow-[0_12px_36px_-8px_rgba(0,0,0,0.06),0_2px_8px_rgba(0,0,0,0.03)] dark:shadow-[0_16px_40px_-8px_rgba(0,0,0,0.6)] p-5 md:p-6 space-y-5">
         {/* Title row */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-3.5">
@@ -663,47 +679,48 @@ function AnalyticsSkeleton() {
         </div>
 
         {/* Filter row */}
-        <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex flex-col md:flex-row md:flex-wrap items-stretch md:items-center justify-between gap-2.5 sm:gap-3">
+        <div className="pt-3.5 border-t border-slate-200/60 dark:border-white/5 flex flex-col md:flex-row md:flex-wrap items-stretch md:items-center justify-between gap-2.5 sm:gap-3">
           <div className="flex flex-wrap items-center gap-2.5">
             <Bone className="h-9 w-20 rounded-xl" />
-            <Bone className="h-9 w-28 rounded-xl" />
+            <Bone className="h-9 w-32 rounded-xl" />
             <Bone className="h-9 w-28 rounded-xl" />
             <Bone className="h-9 w-28 rounded-xl" />
           </div>
           <div className="flex items-center gap-2.5 md:ml-auto">
-            <Bone className="h-9 w-32 rounded-xl" />
-            <Bone className="h-9 w-32 rounded-xl" />
+            <Bone className="h-9 w-36 rounded-xl" />
+            <Bone className="h-9 w-36 rounded-xl" />
           </div>
         </div>
       </div>
 
-      {/* 2. 4-Stat Soft Metric Cards (matches grid-cols-2 lg:grid-cols-4) */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* 2. 4-Stat Soft Metric Cards (matches real horizontal flex card layout) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 shrink-0">
         {[...Array(4)].map((_, i) => (
           <div
             key={i}
-            className="p-5 rounded-2xl bg-white/80 dark:bg-[#111827]/80 border border-slate-200/80 dark:border-white/10 flex flex-col justify-between"
+            className="p-3.5 sm:p-4 md:p-5 rounded-2xl bg-white/80 dark:bg-[#111827]/80 backdrop-blur-xl border border-slate-200/80 dark:border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)] flex items-center justify-between min-w-0"
           >
-            <div className="flex items-center justify-between gap-2 mb-3">
+            <div className="space-y-1.5 min-w-0 flex-1">
               <Bone className="h-3 w-20 rounded-md" />
-              <Bone className="w-8 h-8 rounded-xl shrink-0" />
+              <Bone className="h-7 sm:h-8 w-16 rounded-lg" />
+              <div className="flex items-center gap-1.5">
+                <Bone className="w-1.5 h-1.5 rounded-full shrink-0" />
+                <Bone className="h-3 w-24 rounded-full" />
+              </div>
             </div>
-            <div className="space-y-2">
-              <Bone className="h-8 w-16 rounded-lg" />
-              <Bone className="h-3 w-28 rounded-md" />
-            </div>
+            <Bone className="w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-xl sm:rounded-2xl shrink-0" />
           </div>
         ))}
       </div>
 
-      {/* 3. 2-Column Charts Row (Barangay Bar Chart + Type Donut Chart) */}
+      {/* 3. 2-Column Charts Row (both cards rounded-3xl glass) */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         {/* Left Card: Incident Frequency per Barangay */}
-        <div className="p-6 rounded-2xl bg-white/80 dark:bg-[#111827]/80 border border-slate-200/80 dark:border-white/10 flex flex-col space-y-4">
+        <div className="p-6 rounded-3xl bg-white/95 dark:bg-[#1C1C1E]/95 backdrop-blur-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_12px_36px_-8px_rgba(0,0,0,0.06)] flex flex-col space-y-4">
           <div className="flex items-center gap-3 mb-2">
-            <Bone className="w-8 h-8 rounded-xl shrink-0" />
+            <Bone className="w-9 h-9 rounded-xl shrink-0" />
             <div className="space-y-1 flex-1">
-              <Bone className="h-4 w-48 rounded-md" />
+              <Bone className="h-4.5 w-48 rounded-md" />
               <Bone className="h-3 w-64 rounded-md" />
             </div>
           </div>
@@ -718,12 +735,12 @@ function AnalyticsSkeleton() {
         </div>
 
         {/* Right Card: Breakdown by Incident Type */}
-        <div className="p-6 rounded-2xl bg-white/80 dark:bg-[#111827]/80 border border-slate-200/80 dark:border-white/10 flex flex-col space-y-4">
+        <div className="p-6 rounded-3xl bg-white/95 dark:bg-[#1C1C1E]/95 backdrop-blur-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_12px_36px_-8px_rgba(0,0,0,0.06)] flex flex-col space-y-4">
           <div className="flex items-center justify-between gap-3 mb-2">
             <div className="flex items-center gap-3">
-              <Bone className="w-8 h-8 rounded-xl shrink-0" />
+              <Bone className="w-9 h-9 rounded-xl shrink-0" />
               <div className="space-y-1">
-                <Bone className="h-4 w-40 rounded-md" />
+                <Bone className="h-4.5 w-40 rounded-md" />
                 <Bone className="h-3 w-56 rounded-md" />
               </div>
             </div>
@@ -742,6 +759,48 @@ function AnalyticsSkeleton() {
                 </div>
               ))}
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 4. High-Risk Barangays 5-Column Table Card (rounded-3xl glass) */}
+      <div className="p-5 sm:p-6 rounded-3xl bg-white/95 dark:bg-[#1C1C1E]/95 backdrop-blur-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_12px_36px_-8px_rgba(0,0,0,0.06)] space-y-4">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <Bone className="w-9 h-9 rounded-xl shrink-0" />
+            <div className="space-y-1">
+              <Bone className="h-4.5 w-44 rounded-md" />
+              <Bone className="h-3 w-72 rounded-md" />
+            </div>
+          </div>
+          <Bone className="h-6 w-32 rounded-full shrink-0" />
+        </div>
+
+        {/* 5-Column Table Frame */}
+        <div className="rounded-2xl border border-slate-200/80 dark:border-white/10 overflow-hidden bg-white/70 dark:bg-white/[0.02]">
+          {/* Header Row */}
+          <div className="px-5 py-3 border-b border-slate-200/70 dark:border-white/5 flex items-center justify-between bg-slate-50/80 dark:bg-white/[0.04]">
+            <Bone className="h-3 w-28 rounded-md" />
+            <Bone className="h-3 w-24 rounded-md" />
+            <Bone className="h-3 w-28 rounded-md" />
+            <Bone className="h-3 w-20 rounded-md" />
+            <Bone className="h-3 w-24 rounded-md" />
+          </div>
+          {/* Table Rows */}
+          <div className="divide-y divide-slate-100/80 dark:divide-white/5">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="px-5 py-3.5 flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <Bone className="w-6 h-6 rounded-lg shrink-0" />
+                  <Bone className="w-3.5 h-3.5 rounded-full shrink-0" />
+                  <Bone className="h-4 w-32 rounded-md" />
+                </div>
+                <Bone className="h-3.5 w-28 rounded-full" />
+                <Bone className="h-6 w-24 rounded-full" />
+                <Bone className="h-6 w-20 rounded-full" />
+                <Bone className="h-6 w-24 rounded-full" />
+              </div>
+            ))}
           </div>
         </div>
       </div>
