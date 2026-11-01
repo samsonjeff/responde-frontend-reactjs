@@ -52,13 +52,46 @@ type AuditEntry = {
 };
 
 /* Calm, low-saturation neutral badges with micro-dot indicator */
-const AUDIT_META: Record<AuditAction, { label: string; dotColor: string }> = {
-  invite: { label: 'Invite Generated', dotColor: 'bg-purple-500' },
-  signup: { label: 'Personnel Sign Up', dotColor: 'bg-emerald-500' },
-  role_change: { label: 'Role Changed', dotColor: 'bg-sky-500' },
-  user_deleted: { label: 'User Deleted', dotColor: 'bg-rose-500' },
-  password_change: { label: 'Password Changed', dotColor: 'bg-indigo-500' },
-  login: { label: 'Sign In', dotColor: 'bg-slate-400' },
+const AUDIT_META: Record<
+  AuditAction,
+  { label: string; dotColor: string; badgeClasses: string }
+> = {
+  invite: {
+    label: 'Invite Generated',
+    dotColor: 'bg-purple-500',
+    badgeClasses:
+      'bg-purple-500/10 text-purple-600 dark:bg-purple-500/20 dark:text-purple-300 border-purple-500/20 dark:border-purple-500/30',
+  },
+  signup: {
+    label: 'Personnel Sign Up',
+    dotColor: 'bg-emerald-500',
+    badgeClasses:
+      'bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 border-emerald-500/20 dark:border-emerald-500/30',
+  },
+  role_change: {
+    label: 'Role Changed',
+    dotColor: 'bg-[#0071E3]',
+    badgeClasses:
+      'bg-blue-500/10 text-[#0071E3] dark:bg-blue-500/20 dark:text-sky-400 border-blue-500/20 dark:border-blue-500/30',
+  },
+  user_deleted: {
+    label: 'User Deleted',
+    dotColor: 'bg-rose-500',
+    badgeClasses:
+      'bg-rose-500/10 text-rose-600 dark:bg-rose-500/20 dark:text-rose-400 border-rose-500/20 dark:border-rose-500/30',
+  },
+  password_change: {
+    label: 'Password Changed',
+    dotColor: 'bg-indigo-500',
+    badgeClasses:
+      'bg-indigo-500/10 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400 border-indigo-500/20 dark:border-indigo-500/30',
+  },
+  login: {
+    label: 'Sign In',
+    dotColor: 'bg-slate-400',
+    badgeClasses:
+      'bg-slate-500/10 text-slate-600 dark:bg-slate-400/20 dark:text-slate-300 border-slate-500/20 dark:border-slate-500/30',
+  },
 };
 
 const AUDIT_FILTER_OPTIONS: Array<{ value: AuditAction | 'all'; label: string; dotColor: string }> = [
@@ -209,9 +242,9 @@ function UserRoleBadge({ role }: { role: string }) {
   }
 
   return (
-    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border whitespace-nowrap shadow-2xs ${badgeClasses}`}>
+    <span className={`inline-flex items-center justify-start gap-1.5 w-[116px] px-2.5 py-1 rounded-full text-xs font-semibold border whitespace-nowrap shadow-2xs ${badgeClasses}`}>
       <span className={`w-1.5 h-1.5 rounded-full ${dotColor} shrink-0`} />
-      <span>{label}</span>
+      <span className="truncate">{label}</span>
     </span>
   );
 }
@@ -220,12 +253,19 @@ function UserRoleBadge({ role }: { role: string }) {
  * AuditActionBadge: Neutral pill badge with a 6px semantic color indicator dot.
  */
 function AuditActionBadge({ action }: { action: AuditAction }) {
-  const meta = AUDIT_META[action] || { label: action, dotColor: 'bg-slate-400' };
+  const meta = AUDIT_META[action] || {
+    label: action,
+    dotColor: 'bg-slate-400',
+    badgeClasses:
+      'bg-slate-500/10 text-slate-600 dark:bg-slate-400/20 dark:text-slate-300 border-slate-500/20 dark:border-slate-500/30',
+  };
 
   return (
-    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200/60 dark:border-slate-700/60 whitespace-nowrap">
+    <span
+      className={`inline-flex items-center justify-start gap-2 w-[148px] px-2.5 py-1 rounded-full text-xs font-semibold border whitespace-nowrap shadow-2xs ${meta.badgeClasses}`}
+    >
       <span className={`w-1.5 h-1.5 rounded-full ${meta.dotColor} shrink-0`} />
-      <span>{meta.label}</span>
+      <span className="truncate">{meta.label}</span>
     </span>
   );
 }
