@@ -3,7 +3,7 @@ import { motion, AnimatePresence, type Variants } from "framer-motion";
 import {
   Filter, AlertCircle, X, CheckCircle2, RefreshCw, MessageSquare,
   ChevronRight, ChevronLeft, ChevronDown, Bot, RotateCcw,
-  Layers, AlertTriangle, ArrowUp, ArrowDown, Brain, MapPin
+  Layers, AlertTriangle, ArrowUp, ArrowDown
 } from "lucide-react";
 import DatePicker from "../components/DatePicker";
 import FilterDropdown from "../components/DropDown";
@@ -1379,64 +1379,6 @@ export default function MessengerBotLogs() {
                       }}
                     >
                       <div className="space-y-3 sm:space-y-4">
-                        {/* Apple iOS Incident Assessment Header Banner (Structured / Incident Mode) */}
-                        {selectedConversation.nlp.isIncident && (
-                          <div className="mx-auto max-w-[92%] sm:max-w-[80%] mb-3 sm:mb-4 bg-white/80 dark:bg-slate-800/60 backdrop-blur-md rounded-2xl p-3.5 sm:p-4 border border-slate-200/70 dark:border-white/10 shadow-2xs">
-                            <div className="flex items-center justify-between text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2.5 px-0.5">
-                              <span className="flex items-center gap-1.5">
-                                <Brain className="w-3.5 h-3.5 text-purple-500/90 dark:text-purple-400" strokeWidth={2} />
-                                <span>Incident Assessment</span>
-                              </span>
-                              <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold ${
-                                selectedConversation.nlp.urgency === 'High'
-                                  ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
-                                  : selectedConversation.nlp.urgency === 'Moderate'
-                                  ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'
-                                  : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
-                              }`}>
-                                <span className={`w-1.5 h-1.5 rounded-full ${
-                                  selectedConversation.nlp.urgency === 'High' ? 'bg-rose-500 animate-pulse' : selectedConversation.nlp.urgency === 'Moderate' ? 'bg-amber-500' : 'bg-emerald-500'
-                                }`} />
-                                {selectedConversation.nlp.urgency} Priority
-                              </span>
-                            </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                              <div className="bg-slate-50/70 dark:bg-white/[0.03] rounded-xl p-2.5 border border-slate-200/50 dark:border-white/5">
-                                <div className="flex items-center gap-1.5 text-[11px] font-medium text-slate-400 dark:text-slate-500 mb-0.5">
-                                  <MapPin className="w-3 h-3 text-[#0071E3] dark:text-sky-400 shrink-0" strokeWidth={2} />
-                                  <span>Location</span>
-                                </div>
-                                <p className={`text-xs sm:text-[13px] tracking-tight truncate ${
-                                  !selectedConversation.barangay || selectedConversation.barangay === "Unknown"
-                                    ? "text-slate-400 dark:text-slate-500 italic font-normal"
-                                    : "font-semibold text-slate-800 dark:text-slate-100"
-                                }`}>
-                                  {selectedConversation.barangay || "Unknown"}
-                                </p>
-                              </div>
-                              <div className="bg-slate-50/70 dark:bg-white/[0.03] rounded-xl p-2.5 border border-slate-200/50 dark:border-white/5">
-                                <div className="flex items-center gap-1.5 text-[11px] font-medium text-slate-400 dark:text-slate-500 mb-0.5">
-                                  <AlertTriangle className="w-3 h-3 text-amber-500 shrink-0" strokeWidth={2} />
-                                  <span>Category</span>
-                                </div>
-                                <p className="text-xs sm:text-[13px] font-semibold text-slate-800 dark:text-slate-100 tracking-tight truncate">
-                                  {selectedConversation.nlp.incidentType}
-                                </p>
-                              </div>
-                            </div>
-                            {selectedConversation.nlp.actionableNeeds && selectedConversation.nlp.actionableNeeds.length > 0 && (
-                              <div className="mt-2.5 pt-2 border-t border-slate-100 dark:border-white/5 flex items-center gap-1.5 flex-wrap">
-                                <span className="text-[10px] uppercase font-semibold text-slate-400 dark:text-slate-500 mr-1">Needs:</span>
-                                {selectedConversation.nlp.actionableNeeds.map((need, nIdx) => (
-                                  <span key={nIdx} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
-                                    {need}
-                                  </span>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        )}
-
                         {(selectedConversation.messages ?? []).map((msg, idx) =>
                           msg.sender === "bot" ? (
                             <div key={idx}>
