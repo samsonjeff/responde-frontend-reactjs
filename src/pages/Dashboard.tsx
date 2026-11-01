@@ -14,7 +14,7 @@ import {
 import {
   LayoutDashboard, AlertTriangle, Brain,
   ArrowRight, X,
-  MapPin, Clock, BarChart3, ListFilter, CheckCircle2, ShieldCheck
+  MapPin, Clock, BarChart3, ListFilter, CheckCircle2, ShieldCheck, Filter
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useReports } from '../context/ReportsContext';
@@ -574,21 +574,27 @@ export default function Dashboard() {
             </div>
 
             {/* Segmented Urgency Filter: [All] [High] [Mod] [Low] */}
-            <div className="inline-flex items-center p-1 bg-slate-100 dark:bg-slate-800/90 rounded-xl border border-slate-200/60 dark:border-white/5 gap-1 shadow-inner">
-              {(['All', 'High', 'Mod', 'Low'] as const).map((opt) => (
-                <button
-                  key={opt}
-                  type="button"
-                  onClick={() => setFilterUrgency(opt)}
-                  className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all duration-150 cursor-pointer select-none active:scale-[0.96] ${
-                    filterUrgency === opt
-                      ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs font-bold'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-700/40'
-                  }`}
-                >
-                  {opt}
-                </button>
-              ))}
+            <div className="inline-flex items-center gap-1 sm:gap-1.5 p-1 bg-slate-100/70 dark:bg-white/[0.05] backdrop-blur-xl rounded-2xl border border-slate-200/70 dark:border-white/10 shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]">
+              <div className="flex items-center gap-1 px-2.5 py-1 text-[#0071E3] dark:text-sky-400 cursor-default select-none shrink-0">
+                <Filter className="w-3.5 h-3.5 transition-transform duration-300 group-hover/filters:scale-110 text-[#0071E3] dark:text-sky-400" strokeWidth={1.8} />
+                <span className="text-[10px] font-bold uppercase tracking-wider">Filters</span>
+              </div>
+              <div className="inline-flex items-center gap-1">
+                {(['All', 'High', 'Mod', 'Low'] as const).map((opt) => (
+                  <button
+                    key={opt}
+                    type="button"
+                    onClick={() => setFilterUrgency(opt)}
+                    className={`px-3 py-1 rounded-xl text-xs font-semibold transition-all duration-150 cursor-pointer select-none active:scale-[0.96] ${
+                      filterUrgency === opt
+                        ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-xs font-bold border border-slate-200/60 dark:border-white/10'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-700/40'
+                    }`}
+                  >
+                    {opt}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 

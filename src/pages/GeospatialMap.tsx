@@ -1511,7 +1511,7 @@ export default function GeospatialMap() {
                 <div className="inline-flex items-center gap-1 sm:gap-1.5 p-1 bg-slate-100/70 dark:bg-white/[0.05] backdrop-blur-xl rounded-2xl border border-slate-200/70 dark:border-white/10 shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] dark:shadow-[inset_0_1px_2px_rgba(0,0,0,0.4)] min-w-max">
                   <div className="group/filters flex items-center gap-1 px-2.5 py-1 text-[#0071E3] dark:text-sky-400 cursor-default select-none shrink-0">
                     <Filter className="w-3.5 h-3.5 transition-transform duration-300 group-hover/filters:scale-110 text-[#0071E3] dark:text-sky-400" strokeWidth={1.8} />
-                    <span className="text-[10px] font-bold uppercase tracking-wider hidden sm:inline">Filters</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider">Filters</span>
                   </div>
 
                   {/* Filter Pills */}
@@ -1549,7 +1549,7 @@ export default function GeospatialMap() {
                         transition={{ duration: 0.15 }}
                         type="button"
                         onClick={resetFilters}
-                        className="inline-flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-[11px] sm:text-xs font-semibold text-[#0071E3] hover:text-[#0077ED] dark:text-sky-400 bg-white/80 dark:bg-slate-700/70 rounded-xl transition-all active:scale-[0.97] cursor-pointer shrink-0 border border-slate-200/60 dark:border-white/10 shadow-2xs hover:shadow-xs"
+                        className="inline-flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-[11px] sm:text-xs font-semibold text-[#0071E3] hover:text-blue-700 dark:text-sky-400 bg-blue-500/10 hover:bg-blue-500/15 rounded-xl transition-all active:scale-[0.97] cursor-pointer shrink-0 border border-blue-500/20"
                         title="Reset filters"
                       >
                         <RotateCcw className="w-3.5 h-3.5" strokeWidth={1.75} />

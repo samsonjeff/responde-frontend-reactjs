@@ -30,6 +30,7 @@ import {
   Copy,
   Loader2,
   ChevronDown,
+  Filter,
 } from 'lucide-react';
 import SignOutModal from '../components/SignOutModal';
 import { StaggerContainer, StaggerItem } from '../components/Stagger';
@@ -1585,20 +1586,22 @@ export default function Settings() {
                   </div>
 
                   <div className="relative flex items-center gap-2.5" ref={auditFilterRef}>
-                    <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 select-none">
-                      Filter:
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setAuditFilterOpen((prev) => !prev)}
-                      aria-haspopup="listbox"
-                      aria-expanded={auditFilterOpen}
-                      className={`group inline-flex items-center gap-2.5 px-3.5 py-1.5 sm:py-2 rounded-2xl text-xs font-semibold backdrop-blur-xl transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 cursor-pointer focus:outline-none select-none ${
-                        auditFilterOpen
-                          ? 'bg-white dark:bg-slate-800 border-[#0071E3] dark:border-sky-400 text-[#0071E3] dark:text-sky-400 ring-4 ring-[#0071E3]/15 shadow-[0_4px_20px_rgba(0,113,227,0.18),inset_0_1px_1px_rgba(255,255,255,1)] dark:shadow-[0_4px_20px_rgba(56,189,248,0.22)]'
-                          : 'bg-white/90 hover:bg-white dark:bg-slate-900/80 dark:hover:bg-slate-900 border-slate-300/90 hover:border-[#0071E3]/50 dark:border-white/20 dark:hover:border-sky-400/40 text-slate-800 dark:text-slate-100 shadow-[0_2px_12px_rgba(0,0,0,0.05),0_1px_2px_rgba(0,0,0,0.02),inset_0_1px_1px_rgba(255,255,255,0.95)] hover:shadow-[0_4px_16px_rgba(0,113,227,0.14),inset_0_1px_1px_rgba(255,255,255,1)] dark:shadow-[0_2px_10px_rgba(0,0,0,0.3),inset_0_1px_1px_rgba(255,255,255,0.06)]'
-                      } border`}
-                    >
+                    <div className="inline-flex items-center gap-1 sm:gap-1.5 p-1 bg-slate-100/70 dark:bg-white/[0.05] backdrop-blur-xl rounded-2xl border border-slate-200/70 dark:border-white/10 shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]">
+                      <div className="flex items-center gap-1 px-2.5 py-1 text-[#0071E3] dark:text-sky-400 cursor-default select-none shrink-0">
+                        <Filter className="w-3.5 h-3.5 transition-transform duration-300 group-hover/filters:scale-110 text-[#0071E3] dark:text-sky-400" strokeWidth={1.8} />
+                        <span className="text-[10px] font-bold uppercase tracking-wider">Filters</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setAuditFilterOpen((prev) => !prev)}
+                        aria-haspopup="listbox"
+                        aria-expanded={auditFilterOpen}
+                        className={`group inline-flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-xs font-semibold backdrop-blur-xl transition-all duration-150 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 cursor-pointer focus:outline-none select-none ${
+                          auditFilterOpen
+                            ? 'bg-white dark:bg-slate-800 border-[#0071E3] dark:border-sky-400 text-[#0071E3] dark:text-sky-400 shadow-xs ring-2 ring-[#0071E3]/15'
+                            : 'bg-white/90 hover:bg-white dark:bg-slate-900/80 dark:hover:bg-slate-900 border-slate-200/80 dark:border-white/10 text-slate-800 dark:text-slate-100 shadow-xs hover:border-[#0071E3]/50'
+                        } border`}
+                      >
                       <span
                         className={`w-2 h-2 rounded-full shrink-0 ring-1.5 ring-white dark:ring-slate-900 shadow-2xs ${
                           AUDIT_FILTER_OPTIONS.find((o) => o.value === auditFilter)?.dotColor || 'bg-slate-400'
@@ -1614,6 +1617,7 @@ export default function Settings() {
                         strokeWidth={2.25}
                       />
                     </button>
+                    </div>
 
                     <AnimatePresence>
                       {auditFilterOpen && (
