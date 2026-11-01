@@ -1054,7 +1054,7 @@ export default function Settings() {
               {/* 1. Profile Information Card */}
               <div className="rounded-3xl bg-white/80 dark:bg-[#111827]/80 backdrop-blur-xl border border-slate-200/80 dark:border-white/10 p-6 sm:p-7 shadow-[0_4px_24px_rgba(0,0,0,0.03),0_1px_2px_rgba(0,0,0,0.02)]">
                 {/* Header */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-100 dark:border-white/5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-200/80 dark:border-white/10">
                   <div>
                     <h2 className="text-base sm:text-lg font-bold tracking-tight text-slate-900 dark:text-white">
                       Profile Information
@@ -1346,7 +1346,7 @@ export default function Settings() {
             <div className="space-y-6">
               <SoftCard>
                 {/* Header & Controls */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-slate-100 dark:border-white/5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-slate-200/80 dark:border-white/10">
                   <div className="flex items-center gap-3.5">
                     <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400 flex items-center justify-center shrink-0 border border-indigo-500/20 shadow-xs">
                       <Users className="w-5 h-5" strokeWidth={1.75} />
@@ -1570,7 +1570,7 @@ export default function Settings() {
 
               {/* Sub-Card: Activity & Audit Log */}
               <SoftCard>
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-white/5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200/80 dark:border-white/10">
                   <div className="flex items-center gap-3.5">
                     <div className="w-9 h-9 rounded-xl bg-purple-500/10 text-purple-600 dark:bg-purple-500/20 dark:text-purple-400 flex items-center justify-center shrink-0 border border-purple-500/20 shadow-xs">
                       <Shield className="w-4.5 h-4.5" strokeWidth={1.75} />
@@ -1740,7 +1740,7 @@ export default function Settings() {
           <StaggerItem>
             <div className="w-full space-y-6">
               <SoftCard className="w-full">
-                <div className="flex items-center gap-3.5 pb-5 sm:pb-6 border-b border-slate-100 dark:border-white/5">
+                <div className="flex items-center gap-3.5 pb-5 sm:pb-6 border-b border-slate-200/80 dark:border-white/10">
                   <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-300 flex items-center justify-center shrink-0 border border-slate-200/60 dark:border-white/10 shadow-2xs">
                     <Lock className="w-5 h-5" strokeWidth={1.75} />
                   </div>
@@ -1915,7 +1915,7 @@ export default function Settings() {
           <StaggerItem>
             <div className="w-full space-y-6">
               <SoftCard className="w-full">
-                <div className="pb-5 sm:pb-6 border-b border-slate-100/80 dark:border-white/5">
+                <div className="pb-5 sm:pb-6 border-b border-slate-200/80 dark:border-white/10">
                   <h2 className="text-lg sm:text-xl font-bold tracking-tight text-slate-900 dark:text-white">
                     System Preferences
                   </h2>
@@ -1924,9 +1924,9 @@ export default function Settings() {
                   </p>
                 </div>
 
-                <div className="pt-2 divide-y divide-slate-100/80 dark:divide-white/5">
+                <div className="pt-1">
                   {/* Theme Mode */}
-                  <div className="py-4.5 sm:py-5 -mx-2 sm:-mx-3 px-3 sm:px-4 rounded-2xl hover:bg-slate-50/70 dark:hover:bg-white/[0.025] transition-colors duration-150 flex items-center justify-between gap-4">
+                  <div className="py-4.5 sm:py-5 px-3 sm:px-4 -mx-3 sm:-mx-4 rounded-2xl hover:bg-slate-500/[0.03] dark:hover:bg-white/[0.03] transition-colors duration-150 flex items-center justify-between gap-4">
                     <div className="flex items-center gap-3.5">
                       <div className="w-10 h-10 rounded-2xl bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-slate-400 flex items-center justify-center shrink-0 border border-slate-200/60 dark:border-white/5 shadow-2xs">
                         {isDark ? <Moon className="w-5 h-5" strokeWidth={1.75} /> : <Sun className="w-5 h-5" strokeWidth={1.75} />}
@@ -1964,8 +1964,11 @@ export default function Settings() {
                     </motion.button>
                   </div>
 
+                  {/* Minimal iOS Hairline Separator */}
+                  <div className="h-[1px] w-full bg-slate-200/70 dark:bg-white/10" />
+
                   {/* Push Notifications */}
-                  <div className="py-4.5 sm:py-5 -mx-2 sm:-mx-3 px-3 sm:px-4 rounded-2xl hover:bg-slate-50/70 dark:hover:bg-white/[0.025] transition-colors duration-150 flex items-center justify-between gap-4">
+                  <div className="py-4.5 sm:py-5 px-3 sm:px-4 -mx-3 sm:-mx-4 rounded-2xl hover:bg-slate-500/[0.03] dark:hover:bg-white/[0.03] transition-colors duration-150 flex items-center justify-between gap-4">
                     <div className="flex items-center gap-3.5">
                       <div className="w-10 h-10 rounded-2xl bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-slate-400 flex items-center justify-center shrink-0 border border-slate-200/60 dark:border-white/5 shadow-2xs">
                         <Bell className="w-5 h-5" strokeWidth={1.75} />
@@ -1986,8 +1989,11 @@ export default function Settings() {
                     />
                   </div>
 
+                  {/* Minimal iOS Hairline Separator */}
+                  <div className="h-[1px] w-full bg-slate-200/70 dark:bg-white/10" />
+
                   {/* Sound Alerts */}
-                  <div className="py-4.5 sm:py-5 -mx-2 sm:-mx-3 px-3 sm:px-4 rounded-2xl hover:bg-slate-50/70 dark:hover:bg-white/[0.025] transition-colors duration-150 flex items-center justify-between gap-4">
+                  <div className="py-4.5 sm:py-5 px-3 sm:px-4 -mx-3 sm:-mx-4 rounded-2xl hover:bg-slate-500/[0.03] dark:hover:bg-white/[0.03] transition-colors duration-150 flex items-center justify-between gap-4">
                     <div className="flex items-center gap-3.5">
                       <div className="w-10 h-10 rounded-2xl bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-slate-400 flex items-center justify-center shrink-0 border border-slate-200/60 dark:border-white/5 shadow-2xs">
                         <Volume2 className="w-5 h-5" strokeWidth={1.75} />
@@ -2008,8 +2014,11 @@ export default function Settings() {
                     />
                   </div>
 
+                  {/* Minimal iOS Hairline Separator */}
+                  <div className="h-[1px] w-full bg-slate-200/70 dark:bg-white/10" />
+
                   {/* Live Auto-Refresh */}
-                  <div className="py-4.5 sm:py-5 -mx-2 sm:-mx-3 px-3 sm:px-4 rounded-2xl hover:bg-slate-50/70 dark:hover:bg-white/[0.025] transition-colors duration-150 flex items-center justify-between gap-4">
+                  <div className="py-4.5 sm:py-5 px-3 sm:px-4 -mx-3 sm:-mx-4 rounded-2xl hover:bg-slate-500/[0.03] dark:hover:bg-white/[0.03] transition-colors duration-150 flex items-center justify-between gap-4">
                     <div className="flex items-center gap-3.5">
                       <div className="w-10 h-10 rounded-2xl bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-slate-400 flex items-center justify-center shrink-0 border border-slate-200/60 dark:border-white/5 shadow-2xs">
                         <Globe className="w-5 h-5" strokeWidth={1.75} />
