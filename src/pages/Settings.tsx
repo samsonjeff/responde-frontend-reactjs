@@ -1235,7 +1235,7 @@ export default function Settings() {
                         <th className="px-4 py-3 font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-[11px] hidden md:table-cell whitespace-nowrap">
                           Last Login
                         </th>
-                        <th className="px-4 py-3 font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-[11px] text-right whitespace-nowrap sticky right-0 z-20 bg-slate-50/95 dark:bg-slate-900/95 backdrop-blur-md shadow-[-8px_0_12px_-4px_rgba(0,0,0,0.08)] dark:shadow-[-8px_0_12px_-4px_rgba(0,0,0,0.4)] shrink-0">
+                        <th className="px-4 py-3 w-40 min-w-[150px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-[11px] text-left whitespace-nowrap sticky right-0 z-20 bg-slate-50/95 dark:bg-slate-900/95 backdrop-blur-md shadow-[-8px_0_12px_-4px_rgba(0,0,0,0.08)] dark:shadow-[-8px_0_12px_-4px_rgba(0,0,0,0.4)] shrink-0">
                           Actions
                         </th>
                       </tr>
@@ -1309,8 +1309,8 @@ export default function Settings() {
                                   : 'Never'}
                               </td>
 
-                              <td className="px-4 py-3 text-right whitespace-nowrap sticky right-0 z-10 bg-white/95 dark:bg-[#111827]/95 group-hover:bg-slate-50 dark:group-hover:bg-slate-800 transition-colors shadow-[-8px_0_12px_-4px_rgba(0,0,0,0.08)] dark:shadow-[-8px_0_12px_-4px_rgba(0,0,0,0.4)] shrink-0">
-                                <div className="flex items-center justify-end gap-2.5">
+                              <td className="px-4 py-3 w-40 min-w-[150px] text-left whitespace-nowrap sticky right-0 z-10 bg-white/95 dark:bg-[#111827]/95 group-hover:bg-slate-50 dark:group-hover:bg-slate-800 transition-colors shadow-[-8px_0_12px_-4px_rgba(0,0,0,0.08)] dark:shadow-[-8px_0_12px_-4px_rgba(0,0,0,0.4)] shrink-0">
+                                <div className="flex items-center justify-start gap-2.5">
                                   {isEditDisabled ? (
                                     <span className="text-xs text-slate-400 italic">
                                       {disabledReason}
