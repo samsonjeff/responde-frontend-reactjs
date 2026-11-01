@@ -415,6 +415,7 @@ export default function Layout() {
 
 
   const isActive = (p: string) => location.pathname === p;
+  const isSettingsPage = location.pathname.startsWith('/settings');
 
   const navItems = [
     { path: '/dashboard', label: 'Dashboard', shortLabel: 'Dashboard', icon: LayoutDashboard },
@@ -666,7 +667,8 @@ export default function Layout() {
         `}
       >
         {/* ─── FLOATING HEADER (Frosted Glass) ─── */}
-        <div className="shrink-0 px-2 sm:px-4 md:px-0 md:pl-2 pt-3 sm:pt-4 z-[100] relative">
+        {!isSettingsPage && (
+          <div className="shrink-0 px-2 sm:px-4 md:px-0 md:pl-2 pt-3 sm:pt-4 z-[100] relative">
           <header className="
             h-16.25 flex items-center justify-between px-4
             backdrop-blur-xl backdrop-saturate-180
@@ -1176,9 +1178,14 @@ export default function Layout() {
               </div>
             </div>
           </header>
-        </div>
+          </div>
+        )}
 
-        <div className="flex-1 flex flex-col min-h-0 overflow-y-auto overflow-x-hidden px-3.5 pb-[calc(7.5rem+env(safe-area-inset-bottom,0px))] pt-3 sm:px-5 sm:pb-[calc(7.5rem+env(safe-area-inset-bottom,0px))] md:pb-0 md:pt-3.5 md:pr-0 md:pl-2 lg:pb-0 lg:pt-3.5 lg:pr-0 lg:pl-2">
+        <div className={`flex-1 flex flex-col min-h-0 overflow-y-auto overflow-x-hidden px-3.5 pb-[calc(7.5rem+env(safe-area-inset-bottom,0px))] sm:px-5 sm:pb-[calc(7.5rem+env(safe-area-inset-bottom,0px))] md:pb-0 md:pr-0 md:pl-2 lg:pb-0 lg:pr-0 lg:pl-2 ${
+          isSettingsPage
+            ? 'pt-4 sm:pt-4 md:pt-4 lg:pt-4'
+            : 'pt-3 sm:pt-3.5 md:pt-3.5 lg:pt-3.5'
+        }`}>
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
               key={location.pathname}

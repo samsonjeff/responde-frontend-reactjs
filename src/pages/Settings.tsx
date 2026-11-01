@@ -963,7 +963,7 @@ export default function Settings() {
 
         {/* ── UNIFIED APPLE macOS / iOS PAGE HEADER WITH INTEGRATED SEGMENTED TABS ── */}
         <StaggerItem className="shrink-0">
-          <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 pt-1">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pt-1">
             <div className="flex items-center gap-3 shrink-0">
               <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-blue-500/10 dark:bg-blue-500/20 text-[#0071E3] dark:text-sky-400 flex items-center justify-center shrink-0 border border-blue-500/20 shadow-xs">
                 <SettingsIcon className="w-5 h-5 sm:w-5.5 sm:h-5.5" strokeWidth={1.75} />
