@@ -1380,22 +1380,22 @@ export default function Settings() {
                 {/* Search Bar (Glass iOS Style) */}
                 <div className="pt-4 pb-2">
                   <div className="relative max-w-sm sm:max-w-md group/search">
-                    <Search
-                      className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within/search:text-[#0071E3] dark:group-focus-within/search:text-sky-400 transition-colors duration-200 pointer-events-none"
-                      strokeWidth={2}
-                    />
                     <input
                       type="text"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       placeholder="Search by name, email, or username..."
-                      className="w-full pl-10 pr-9 py-2.5 rounded-2xl text-xs sm:text-sm font-medium bg-white/90 hover:bg-white focus:bg-white dark:bg-slate-900/80 dark:hover:bg-slate-900/95 dark:focus:bg-slate-900 backdrop-blur-xl border border-slate-300/90 hover:border-slate-400/90 focus:border-[#0071E3] dark:border-white/20 dark:hover:border-white/30 dark:focus:border-sky-400 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 shadow-[0_2px_12px_rgba(0,0,0,0.05),0_1px_2px_rgba(0,0,0,0.02),inset_0_1px_1px_rgba(255,255,255,0.95)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.07),inset_0_1px_1px_rgba(255,255,255,1)] focus:shadow-[0_4px_20px_rgba(0,113,227,0.16),0_0_0_3px_rgba(0,113,227,0.15),inset_0_1px_1px_rgba(255,255,255,1)] dark:shadow-[0_2px_10px_rgba(0,0,0,0.3),inset_0_1px_1px_rgba(255,255,255,0.06)] dark:focus:shadow-[0_4px_20px_rgba(56,189,248,0.22),0_0_0_3px_rgba(56,189,248,0.2)] focus:outline-none transition-all duration-200"
+                      className="w-full pl-10 pr-9 py-2.5 rounded-2xl text-xs sm:text-sm font-medium bg-white/90 hover:bg-white focus:bg-white dark:bg-slate-900/80 dark:hover:bg-slate-900/95 dark:focus:bg-slate-900 backdrop-blur-xl border border-slate-300/90 hover:border-slate-400/90 focus:border-[#0071E3] dark:border-white/20 dark:hover:border-white/30 dark:focus:border-sky-400 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 shadow-[0_2px_12px_rgba(0,0,0,0.05),0_1px_2px_rgba(0,0,0,0.02),inset_0_1px_1px_rgba(255,255,255,0.95)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.07),inset_0_1px_1px_rgba(255,255,255,1)] focus:shadow-[0_4px_20px_rgba(0,113,227,0.16),0_0_0_3px_rgba(0,113,227,0.15),inset_0_1px_1px_rgba(255,255,255,1)] dark:shadow-[0_2px_10px_rgba(0,0,0,0.3),inset_0_1px_1px_rgba(255,255,255,0.06)] dark:focus:shadow-[0_4px_20px_rgba(56,189,248,0.22),0_0_0_3px_rgba(56,189,248,0.2)] focus:outline-none transition-all duration-200 relative z-0"
+                    />
+                    <Search
+                      className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within/search:text-[#0071E3] dark:group-focus-within/search:text-sky-400 transition-colors duration-200 pointer-events-none z-10"
+                      strokeWidth={2}
                     />
                     {searchQuery && (
                       <button
                         type="button"
                         onClick={() => setSearchQuery('')}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 w-4.5 h-4.5 rounded-full bg-slate-200/80 hover:bg-slate-300 dark:bg-white/20 dark:hover:bg-white/30 text-slate-600 dark:text-slate-200 flex items-center justify-center transition-all cursor-pointer active:scale-90"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 w-4.5 h-4.5 rounded-full bg-slate-200/80 hover:bg-slate-300 dark:bg-white/20 dark:hover:bg-white/30 text-slate-600 dark:text-slate-200 flex items-center justify-center transition-all cursor-pointer active:scale-90 z-10"
                         title="Clear search"
                       >
                         <X className="w-3 h-3" strokeWidth={2.5} />
