@@ -956,10 +956,14 @@ export default function Settings() {
                     <form onSubmit={handleSaveProfile} className="divide-y divide-slate-100 dark:divide-white/5">
                       {/* Row 1: Full Name & Username */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-slate-100 dark:divide-white/5">
-                        <div className="p-4 sm:p-5 space-y-1.5">
-                          <label className="text-[11px] font-medium tracking-wide text-slate-500 dark:text-slate-400 block">
-                            Full Name <span className="text-rose-500">*</span>
-                          </label>
+                        <div className="p-4 sm:p-5 space-y-2">
+                          <div>
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-500/10 text-[#0071E3] dark:bg-blue-500/20 dark:text-sky-400 border border-blue-500/20 w-fit select-none">
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#0071E3] dark:bg-sky-400 shrink-0" />
+                              <span>Full Name</span>
+                              <span className="text-rose-500">*</span>
+                            </span>
+                          </div>
                           <input
                             type="text"
                             value={profileDraft.fullName}
@@ -970,10 +974,13 @@ export default function Settings() {
                           />
                         </div>
 
-                        <div className="p-4 sm:p-5 space-y-1.5">
-                          <label className="text-[11px] font-medium tracking-wide text-slate-500 dark:text-slate-400 block">
-                            Username
-                          </label>
+                        <div className="p-4 sm:p-5 space-y-2">
+                          <div>
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-purple-500/10 text-purple-600 dark:bg-purple-500/20 dark:text-purple-400 border border-purple-500/20 w-fit select-none">
+                              <span className="w-1.5 h-1.5 rounded-full bg-purple-500 dark:bg-purple-400 shrink-0" />
+                              <span>Username</span>
+                            </span>
+                          </div>
                           <input
                             type="text"
                             value={`@${usernameDisplay}`}
@@ -986,10 +993,13 @@ export default function Settings() {
 
                       {/* Row 2: Email & Phone */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-slate-100 dark:divide-white/5">
-                        <div className="p-4 sm:p-5 space-y-1.5">
-                          <label className="text-[11px] font-medium tracking-wide text-slate-500 dark:text-slate-400 block">
-                            Email Address
-                          </label>
+                        <div className="p-4 sm:p-5 space-y-2">
+                          <div>
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-sky-500/10 text-sky-600 dark:bg-sky-500/20 dark:text-sky-400 border border-sky-500/20 w-fit select-none">
+                              <span className="w-1.5 h-1.5 rounded-full bg-sky-500 dark:bg-sky-400 shrink-0" />
+                              <span>Email Address</span>
+                            </span>
+                          </div>
                           <input
                             type="email"
                             value={currentUser?.email || ''}
@@ -999,10 +1009,13 @@ export default function Settings() {
                           />
                         </div>
 
-                        <div className="p-4 sm:p-5 space-y-1.5">
-                          <label className="text-[11px] font-medium tracking-wide text-slate-500 dark:text-slate-400 block">
-                            Contact Phone
-                          </label>
+                        <div className="p-4 sm:p-5 space-y-2">
+                          <div>
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 border border-emerald-500/20 w-fit select-none">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400 shrink-0" />
+                              <span>Contact Phone</span>
+                            </span>
+                          </div>
                           <input
                             type="tel"
                             value={profileDraft.phone}
@@ -1014,10 +1027,13 @@ export default function Settings() {
                       </div>
 
                       {/* Row 3: Official Role & Unit */}
-                      <div className="p-4 sm:p-5 space-y-1.5">
-                        <label className="text-[11px] font-medium tracking-wide text-slate-500 dark:text-slate-400 block">
-                          Official Role &amp; Assignment
-                        </label>
+                      <div className="p-4 sm:p-5 space-y-2">
+                        <div>
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/10 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400 border border-amber-500/20 w-fit select-none">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 dark:bg-amber-400 shrink-0" />
+                            <span>Official Role &amp; Assignment</span>
+                          </span>
+                        </div>
                         <input
                           type="text"
                           value={profileDraft.position}
@@ -1064,24 +1080,30 @@ export default function Settings() {
                       </div>
                     </form>
                   ) : (
-                    /* Non-editing Minimalist Grid (Icons removed, gaps filled) */
+                    /* Non-editing Minimalist Grid with Urgency-style Color Labels */
                     <>
                       {/* Row 1: Full Name & Username */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-slate-100 dark:divide-white/5">
-                        <div className="px-5 py-4 hover:bg-slate-50/50 dark:hover:bg-white/[0.015] transition-colors">
-                          <span className="text-[11px] font-medium tracking-wide text-slate-400 dark:text-slate-500 uppercase block mb-1">
-                            Full Name
-                          </span>
-                          <span className="text-sm sm:text-base font-semibold text-slate-900 dark:text-white block">
+                        <div className="px-5 py-4 hover:bg-slate-50/50 dark:hover:bg-white/[0.015] transition-colors flex flex-col justify-center">
+                          <div className="mb-2">
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-500/10 text-[#0071E3] dark:bg-blue-500/20 dark:text-sky-400 border border-blue-500/20 w-fit select-none">
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#0071E3] dark:bg-sky-400 shrink-0" />
+                              <span>Full Name</span>
+                            </span>
+                          </div>
+                          <span className="text-sm sm:text-base font-semibold text-slate-900 dark:text-white block px-0.5">
                             {profile.fullName || 'Not provided'}
                           </span>
                         </div>
 
-                        <div className="px-5 py-4 hover:bg-slate-50/50 dark:hover:bg-white/[0.015] transition-colors">
-                          <span className="text-[11px] font-medium tracking-wide text-slate-400 dark:text-slate-500 uppercase block mb-1">
-                            Username
-                          </span>
-                          <span className="text-sm sm:text-base font-mono font-medium text-slate-900 dark:text-white block">
+                        <div className="px-5 py-4 hover:bg-slate-50/50 dark:hover:bg-white/[0.015] transition-colors flex flex-col justify-center">
+                          <div className="mb-2">
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-purple-500/10 text-purple-600 dark:bg-purple-500/20 dark:text-purple-400 border border-purple-500/20 w-fit select-none">
+                              <span className="w-1.5 h-1.5 rounded-full bg-purple-500 dark:bg-purple-400 shrink-0" />
+                              <span>Username</span>
+                            </span>
+                          </div>
+                          <span className="text-sm sm:text-base font-mono font-medium text-slate-900 dark:text-white block px-0.5">
                             @{usernameDisplay}
                           </span>
                         </div>
@@ -1089,31 +1111,40 @@ export default function Settings() {
 
                       {/* Row 2: Email & Phone */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-slate-100 dark:divide-white/5">
-                        <div className="px-5 py-4 hover:bg-slate-50/50 dark:hover:bg-white/[0.015] transition-colors">
-                          <span className="text-[11px] font-medium tracking-wide text-slate-400 dark:text-slate-500 uppercase block mb-1">
-                            Email Address
-                          </span>
-                          <span className="text-sm sm:text-base font-mono font-medium text-slate-900 dark:text-white block truncate">
+                        <div className="px-5 py-4 hover:bg-slate-50/50 dark:hover:bg-white/[0.015] transition-colors flex flex-col justify-center">
+                          <div className="mb-2">
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-sky-500/10 text-sky-600 dark:bg-sky-500/20 dark:text-sky-400 border border-sky-500/20 w-fit select-none">
+                              <span className="w-1.5 h-1.5 rounded-full bg-sky-500 dark:bg-sky-400 shrink-0" />
+                              <span>Email Address</span>
+                            </span>
+                          </div>
+                          <span className="text-sm sm:text-base font-mono font-medium text-slate-900 dark:text-white block px-0.5 truncate">
                             {currentUser?.email || 'No email attached'}
                           </span>
                         </div>
 
-                        <div className="px-5 py-4 hover:bg-slate-50/50 dark:hover:bg-white/[0.015] transition-colors">
-                          <span className="text-[11px] font-medium tracking-wide text-slate-400 dark:text-slate-500 uppercase block mb-1">
-                            Contact Phone
-                          </span>
-                          <span className="text-sm sm:text-base font-mono font-medium text-slate-900 dark:text-white block">
+                        <div className="px-5 py-4 hover:bg-slate-50/50 dark:hover:bg-white/[0.015] transition-colors flex flex-col justify-center">
+                          <div className="mb-2">
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 border border-emerald-500/20 w-fit select-none">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400 shrink-0" />
+                              <span>Contact Phone</span>
+                            </span>
+                          </div>
+                          <span className="text-sm sm:text-base font-mono font-medium text-slate-900 dark:text-white block px-0.5">
                             {profile.phone || 'None recorded'}
                           </span>
                         </div>
                       </div>
 
                       {/* Row 3: Official Role & Assignment */}
-                      <div className="px-5 py-4 hover:bg-slate-50/50 dark:hover:bg-white/[0.015] transition-colors">
-                        <span className="text-[11px] font-medium tracking-wide text-slate-400 dark:text-slate-500 uppercase block mb-1">
-                          Official Role &amp; Assignment
-                        </span>
-                        <span className="text-sm sm:text-base font-semibold text-slate-900 dark:text-white block">
+                      <div className="px-5 py-4 hover:bg-slate-50/50 dark:hover:bg-white/[0.015] transition-colors flex flex-col justify-center">
+                        <div className="mb-2">
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/10 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400 border border-amber-500/20 w-fit select-none">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 dark:bg-amber-400 shrink-0" />
+                            <span>Official Role &amp; Assignment</span>
+                          </span>
+                        </div>
+                        <span className="text-sm sm:text-base font-semibold text-slate-900 dark:text-white block px-0.5">
                           {profile.position || 'Super Admin • MDRRMO'}
                         </span>
                       </div>
