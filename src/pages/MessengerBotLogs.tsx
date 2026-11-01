@@ -816,53 +816,81 @@ export default function MessengerBotLogs() {
     [updateDistressNav]
   );
 
-  const handleJumpToTop = () => {
+  const handleJumpDirection = useCallback((dir: 'up' | 'down') => {
+    preferredDirectionRef.current = dir;
     const container = chatScrollRef.current;
     if (!container) return;
 
-    // If multiple distress messages and we are below the first one (e.g. at #2 or #3),
-    // jump straight to the first (topmost) distress signal in one click!
-    const firstIdx = distressNav.firstDistressIdx;
-    if (firstIdx !== -1 && distressNav.currentNumber > 1) {
-      jumpToMessageIndex(firstIdx);
-      return;
-    }
+    const indices = selectedConversation?.nlp?.distressMessageIndices || [];
+    if (indices.length === 0) return;
 
-    // If first distress is scrolled above out of view, jump straight to it
-    if (firstIdx !== -1) {
-      const firstEl = container.querySelector<HTMLElement>(`[data-distress-idx="${firstIdx}"]`);
-      if (firstEl) {
-        const containerRect = container.getBoundingClientRect();
-        const elRect = firstEl.getBoundingClientRect();
-        if (elRect.bottom < containerRect.top + 60) {
-          jumpToMessageIndex(firstIdx);
-          return;
+    const containerRect = container.getBoundingClientRect();
+    const containerCenter = (containerRect.top + containerRect.bottom) / 2;
+
+    if (dir === 'down') {
+      // Find all distress elements that are below the current container center
+      const belowElements = indices
+        .map((idx, order) => {
+          const el = container.querySelector<HTMLElement>(`[data-distress-idx="${idx}"]`);
+          if (!el) return null;
+          const elRect = el.getBoundingClientRect();
+          const elCenter = (elRect.top + elRect.bottom) / 2;
+          return { idx, order: order + 1, elCenter, diff: elCenter - containerCenter };
+        })
+        .filter((e): e is NonNullable<typeof e> => e !== null && e.diff > 35)
+        .sort((a, b) => a.diff - b.diff);
+
+      if (belowElements.length > 0) {
+        // Step down to next distress signal
+        jumpToMessageIndex(belowElements[0].idx);
+      } else {
+        // Past the last distress: scroll all the way to the bottom of the chat conversation
+        const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 35;
+        if (!isNearBottom) {
+          container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
+          setTimeout(() => updateDistressNav(), 400);
+        } else {
+          // Wrap around seamlessly from bottom to top (first distress signal)
+          jumpToMessageIndex(indices[0]);
+        }
+      }
+    } else {
+      // dir === 'up'
+      const aboveElements = indices
+        .map((idx, order) => {
+          const el = container.querySelector<HTMLElement>(`[data-distress-idx="${idx}"]`);
+          if (!el) return null;
+          const elRect = el.getBoundingClientRect();
+          const elCenter = (elRect.top + elRect.bottom) / 2;
+          return { idx, order: order + 1, elCenter, diff: containerCenter - elCenter };
+        })
+        .filter((e): e is NonNullable<typeof e> => e !== null && e.diff > 35)
+        .sort((a, b) => a.diff - b.diff);
+
+      if (aboveElements.length > 0) {
+        // Step up to previous distress signal
+        jumpToMessageIndex(aboveElements[0].idx);
+      } else {
+        // Past the first distress: scroll all the way to the top of the chat
+        const isNearTop = container.scrollTop < 35;
+        if (!isNearTop) {
+          container.scrollTo({ top: 0, behavior: 'smooth' });
+          setTimeout(() => updateDistressNav(), 400);
+        } else {
+          // Wrap around seamlessly from top to bottom (last distress signal)
+          jumpToMessageIndex(indices[indices.length - 1]);
         }
       }
     }
+  }, [selectedConversation, jumpToMessageIndex, updateDistressNav]);
 
-    // If already at or past the first distress, scroll smoothly to the very top of the chat
-    container.scrollTo({ top: 0, behavior: 'smooth' });
-    setTimeout(() => {
-      updateDistressNav();
-    }, 450);
-  };
-
-  const handleJumpDirection = (dir: 'up' | 'down') => {
-    preferredDirectionRef.current = dir;
-    const target = dir === 'up' ? distressNav.prevTargetIdx : distressNav.nextTargetIdx;
-    if (target !== -1) {
-      jumpToMessageIndex(target);
-    } else if (distressNav.targetIdx !== -1) {
-      jumpToMessageIndex(distressNav.targetIdx);
-    }
-  };
-
-  const handleJumpToDistress = () => {
+  const handleJumpToDistress = useCallback(() => {
     if (distressNav.targetIdx !== -1) {
       jumpToMessageIndex(distressNav.targetIdx);
+    } else {
+      handleJumpDirection('down');
     }
-  };
+  }, [distressNav.targetIdx, jumpToMessageIndex, handleJumpDirection]);
 
   return (
     <div className="messenger-soft flex flex-col flex-1 min-h-0 space-y-3 sm:space-y-3.5 w-full h-full relative">
@@ -1514,15 +1542,14 @@ export default function MessengerBotLogs() {
                           className="absolute bottom-3 left-1/2 -translate-x-1/2 z-30 pointer-events-auto"
                         >
                           <div className="group flex items-center gap-1 p-1 rounded-full bg-white/95 dark:bg-[#242526]/95 backdrop-blur-xl border border-rose-500/35 dark:border-rose-500/40 shadow-[0_8px_24px_rgba(244,63,94,0.24)] dark:shadow-[0_8px_24px_rgba(244,63,94,0.3)] text-xs font-semibold select-none">
-                            {/* Instant jump to top / first distress */}
+                            {/* Scroll up / Previous distress signal */}
                             {distressNav.total > 1 && (
                               <button
                                 type="button"
-                                onClick={handleJumpToTop}
-                                disabled={!distressNav.canScrollUp}
-                                className="flex items-center justify-center w-6 h-6 rounded-full text-rose-600 dark:text-rose-400 hover:bg-rose-500/15 active:scale-90 disabled:opacity-25 disabled:pointer-events-none transition-all cursor-pointer"
-                                title="Go on top / First distress signal"
-                                aria-label="Go on top / First distress signal"
+                                onClick={() => handleJumpDirection('up')}
+                                className="flex items-center justify-center w-6 h-6 rounded-full text-rose-600 dark:text-rose-400 hover:bg-rose-500/15 active:scale-90 transition-all cursor-pointer"
+                                title="Previous distress signal (scroll up)"
+                                aria-label="Previous distress signal"
                               >
                                 <ArrowUp className="w-3.5 h-3.5" strokeWidth={2.2} />
                               </button>
@@ -1550,14 +1577,14 @@ export default function MessengerBotLogs() {
                               )}
                             </button>
 
-                            {/* Scroll down to next distress */}
+                            {/* Scroll down to next distress signal (unlimited navigation) */}
                             {distressNav.total > 1 && (
                               <button
                                 type="button"
                                 onClick={() => handleJumpDirection('down')}
-                                disabled={!distressNav.hasBelow}
-                                className="flex items-center justify-center w-6 h-6 rounded-full text-rose-600 dark:text-rose-400 hover:bg-rose-500/15 active:scale-90 disabled:opacity-25 disabled:pointer-events-none transition-all cursor-pointer"
+                                className="flex items-center justify-center w-6 h-6 rounded-full text-rose-600 dark:text-rose-400 hover:bg-rose-500/15 active:scale-90 transition-all cursor-pointer"
                                 title="Next distress signal (scroll down)"
+                                aria-label="Next distress signal"
                               >
                                 <ArrowDown className="w-3.5 h-3.5" strokeWidth={2.2} />
                               </button>
