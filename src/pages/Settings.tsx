@@ -1320,17 +1320,30 @@ export default function Settings() {
                   </div>
                 </div>
 
-                {/* Search Bar */}
+                {/* Search Bar (Glass iOS Style) */}
                 <div className="pt-4 pb-2">
-                  <div className="relative max-w-sm">
-                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" strokeWidth={1.75} />
+                  <div className="relative max-w-sm sm:max-w-md group/search">
+                    <Search
+                      className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within/search:text-[#0071E3] dark:group-focus-within/search:text-sky-400 transition-colors duration-200 pointer-events-none"
+                      strokeWidth={2}
+                    />
                     <input
                       type="text"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       placeholder="Search by name, email, or username..."
-                      className="w-full pl-9 pr-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm bg-slate-100/70 hover:bg-slate-100 focus:bg-white dark:bg-white/5 dark:hover:bg-white/[0.08] dark:focus:bg-white/10 border border-slate-200/80 dark:border-white/10 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0071E3]/20 focus:border-[#0071E3] transition-all"
+                      className="w-full pl-10 pr-9 py-2.5 rounded-2xl text-xs sm:text-sm font-medium bg-white/90 hover:bg-white focus:bg-white dark:bg-slate-900/80 dark:hover:bg-slate-900/95 dark:focus:bg-slate-900 backdrop-blur-xl border border-slate-300/90 hover:border-slate-400/90 focus:border-[#0071E3] dark:border-white/20 dark:hover:border-white/30 dark:focus:border-sky-400 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 shadow-[0_2px_12px_rgba(0,0,0,0.05),0_1px_2px_rgba(0,0,0,0.02),inset_0_1px_1px_rgba(255,255,255,0.95)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.07),inset_0_1px_1px_rgba(255,255,255,1)] focus:shadow-[0_4px_20px_rgba(0,113,227,0.16),0_0_0_3px_rgba(0,113,227,0.15),inset_0_1px_1px_rgba(255,255,255,1)] dark:shadow-[0_2px_10px_rgba(0,0,0,0.3),inset_0_1px_1px_rgba(255,255,255,0.06)] dark:focus:shadow-[0_4px_20px_rgba(56,189,248,0.22),0_0_0_3px_rgba(56,189,248,0.2)] focus:outline-none transition-all duration-200"
                     />
+                    {searchQuery && (
+                      <button
+                        type="button"
+                        onClick={() => setSearchQuery('')}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 w-4.5 h-4.5 rounded-full bg-slate-200/80 hover:bg-slate-300 dark:bg-white/20 dark:hover:bg-white/30 text-slate-600 dark:text-slate-200 flex items-center justify-center transition-all cursor-pointer active:scale-90"
+                        title="Clear search"
+                      >
+                        <X className="w-3 h-3" strokeWidth={2.5} />
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -1492,28 +1505,34 @@ export default function Settings() {
                     </div>
                   </div>
 
-                  <div className="relative flex items-center gap-2" ref={auditFilterRef}>
-                    <span className="text-xs text-slate-400 font-medium">Filter:</span>
+                  <div className="relative flex items-center gap-2.5" ref={auditFilterRef}>
+                    <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 select-none">
+                      Filter:
+                    </span>
                     <button
                       type="button"
                       onClick={() => setAuditFilterOpen((prev) => !prev)}
                       aria-haspopup="listbox"
                       aria-expanded={auditFilterOpen}
-                      className="group inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-medium bg-slate-100/80 hover:bg-slate-200/80 dark:bg-white/10 dark:hover:bg-white/15 border border-slate-200/70 hover:border-slate-300 dark:border-white/10 dark:hover:border-white/20 text-slate-800 dark:text-slate-200 transition-all duration-150 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 shadow-2xs hover:shadow-xs cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#0071E3]/25"
+                      className={`group inline-flex items-center gap-2.5 px-3.5 py-1.5 sm:py-2 rounded-2xl text-xs font-semibold backdrop-blur-xl transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 cursor-pointer focus:outline-none select-none ${
+                        auditFilterOpen
+                          ? 'bg-white dark:bg-slate-800 border-[#0071E3] dark:border-sky-400 text-[#0071E3] dark:text-sky-400 ring-4 ring-[#0071E3]/15 shadow-[0_4px_20px_rgba(0,113,227,0.18),inset_0_1px_1px_rgba(255,255,255,1)] dark:shadow-[0_4px_20px_rgba(56,189,248,0.22)]'
+                          : 'bg-white/90 hover:bg-white dark:bg-slate-900/80 dark:hover:bg-slate-900 border-slate-300/90 hover:border-[#0071E3]/50 dark:border-white/20 dark:hover:border-sky-400/40 text-slate-800 dark:text-slate-100 shadow-[0_2px_12px_rgba(0,0,0,0.05),0_1px_2px_rgba(0,0,0,0.02),inset_0_1px_1px_rgba(255,255,255,0.95)] hover:shadow-[0_4px_16px_rgba(0,113,227,0.14),inset_0_1px_1px_rgba(255,255,255,1)] dark:shadow-[0_2px_10px_rgba(0,0,0,0.3),inset_0_1px_1px_rgba(255,255,255,0.06)]'
+                      } border`}
                     >
                       <span
-                        className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                        className={`w-2 h-2 rounded-full shrink-0 ring-1.5 ring-white dark:ring-slate-900 shadow-2xs ${
                           AUDIT_FILTER_OPTIONS.find((o) => o.value === auditFilter)?.dotColor || 'bg-slate-400'
                         }`}
                       />
-                      <span>
+                      <span className="tracking-[-0.01em]">
                         {AUDIT_FILTER_OPTIONS.find((o) => o.value === auditFilter)?.label || 'All Events'}
                       </span>
                       <ChevronDown
-                        className={`w-3.5 h-3.5 text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-200 transition-transform duration-200 shrink-0 ${
+                        className={`w-3.5 h-3.5 text-slate-400 group-hover:text-[#0071E3] dark:group-hover:text-sky-400 transition-all duration-200 shrink-0 ${
                           auditFilterOpen ? 'rotate-180 text-[#0071E3] dark:text-sky-400' : ''
                         }`}
-                        strokeWidth={2}
+                        strokeWidth={2.25}
                       />
                     </button>
 
@@ -1524,7 +1543,7 @@ export default function Settings() {
                           animate={{ opacity: 1, y: 0, scale: 1 }}
                           exit={{ opacity: 0, y: 4, scale: 0.95 }}
                           transition={{ duration: 0.15, ease: 'easeOut' }}
-                          className="absolute right-0 top-full mt-2 w-48 p-1.5 bg-white/95 dark:bg-[#1C1C1E]/95 backdrop-blur-xl border border-slate-200/80 dark:border-white/10 rounded-2xl shadow-[0_10px_30px_-5px_rgba(0,0,0,0.12),0_0_0_1px_rgba(0,0,0,0.04)] dark:shadow-[0_10px_30px_-5px_rgba(0,0,0,0.6),0_0_0_1px_rgba(255,255,255,0.08)] z-50 overflow-hidden"
+                          className="absolute right-0 top-full mt-2 w-52 p-1.5 bg-white/95 dark:bg-[#1C1C1E]/95 backdrop-blur-2xl border border-slate-200/90 dark:border-white/15 rounded-2xl shadow-[0_16px_40px_-8px_rgba(0,0,0,0.16),0_0_0_1px_rgba(0,0,0,0.04),inset_0_1px_1px_rgba(255,255,255,0.95)] dark:shadow-[0_16px_40px_-8px_rgba(0,0,0,0.7),0_0_0_1px_rgba(255,255,255,0.1),inset_0_1px_1px_rgba(255,255,255,0.08)] z-50 overflow-hidden"
                           role="listbox"
                         >
                           <div className="space-y-0.5">
