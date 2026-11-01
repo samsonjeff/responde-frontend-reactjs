@@ -5,10 +5,6 @@ import { useAuth } from '../context/AuthContext';
 import {
   Settings as SettingsIcon,
   UserCircle,
-  User,
-  Phone,
-  ShieldCheck,
-  AtSign,
   Shield,
   Lock,
   Bell,
@@ -945,7 +941,7 @@ export default function Settings() {
               {/* ── Apple Inset Grouped Section: Account Details ── */}
               <div>
                 <div className="px-3 pb-2 flex items-center justify-between">
-                  <span className="text-[11px] font-bold tracking-wider uppercase text-slate-400 dark:text-slate-500">
+                  <span className="text-[11px] font-semibold tracking-wider uppercase text-slate-400 dark:text-slate-500">
                     Account Details
                   </span>
                   {isEditingProfile && (
@@ -958,91 +954,76 @@ export default function Settings() {
                 <div className="rounded-2xl bg-white/80 dark:bg-[#111827]/80 backdrop-blur-xl border border-slate-200/80 dark:border-white/10 shadow-[0_2px_12px_rgba(0,0,0,0.03)] divide-y divide-slate-100 dark:divide-white/5 overflow-hidden">
                   {isEditingProfile ? (
                     <form onSubmit={handleSaveProfile} className="divide-y divide-slate-100 dark:divide-white/5">
-                      {/* Full Name */}
-                      <div className="px-4 sm:px-5 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 hover:bg-slate-50/40 dark:hover:bg-white/[0.015] transition-colors">
-                        <div className="flex items-center gap-3 shrink-0">
-                          <div className="w-8 h-8 rounded-xl bg-blue-500/10 text-[#0071E3] dark:bg-blue-500/20 dark:text-sky-400 flex items-center justify-center shrink-0">
-                            <User className="w-4 h-4" strokeWidth={2} />
-                          </div>
-                          <span className="text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300">
+                      {/* Row 1: Full Name & Username */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-slate-100 dark:divide-white/5">
+                        <div className="p-4 sm:p-5 space-y-1.5">
+                          <label className="text-[11px] font-medium tracking-wide text-slate-500 dark:text-slate-400 block">
                             Full Name <span className="text-rose-500">*</span>
-                          </span>
+                          </label>
+                          <input
+                            type="text"
+                            value={profileDraft.fullName}
+                            onChange={(e) => setProfileDraft({ ...profileDraft, fullName: e.target.value })}
+                            required
+                            placeholder="Enter your full name"
+                            className="w-full px-3.5 py-2 text-xs sm:text-sm rounded-xl bg-slate-100/70 hover:bg-slate-100 focus:bg-white dark:bg-white/5 dark:hover:bg-white/[0.08] dark:focus:bg-white/10 border border-slate-200/80 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0071E3]/20 focus:border-[#0071E3] transition-all"
+                          />
                         </div>
-                        <input
-                          type="text"
-                          value={profileDraft.fullName}
-                          onChange={(e) => setProfileDraft({ ...profileDraft, fullName: e.target.value })}
-                          required
-                          placeholder="Enter your full name"
-                          className="w-full sm:max-w-xs px-3 py-1.5 text-xs sm:text-sm rounded-xl bg-slate-100/70 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0071E3]/30 dark:focus:ring-sky-400/30 text-left sm:text-right"
-                        />
-                      </div>
 
-                      {/* Username */}
-                      <div className="px-4 sm:px-5 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 hover:bg-slate-50/40 dark:hover:bg-white/[0.015] transition-colors">
-                        <div className="flex items-center gap-3 shrink-0">
-                          <div className="w-8 h-8 rounded-xl bg-purple-500/10 text-purple-600 dark:bg-purple-500/20 dark:text-purple-400 flex items-center justify-center shrink-0">
-                            <AtSign className="w-4 h-4" strokeWidth={2} />
-                          </div>
-                          <span className="text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300">
+                        <div className="p-4 sm:p-5 space-y-1.5">
+                          <label className="text-[11px] font-medium tracking-wide text-slate-500 dark:text-slate-400 block">
                             Username
-                          </span>
+                          </label>
+                          <input
+                            type="text"
+                            value={`@${usernameDisplay}`}
+                            disabled
+                            readOnly
+                            className="w-full px-3.5 py-2 text-xs sm:text-sm font-mono rounded-xl bg-slate-100/40 dark:bg-white/[0.02] border border-slate-200/50 dark:border-white/5 text-slate-400 dark:text-slate-500 cursor-not-allowed select-none"
+                          />
                         </div>
-                        <span className="text-xs sm:text-sm font-mono text-slate-400 dark:text-slate-500 px-3 py-1 text-left sm:text-right">
-                          @{usernameDisplay} (System Managed)
-                        </span>
                       </div>
 
-                      {/* Email */}
-                      <div className="px-4 sm:px-5 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 hover:bg-slate-50/40 dark:hover:bg-white/[0.015] transition-colors">
-                        <div className="flex items-center gap-3 shrink-0">
-                          <div className="w-8 h-8 rounded-xl bg-sky-500/10 text-sky-600 dark:bg-sky-500/20 dark:text-sky-400 flex items-center justify-center shrink-0">
-                            <Mail className="w-4 h-4" strokeWidth={2} />
-                          </div>
-                          <span className="text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300">
+                      {/* Row 2: Email & Phone */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-slate-100 dark:divide-white/5">
+                        <div className="p-4 sm:p-5 space-y-1.5">
+                          <label className="text-[11px] font-medium tracking-wide text-slate-500 dark:text-slate-400 block">
                             Email Address
-                          </span>
+                          </label>
+                          <input
+                            type="email"
+                            value={currentUser?.email || ''}
+                            disabled
+                            readOnly
+                            className="w-full px-3.5 py-2 text-xs sm:text-sm font-mono rounded-xl bg-slate-100/40 dark:bg-white/[0.02] border border-slate-200/50 dark:border-white/5 text-slate-400 dark:text-slate-500 cursor-not-allowed select-none truncate"
+                          />
                         </div>
-                        <span className="text-xs sm:text-sm font-mono text-slate-400 dark:text-slate-500 px-3 py-1 text-left sm:text-right truncate max-w-xs">
-                          {currentUser?.email || 'No email attached'}
-                        </span>
-                      </div>
 
-                      {/* Phone */}
-                      <div className="px-4 sm:px-5 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 hover:bg-slate-50/40 dark:hover:bg-white/[0.015] transition-colors">
-                        <div className="flex items-center gap-3 shrink-0">
-                          <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 flex items-center justify-center shrink-0">
-                            <Phone className="w-4 h-4" strokeWidth={2} />
-                          </div>
-                          <span className="text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300">
+                        <div className="p-4 sm:p-5 space-y-1.5">
+                          <label className="text-[11px] font-medium tracking-wide text-slate-500 dark:text-slate-400 block">
                             Contact Phone
-                          </span>
+                          </label>
+                          <input
+                            type="tel"
+                            value={profileDraft.phone}
+                            onChange={(e) => setProfileDraft({ ...profileDraft, phone: e.target.value })}
+                            placeholder="09XX-XXX-XXXX"
+                            className="w-full px-3.5 py-2 text-xs sm:text-sm font-mono rounded-xl bg-slate-100/70 hover:bg-slate-100 focus:bg-white dark:bg-white/5 dark:hover:bg-white/[0.08] dark:focus:bg-white/10 border border-slate-200/80 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0071E3]/20 focus:border-[#0071E3] transition-all"
+                          />
                         </div>
-                        <input
-                          type="tel"
-                          value={profileDraft.phone}
-                          onChange={(e) => setProfileDraft({ ...profileDraft, phone: e.target.value })}
-                          placeholder="09XX-XXX-XXXX"
-                          className="w-full sm:max-w-xs px-3 py-1.5 text-xs sm:text-sm font-mono rounded-xl bg-slate-100/70 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0071E3]/30 dark:focus:ring-sky-400/30 text-left sm:text-right"
-                        />
                       </div>
 
-                      {/* Title & Unit */}
-                      <div className="px-4 sm:px-5 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 hover:bg-slate-50/40 dark:hover:bg-white/[0.015] transition-colors">
-                        <div className="flex items-center gap-3 shrink-0">
-                          <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400 flex items-center justify-center shrink-0">
-                            <ShieldCheck className="w-4 h-4" strokeWidth={2} />
-                          </div>
-                          <span className="text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300">
-                            Official Role &amp; Unit
-                          </span>
-                        </div>
+                      {/* Row 3: Official Role & Unit */}
+                      <div className="p-4 sm:p-5 space-y-1.5">
+                        <label className="text-[11px] font-medium tracking-wide text-slate-500 dark:text-slate-400 block">
+                          Official Role &amp; Assignment
+                        </label>
                         <input
                           type="text"
                           value={profileDraft.position}
                           onChange={(e) => setProfileDraft({ ...profileDraft, position: e.target.value })}
                           placeholder="e.g. Lead Dispatcher • MDRRMO Command"
-                          className="w-full sm:max-w-xs px-3 py-1.5 text-xs sm:text-sm rounded-xl bg-slate-100/70 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0071E3]/30 dark:focus:ring-sky-400/30 text-left sm:text-right"
+                          className="w-full px-3.5 py-2 text-xs sm:text-sm rounded-xl bg-slate-100/70 hover:bg-slate-100 focus:bg-white dark:bg-white/5 dark:hover:bg-white/[0.08] dark:focus:bg-white/10 border border-slate-200/80 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0071E3]/20 focus:border-[#0071E3] transition-all"
                         />
                       </div>
 
@@ -1083,80 +1064,57 @@ export default function Settings() {
                       </div>
                     </form>
                   ) : (
-                    /* Non-editing Inset Grouped Rows */
+                    /* Non-editing Minimalist Grid (Icons removed, gaps filled) */
                     <>
-                      {/* Full Name */}
-                      <div className="px-4 sm:px-5 py-3.5 flex items-center justify-between gap-4 hover:bg-slate-50/50 dark:hover:bg-white/[0.02] transition-colors">
-                        <div className="flex items-center gap-3.5 min-w-0">
-                          <div className="w-8 h-8 rounded-xl bg-blue-500/10 text-[#0071E3] dark:bg-blue-500/20 dark:text-sky-400 flex items-center justify-center shrink-0">
-                            <User className="w-4 h-4" strokeWidth={2} />
-                          </div>
-                          <span className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-300">
+                      {/* Row 1: Full Name & Username */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-slate-100 dark:divide-white/5">
+                        <div className="px-5 py-4 hover:bg-slate-50/50 dark:hover:bg-white/[0.015] transition-colors">
+                          <span className="text-[11px] font-medium tracking-wide text-slate-400 dark:text-slate-500 uppercase block mb-1">
                             Full Name
                           </span>
+                          <span className="text-sm sm:text-base font-semibold text-slate-900 dark:text-white block">
+                            {profile.fullName || 'Not provided'}
+                          </span>
                         </div>
-                        <span className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white truncate">
-                          {profile.fullName || 'Not provided'}
-                        </span>
-                      </div>
 
-                      {/* Username */}
-                      <div className="px-4 sm:px-5 py-3.5 flex items-center justify-between gap-4 hover:bg-slate-50/50 dark:hover:bg-white/[0.02] transition-colors">
-                        <div className="flex items-center gap-3.5 min-w-0">
-                          <div className="w-8 h-8 rounded-xl bg-purple-500/10 text-purple-600 dark:bg-purple-500/20 dark:text-purple-400 flex items-center justify-center shrink-0">
-                            <AtSign className="w-4 h-4" strokeWidth={2} />
-                          </div>
-                          <span className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-300">
+                        <div className="px-5 py-4 hover:bg-slate-50/50 dark:hover:bg-white/[0.015] transition-colors">
+                          <span className="text-[11px] font-medium tracking-wide text-slate-400 dark:text-slate-500 uppercase block mb-1">
                             Username
                           </span>
+                          <span className="text-sm sm:text-base font-mono font-medium text-slate-900 dark:text-white block">
+                            @{usernameDisplay}
+                          </span>
                         </div>
-                        <span className="text-xs sm:text-sm font-mono font-medium text-slate-800 dark:text-slate-200">
-                          @{usernameDisplay}
-                        </span>
                       </div>
 
-                      {/* Email */}
-                      <div className="px-4 sm:px-5 py-3.5 flex items-center justify-between gap-4 hover:bg-slate-50/50 dark:hover:bg-white/[0.02] transition-colors">
-                        <div className="flex items-center gap-3.5 min-w-0">
-                          <div className="w-8 h-8 rounded-xl bg-sky-500/10 text-sky-600 dark:bg-sky-500/20 dark:text-sky-400 flex items-center justify-center shrink-0">
-                            <Mail className="w-4 h-4" strokeWidth={2} />
-                          </div>
-                          <span className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-300">
+                      {/* Row 2: Email & Phone */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-slate-100 dark:divide-white/5">
+                        <div className="px-5 py-4 hover:bg-slate-50/50 dark:hover:bg-white/[0.015] transition-colors">
+                          <span className="text-[11px] font-medium tracking-wide text-slate-400 dark:text-slate-500 uppercase block mb-1">
                             Email Address
                           </span>
+                          <span className="text-sm sm:text-base font-mono font-medium text-slate-900 dark:text-white block truncate">
+                            {currentUser?.email || 'No email attached'}
+                          </span>
                         </div>
-                        <span className="text-xs sm:text-sm font-mono font-medium text-slate-800 dark:text-slate-200 truncate max-w-[240px] sm:max-w-md">
-                          {currentUser?.email || 'No email attached'}
-                        </span>
-                      </div>
 
-                      {/* Phone */}
-                      <div className="px-4 sm:px-5 py-3.5 flex items-center justify-between gap-4 hover:bg-slate-50/50 dark:hover:bg-white/[0.02] transition-colors">
-                        <div className="flex items-center gap-3.5 min-w-0">
-                          <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 flex items-center justify-center shrink-0">
-                            <Phone className="w-4 h-4" strokeWidth={2} />
-                          </div>
-                          <span className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-300">
+                        <div className="px-5 py-4 hover:bg-slate-50/50 dark:hover:bg-white/[0.015] transition-colors">
+                          <span className="text-[11px] font-medium tracking-wide text-slate-400 dark:text-slate-500 uppercase block mb-1">
                             Contact Phone
                           </span>
-                        </div>
-                        <span className="text-xs sm:text-sm font-mono font-medium text-slate-800 dark:text-slate-200">
-                          {profile.phone || 'None recorded'}
-                        </span>
-                      </div>
-
-                      {/* Role & Unit */}
-                      <div className="px-4 sm:px-5 py-3.5 flex items-center justify-between gap-4 hover:bg-slate-50/50 dark:hover:bg-white/[0.02] transition-colors">
-                        <div className="flex items-center gap-3.5 min-w-0">
-                          <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400 flex items-center justify-center shrink-0">
-                            <ShieldCheck className="w-4 h-4" strokeWidth={2} />
-                          </div>
-                          <span className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-300">
-                            Official Role &amp; Unit
+                          <span className="text-sm sm:text-base font-mono font-medium text-slate-900 dark:text-white block">
+                            {profile.phone || 'None recorded'}
                           </span>
                         </div>
-                        <span className="text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 text-right">
-                          {profile.position}
+                      </div>
+
+                      {/* Row 3: Official Role & Assignment */}
+                      <div className="px-5 py-4 hover:bg-slate-50/50 dark:hover:bg-white/[0.015] transition-colors">
+                        <span className="text-[11px] font-medium tracking-wide text-slate-400 dark:text-slate-500 uppercase block mb-1">
+                          Official Role &amp; Assignment
+                        </span>
+                        <span className="text-sm sm:text-base font-semibold text-slate-900 dark:text-white block">
+                          {profile.position || 'Super Admin • MDRRMO'}
                         </span>
                       </div>
                     </>
