@@ -1054,9 +1054,9 @@ export default function IncidentReports() {
 
           {/* Filter Controls */}
           <div className={`${mobileFiltersOpen ? 'grid' : 'hidden'} md:flex md:flex-wrap grid-cols-2 gap-2 sm:gap-2.5 md:gap-3 md:items-center pt-2.5 md:pt-0`}>
-            <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-500/10 dark:bg-blue-500/20 text-[#0071E3] dark:text-sky-400 text-xs font-semibold shrink-0 border border-blue-500/25 dark:border-blue-400/25 shadow-2xs select-none cursor-default pointer-events-none">
-              <Filter className="w-3.5 h-3.5 text-[#0071E3] dark:text-sky-400" strokeWidth={1.75} />
-              <span>Filters</span>
+            <div className="hidden md:flex items-center gap-1 px-2.5 py-1 text-[#0071E3] dark:text-sky-400 cursor-default select-none shrink-0">
+              <Filter className="w-3.5 h-3.5 transition-transform duration-300 group-hover/filters:scale-110 text-[#0071E3] dark:text-sky-400" strokeWidth={1.8} />
+              <span className="text-[10px] font-bold uppercase tracking-wider">Filters</span>
             </div>
 
             {/* Source Toggle Filter: [Bot] [Scraper] */}

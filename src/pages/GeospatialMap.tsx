@@ -1506,55 +1506,58 @@ export default function GeospatialMap() {
 
             {/* ── Filters & Layer Controls ── */}
             <div className="pt-3.5 border-t border-slate-200/60 dark:border-white/5 flex flex-col xl:flex-row xl:items-center justify-between gap-3">
-              {/* Left Side: Filter Dropdowns + Reset */}
-              <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
-                <div className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-blue-500/10 dark:bg-blue-500/20 text-[#0071E3] dark:text-sky-400 text-xs font-semibold shrink-0 border border-blue-500/25 dark:border-blue-400/25 shadow-2xs">
-                  <Filter className="w-3.5 h-3.5 text-[#0071E3] dark:text-sky-400" strokeWidth={1.75} />
-                  <span>Filters</span>
-                </div>
-                {/* Filter Pills */}
-                <div className="flex-1 sm:flex-initial min-w-[130px]">
-                  <FilterDropdown
-                    value={filterStatus}
-                    options={['Verified Only', 'All Reports', 'Under Review', 'Resolved']}
-                    onChange={setFilterStatus}
-                  />
-                </div>
+              {/* Left Side: Segmented Filter Control */}
+              <div className="w-full xl:w-auto overflow-x-auto no-scrollbar scroll-smooth flex items-center justify-start py-0.5 shrink-0">
+                <div className="inline-flex items-center gap-1 sm:gap-1.5 p-1 bg-slate-100/70 dark:bg-white/[0.05] backdrop-blur-xl rounded-2xl border border-slate-200/70 dark:border-white/10 shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] dark:shadow-[inset_0_1px_2px_rgba(0,0,0,0.4)] min-w-max">
+                  <div className="group/filters flex items-center gap-1 px-2.5 py-1 text-[#0071E3] dark:text-sky-400 cursor-default select-none shrink-0">
+                    <Filter className="w-3.5 h-3.5 transition-transform duration-300 group-hover/filters:scale-110 text-[#0071E3] dark:text-sky-400" strokeWidth={1.8} />
+                    <span className="text-[10px] font-bold uppercase tracking-wider hidden sm:inline">Filters</span>
+                  </div>
 
-                <div className="flex-1 sm:flex-initial min-w-[120px]">
-                  <FilterDropdown
-                    value={filterUrgency}
-                    options={['All Urgency', 'High', 'Moderate', 'Low']}
-                    onChange={setFilterUrgency}
-                  />
-                </div>
+                  {/* Filter Pills */}
+                  <div className="min-w-[130px]">
+                    <FilterDropdown
+                      value={filterStatus}
+                      options={['Verified Only', 'All Reports', 'Under Review', 'Resolved']}
+                      onChange={setFilterStatus}
+                    />
+                  </div>
 
-                <div className="flex-1 sm:flex-initial min-w-[130px]">
-                  <FilterDropdown
-                    value={filterType}
-                    options={availableIncidentTypes}
-                    onChange={setFilterType}
-                  />
-                </div>
+                  <div className="min-w-[120px]">
+                    <FilterDropdown
+                      value={filterUrgency}
+                      options={['All Urgency', 'High', 'Moderate', 'Low']}
+                      onChange={setFilterUrgency}
+                    />
+                  </div>
 
-                {/* Animated Reset Button */}
-                <AnimatePresence>
-                  {hasActiveFilters && (
-                    <motion.button
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.9 }}
-                      transition={{ duration: 0.15 }}
-                      type="button"
-                      onClick={resetFilters}
-                      className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 bg-blue-500/10 hover:bg-blue-500/15 rounded-xl transition-all active:scale-[0.97] cursor-pointer shrink-0 border border-blue-500/20"
-                      title="Reset filters"
-                    >
-                      <RotateCcw className="w-3.5 h-3.5" />
-                      <span>Reset</span>
-                    </motion.button>
-                  )}
-                </AnimatePresence>
+                  <div className="min-w-[130px]">
+                    <FilterDropdown
+                      value={filterType}
+                      options={availableIncidentTypes}
+                      onChange={setFilterType}
+                    />
+                  </div>
+
+                  {/* Animated Reset Button */}
+                  <AnimatePresence>
+                    {hasActiveFilters && (
+                      <motion.button
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.9 }}
+                        transition={{ duration: 0.15 }}
+                        type="button"
+                        onClick={resetFilters}
+                        className="inline-flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-[11px] sm:text-xs font-semibold text-[#0071E3] hover:text-[#0077ED] dark:text-sky-400 bg-white/80 dark:bg-slate-700/70 rounded-xl transition-all active:scale-[0.97] cursor-pointer shrink-0 border border-slate-200/60 dark:border-white/10 shadow-2xs hover:shadow-xs"
+                        title="Reset filters"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5" strokeWidth={1.75} />
+                        <span>Reset</span>
+                      </motion.button>
+                    )}
+                  </AnimatePresence>
+                </div>
               </div>
 
               {/* Right Side: Segmented Layer Control */}

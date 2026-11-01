@@ -637,9 +637,9 @@ export default function Analytics() {
               {/* Filter Bar with DatePicker and FilterDropdown */}
               <div className="pt-3.5 border-t border-slate-200/60 dark:border-white/5 flex flex-col md:flex-row md:flex-wrap lg:flex-nowrap items-stretch md:items-center justify-between gap-2.5 sm:gap-3 relative z-50">
                 <div className="flex flex-wrap items-center gap-2.5 relative z-50">
-                  <div className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-blue-500/10 dark:bg-blue-500/20 text-[#0071E3] dark:text-sky-400 text-xs font-semibold shrink-0 border border-blue-500/25 dark:border-blue-400/25 shadow-2xs">
-                    <Filter className="w-3.5 h-3.5 text-[#0071E3] dark:text-sky-400" strokeWidth={1.75} />
-                    <span>Filters</span>
+                  <div className="flex items-center gap-1 px-2.5 py-1 text-[#0071E3] dark:text-sky-400 cursor-default select-none shrink-0">
+                    <Filter className="w-3.5 h-3.5 transition-transform duration-300 group-hover/filters:scale-110 text-[#0071E3] dark:text-sky-400" strokeWidth={1.8} />
+                    <span className="text-[10px] font-bold uppercase tracking-wider">Filters</span>
                   </div>
 
                   {/* Barangay DropDown */}
