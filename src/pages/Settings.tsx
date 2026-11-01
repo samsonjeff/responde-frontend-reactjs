@@ -29,11 +29,12 @@ import {
   Globe,
   Copy,
   Loader2,
+  ChevronDown,
 } from 'lucide-react';
 import SignOutModal from '../components/SignOutModal';
 import { StaggerContainer, StaggerItem } from '../components/Stagger';
 import { authService, type AuthUser, type UserRole, AuthError } from '../services/authService';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { formatPhilippineDateTime } from '../utils/dateUtils';
 
 const APPLE_SLIDE_SPRING = { type: 'spring', stiffness: 400, damping: 32, mass: 0.8 } as const;
@@ -59,6 +60,15 @@ const AUDIT_META: Record<AuditAction, { label: string; dotColor: string }> = {
   password_change: { label: 'Password Changed', dotColor: 'bg-indigo-500' },
   login: { label: 'Sign In', dotColor: 'bg-slate-400' },
 };
+
+const AUDIT_FILTER_OPTIONS: Array<{ value: AuditAction | 'all'; label: string; dotColor: string }> = [
+  { value: 'all', label: 'All Events', dotColor: 'bg-slate-400' },
+  { value: 'invite', label: 'Invites', dotColor: 'bg-purple-500' },
+  { value: 'signup', label: 'Signups', dotColor: 'bg-emerald-500' },
+  { value: 'role_change', label: 'Role Changes', dotColor: 'bg-sky-500' },
+  { value: 'password_change', label: 'Password Updates', dotColor: 'bg-indigo-500' },
+  { value: 'user_deleted', label: 'Deletions', dotColor: 'bg-rose-500' },
+];
 
 const minutesAgo = (m: number) => new Date(Date.now() - m * 60_000).toISOString();
 
@@ -347,6 +357,30 @@ export default function Settings() {
     { id: 'a6', actor: currentUser?.full_name || 'Super Admin', action: 'invite', target: 'Generated 24h Admin invitation link', timestamp: minutesAgo(1440) },
   ]);
   const [auditFilter, setAuditFilter] = useState<AuditAction | 'all'>('all');
+  const [auditFilterOpen, setAuditFilterOpen] = useState(false);
+  const auditFilterRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (auditFilterRef.current && !auditFilterRef.current.contains(e.target as Node)) {
+        setAuditFilterOpen(false);
+      }
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && auditFilterOpen) {
+        setAuditFilterOpen(false);
+      }
+    };
+    if (auditFilterOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('keydown', handleKeyDown);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [auditFilterOpen]);
+
   const visibleAuditLogs = auditFilter === 'all' ? auditLogs : auditLogs.filter(l => l.action === auditFilter);
 
   // Delete User Modal State (Super Admin Only)
@@ -1378,20 +1412,77 @@ export default function Settings() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-slate-400">Filter:</span>
-                    <select
-                      value={auditFilter}
-                      onChange={(e) => setAuditFilter(e.target.value as any)}
-                      className="px-3 py-1.5 rounded-xl text-xs bg-slate-100/80 hover:bg-slate-200/70 dark:bg-white/10 dark:hover:bg-white/15 border border-slate-200/60 dark:border-white/10 text-slate-700 dark:text-slate-200 focus:outline-none cursor-pointer transition-colors"
+                  <div className="relative flex items-center gap-2" ref={auditFilterRef}>
+                    <span className="text-xs text-slate-400 font-medium">Filter:</span>
+                    <button
+                      type="button"
+                      onClick={() => setAuditFilterOpen((prev) => !prev)}
+                      aria-haspopup="listbox"
+                      aria-expanded={auditFilterOpen}
+                      className="group inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-medium bg-slate-100/80 hover:bg-slate-200/80 dark:bg-white/10 dark:hover:bg-white/15 border border-slate-200/70 hover:border-slate-300 dark:border-white/10 dark:hover:border-white/20 text-slate-800 dark:text-slate-200 transition-all duration-150 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 shadow-2xs hover:shadow-xs cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#0071E3]/25"
                     >
-                      <option value="all">All Events</option>
-                      <option value="invite">Invites</option>
-                      <option value="signup">Signups</option>
-                      <option value="role_change">Role Changes</option>
-                      <option value="password_change">Password Updates</option>
-                      <option value="user_deleted">Deletions</option>
-                    </select>
+                      <span
+                        className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                          AUDIT_FILTER_OPTIONS.find((o) => o.value === auditFilter)?.dotColor || 'bg-slate-400'
+                        }`}
+                      />
+                      <span>
+                        {AUDIT_FILTER_OPTIONS.find((o) => o.value === auditFilter)?.label || 'All Events'}
+                      </span>
+                      <ChevronDown
+                        className={`w-3.5 h-3.5 text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-200 transition-transform duration-200 shrink-0 ${
+                          auditFilterOpen ? 'rotate-180 text-[#0071E3] dark:text-sky-400' : ''
+                        }`}
+                        strokeWidth={2}
+                      />
+                    </button>
+
+                    <AnimatePresence>
+                      {auditFilterOpen && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 6, scale: 0.95 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: 4, scale: 0.95 }}
+                          transition={{ duration: 0.15, ease: 'easeOut' }}
+                          className="absolute right-0 top-full mt-2 w-48 p-1.5 bg-white/95 dark:bg-[#1C1C1E]/95 backdrop-blur-xl border border-slate-200/80 dark:border-white/10 rounded-2xl shadow-[0_10px_30px_-5px_rgba(0,0,0,0.12),0_0_0_1px_rgba(0,0,0,0.04)] dark:shadow-[0_10px_30px_-5px_rgba(0,0,0,0.6),0_0_0_1px_rgba(255,255,255,0.08)] z-50 overflow-hidden"
+                          role="listbox"
+                        >
+                          <div className="space-y-0.5">
+                            {AUDIT_FILTER_OPTIONS.map((opt) => {
+                              const isSelected = auditFilter === opt.value;
+                              return (
+                                <button
+                                  key={opt.value}
+                                  type="button"
+                                  role="option"
+                                  aria-selected={isSelected}
+                                  onClick={() => {
+                                    setAuditFilter(opt.value);
+                                    setAuditFilterOpen(false);
+                                  }}
+                                  className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs transition-all duration-150 cursor-pointer text-left ${
+                                    isSelected
+                                      ? 'bg-[#0071E3]/10 text-[#0071E3] dark:bg-[#0071E3]/20 dark:text-sky-400 font-semibold'
+                                      : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/10 hover:text-slate-900 dark:hover:text-white'
+                                  }`}
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${opt.dotColor}`} />
+                                    <span>{opt.label}</span>
+                                  </div>
+                                  {isSelected && (
+                                    <Check
+                                      className="w-3.5 h-3.5 text-[#0071E3] dark:text-sky-400 shrink-0"
+                                      strokeWidth={2.5}
+                                    />
+                                  )}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
                 </div>
 
