@@ -1,12 +1,12 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, type Variants } from 'framer-motion';
 import {
   LayoutDashboard, FileText, MessageSquare, Globe, Map,
   BarChart3, Settings, Search, Bell, LogOut, Menu, X,
   Globe2, MessageCircle, CheckCheck, Trash2, BellOff, ArrowRight, ArrowDown,
-  Sun, Moon, Copy, Check, Siren, ShieldAlert, MapPin,
+  Sun, Moon, Copy, Check, Siren, ShieldAlert, MapPin, Inbox,
 } from 'lucide-react';
 import SignOutModal from './SignOutModal';
 import {
@@ -24,6 +24,49 @@ import {
 } from '../utils/dateUtils';
 
 type FilterTab = 'all' | NotificationType;
+
+const NOTIF_TAB_ANIMATIONS: Record<FilterTab, Variants> = {
+  all: {
+    rest: { scale: 1, y: 0 },
+    hover: {
+      scale: 1.18,
+      y: -1.5,
+      transition: { type: 'spring', stiffness: 500, damping: 15 },
+    },
+  },
+  priority: {
+    rest: { scale: 1, rotate: 0 },
+    hover: {
+      scale: [1, 1.25, 1.12],
+      rotate: [0, -14, 14, -8, 8, 0],
+      transition: { duration: 0.5, ease: 'easeInOut' },
+    },
+  },
+  scraper: {
+    rest: { scale: 1, rotate: 0 },
+    hover: {
+      rotate: [0, 36, 0],
+      scale: 1.18,
+      transition: { duration: 0.55, ease: 'easeInOut' },
+    },
+  },
+  messenger: {
+    rest: { scale: 1, y: 0 },
+    hover: {
+      scale: [1, 0.88, 1.22, 1.08],
+      y: [0, 1, -2, 0],
+      transition: { duration: 0.45, ease: 'easeOut' },
+    },
+  },
+};
+
+const BELL_SWING_VARIANTS: Variants = {
+  rest: { rotate: 0 },
+  hover: {
+    rotate: [0, -16, 16, -10, 8, 0],
+    transition: { duration: 0.5, ease: 'easeInOut' },
+  },
+};
 
 // Prefetch map for lazy page chunks — loaded on demand when user hovers or presses navigation buttons
 const ROUTE_PRELOADERS: Record<string, () => Promise<unknown>> = {
@@ -723,32 +766,39 @@ export default function Layout() {
                         duration: 0.36,
                         ease: APPLE_DECEL_EASE,
                       }}
-                      className="origin-top-right fixed sm:absolute left-3 right-3 sm:left-auto sm:right-0 top-20 sm:top-full mt-0 sm:mt-2 w-auto sm:w-100 max-w-[calc(100vw-1.5rem)] sm:max-w-none bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-[0_24px_60px_rgba(0,0,0,0.25)] dark:shadow-[0_24px_60px_rgba(0,0,0,0.85)] z-[110] overflow-hidden flex flex-col"
+                      className="origin-top-right fixed sm:absolute left-3 right-3 sm:left-auto sm:right-0 top-20 sm:top-full mt-0 sm:mt-2 w-auto sm:w-[420px] max-w-[calc(100vw-1.5rem)] sm:max-w-none bg-white/95 dark:bg-[#1C1C1E]/95 backdrop-blur-2xl rounded-3xl border border-slate-200/80 dark:border-white/10 shadow-[0_24px_60px_-12px_rgba(0,0,0,0.2),0_0_0_1px_rgba(0,0,0,0.04),inset_0_1px_1px_rgba(255,255,255,0.95)] dark:shadow-[0_24px_60px_rgba(0,0,0,0.85),0_0_0_1px_rgba(255,255,255,0.08),inset_0_1px_0_rgba(255,255,255,0.1)] z-[110] overflow-hidden flex flex-col"
                     >
                       {/* ── Stage 1: Header (Ambatubazz Cascade) ── */}
                       <motion.div
                         initial={{ opacity: 0, y: -6 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.22, delay: 0.03, ease: APPLE_DECEL_EASE }}
-                        className="flex items-center justify-between px-4 py-3 border-b border-slate-100 dark:border-slate-800 shrink-0 bg-white dark:bg-slate-900"
+                        className="flex items-center justify-between px-4.5 py-3 border-b border-slate-100/80 dark:border-white/5 shrink-0 bg-transparent"
                       >
-                        <div className="bell-btn flex items-center gap-2">
-                          <Bell className="w-4 h-4 text-slate-500 dark:text-slate-400" />
-                          <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+                        <motion.div
+                          initial="rest"
+                          whileHover="hover"
+                          animate="rest"
+                          className="bell-btn flex items-center gap-2 cursor-default select-none"
+                        >
+                          <motion.span variants={BELL_SWING_VARIANTS} className="inline-flex items-center justify-center">
+                            <Bell className="w-4 h-4 text-slate-600 dark:text-slate-300" />
+                          </motion.span>
+                          <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">
                             Notifications
                           </span>
                           {notifications.length > 0 && (
-                            <span className="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[10px] font-medium rounded-full">
+                            <span className="px-2 py-0.5 bg-slate-100/90 dark:bg-white/10 text-slate-600 dark:text-slate-300 text-[10px] font-semibold rounded-full tabular-nums">
                               {notifications.length > 99 ? '99+' : notifications.length}
                             </span>
                           )}
-                        </div>
-                        <div className="flex items-center gap-1.5">
+                        </motion.div>
+                        <div className="flex items-center gap-1">
                           {unreadCount > 0 && (
                             <button
                               type="button"
                               onClick={markAllRead}
-                              className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-[#0071E3] dark:text-sky-400 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-lg transition-all active:scale-95 cursor-pointer"
+                              className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-[#0071E3] dark:text-sky-400 bg-blue-500/10 hover:bg-blue-500/15 rounded-xl transition-all active:scale-95 cursor-pointer"
                               title="Mark all notifications as read"
                               aria-label="Mark all notifications as read"
                             >
@@ -760,7 +810,7 @@ export default function Layout() {
                             <button
                               type="button"
                               onClick={() => setConfirmDeleteTarget('all')}
-                              className="p-1.5 text-red-500 dark:text-red-400 bg-red-50/80 dark:bg-red-950/35 border border-red-200/60 dark:border-red-800/40 hover:text-red-600 dark:hover:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/50 rounded-lg transition-all active:scale-90 cursor-pointer"
+                              className="p-1.5 rounded-xl text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-500/10 transition-all active:scale-90 cursor-pointer"
                               title="Clear all notifications"
                               aria-label="Clear all notifications"
                             >
@@ -770,7 +820,7 @@ export default function Layout() {
                           <button
                             type="button"
                             onClick={() => setNotifOpen(false)}
-                            className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+                            className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-500/10 transition-all active:scale-90 cursor-pointer"
                             title="Close notification panel"
                             aria-label="Close notification panel"
                           >
@@ -784,63 +834,73 @@ export default function Layout() {
                         initial={{ opacity: 0, y: -6 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.22, delay: 0.06, ease: APPLE_DECEL_EASE }}
-                        className="flex gap-1 p-2 border-b border-slate-100 dark:border-slate-800 shrink-0 bg-slate-50 dark:bg-slate-800/80"
+                        className="p-1.5 mx-3.5 mb-2 bg-slate-200/50 dark:bg-white/[0.05] backdrop-blur-md rounded-2xl border border-slate-200/60 dark:border-white/5 flex items-center gap-1 shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]"
                       >
                         {([
-                          { key: 'all', label: 'All', count: notifications.length },
-                          { key: 'priority', label: 'Priority', count: priorityUnread },
-                          { key: 'scraper', label: 'Scraper', count: scraperUnread },
-                          { key: 'messenger', label: 'Messenger', count: messengerUnread },
-                        ] as { key: FilterTab; label: string; count: number }[]).map((tab) => {
+                          { key: 'all' as const, label: 'All', icon: Inbox, count: notifications.length },
+                          { key: 'priority' as const, label: 'Priority', icon: Siren, count: priorityUnread },
+                          { key: 'scraper' as const, label: 'Scraper', icon: Globe2, count: scraperUnread },
+                          { key: 'messenger' as const, label: 'Messenger', icon: MessageCircle, count: messengerUnread },
+                        ]).map((tab) => {
                           const isPriorityTab = tab.key === 'priority';
                           const isSelected = activeTab === tab.key;
+                          const IconComponent = tab.icon;
+                          const animation = NOTIF_TAB_ANIMATIONS[tab.key];
                           return (
-                            <button
+                            <motion.button
                               key={tab.key}
                               type="button"
+                              initial="rest"
+                              whileHover="hover"
+                              animate="rest"
                               onClick={() => {
                                 setActiveTab(tab.key);
                                 if (listContainerRef.current) {
                                   listContainerRef.current.scrollTop = 0;
                                 }
                               }}
-                              className={`relative flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg text-xs font-medium transition-colors duration-150 cursor-pointer select-none ${
+                              className={`group relative flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-xl text-xs transition-colors duration-150 cursor-pointer select-none ${
                                 isSelected
                                   ? 'text-white font-semibold'
                                   : isPriorityTab && tab.count > 0
-                                  ? 'text-red-600 dark:text-red-400 font-bold hover:bg-red-50 dark:hover:bg-red-950/40'
-                                  : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                                  ? 'text-red-600 dark:text-red-400 font-bold hover:bg-red-500/10'
+                                  : 'text-slate-600 dark:text-slate-400 font-medium hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-white/5'
                               }`}
                             >
                               {isSelected && (
                                 <motion.div
                                   layoutId="activeNotifTabIndicator"
-                                  transition={{ type: 'spring', stiffness: 380, damping: 32 }}
-                                  className={`absolute inset-0 rounded-lg ${
-                                    isPriorityTab ? 'bg-red-600 shadow-xs' : 'bg-[#0071E3] shadow-xs'
+                                  transition={{ type: 'spring', stiffness: 420, damping: 32 }}
+                                  className={`absolute inset-0 rounded-xl ${
+                                    isPriorityTab
+                                      ? 'bg-gradient-to-r from-red-600 to-rose-600 shadow-[0_2px_8px_rgba(239,68,68,0.35)]'
+                                      : 'bg-[#0071E3] shadow-[0_2px_8px_rgba(0,113,227,0.35)]'
                                   }`}
                                 />
                               )}
                               <span className="relative z-10 flex items-center gap-1 truncate">
-                                {isPriorityTab && (
-                                  <Siren className="w-3.5 h-3.5 shrink-0" />
-                                )}
+                                <motion.span
+                                  variants={animation}
+                                  className="inline-flex shrink-0 items-center justify-center"
+                                >
+                                  <IconComponent className="w-3.5 h-3.5 shrink-0" />
+                                </motion.span>
                                 <span>{tab.label}</span>
                                 {tab.count > 0 && (
                                   <span
-                                    className={`text-[10px] font-bold px-1.5 py-0.2 rounded-full shrink-0 ${
+                                    className={`text-[10px] font-bold px-1.5 py-0.2 rounded-full shrink-0 tabular-nums ${
                                       isSelected
-                                        ? 'bg-white/20 text-white'
+                                        ? 'bg-white/25 text-white'
                                         : isPriorityTab
                                         ? 'bg-red-500 text-white'
-                                        : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+                                        : 'bg-slate-200/80 dark:bg-white/10 text-slate-600 dark:text-slate-300'
                                     }`}
                                   >
                                     {tab.count > 99 ? '99+' : tab.count}
                                   </span>
                                 )}
                               </span>
-                            </button>
+                            </motion.button>
                           );
                         })}
                       </motion.div>
@@ -850,11 +910,11 @@ export default function Layout() {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         transition={{ duration: 0.24, delay: 0.09, ease: APPLE_DECEL_EASE }}
-                        className="relative flex-1 min-h-0 flex flex-col bg-white dark:bg-slate-900"
+                        className="relative flex-1 min-h-0 flex flex-col bg-transparent"
                       >
                         <div
                           ref={listContainerRef}
-                          className="h-[340px] sm:h-[360px] overflow-y-auto pb-6 divide-y divide-slate-100 dark:divide-slate-800/60 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700 bg-white dark:bg-slate-900"
+                          className="h-[340px] sm:h-[360px] overflow-y-auto pb-6 divide-y divide-slate-100/80 dark:divide-white/5 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700 bg-transparent"
                           style={{
                             maskImage: 'linear-gradient(to bottom, black calc(100% - 40px), transparent 100%)',
                             WebkitMaskImage: 'linear-gradient(to bottom, black calc(100% - 40px), transparent 100%)',
@@ -867,7 +927,7 @@ export default function Layout() {
                               animate={{ opacity: 1, y: 0 }}
                               exit={{ opacity: 0, y: -4 }}
                               transition={{ duration: 0.16, ease: APPLE_DECEL_EASE }}
-                              className="divide-y divide-slate-100 dark:divide-slate-800/60"
+                              className="divide-y divide-slate-100/80 dark:divide-white/5"
                             >
                               {filteredNotifications.length === 0 ? (
                                 <div className="h-[340px] sm:h-[360px] flex flex-col items-center justify-center py-12 px-4 gap-2 text-slate-400 text-center">
@@ -920,7 +980,7 @@ export default function Layout() {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         transition={{ duration: 0.2, delay: 0.12, ease: APPLE_DECEL_EASE }}
-                        className="px-4 py-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0 bg-slate-50 dark:bg-slate-800/80 text-xs text-slate-400"
+                        className="px-4 py-2.5 border-t border-slate-100/80 dark:border-white/5 flex items-center justify-between shrink-0 bg-slate-50/70 dark:bg-white/[0.02] text-xs text-slate-400 dark:text-slate-500"
                       >
                         <span>
                           {filteredNotifications.length} notification
@@ -1271,24 +1331,24 @@ function NotificationRow({
       className={`group relative flex items-start gap-3 px-4 py-3.5 cursor-pointer transition-colors duration-150 active:scale-[0.99] select-none ${
         !n.read
           ? isPriority
-            ? 'bg-red-50/70 dark:bg-red-950/25 hover:bg-red-100/60 dark:hover:bg-red-950/40'
-            : 'bg-blue-50/70 dark:bg-blue-950/25 hover:bg-blue-100/60 dark:hover:bg-blue-950/40'
-          : 'bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/60 opacity-80 hover:opacity-100'
+            ? 'bg-red-500/[0.04] dark:bg-red-500/[0.08] hover:bg-red-500/[0.08] dark:hover:bg-red-500/[0.12]'
+            : 'bg-[#0071E3]/[0.03] dark:bg-[#0071E3]/[0.06] hover:bg-[#0071E3]/[0.07] dark:hover:bg-[#0071E3]/[0.1]'
+          : 'bg-transparent hover:bg-slate-500/[0.04] dark:hover:bg-white/[0.03] opacity-80 hover:opacity-100'
       }`}
       onClick={onClick}
       onMouseEnter={() => prefetchRoute(n.targetPath)}
       onPointerDown={() => prefetchRoute(n.targetPath)}
     >
-      {/* Icon */}
+      {/* Icon squircle with micro-lift */}
       <div
-        className={`shrink-0 mt-0.5 w-9 h-9 rounded-xl flex items-center justify-center transition-colors ${
+        className={`shrink-0 mt-0.5 w-9 h-9 rounded-2xl flex items-center justify-center transition-all duration-200 group-hover:scale-105 group-hover:-translate-y-0.5 ${
           !n.read
             ? isPriority
-              ? 'bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-300 ring-2 ring-red-500/20'
+              ? 'bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-300 ring-1 ring-red-500/20 shadow-xs'
               : isMessenger
-              ? 'bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-300 ring-2 ring-purple-500/20'
-              : 'bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300 ring-2 ring-blue-500/20'
-            : 'bg-slate-100/80 dark:bg-slate-800/80 text-slate-400 dark:text-slate-500'
+              ? 'bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-300 ring-1 ring-purple-500/20 shadow-xs'
+              : 'bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300 ring-1 ring-blue-500/20 shadow-xs'
+            : 'bg-slate-100/80 dark:bg-white/5 text-slate-400 dark:text-slate-500'
         }`}
       >
         {isPriority ? (
@@ -1301,8 +1361,8 @@ function NotificationRow({
       </div>
 
       {/* Content */}
-      <div className="flex-1 min-w-0 pr-9">
-        <div className="flex items-center gap-2 mb-1">
+      <div className="flex-1 min-w-0 pr-8">
+        <div className="flex items-center gap-1.5 mb-1 flex-wrap">
           <p
             className={`text-xs truncate tracking-tight transition-colors ${
               !n.read
@@ -1317,19 +1377,19 @@ function NotificationRow({
 
           {!n.read && (
             <span
-              className={`w-2 h-2 rounded-full shrink-0 ${
+              className={`w-1.5 h-1.5 rounded-full shrink-0 ${
                 isPriority
-                  ? 'bg-red-600 ring-2 ring-red-500/30'
-                  : 'bg-[#0071E3] ring-2 ring-blue-500/30'
+                  ? 'bg-red-600 ring-2 ring-red-500/30 shadow-[0_0_6px_rgba(239,68,68,0.6)]'
+                  : 'bg-[#0071E3] ring-2 ring-blue-500/30 shadow-[0_0_6px_rgba(0,113,227,0.6)]'
               }`}
             />
           )}
 
           {isPriority ? (
             <span
-              className={`shrink-0 text-[10px] px-1.5 py-0.5 rounded-full transition-colors flex items-center gap-1 ${
+              className={`shrink-0 text-[10px] px-1.5 py-0.5 rounded-full transition-colors flex items-center gap-1 font-semibold ${
                 !n.read
-                  ? 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 font-bold border border-red-500/30'
+                  ? 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 border border-red-500/20'
                   : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 font-normal border border-slate-200/50 dark:border-slate-700/50'
               }`}
             >
@@ -1338,9 +1398,9 @@ function NotificationRow({
             </span>
           ) : isMessenger ? (
             <span
-              className={`shrink-0 text-[10px] px-1.5 py-0.5 rounded-full transition-colors ${
+              className={`shrink-0 text-[10px] px-1.5 py-0.5 rounded-full transition-colors font-semibold ${
                 !n.read
-                  ? 'bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 font-semibold border border-purple-500/30'
+                  ? 'bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 border border-purple-500/20'
                   : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 font-normal border border-slate-200/50 dark:border-slate-700/50'
               }`}
             >
@@ -1348,9 +1408,9 @@ function NotificationRow({
             </span>
           ) : (
             <span
-              className={`shrink-0 text-[10px] px-1.5 py-0.5 rounded-full transition-colors ${
+              className={`shrink-0 text-[10px] px-1.5 py-0.5 rounded-full transition-colors font-semibold ${
                 !n.read
-                  ? 'bg-blue-100 dark:bg-blue-900/40 text-[#0071E3] dark:text-blue-300 font-semibold border border-blue-500/30'
+                  ? 'bg-blue-100 dark:bg-blue-900/40 text-[#0071E3] dark:text-blue-300 border border-blue-500/20'
                   : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 font-normal border border-slate-200/50 dark:border-slate-700/50'
               }`}
             >
@@ -1364,7 +1424,7 @@ function NotificationRow({
           <p
             className={`text-[11px] mb-1 transition-colors ${
               !n.read
-                ? 'font-semibold text-slate-700 dark:text-slate-200'
+                ? 'font-medium text-slate-700 dark:text-slate-300'
                 : 'font-normal text-slate-400 dark:text-slate-500'
             }`}
           >
@@ -1372,11 +1432,11 @@ function NotificationRow({
           </p>
         )}
 
-        {/* Message snippet: Bold & highlighted when new, Gray & faded when seen */}
+        {/* Message snippet */}
         <p
           className={`text-xs line-clamp-2 leading-relaxed transition-colors ${
             !n.read
-              ? 'font-semibold text-slate-900 dark:text-slate-100'
+              ? 'font-medium text-slate-800 dark:text-slate-200'
               : 'font-normal text-slate-400 dark:text-slate-500'
           }`}
         >
@@ -1394,14 +1454,14 @@ function NotificationRow({
         </p>
       </div>
 
-      {/* Dismiss / Delete button (Always visible & red-tinted) */}
+      {/* Dismiss / Delete button - Minimalist iOS hover style */}
       <button
         type="button"
         onClick={(e) => {
           e.stopPropagation();
           onDelete();
         }}
-        className="absolute top-3 right-3 p-1.5 rounded-lg text-red-500 dark:text-red-400 bg-red-50/75 dark:bg-red-950/35 border border-red-200/60 dark:border-red-800/40 hover:text-red-600 dark:hover:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/50 transition-all cursor-pointer active:scale-90"
+        className="absolute top-3 right-3 p-1.5 rounded-xl text-slate-300 dark:text-slate-600 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-500/10 transition-all cursor-pointer active:scale-90"
         title="Delete notification"
         aria-label="Delete notification"
       >
