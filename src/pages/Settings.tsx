@@ -140,7 +140,7 @@ function CleanButton({
       className={`group inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 sm:py-2 text-xs sm:text-sm font-semibold transition-all duration-150 cursor-pointer hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-none select-none ${styles} ${className}`}
     >
       {Icon && <Icon className="w-4 h-4 shrink-0 transition-transform duration-150 group-hover:scale-105" strokeWidth={1.75} />}
-      <span>{children}</span>
+      <span className="inline-flex items-center justify-center gap-1.5 whitespace-nowrap">{children}</span>
     </button>
   );
 }
@@ -1942,10 +1942,16 @@ export default function Settings() {
       {/* 4. DELETE MY ACCOUNT MODAL (Self-Deletion 2-Step OTP) */}
       {deleteSelfModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 dark:bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="w-full max-w-md rounded-2xl sm:rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-white/10 p-6 sm:p-7 shadow-[0_24px_50px_rgba(0,0,0,0.2)] dark:shadow-[0_24px_60px_rgba(0,0,0,0.7)] space-y-4 relative">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 12 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 12 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+            className="w-full max-w-md rounded-2xl sm:rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-white/10 p-6 sm:p-7 shadow-[0_24px_50px_rgba(0,0,0,0.2)] dark:shadow-[0_24px_60px_rgba(0,0,0,0.7)] space-y-4 relative"
+          >
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-rose-600">
-                <div className="w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-950/40 flex items-center justify-center border border-rose-200/70 dark:border-rose-900/50">
+              <div className="flex items-center gap-2.5 text-rose-600 dark:text-rose-400">
+                <div className="w-8 h-8 rounded-xl bg-rose-50 dark:bg-rose-950/40 flex items-center justify-center border border-rose-200/70 dark:border-rose-900/50 shadow-2xs">
                   <AlertTriangle className="w-4 h-4 shrink-0" strokeWidth={1.75} />
                 </div>
                 <h3 className="text-base font-semibold text-slate-900 dark:text-white">
@@ -1965,13 +1971,13 @@ export default function Settings() {
             {/* STEP 1: PASSWORD CONFIRMATION */}
             {deleteSelfStep === 'password' && (
               <form onSubmit={handlePasswordConfirmAndRequestOtp} className="space-y-4">
-                <p className="text-xs text-slate-500 dark:text-slate-400">
+                <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
                   Please confirm your password. An email verification code will be dispatched to your registered address to confirm deletion.
                 </p>
 
-                <div className="space-y-1">
-                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">
-                    Your Password
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    Your Password <span className="text-rose-500">*</span>
                   </label>
                   <div className="relative">
                     <input
@@ -1980,12 +1986,12 @@ export default function Settings() {
                       onChange={(e) => setDeleteSelfPassword(e.target.value)}
                       placeholder="Enter account password"
                       required
-                      className="w-full px-3.5 py-2.5 pr-10 rounded-xl text-xs sm:text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-900/10 dark:focus:ring-white/10"
+                      className="w-full px-3.5 py-2.5 pr-10 rounded-xl text-xs sm:text-sm bg-slate-100/70 hover:bg-slate-100 focus:bg-white dark:bg-white/5 dark:hover:bg-white/[0.08] dark:focus:bg-white/10 border border-slate-200/80 dark:border-white/10 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
                     />
                     <button
                       type="button"
                       onClick={() => setShowDeleteSelfPassword(!showDeleteSelfPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-white/10 transition-colors cursor-pointer active:scale-95"
                     >
                       {showDeleteSelfPassword ? <EyeOff className="w-4 h-4" strokeWidth={1.75} /> : <Eye className="w-4 h-4" strokeWidth={1.75} />}
                     </button>
@@ -1993,13 +1999,13 @@ export default function Settings() {
                 </div>
 
                 {deleteSelfPasswordError && (
-                  <div className="p-3 rounded-xl bg-rose-50 border border-rose-200/70 text-xs text-rose-700 flex items-center gap-2">
-                    <AlertCircle className="w-4 h-4 shrink-0" strokeWidth={1.75} />
+                  <div className="p-3.5 rounded-xl bg-rose-50/80 dark:bg-rose-950/40 border border-rose-200/70 text-xs text-rose-700 dark:text-rose-300 flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 shrink-0 text-rose-500" strokeWidth={1.75} />
                     <span>{deleteSelfPasswordError}</span>
                   </div>
                 )}
 
-                <div className="flex items-center justify-end gap-2 pt-2">
+                <div className="flex items-center justify-end gap-2.5 pt-2">
                   <CleanButton
                     variant="secondary"
                     onClick={closeDeleteMyAccountModal}
@@ -2011,17 +2017,18 @@ export default function Settings() {
                     type="submit"
                     variant="danger"
                     disabled={isRequestingOtp}
+                    className="group/continue min-w-[125px]"
                   >
                     {isRequestingOtp ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
+                      <span className="inline-flex items-center justify-center gap-2 whitespace-nowrap">
+                        <Loader2 className="w-4 h-4 animate-spin shrink-0" />
                         <span>Sending OTP...</span>
-                      </>
+                      </span>
                     ) : (
-                      <>
-                        <span>Continue</span>
-                        <ArrowRight className="w-4 h-4" strokeWidth={1.75} />
-                      </>
+                      <span className="inline-flex items-center justify-center gap-2 whitespace-nowrap">
+                        <span className="font-semibold">Continue</span>
+                        <ArrowRight className="w-4 h-4 shrink-0 transition-transform duration-200 ease-out group-hover/continue:translate-x-1" strokeWidth={2} />
+                      </span>
                     )}
                   </CleanButton>
                 </div>
@@ -2031,15 +2038,15 @@ export default function Settings() {
             {/* STEP 2: EMAIL OTP VERIFICATION */}
             {deleteSelfStep === 'otp' && (
               <div className="space-y-4">
-                <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900/50 text-blue-900 dark:text-blue-200 text-xs flex items-start gap-2">
-                  <Mail className="w-4 h-4 shrink-0 mt-0.5 text-blue-600 dark:text-blue-400" strokeWidth={1.75} />
+                <div className="p-3.5 rounded-xl bg-blue-50/80 dark:bg-blue-950/30 border border-blue-200/80 dark:border-blue-900/50 text-blue-900 dark:text-blue-200 text-xs flex items-start gap-2.5">
+                  <Mail className="w-4 h-4 shrink-0 mt-0.5 text-[#0071E3] dark:text-sky-400" strokeWidth={1.75} />
                   <div>
                     A 6-digit confirmation code was sent to <strong className="font-semibold">{deleteSelfMaskedEmail}</strong>.
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-2 text-center">
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2.5 text-center">
                     Enter 6-Digit Code
                   </label>
                   <div className="flex items-center justify-center gap-2" onPaste={handleOtpPaste}>
@@ -2053,13 +2060,13 @@ export default function Settings() {
                         value={digit}
                         onChange={(e) => handleOtpDigitChange(idx, e.target.value)}
                         onKeyDown={(e) => handleOtpKeyDown(idx, e)}
-                        className="w-10 h-12 text-center text-lg font-bold font-mono bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                        className="w-10 h-12 text-center text-lg font-bold font-mono bg-slate-100/70 hover:bg-slate-100 focus:bg-white dark:bg-white/5 dark:hover:bg-white/[0.08] dark:focus:bg-white/10 border border-slate-200/80 dark:border-white/10 rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
                       />
                     ))}
                   </div>
 
                   {deleteSelfOtpError && (
-                    <p className="text-xs text-rose-500 mt-2 text-center flex items-center justify-center gap-1">
+                    <p className="text-xs text-rose-500 mt-2 text-center flex items-center justify-center gap-1.5 font-medium">
                       <AlertCircle className="w-3.5 h-3.5" strokeWidth={1.75} /> {deleteSelfOtpError}
                     </p>
                   )}
@@ -2067,13 +2074,13 @@ export default function Settings() {
                   <div className="flex items-center justify-between text-xs text-slate-400 mt-3 px-1">
                     <span>Didn&apos;t receive code?</span>
                     {otpCooldown > 0 ? (
-                      <span className="font-mono">Resend in {otpCooldown}s</span>
+                      <span className="font-mono text-slate-500 dark:text-slate-400">Resend in {otpCooldown}s</span>
                     ) : (
                       <button
                         type="button"
                         onClick={handleResendDeleteOtp}
                         disabled={isRequestingOtp}
-                        className="text-blue-600 dark:text-blue-400 font-medium hover:underline cursor-pointer disabled:opacity-50"
+                        className="text-[#0071E3] dark:text-sky-400 font-semibold hover:underline cursor-pointer disabled:opacity-50"
                       >
                         {isRequestingOtp ? 'Sending...' : 'Resend Code'}
                       </button>
@@ -2081,7 +2088,7 @@ export default function Settings() {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
+                <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-white/5">
                   <button
                     type="button"
                     onClick={() => {
@@ -2089,9 +2096,9 @@ export default function Settings() {
                       setDeleteSelfOtpError(null);
                     }}
                     disabled={isConfirmingDelete}
-                    className="inline-flex items-center gap-1 text-xs text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 cursor-pointer p-1 active:scale-95 transition-transform"
+                    className="group/back inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white px-2.5 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-white/5 transition-all cursor-pointer active:scale-95"
                   >
-                    <ArrowLeft className="w-3.5 h-3.5" strokeWidth={1.75} />
+                    <ArrowLeft className="w-3.5 h-3.5 transition-transform duration-200 group-hover/back:-translate-x-1" strokeWidth={2} />
                     <span>Back</span>
                   </button>
 
@@ -2109,10 +2116,10 @@ export default function Settings() {
                       disabled={isConfirmingDelete || deleteSelfOtp.join('').length !== 6}
                     >
                       {isConfirmingDelete ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin" />
+                        <span className="inline-flex items-center gap-2 whitespace-nowrap">
+                          <Loader2 className="w-4 h-4 animate-spin shrink-0" />
                           <span>Deleting...</span>
-                        </>
+                        </span>
                       ) : (
                         'Confirm Delete'
                       )}
@@ -2125,13 +2132,13 @@ export default function Settings() {
             {/* STEP 3: SUCCESS STATE */}
             {deleteSelfStep === 'success' && (
               <div className="py-6 text-center space-y-3">
-                <div className="w-12 h-12 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto">
+                <div className="w-12 h-12 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto shadow-xs">
                   <Check className="w-6 h-6 stroke-[3]" />
                 </div>
-                <h4 className="font-semibold text-slate-800 dark:text-slate-100 text-base">
+                <h4 className="font-semibold text-slate-900 dark:text-slate-100 text-base">
                   Account Deleted
                 </h4>
-                <p className="text-xs text-slate-500 dark:text-slate-400 max-w-xs mx-auto">
+                <p className="text-xs text-slate-500 dark:text-slate-400 max-w-xs mx-auto leading-relaxed">
                   Your credentials have been cleared. Redirecting to sign-in page...
                 </p>
                 <div className="flex items-center justify-center gap-2 text-xs text-slate-400 pt-2">
@@ -2140,7 +2147,7 @@ export default function Settings() {
                 </div>
               </div>
             )}
-          </div>
+          </motion.div>
         </div>
       )}
 
