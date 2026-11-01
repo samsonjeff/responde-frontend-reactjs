@@ -865,9 +865,9 @@ export default function Settings() {
                     <button
                       type="button"
                       onClick={() => { setProfileDraft(profile); setIsEditingProfile(true); }}
-                      className="self-start sm:self-auto inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-slate-100 hover:bg-slate-200/90 dark:bg-white/10 dark:hover:bg-white/15 text-slate-700 dark:text-slate-200 border border-slate-200/60 dark:border-white/10 transition-all duration-150 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 cursor-pointer shadow-2xs hover:shadow-xs"
+                      className="group/edit self-start sm:self-auto inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold bg-white hover:bg-slate-50 dark:bg-white/10 dark:hover:bg-white/15 text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white border border-slate-200/80 hover:border-slate-300 dark:border-white/10 dark:hover:border-white/20 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] active:translate-y-0 active:scale-95 cursor-pointer shadow-2xs"
                     >
-                      <Pencil className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" strokeWidth={2} />
+                      <Pencil className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 transition-transform duration-200 ease-out group-hover/edit:rotate-12 group-hover/edit:scale-110" strokeWidth={2} />
                       <span>Edit Profile</span>
                     </button>
                   )}
@@ -1118,9 +1118,9 @@ export default function Settings() {
                 <button
                   type="button"
                   onClick={openDeleteMyAccountModal}
-                  className="self-start sm:self-auto shrink-0 inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-500/15 dark:hover:bg-rose-500/25 dark:text-rose-400 border border-rose-200/60 dark:border-rose-500/20 transition-all duration-150 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 cursor-pointer shadow-2xs whitespace-nowrap"
+                  className="group/del self-start sm:self-auto shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold bg-rose-50 hover:bg-rose-500 text-rose-600 hover:text-white dark:bg-rose-500/15 dark:hover:bg-rose-600 dark:text-rose-400 dark:hover:text-white border border-rose-200/70 hover:border-rose-500 dark:border-rose-500/30 dark:hover:border-rose-600 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_4px_14px_rgba(244,63,94,0.28)] active:translate-y-0 active:scale-95 cursor-pointer shadow-2xs whitespace-nowrap"
                 >
-                  <Trash2 className="w-3.5 h-3.5" strokeWidth={2} />
+                  <Trash2 className="w-3.5 h-3.5 transition-transform duration-200 ease-out group-hover/del:scale-110 group-hover/del:-rotate-6" strokeWidth={2} />
                   <span>Delete Account</span>
                 </button>
               </div>
