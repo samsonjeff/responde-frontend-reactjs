@@ -32,7 +32,10 @@ import {
 import SignOutModal from '../components/SignOutModal';
 import { StaggerContainer, StaggerItem } from '../components/Stagger';
 import { authService, type AuthUser, type UserRole, AuthError } from '../services/authService';
+import { motion } from 'framer-motion';
 import { formatPhilippineDateTime } from '../utils/dateUtils';
+
+const APPLE_SLIDE_SPRING = { type: 'spring', stiffness: 400, damping: 32, mass: 0.8 } as const;
 
 type TabKey = 'profile' | 'team' | 'security' | 'preferences';
 
@@ -220,6 +223,13 @@ export default function Settings() {
   const { user: currentUser, logout, setUser, refreshUser } = useAuth();
   const userRole = (currentUser?.role || '').toLowerCase().trim();
   const canViewUsers = userRole === 'super_admin' || userRole === 'admin';
+
+  const settingsTabs = [
+    { key: 'profile' as const, label: 'Profile', icon: UserCircle },
+    ...(canViewUsers ? [{ key: 'team' as const, label: 'Team & Access', icon: Shield }] : []),
+    { key: 'security' as const, label: 'Security', icon: Lock },
+    { key: 'preferences' as const, label: 'Preferences', icon: Bell },
+  ];
 
   // Navigation Tab State (defaults to Profile)
   const [activeTab, setActiveTab] = useState<TabKey>('profile');
@@ -766,89 +776,66 @@ export default function Settings() {
     <div className="settings-soft w-full">
       <StaggerContainer className="space-y-6 max-w-6xl mx-auto pb-24 md:pb-0">
 
-        {/* 1. UNIFIED SOFT UI PAGE HEADER */}
+        {/* ── UNIFIED APPLE macOS / iOS PAGE HEADER WITH INTEGRATED SEGMENTED TABS ── */}
         <StaggerItem>
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-1">
-            <div className="flex items-center gap-3">
+          <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 pt-1">
+            <div className="flex items-center gap-3 shrink-0">
               <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-blue-500/10 dark:bg-blue-500/20 text-[#0071E3] dark:text-sky-400 flex items-center justify-center shrink-0 border border-blue-500/20 shadow-xs">
                 <SettingsIcon className="w-5 h-5 sm:w-5.5 sm:h-5.5" strokeWidth={1.75} />
               </div>
               <div>
-                <h1 className="text-lg sm:text-[22px] font-semibold tracking-[-0.025em] leading-tight text-slate-900 dark:text-white">
-                  Settings
-                </h1>
+                <div className="flex items-center gap-2.5">
+                  <h1 className="text-lg sm:text-[22px] font-semibold tracking-[-0.025em] leading-tight text-slate-900 dark:text-white">
+                    Settings
+                  </h1>
+                  {actionSuccess && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800 text-[11px] font-medium text-emerald-700 dark:text-emerald-300 shadow-2xs"
+                    >
+                      <Check className="w-3 h-3 text-emerald-600 dark:text-emerald-400" strokeWidth={2} />
+                      <span>{actionSuccess}</span>
+                    </motion.div>
+                  )}
+                </div>
                 <p className="text-[11px] sm:text-xs font-normal tracking-[0.005em] text-slate-500/90 dark:text-slate-400/90 mt-0.5 leading-relaxed">
                   Personal profile <span className="text-slate-300 dark:text-slate-600 mx-1">·</span> Team access &amp; security preferences
                 </p>
               </div>
             </div>
 
-            {/* Global Success Feedback Banner */}
-            {actionSuccess && (
-              <div className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800 text-xs font-medium text-emerald-700 dark:text-emerald-300 shadow-xs animate-in fade-in duration-200">
-                <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" strokeWidth={2} />
-                <span>{actionSuccess}</span>
+            {/* ── Apple iOS / macOS Fluid Segmented Navigation Tabs ── */}
+            <div className="overflow-x-auto scrollbar-none -mx-1 px-1 py-0.5 shrink-0">
+              <div className="p-1 bg-slate-200/60 dark:bg-slate-800/60 backdrop-blur-md rounded-2xl border border-slate-200/60 dark:border-white/5 inline-flex items-center gap-1 shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]">
+                {settingsTabs.map((tab) => {
+                  const isActive = activeTab === tab.key;
+                  const Icon = tab.icon;
+                  return (
+                    <button
+                      key={tab.key}
+                      type="button"
+                      onClick={() => setActiveTab(tab.key)}
+                      className={`relative px-3.5 py-1.5 sm:px-4 sm:py-1.5 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-150 inline-flex items-center justify-center gap-2 select-none active:scale-[0.97] cursor-pointer whitespace-nowrap ${
+                        isActive
+                          ? "text-slate-900 dark:text-white"
+                          : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-700/60 hover:shadow-2xs"
+                      }`}
+                    >
+                      {isActive && (
+                        <motion.div
+                          layoutId="settingsActiveTabPill"
+                          transition={APPLE_SLIDE_SPRING}
+                          className="absolute inset-0 bg-white dark:bg-slate-700/90 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)] border border-black/4 dark:border-white/10"
+                        />
+                      )}
+                      <Icon className={`w-4 h-4 relative z-10 transition-colors ${isActive ? "text-[#0071E3] dark:text-sky-400" : "text-slate-500 dark:text-slate-400"}`} strokeWidth={1.75} />
+                      <span className="relative z-10">{tab.label}</span>
+                    </button>
+                  );
+                })}
               </div>
-            )}
-          </div>
-        </StaggerItem>
-
-        {/* 2. CALM MAC-OS SEGMENTED NAVIGATION TABS */}
-        <StaggerItem>
-          <div className="p-1 bg-slate-200/60 dark:bg-slate-800/60 backdrop-blur-md rounded-2xl border border-slate-200/60 dark:border-white/5 flex flex-wrap sm:inline-flex items-center gap-1 shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] w-full sm:w-auto overflow-x-auto">
-            <button
-              type="button"
-              onClick={() => setActiveTab('profile')}
-              className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm transition-all duration-200 cursor-pointer active:scale-[0.98] ${
-                activeTab === 'profile'
-                  ? 'bg-white text-slate-900 dark:bg-slate-900 dark:text-white shadow-xs font-semibold'
-                  : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-white/40 dark:hover:bg-slate-800/40 font-medium'
-              }`}
-            >
-              <UserCircle className="w-4 h-4" strokeWidth={1.75} />
-              <span>Profile</span>
-            </button>
-
-            {canViewUsers && (
-              <button
-                type="button"
-                onClick={() => setActiveTab('team')}
-                className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm transition-all duration-200 cursor-pointer active:scale-[0.98] ${
-                  activeTab === 'team'
-                    ? 'bg-white text-slate-900 dark:bg-slate-900 dark:text-white shadow-xs font-semibold'
-                    : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-white/40 dark:hover:bg-slate-800/40 font-medium'
-                }`}
-              >
-                <Shield className="w-4 h-4" strokeWidth={1.75} />
-                <span>Team &amp; Access</span>
-              </button>
-            )}
-
-            <button
-              type="button"
-              onClick={() => setActiveTab('security')}
-              className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm transition-all duration-200 cursor-pointer active:scale-[0.98] ${
-                activeTab === 'security'
-                  ? 'bg-white text-slate-900 dark:bg-slate-900 dark:text-white shadow-xs font-semibold'
-                  : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-white/40 dark:hover:bg-slate-800/40 font-medium'
-              }`}
-            >
-              <Lock className="w-4 h-4" strokeWidth={1.75} />
-              <span>Security</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveTab('preferences')}
-              className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm transition-all duration-200 cursor-pointer active:scale-[0.98] ${
-                activeTab === 'preferences'
-                  ? 'bg-white text-slate-900 dark:bg-slate-900 dark:text-white shadow-xs font-semibold'
-                  : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-white/40 dark:hover:bg-slate-800/40 font-medium'
-              }`}
-            >
-              <Bell className="w-4 h-4" strokeWidth={1.75} />
-              <span>Preferences</span>
-            </button>
+            </div>
           </div>
         </StaggerItem>
 
