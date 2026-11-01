@@ -41,6 +41,49 @@ const APPLE_SLIDE_SPRING = { type: 'spring', stiffness: 400, damping: 32, mass: 
 
 type TabKey = 'profile' | 'team' | 'security' | 'preferences';
 
+/**
+ * Tailored micro-animations for each tab based on its iconic personality:
+ * - Profile (User): Buoyant upward head-nod & avatar scale
+ * - Team (Shield): Sturdy protective deflective pop & tilt
+ * - Security (Lock): Tactile mechanical padlock click & shackle wiggle
+ * - Preferences (Bell): Authentic chime bell ringing from top apex
+ */
+const TAB_ICON_ANIMATIONS: Record<TabKey, { rest: Record<string, any>; hover: Record<string, any> }> = {
+  profile: {
+    rest: { scale: 1, y: 0 },
+    hover: {
+      scale: 1.18,
+      y: -1.5,
+      transition: { type: 'spring', stiffness: 500, damping: 15 }
+    }
+  },
+  team: {
+    rest: { scale: 1, rotate: 0 },
+    hover: {
+      scale: [1, 1.2, 1.12],
+      rotate: [0, -12, 10, -5, 0],
+      transition: { duration: 0.45, ease: 'easeInOut' }
+    }
+  },
+  security: {
+    rest: { scale: 1, y: 0, rotate: 0 },
+    hover: {
+      scale: 1.15,
+      y: [0, -2, 0],
+      rotate: [0, -14, 12, -6, 0],
+      transition: { duration: 0.4, ease: 'easeOut' }
+    }
+  },
+  preferences: {
+    rest: { rotate: 0, scale: 1 },
+    hover: {
+      rotate: [0, -24, 20, -14, 10, -4, 0],
+      scale: 1.12,
+      transition: { duration: 0.55, ease: 'easeInOut' }
+    }
+  }
+};
+
 type AuditAction = 'invite' | 'signup' | 'role_change' | 'user_deleted' | 'password_change' | 'login';
 
 type AuditEntry = {
@@ -931,11 +974,14 @@ export default function Settings() {
                   const isActive = activeTab === tab.key;
                   const Icon = tab.icon;
                   return (
-                    <button
+                    <motion.button
                       key={tab.key}
                       type="button"
                       onClick={() => setActiveTab(tab.key)}
-                      className={`relative px-3.5 py-1.5 sm:px-4 sm:py-1.5 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-150 inline-flex items-center justify-center gap-2 select-none active:scale-[0.97] cursor-pointer whitespace-nowrap ${
+                      initial="rest"
+                      whileHover="hover"
+                      animate="rest"
+                      className={`group relative px-3.5 py-1.5 sm:px-4 sm:py-1.5 rounded-xl text-xs sm:text-sm font-semibold transition-colors duration-150 inline-flex items-center justify-center gap-2 select-none active:scale-[0.97] cursor-pointer whitespace-nowrap ${
                         isActive
                           ? "text-slate-900 dark:text-white"
                           : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-700/60 hover:shadow-2xs"
@@ -948,9 +994,26 @@ export default function Settings() {
                           className="absolute inset-0 bg-white dark:bg-slate-700/90 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)] border border-black/4 dark:border-white/10"
                         />
                       )}
-                      <Icon className={`w-4 h-4 relative z-10 transition-colors ${isActive ? "text-[#0071E3] dark:text-sky-400" : "text-slate-500 dark:text-slate-400"}`} strokeWidth={1.75} />
+                      <motion.span
+                        variants={TAB_ICON_ANIMATIONS[tab.key]}
+                        className={`relative z-10 inline-flex items-center justify-center transition-colors duration-200 ${
+                          isActive
+                            ? "text-[#0071E3] dark:text-sky-400"
+                            : "text-slate-500 dark:text-slate-400 group-hover:text-[#0071E3] dark:group-hover:text-sky-400"
+                        }`}
+                        style={{
+                          transformOrigin:
+                            tab.key === 'preferences' || tab.key === 'security'
+                              ? 'top center'
+                              : tab.key === 'profile'
+                                ? 'bottom center'
+                                : 'center',
+                        }}
+                      >
+                        <Icon className="w-4 h-4" strokeWidth={1.75} />
+                      </motion.span>
                       <span className="relative z-10">{tab.label}</span>
-                    </button>
+                    </motion.button>
                   );
                 })}
               </div>
