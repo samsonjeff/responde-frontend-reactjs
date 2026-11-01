@@ -840,7 +840,7 @@ function IncidentSidebarContent({
             onClick={() => onTabChange('incomplete')}
             className={`group relative flex-1 py-1.5 px-3 rounded-xl transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer z-10 select-none active:scale-[0.97] ${
               activeSidebarTab === 'incomplete'
-                ? 'text-sky-700 dark:text-sky-300 font-bold'
+                ? 'text-amber-600 dark:text-amber-400 font-bold'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/40 dark:hover:bg-slate-700/40'
             }`}
           >
@@ -851,12 +851,12 @@ function IncidentSidebarContent({
                 className="absolute inset-0 bg-white dark:bg-slate-700/90 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)] border border-black/[0.04] dark:border-white/10"
               />
             )}
-            <AlertTriangle className="w-3.5 h-3.5 relative z-10 text-sky-500 dark:text-sky-400 transition-transform duration-200 ease-out group-hover:scale-115 group-hover:-rotate-6" />
+            <AlertTriangle className="w-3.5 h-3.5 relative z-10 text-amber-500 dark:text-amber-400 transition-transform duration-200 ease-out group-hover:scale-115 group-hover:-rotate-6" />
             <span className="relative z-10 font-bold">Incomplete</span>
             <span
               className={`relative z-10 text-[10px] px-2 py-0.2 rounded-full tabular-nums font-bold transition-transform duration-200 group-hover:scale-105 ${
                 activeSidebarTab === 'incomplete'
-                  ? 'bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 ring-1 ring-sky-500/20'
+                  ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 ring-1 ring-amber-500/20'
                   : 'bg-slate-300/60 dark:bg-slate-700/60 text-slate-600 dark:text-slate-400'
               }`}
             >
