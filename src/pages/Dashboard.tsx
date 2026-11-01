@@ -189,7 +189,7 @@ export default function Dashboard() {
   const { user } = useAuth();
   const location = useLocation();
   const { reports, loading: reportsLoading } = useReports();
-  const [filterUrgency, setFilterUrgency] = useState<'All' | 'High' | 'Mod' | 'Low'>('All');
+  const [filterUrgency, setFilterUrgency] = useState<'All' | 'Critical' | 'High' | 'Mod' | 'Low'>('All');
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'chart' | 'bars'>('chart');
 
@@ -230,13 +230,16 @@ export default function Dashboard() {
   }, [reports]);
 
   const highUrgencyCount = useMemo(() => {
-    return reports.filter((r) => (r.urgency || '').toLowerCase() === 'high').length;
+    return reports.filter((r) => {
+      const u = (r.urgency || '').toLowerCase();
+      return u === 'high' || u === 'critical';
+    }).length;
   }, [reports]);
 
   // Reports by Type Breakdown with Detailed Metrics
   const typeSummary = useMemo(() => {
     if (reports.length === 0) return [];
-    const counts: Record<string, { count: number; high: number; mod: number; low: number; brgys: Record<string, number> }> = {};
+    const counts: Record<string, { count: number; critical: number; high: number; mod: number; low: number; brgys: Record<string, number> }> = {};
 
     reports.forEach((r) => {
       const raw = (r.type || 'General').trim();
@@ -246,11 +249,13 @@ export default function Dashboard() {
           : raw;
 
       if (!counts[norm]) {
-        counts[norm] = { count: 0, high: 0, mod: 0, low: 0, brgys: {} };
+        counts[norm] = { count: 0, critical: 0, high: 0, mod: 0, low: 0, brgys: {} };
       }
       counts[norm].count += 1;
-      if (r.urgency === 'High') counts[norm].high += 1;
-      else if (r.urgency === 'Moderate') counts[norm].mod += 1;
+      const u = (r.urgency || '').toLowerCase();
+      if (u === 'critical') counts[norm].critical += 1;
+      else if (u === 'high') counts[norm].high += 1;
+      else if (u === 'moderate' || u === 'mod') counts[norm].mod += 1;
       else counts[norm].low += 1;
 
       const brgy = r.barangay || 'Unknown';
@@ -287,9 +292,13 @@ export default function Dashboard() {
     });
 
     const total = matching.length;
-    const high = matching.filter((r) => r.urgency === 'High').length;
-    const mod = matching.filter((r) => r.urgency === 'Moderate').length;
-    const low = matching.filter((r) => r.urgency === 'Low').length;
+    const critical = matching.filter((r) => (r.urgency || '').toLowerCase() === 'critical').length;
+    const high = matching.filter((r) => (r.urgency || '').toLowerCase() === 'high').length;
+    const mod = matching.filter((r) => {
+      const u = (r.urgency || '').toLowerCase();
+      return u === 'moderate' || u === 'mod';
+    }).length;
+    const low = matching.filter((r) => (r.urgency || '').toLowerCase() === 'low').length;
 
     const verified = matching.filter((r) => r.status === 'verified').length;
     const underReview = matching.filter((r) => r.status === 'under_review' || r.status === 'pending').length;
@@ -311,6 +320,7 @@ export default function Dashboard() {
       type: selectedType,
       total,
       percentage: reports.length ? Math.round((total / reports.length) * 100) : 0,
+      critical,
       high,
       mod,
       low,
@@ -332,12 +342,17 @@ export default function Dashboard() {
       return tB - tA;
     });
 
-    if (filterUrgency === 'High') {
-      list = list.filter((r) => r.urgency === 'High');
+    if (filterUrgency === 'Critical') {
+      list = list.filter((r) => (r.urgency || '').toLowerCase() === 'critical');
+    } else if (filterUrgency === 'High') {
+      list = list.filter((r) => (r.urgency || '').toLowerCase() === 'high');
     } else if (filterUrgency === 'Mod') {
-      list = list.filter((r) => r.urgency === 'Moderate');
+      list = list.filter((r) => {
+        const u = (r.urgency || '').toLowerCase();
+        return u === 'moderate' || u === 'mod';
+      });
     } else if (filterUrgency === 'Low') {
-      list = list.filter((r) => r.urgency === 'Low');
+      list = list.filter((r) => (r.urgency || '').toLowerCase() === 'low');
     }
 
     if (selectedType) {
@@ -352,7 +367,15 @@ export default function Dashboard() {
   }, [reports, filterUrgency, selectedType]);
 
   const getUrgencyBadge = (urgency: string) => {
-    switch (urgency) {
+    switch ((urgency || '').toLowerCase()) {
+      case 'critical':
+        return (
+          <span className="inline-flex items-center justify-center gap-1.5 w-[82px] py-0.5 rounded-full text-xs font-semibold bg-rose-600/15 text-rose-700 dark:text-rose-400 border border-rose-600/30">
+            <span className="w-1.5 h-1.5 rounded-full bg-rose-600 shrink-0 animate-pulse" />
+            <span>Critical</span>
+          </span>
+        );
+      case 'high':
       case 'High':
         return (
           <span className="inline-flex items-center justify-center gap-1.5 w-[82px] py-0.5 rounded-full text-xs font-semibold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
@@ -360,14 +383,15 @@ export default function Dashboard() {
             <span>High</span>
           </span>
         );
-      case 'Moderate':
+      case 'moderate':
+      case 'mod':
         return (
           <span className="inline-flex items-center justify-center gap-1.5 w-[82px] py-0.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
             <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
             <span>Moderate</span>
           </span>
         );
-      case 'Low':
+      case 'low':
       default:
         return (
           <span className="inline-flex items-center justify-center gap-1.5 w-[82px] py-0.5 rounded-full text-xs font-semibold bg-green-500/15 text-green-700 dark:text-green-300 border border-green-500/30">
@@ -424,8 +448,8 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="dashboard-soft flex flex-col flex-1 min-h-0 w-full h-full relative">
-      <StaggerContainer className="flex flex-col flex-1 min-h-0 space-y-4 sm:space-y-5 w-full h-full">
+    <div className="dashboard-soft flex flex-col flex-1 w-full lg:h-full lg:min-h-0 relative">
+      <StaggerContainer className="flex flex-col flex-1 space-y-4 sm:space-y-5 w-full lg:h-full lg:min-h-0">
         {/* ── Top Header Bar (Matching IncidentReports, Analytics, Settings) ── */}
         <StaggerItem>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
@@ -447,7 +471,7 @@ export default function Dashboard() {
 
         {/* ── 1. Row 1: 4 Raised Stat Cards (Derived directly from reports) ── */}
         <StaggerItem>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 shrink-0">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-3 md:gap-4 shrink-0">
         {/* Total Incidents */}
         <div className="relative overflow-hidden bg-white/80 dark:bg-[#111827]/80 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)] p-3.5 sm:p-4 md:p-5 flex items-center justify-between group transition-[transform,box-shadow,border-color,background-color] duration-250 ease-[cubic-bezier(0.23,1,0.32,1)] hover:-translate-y-1 hover:bg-white/95 dark:hover:bg-[#151e31]/95 hover:border-rose-500/35 dark:hover:border-rose-500/40 hover:shadow-[0_12px_28px_-6px_rgba(244,63,94,0.15),0_4px_12px_-2px_rgba(15,23,42,0.05)] dark:hover:shadow-[0_12px_30px_-6px_rgba(244,63,94,0.22)] min-w-0">
           <div className="pointer-events-none absolute -right-10 -top-10 w-44 h-44 rounded-full bg-[radial-gradient(circle,rgba(244,63,94,0.16)_0%,rgba(244,63,94,0.05)_45%,transparent_70%)] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -456,7 +480,7 @@ export default function Dashboard() {
             <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors duration-200 truncate">
               Total Incidents
             </p>
-            <p className="text-xl sm:text-2xl md:text-3xl font-semibold tracking-tight tabular-nums text-slate-900 dark:text-white">
+            <p className="text-lg sm:text-2xl md:text-3xl font-semibold tracking-tight tabular-nums text-slate-900 dark:text-white">
               <AnimatedNumber key={`total-${location.key}`} value={totalIncidents} duration={2} />
             </p>
             <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 group-hover:text-rose-600 dark:group-hover:text-rose-400 transition-colors duration-200 font-medium min-w-0">
@@ -477,7 +501,7 @@ export default function Dashboard() {
             <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors duration-200 truncate">
               Under Review
             </p>
-            <p className="text-xl sm:text-2xl md:text-3xl font-semibold tracking-tight tabular-nums text-slate-900 dark:text-white">
+            <p className="text-lg sm:text-2xl md:text-3xl font-semibold tracking-tight tabular-nums text-slate-900 dark:text-white">
               <AnimatedNumber key={`review-${location.key}`} value={underReviewCount} duration={2} />
             </p>
             <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] font-medium min-w-0">
@@ -511,7 +535,7 @@ export default function Dashboard() {
             <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors duration-200 truncate">
               Verified Incidents
             </p>
-            <p className="text-xl sm:text-2xl md:text-3xl font-semibold tracking-tight tabular-nums text-slate-900 dark:text-white">
+            <p className="text-lg sm:text-2xl md:text-3xl font-semibold tracking-tight tabular-nums text-slate-900 dark:text-white">
               <AnimatedNumber key={`verified-${location.key}`} value={verifiedCount} duration={2} />
             </p>
             <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] text-emerald-600 dark:text-emerald-400 font-medium min-w-0">
@@ -532,7 +556,7 @@ export default function Dashboard() {
             <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors duration-200 truncate">
               High Urgency
             </p>
-            <p className="text-xl sm:text-2xl md:text-3xl font-semibold tracking-tight tabular-nums text-slate-900 dark:text-white">
+            <p className="text-lg sm:text-2xl md:text-3xl font-semibold tracking-tight tabular-nums text-slate-900 dark:text-white">
               <AnimatedNumber key={`high-${location.key}`} value={highUrgencyCount} duration={2} />
             </p>
             <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] text-purple-600 dark:text-purple-400 font-medium min-w-0">
@@ -548,10 +572,10 @@ export default function Dashboard() {
         </StaggerItem>
 
         {/* ── 2. Main 2-Column Section: Latest Reports Table (Left) & Reports by Type with Interactive Bar Chart (Right) ── */}
-        <StaggerItem className="flex-1 min-h-0 flex flex-col">
-          <div className="grid grid-cols-12 gap-4 sm:gap-5 lg:gap-6 flex-1 min-h-0 w-full items-stretch">
+        <StaggerItem className="w-full flex flex-col flex-1 lg:min-h-0">
+          <div className="grid grid-cols-12 gap-4 sm:gap-5 lg:gap-6 flex-1 lg:min-h-0 w-full items-stretch">
         {/* Left Column: Latest Reports Table (Col 8) */}
-        <div className="col-span-12 lg:col-span-8 bg-white/90 dark:bg-[#111827]/90 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.04)] flex flex-col overflow-hidden h-full">
+        <div className="order-2 md:order-1 col-span-12 lg:col-span-8 bg-white/90 dark:bg-[#111827]/90 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.04)] flex flex-col overflow-hidden lg:h-full">
           {/* Header Row */}
           <div className="p-4 sm:p-5 border-b border-slate-200/70 dark:border-white/10 flex flex-wrap items-center justify-between gap-3 shrink-0">
             <div className="flex items-center gap-2.5">
@@ -580,7 +604,7 @@ export default function Dashboard() {
                 <span className="text-[10px] font-bold uppercase tracking-wider">Filters</span>
               </div>
               <div className="inline-flex items-center gap-1">
-                {(['All', 'High', 'Mod', 'Low'] as const).map((opt) => (
+                {(['All', 'Critical', 'High', 'Mod', 'Low'] as const).map((opt) => (
                   <button
                     key={opt}
                     type="button"
@@ -700,7 +724,7 @@ export default function Dashboard() {
         </div>
 
         {/* Right Column: Reports by Type with Interactive Bar Chart (Col 4) */}
-        <div className="col-span-12 lg:col-span-4 bg-white/90 dark:bg-[#111827]/90 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.04)] p-4 sm:p-5 flex flex-col h-full justify-between">
+        <div className="order-1 md:order-2 col-span-12 lg:col-span-4 bg-white/90 dark:bg-[#111827]/90 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.04)] p-4 sm:p-5 flex flex-col lg:h-full justify-between">
           {/* Header Row with View Mode Switcher and Clear Filter Pill */}
           <div className="flex items-center justify-between pb-3.5 border-b border-slate-200/70 dark:border-white/10 shrink-0 gap-2">
             <div className="flex items-center gap-2 min-w-0">
@@ -768,7 +792,7 @@ export default function Dashboard() {
               <p className="text-[11px] text-slate-400 dark:text-slate-500">
                 Click any bar to highlight incident and inspect details
               </p>
-              <div className="w-full h-48 sm:h-52 relative mt-1">
+              <div className="w-full h-48 sm:h-52 min-h-[190px] relative mt-1">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
                     data={typeSummary}
@@ -904,6 +928,12 @@ export default function Dashboard() {
                       Urgency Levels
                     </span>
                     <div className="flex items-center gap-1.5 flex-wrap text-[11px] font-medium">
+                      {selectedTypeDetails.critical > 0 && (
+                        <>
+                          <span className="text-rose-700 dark:text-rose-400 font-bold">{selectedTypeDetails.critical} Crit</span>
+                          <span className="text-slate-300 dark:text-slate-600">·</span>
+                        </>
+                      )}
                       <span className="text-rose-600 dark:text-rose-400 font-semibold">{selectedTypeDetails.high} High</span>
                       <span className="text-slate-300 dark:text-slate-600">·</span>
                       <span className="text-amber-600 dark:text-amber-400">{selectedTypeDetails.mod} Mod</span>
