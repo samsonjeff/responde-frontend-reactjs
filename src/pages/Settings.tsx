@@ -16,6 +16,7 @@ import {
   Trash2,
   RefreshCw,
   UserPlus,
+  Users,
   Search,
   Eye,
   EyeOff,
@@ -89,7 +90,7 @@ function SoftCard({
 }) {
   return (
     <div
-      className={`rounded-2xl border transition-all duration-300 p-6 sm:p-7 ${className}`}
+      className={`rounded-3xl border transition-all duration-300 p-6 sm:p-7 ${className}`}
       style={{
         backgroundColor: 'var(--soft-surface)',
         borderColor: 'var(--soft-border)',
@@ -102,7 +103,7 @@ function SoftCard({
 }
 
 /**
- * CleanButton: Tactile button with subtle borders and gentle scale feedback.
+ * CleanButton: Tactile Apple-grade button with subtle borders, elevation lift, and tactile feedback (NO tilt).
  */
 function CleanButton({
   variant = 'primary',
@@ -125,13 +126,13 @@ function CleanButton({
 }) {
   let styles = '';
   if (variant === 'primary') {
-    styles = 'bg-slate-900 text-white hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100 shadow-xs';
+    styles = 'bg-[#0071E3] hover:bg-[#0077ED] active:bg-[#0062C4] text-white shadow-[0_2px_8px_rgba(0,113,227,0.25)] hover:shadow-[0_4px_14px_rgba(0,113,227,0.35)] border border-transparent';
   } else if (variant === 'secondary') {
-    styles = 'bg-white text-slate-700 hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700/70 border border-slate-200/80 dark:border-slate-700/80 shadow-xs';
+    styles = 'bg-slate-100 hover:bg-slate-200/80 text-slate-700 dark:bg-white/10 dark:text-slate-200 dark:hover:bg-white/15 border border-slate-200/60 dark:border-white/10 shadow-2xs hover:shadow-xs';
   } else if (variant === 'danger') {
-    styles = 'bg-rose-50 text-rose-700 hover:bg-rose-100/80 dark:bg-rose-950/30 dark:text-rose-300 dark:hover:bg-rose-900/40 border border-rose-200/70 dark:border-rose-900/50';
+    styles = 'bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-950/30 dark:text-rose-400 dark:hover:bg-rose-900/40 border border-rose-200/70 dark:border-rose-900/50 shadow-2xs hover:shadow-xs';
   } else {
-    styles = 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100/70 dark:hover:bg-slate-800/60';
+    styles = 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100/70 dark:hover:bg-white/5';
   }
 
   return (
@@ -140,16 +141,16 @@ function CleanButton({
       onClick={onClick}
       disabled={disabled}
       title={title}
-      className={`inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 min-h-[42px] sm:min-h-[38px] text-xs sm:text-sm font-medium transition-all duration-150 cursor-pointer active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed select-none ${styles} ${className}`}
+      className={`group inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 sm:py-2 text-xs sm:text-sm font-semibold transition-all duration-150 cursor-pointer hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-none select-none ${styles} ${className}`}
     >
-      {Icon && <Icon className="w-4 h-4 shrink-0" strokeWidth={1.75} />}
+      {Icon && <Icon className="w-4 h-4 shrink-0 transition-transform duration-150 group-hover:scale-105" strokeWidth={1.75} />}
       <span>{children}</span>
     </button>
   );
 }
 
 /**
- * SoftToggle: Clean, simple toggle with smooth track transition.
+ * SoftToggle: Apple-style fluid spring toggle switch.
  */
 function SoftToggle({
   checked,
@@ -167,14 +168,14 @@ function SoftToggle({
       aria-checked={checked}
       aria-label={label || 'Toggle switch'}
       onClick={onChange}
-      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500/20 border ${
+      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full transition-all duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[#0071E3]/25 active:scale-95 border ${
         checked
-          ? 'bg-blue-600 border-blue-600 dark:bg-blue-500 dark:border-blue-500'
-          : 'bg-slate-200 dark:bg-slate-700 border-slate-300/80 dark:border-slate-600/80'
+          ? 'bg-[#0071E3] border-[#0071E3] shadow-[0_2px_6px_rgba(0,113,227,0.3)]'
+          : 'bg-slate-200 dark:bg-slate-700 border-slate-300/80 dark:border-slate-600/80 hover:bg-slate-300/80 dark:hover:bg-slate-600'
       }`}
     >
       <span
-        className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-xs transform transition duration-200 ease-in-out ${
+        className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,0.2)] transform transition-transform duration-200 ease-in-out ${
           checked ? 'translate-x-5' : 'translate-x-0.5'
         }`}
         style={{ marginTop: '1px' }}
@@ -1207,14 +1208,19 @@ export default function Settings() {
             <div className="space-y-6">
               <SoftCard>
                 {/* Header & Controls */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-slate-100 dark:border-slate-800">
-                  <div>
-                    <h2 className="text-base sm:text-lg font-semibold text-slate-900 dark:text-white">
-                      Team Members
-                    </h2>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                      Manage registered personnel accounts and role permissions.
-                    </p>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-slate-100 dark:border-white/5">
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400 flex items-center justify-center shrink-0 border border-indigo-500/20 shadow-xs">
+                      <Users className="w-5 h-5" strokeWidth={1.75} />
+                    </div>
+                    <div>
+                      <h2 className="text-base sm:text-lg font-semibold text-slate-900 dark:text-white">
+                        Team Members
+                      </h2>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                        Manage registered personnel accounts and role permissions.
+                      </p>
+                    </div>
                   </div>
 
                   <div className="flex items-center gap-2">
@@ -1222,10 +1228,10 @@ export default function Settings() {
                       type="button"
                       onClick={fetchUsers}
                       disabled={loadingUsers}
-                      className="p-2.5 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 rounded-xl hover:bg-slate-50 transition-all cursor-pointer active:scale-95 disabled:opacity-50"
+                      className="p-2.5 text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white bg-slate-100 hover:bg-slate-200/80 dark:bg-white/10 dark:hover:bg-white/15 border border-slate-200/60 dark:border-white/10 rounded-xl transition-all duration-150 cursor-pointer hover:-translate-y-0.5 active:translate-y-0 active:scale-95 disabled:opacity-50 shadow-2xs hover:shadow-xs"
                       title="Refresh user list"
                     >
-                      <RefreshCw className={`w-4 h-4 ${loadingUsers ? 'animate-spin' : ''}`} strokeWidth={1.75} />
+                      <RefreshCw className={`w-4 h-4 transition-transform duration-300 ${loadingUsers ? 'animate-spin text-[#0071E3]' : ''}`} strokeWidth={1.75} />
                     </button>
 
                     {currentUser?.role === 'super_admin' && (
@@ -1253,7 +1259,7 @@ export default function Settings() {
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       placeholder="Search by name, email, or username..."
-                      className="w-full pl-9 pr-4 py-2.5 rounded-xl text-xs sm:text-sm bg-slate-50/70 focus:bg-white dark:bg-slate-800/40 dark:focus:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900/10 dark:focus:ring-white/10 transition-colors"
+                      className="w-full pl-9 pr-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm bg-slate-100/70 hover:bg-slate-100 focus:bg-white dark:bg-white/5 dark:hover:bg-white/[0.08] dark:focus:bg-white/10 border border-slate-200/80 dark:border-white/10 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0071E3]/20 focus:border-[#0071E3] transition-all"
                     />
                   </div>
                 </div>
@@ -1265,30 +1271,30 @@ export default function Settings() {
                   </div>
                 )}
 
-                {/* Clean, Non-Glaring User Table */}
-                <div className="mt-3 overflow-x-auto rounded-xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900/40">
+                {/* Clean Apple Table */}
+                <div className="mt-3 overflow-x-auto rounded-2xl border border-slate-200/80 dark:border-white/10 bg-white/50 dark:bg-slate-900/40">
                   <table className="w-full text-xs sm:text-sm text-left border-collapse">
-                    <thead className="bg-slate-50/75 dark:bg-slate-800/40 border-b border-slate-200/70 dark:border-slate-800">
+                    <thead className="bg-slate-50/75 dark:bg-white/[0.02] border-b border-slate-200/70 dark:border-white/5">
                       <tr>
-                        <th className="px-4 py-3 font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider text-[11px] whitespace-nowrap">
+                        <th className="px-4 py-3 font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-[11px] whitespace-nowrap">
                           User
                         </th>
-                        <th className="px-4 py-3 font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider text-[11px] whitespace-nowrap">
+                        <th className="px-4 py-3 font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-[11px] whitespace-nowrap">
                           Role
                         </th>
-                        <th className="px-4 py-3 font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider text-[11px] hidden md:table-cell whitespace-nowrap">
+                        <th className="px-4 py-3 font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-[11px] hidden md:table-cell whitespace-nowrap">
                           Last Login
                         </th>
-                        <th className="px-4 py-3 font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider text-[11px] text-right whitespace-nowrap">
+                        <th className="px-4 py-3 font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-[11px] text-right whitespace-nowrap">
                           Actions
                         </th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                    <tbody className="divide-y divide-slate-100 dark:divide-white/5">
                       {loadingUsers ? (
                         <tr>
                           <td colSpan={4} className="py-10 text-center text-slate-400">
-                            <Loader2 className="w-5 h-5 animate-spin mx-auto text-blue-600 mb-2" />
+                            <Loader2 className="w-5 h-5 animate-spin mx-auto text-[#0071E3] mb-2" />
                             Loading team members...
                           </td>
                         </tr>
@@ -1312,31 +1318,31 @@ export default function Settings() {
                           }
 
                           return (
-                            <tr key={u.user_id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors">
+                            <tr key={u.user_id} className="hover:bg-slate-50/70 dark:hover:bg-white/[0.025] transition-colors duration-150">
                               <td className="px-4 py-3">
                                 <div className="flex items-center gap-3">
                                   {u.avatar_url ? (
                                     <img
                                       src={u.avatar_url}
                                       alt={u.full_name}
-                                      className="w-8 h-8 rounded-lg object-cover border border-slate-200 dark:border-slate-700"
+                                      className="w-8 h-8 rounded-xl object-cover border border-slate-200 dark:border-white/10"
                                     />
                                   ) : (
-                                    <div className="w-8 h-8 rounded-lg bg-blue-500/10 dark:bg-blue-500/20 text-[#0071E3] dark:text-sky-400 font-semibold text-xs flex items-center justify-center border border-blue-500/20">
+                                    <div className="w-8 h-8 rounded-xl bg-blue-500/10 dark:bg-blue-500/20 text-[#0071E3] dark:text-sky-400 font-semibold text-xs flex items-center justify-center border border-blue-500/20">
                                       {(u.full_name || u.email || 'U')[0].toUpperCase()}
                                     </div>
                                   )}
                                   <div>
-                                    <div className="font-medium text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                                    <div className="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2">
                                       <span>{u.full_name || 'Unnamed Personnel'}</span>
                                       {isSelf && (
-                                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+                                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-600 dark:bg-white/10 dark:text-slate-300">
                                           You
                                         </span>
                                       )}
                                     </div>
                                     <div className="text-xs text-slate-400 flex items-center gap-1.5 mt-0.5">
-                                      {u.username && <span>@{u.username} •</span>}
+                                      {u.username && <span className="font-mono">@{u.username} •</span>}
                                       <span className="truncate max-w-xs">{u.email}</span>
                                     </div>
                                   </div>
@@ -1374,7 +1380,7 @@ export default function Settings() {
                                         isSelf ||
                                         (currentUser?.role === 'admin' && u.role === 'super_admin')
                                       }
-                                      className="px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700/60 transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer active:scale-95"
+                                      className="px-3 py-1 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-slate-100 hover:bg-slate-200/90 dark:bg-white/10 dark:hover:bg-white/15 border border-slate-200/60 dark:border-white/10 rounded-full transition-all duration-150 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0 cursor-pointer shadow-2xs hover:shadow-xs"
                                     >
                                       Edit Role
                                     </button>
@@ -1384,7 +1390,7 @@ export default function Settings() {
                                     <button
                                       type="button"
                                       onClick={() => setDeleteModalUser(u)}
-                                      className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 rounded-lg transition-colors cursor-pointer active:scale-95"
+                                      className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-lg transition-all duration-150 active:scale-90 cursor-pointer"
                                       title="Delete personnel account"
                                     >
                                       <Trash2 className="w-4 h-4" strokeWidth={1.75} />
@@ -1403,14 +1409,19 @@ export default function Settings() {
 
               {/* Sub-Card: Activity & Audit Log */}
               <SoftCard>
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-slate-800">
-                  <div>
-                    <h3 className="text-sm sm:text-base font-semibold text-slate-900 dark:text-white">
-                      Activity Log
-                    </h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                      System records of logins, credential updates, and permission changes.
-                    </p>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-white/5">
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-9 h-9 rounded-xl bg-purple-500/10 text-purple-600 dark:bg-purple-500/20 dark:text-purple-400 flex items-center justify-center shrink-0 border border-purple-500/20 shadow-xs">
+                      <Shield className="w-4.5 h-4.5" strokeWidth={1.75} />
+                    </div>
+                    <div>
+                      <h3 className="text-sm sm:text-base font-semibold text-slate-900 dark:text-white">
+                        Activity Log
+                      </h3>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                        System records of logins, credential updates, and permission changes.
+                      </p>
+                    </div>
                   </div>
 
                   <div className="flex items-center gap-2">
@@ -1418,7 +1429,7 @@ export default function Settings() {
                     <select
                       value={auditFilter}
                       onChange={(e) => setAuditFilter(e.target.value as any)}
-                      className="px-3 py-1.5 rounded-xl text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 focus:outline-none cursor-pointer"
+                      className="px-3 py-1.5 rounded-xl text-xs bg-slate-100/80 hover:bg-slate-200/70 dark:bg-white/10 dark:hover:bg-white/15 border border-slate-200/60 dark:border-white/10 text-slate-700 dark:text-slate-200 focus:outline-none cursor-pointer transition-colors"
                     >
                       <option value="all">All Events</option>
                       <option value="invite">Invites</option>
@@ -1430,25 +1441,25 @@ export default function Settings() {
                   </div>
                 </div>
 
-                <div className="mt-3 overflow-x-auto rounded-xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900/40">
+                <div className="mt-3 overflow-x-auto rounded-2xl border border-slate-200/80 dark:border-white/10 bg-white/50 dark:bg-slate-900/40">
                   <table className="w-full text-xs sm:text-sm text-left border-collapse">
-                    <thead className="bg-slate-50/75 dark:bg-slate-800/40 border-b border-slate-200/70 dark:border-slate-800">
+                    <thead className="bg-slate-50/75 dark:bg-white/[0.02] border-b border-slate-200/70 dark:border-white/5">
                       <tr>
-                        <th className="px-4 py-2.5 font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider text-[11px] whitespace-nowrap">
+                        <th className="px-4 py-2.5 font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-[11px] whitespace-nowrap">
                           Action
                         </th>
-                        <th className="px-4 py-2.5 font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider text-[11px] whitespace-nowrap">
+                        <th className="px-4 py-2.5 font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-[11px] whitespace-nowrap">
                           Details
                         </th>
-                        <th className="px-4 py-2.5 font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider text-[11px] hidden sm:table-cell whitespace-nowrap">
+                        <th className="px-4 py-2.5 font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-[11px] hidden sm:table-cell whitespace-nowrap">
                           Actor
                         </th>
-                        <th className="px-4 py-2.5 font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider text-[11px] text-right whitespace-nowrap">
+                        <th className="px-4 py-2.5 font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-[11px] text-right whitespace-nowrap">
                           When
                         </th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                    <tbody className="divide-y divide-slate-100 dark:divide-white/5">
                       {visibleAuditLogs.length === 0 ? (
                         <tr>
                           <td colSpan={4} className="py-8 text-center text-slate-400">
@@ -1457,7 +1468,7 @@ export default function Settings() {
                         </tr>
                       ) : (
                         visibleAuditLogs.map((log) => (
-                          <tr key={log.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors">
+                          <tr key={log.id} className="hover:bg-slate-50/70 dark:hover:bg-white/[0.025] transition-colors duration-150">
                             <td className="px-4 py-2.5 whitespace-nowrap">
                               <AuditActionBadge action={log.action} />
                             </td>
@@ -1484,21 +1495,26 @@ export default function Settings() {
         {/* TAB 3: SECURITY */}
         {activeTab === 'security' && (
           <StaggerItem>
-            <div className="space-y-6">
+            <div className="max-w-2xl mx-auto space-y-6">
               <SoftCard>
-                <div className="pb-5 border-b border-slate-100 dark:border-slate-800">
-                  <h2 className="text-base sm:text-lg font-semibold text-slate-900 dark:text-white">
-                    Password &amp; Authentication
-                  </h2>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                    Update your account password to protect access to the incident dispatch console.
-                  </p>
+                <div className="flex items-center gap-3.5 pb-5 border-b border-slate-100 dark:border-white/5">
+                  <div className="w-10 h-10 rounded-2xl bg-blue-500/10 text-[#0071E3] dark:bg-blue-500/20 dark:text-sky-400 flex items-center justify-center shrink-0 border border-blue-500/20 shadow-xs">
+                    <Lock className="w-5 h-5" strokeWidth={1.75} />
+                  </div>
+                  <div>
+                    <h2 className="text-base sm:text-lg font-semibold text-slate-900 dark:text-white">
+                      Password &amp; Authentication
+                    </h2>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                      Update your account password to protect access to the incident dispatch console.
+                    </p>
+                  </div>
                 </div>
 
-                <form onSubmit={handlePasswordSubmit} className="pt-6 max-w-lg space-y-4">
+                <form onSubmit={handlePasswordSubmit} className="pt-6 space-y-4">
                   {/* Current Password */}
-                  <div className="space-y-1">
-                    <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
                       Current Password <span className="text-rose-500">*</span>
                     </label>
                     <div className="relative">
@@ -1508,12 +1524,12 @@ export default function Settings() {
                         onChange={(e) => setCurrentPassword(e.target.value)}
                         placeholder="Enter current password"
                         required
-                        className="w-full px-3.5 py-2.5 pr-10 rounded-xl text-xs sm:text-sm bg-slate-50/70 focus:bg-white dark:bg-slate-800/50 dark:focus:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-900/10 dark:focus:ring-white/10 transition-colors"
+                        className="w-full px-3.5 py-2.5 pr-10 rounded-xl text-xs sm:text-sm bg-slate-100/70 hover:bg-slate-100 focus:bg-white dark:bg-white/5 dark:hover:bg-white/[0.08] dark:focus:bg-white/10 border border-slate-200/80 dark:border-white/10 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0071E3]/20 focus:border-[#0071E3] transition-all"
                       />
                       <button
                         type="button"
                         onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-white/10 transition-colors cursor-pointer active:scale-95"
                       >
                         {showCurrentPassword ? <EyeOff className="w-4 h-4" strokeWidth={1.75} /> : <Eye className="w-4 h-4" strokeWidth={1.75} />}
                       </button>
@@ -1521,8 +1537,8 @@ export default function Settings() {
                   </div>
 
                   {/* New Password */}
-                  <div className="space-y-1">
-                    <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
                       New Password <span className="text-rose-500">*</span>
                     </label>
                     <div className="relative">
@@ -1532,12 +1548,12 @@ export default function Settings() {
                         onChange={(e) => setNewPassword(e.target.value)}
                         placeholder="At least 8 characters"
                         required
-                        className="w-full px-3.5 py-2.5 pr-10 rounded-xl text-xs sm:text-sm bg-slate-50/70 focus:bg-white dark:bg-slate-800/50 dark:focus:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-900/10 dark:focus:ring-white/10 transition-colors"
+                        className="w-full px-3.5 py-2.5 pr-10 rounded-xl text-xs sm:text-sm bg-slate-100/70 hover:bg-slate-100 focus:bg-white dark:bg-white/5 dark:hover:bg-white/[0.08] dark:focus:bg-white/10 border border-slate-200/80 dark:border-white/10 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0071E3]/20 focus:border-[#0071E3] transition-all"
                       />
                       <button
                         type="button"
                         onClick={() => setShowNewPassword(!showNewPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-white/10 transition-colors cursor-pointer active:scale-95"
                       >
                         {showNewPassword ? <EyeOff className="w-4 h-4" strokeWidth={1.75} /> : <Eye className="w-4 h-4" strokeWidth={1.75} />}
                       </button>
@@ -1545,8 +1561,8 @@ export default function Settings() {
                   </div>
 
                   {/* Confirm Password */}
-                  <div className="space-y-1">
-                    <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
                       Confirm New Password <span className="text-rose-500">*</span>
                     </label>
                     <div className="relative">
@@ -1556,12 +1572,12 @@ export default function Settings() {
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         placeholder="Re-enter new password"
                         required
-                        className="w-full px-3.5 py-2.5 pr-10 rounded-xl text-xs sm:text-sm bg-slate-50/70 focus:bg-white dark:bg-slate-800/50 dark:focus:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-900/10 dark:focus:ring-white/10 transition-colors"
+                        className="w-full px-3.5 py-2.5 pr-10 rounded-xl text-xs sm:text-sm bg-slate-100/70 hover:bg-slate-100 focus:bg-white dark:bg-white/5 dark:hover:bg-white/[0.08] dark:focus:bg-white/10 border border-slate-200/80 dark:border-white/10 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0071E3]/20 focus:border-[#0071E3] transition-all"
                       />
                       <button
                         type="button"
                         onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-white/10 transition-colors cursor-pointer active:scale-95"
                       >
                         {showConfirmPassword ? <EyeOff className="w-4 h-4" strokeWidth={1.75} /> : <Eye className="w-4 h-4" strokeWidth={1.75} />}
                       </button>
@@ -1569,15 +1585,15 @@ export default function Settings() {
                   </div>
 
                   {passwordError && (
-                    <div className="p-3 rounded-xl bg-rose-50 border border-rose-200/70 text-xs text-rose-700 flex items-center gap-2">
-                      <AlertCircle className="w-4 h-4 shrink-0" strokeWidth={1.75} />
+                    <div className="p-3.5 rounded-xl bg-rose-50/80 dark:bg-rose-950/40 border border-rose-200/70 text-xs text-rose-700 dark:text-rose-300 flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 shrink-0 text-rose-500" strokeWidth={1.75} />
                       <span>{passwordError}</span>
                     </div>
                   )}
 
                   {passwordSuccess && (
-                    <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200/70 text-xs text-emerald-700 flex items-center gap-2">
-                      <Check className="w-4 h-4 shrink-0" strokeWidth={2} />
+                    <div className="p-3.5 rounded-xl bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200/70 text-xs text-emerald-700 dark:text-emerald-300 flex items-center gap-2">
+                      <Check className="w-4 h-4 shrink-0 text-emerald-600" strokeWidth={2} />
                       <span>{passwordSuccess}</span>
                     </div>
                   )}
@@ -1587,11 +1603,12 @@ export default function Settings() {
                       type="submit"
                       variant="primary"
                       disabled={isSubmittingPassword}
+                      icon={Lock}
                     >
                       {isSubmittingPassword ? (
                         <>
                           <Loader2 className="w-4 h-4 animate-spin" />
-                          <span>Updating...</span>
+                          <span>Updating Password...</span>
                         </>
                       ) : (
                         'Update Password'
@@ -1607,29 +1624,34 @@ export default function Settings() {
         {/* TAB 4: PREFERENCES */}
         {activeTab === 'preferences' && (
           <StaggerItem>
-            <div className="space-y-6">
+            <div className="max-w-3xl mx-auto space-y-6">
               <SoftCard>
-                <div className="pb-5 border-b border-slate-100 dark:border-slate-800">
-                  <h2 className="text-base sm:text-lg font-semibold text-slate-900 dark:text-white">
-                    System Preferences
-                  </h2>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                    Customize your local display mode, alert triggers, and refresh intervals.
-                  </p>
+                <div className="flex items-center gap-3.5 pb-5 border-b border-slate-100 dark:border-white/5">
+                  <div className="w-10 h-10 rounded-2xl bg-amber-500/10 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400 flex items-center justify-center shrink-0 border border-amber-500/20 shadow-xs">
+                    <Bell className="w-5 h-5" strokeWidth={1.75} />
+                  </div>
+                  <div>
+                    <h2 className="text-base sm:text-lg font-semibold text-slate-900 dark:text-white">
+                      System Preferences
+                    </h2>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                      Customize your local display mode, alert triggers, and refresh intervals.
+                    </p>
+                  </div>
                 </div>
 
-                <div className="pt-4 divide-y divide-slate-100 dark:divide-slate-800">
+                <div className="pt-2 divide-y divide-slate-100 dark:divide-white/5">
                   {/* Theme Mode */}
-                  <div className="py-4 flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300">
+                  <div className="py-4 -mx-2 sm:-mx-3 px-2 sm:px-3 rounded-2xl hover:bg-slate-50/70 dark:hover:bg-white/[0.025] transition-colors duration-150 flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3.5">
+                      <div className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400 flex items-center justify-center shrink-0 border border-amber-500/20 shadow-2xs">
                         {isDark ? <Moon className="w-5 h-5" strokeWidth={1.75} /> : <Sun className="w-5 h-5" strokeWidth={1.75} />}
                       </div>
                       <div>
-                        <span className="text-sm font-medium text-slate-800 dark:text-slate-200 block">
+                        <span className="text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 block">
                           Appearance Mode
                         </span>
-                        <span className="text-xs text-slate-400 block">
+                        <span className="text-xs text-slate-400 block mt-0.5">
                           {isDark ? 'Dark theme active' : 'Light theme active'}
                         </span>
                       </div>
@@ -1637,22 +1659,23 @@ export default function Settings() {
                     <CleanButton
                       variant="secondary"
                       onClick={toggleTheme}
+                      icon={isDark ? Sun : Moon}
                     >
                       {isDark ? 'Switch to Light' : 'Switch to Dark'}
                     </CleanButton>
                   </div>
 
                   {/* Push Notifications */}
-                  <div className="py-4 flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300">
+                  <div className="py-4 -mx-2 sm:-mx-3 px-2 sm:px-3 rounded-2xl hover:bg-slate-50/70 dark:hover:bg-white/[0.025] transition-colors duration-150 flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3.5">
+                      <div className="w-9 h-9 rounded-xl bg-blue-500/10 text-[#0071E3] dark:bg-blue-500/20 dark:text-sky-400 flex items-center justify-center shrink-0 border border-blue-500/20 shadow-2xs">
                         <Bell className="w-5 h-5" strokeWidth={1.75} />
                       </div>
                       <div>
-                        <span className="text-sm font-medium text-slate-800 dark:text-slate-200 block">
+                        <span className="text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 block">
                           Desktop Notifications
                         </span>
-                        <span className="text-xs text-slate-400 block">
+                        <span className="text-xs text-slate-400 block mt-0.5">
                           Receive browser notifications when high-priority alerts are received.
                         </span>
                       </div>
@@ -1665,16 +1688,16 @@ export default function Settings() {
                   </div>
 
                   {/* Sound Alerts */}
-                  <div className="py-4 flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300">
+                  <div className="py-4 -mx-2 sm:-mx-3 px-2 sm:px-3 rounded-2xl hover:bg-slate-50/70 dark:hover:bg-white/[0.025] transition-colors duration-150 flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3.5">
+                      <div className="w-9 h-9 rounded-xl bg-violet-500/10 text-violet-600 dark:bg-violet-500/20 dark:text-violet-400 flex items-center justify-center shrink-0 border border-violet-500/20 shadow-2xs">
                         <Volume2 className="w-5 h-5" strokeWidth={1.75} />
                       </div>
                       <div>
-                        <span className="text-sm font-medium text-slate-800 dark:text-slate-200 block">
+                        <span className="text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 block">
                           Audio Alerts for Critical Incidents
                         </span>
-                        <span className="text-xs text-slate-400 block">
+                        <span className="text-xs text-slate-400 block mt-0.5">
                           Play an audible alert when high-priority emergencies are filed.
                         </span>
                       </div>
@@ -1687,16 +1710,16 @@ export default function Settings() {
                   </div>
 
                   {/* Live Auto-Refresh */}
-                  <div className="py-4 flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300">
+                  <div className="py-4 -mx-2 sm:-mx-3 px-2 sm:px-3 rounded-2xl hover:bg-slate-50/70 dark:hover:bg-white/[0.025] transition-colors duration-150 flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3.5">
+                      <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/20 shadow-2xs">
                         <Globe className="w-5 h-5" strokeWidth={1.75} />
                       </div>
                       <div>
-                        <span className="text-sm font-medium text-slate-800 dark:text-slate-200 block">
+                        <span className="text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 block">
                           Live Auto-Refresh
                         </span>
-                        <span className="text-xs text-slate-400 block">
+                        <span className="text-xs text-slate-400 block mt-0.5">
                           Automatically sync telemetry and feed every 30 seconds.
                         </span>
                       </div>
