@@ -5,6 +5,10 @@ import { useAuth } from '../context/AuthContext';
 import {
   Settings as SettingsIcon,
   UserCircle,
+  User,
+  Phone,
+  ShieldCheck,
+  AtSign,
   Shield,
   Lock,
   Bell,
@@ -264,6 +268,7 @@ export default function Settings() {
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState(false);
 
   const getInitialPosition = () => {
     try {
@@ -844,232 +849,354 @@ export default function Settings() {
         {/* TAB 1: PROFILE */}
         {activeTab === 'profile' && (
           <StaggerItem>
-            <div className="space-y-6">
-              <SoftCard>
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-100 dark:border-slate-800">
-                  <div>
-                    <h2 className="text-base sm:text-lg font-semibold text-slate-900 dark:text-white">
-                      Profile Information
-                    </h2>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                      Personal information associated with your command center account.
-                    </p>
+            <div className="max-w-3xl mx-auto space-y-6">
+
+              {/* ── Apple ID Hero Identity Card ── */}
+              <div className="relative overflow-hidden rounded-3xl bg-white/80 dark:bg-[#111827]/80 backdrop-blur-xl border border-slate-200/80 dark:border-white/10 p-6 sm:p-7 shadow-[0_4px_24px_rgba(0,0,0,0.03),0_1px_2px_rgba(0,0,0,0.02)]">
+                {/* Subtle Ambient Depth Glows */}
+                <div className="pointer-events-none absolute -top-24 -right-24 w-56 h-56 bg-blue-500/5 dark:bg-blue-400/5 rounded-full blur-3xl" />
+                <div className="pointer-events-none absolute -bottom-24 -left-24 w-56 h-56 bg-indigo-500/5 dark:bg-indigo-400/5 rounded-full blur-3xl" />
+
+                <div className="relative flex flex-col sm:flex-row items-center sm:items-start gap-5 sm:gap-6 text-center sm:text-left">
+                  {/* Avatar with Apple Squircle and Online Pill */}
+                  <div className="relative shrink-0 group">
+                    {currentUser?.avatar_url ? (
+                      <img
+                        src={currentUser.avatar_url}
+                        alt={profile.fullName || 'User'}
+                        className="w-20 h-20 sm:w-22 sm:h-22 rounded-3xl object-cover ring-4 ring-white dark:ring-slate-800 shadow-[0_8px_16px_rgba(0,0,0,0.08)]"
+                      />
+                    ) : (
+                      <div className="w-20 h-20 sm:w-22 sm:h-22 rounded-3xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white font-bold text-2xl sm:text-3xl flex items-center justify-center ring-4 ring-white dark:ring-slate-800 shadow-[0_8px_16px_rgba(37,99,235,0.25)] select-none">
+                        {(profile.fullName || currentUser?.email || 'U')[0].toUpperCase()}
+                      </div>
+                    )}
+                    <span
+                      className="absolute bottom-0 right-0 w-4 h-4 sm:w-4.5 sm:h-4.5 rounded-full bg-emerald-500 ring-3 ring-white dark:ring-slate-900 shadow-2xs"
+                      title="Active Status"
+                    />
                   </div>
 
-                  {!isEditingProfile && (
-                    <CleanButton
-                      variant="secondary"
-                      icon={Pencil}
-                      onClick={() => { setProfileDraft(profile); setIsEditingProfile(true); }}
-                    >
-                      Edit Profile
-                    </CleanButton>
+                  {/* Identity Information & Actions */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div>
+                        <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2.5">
+                          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+                            {profile.fullName || 'Command Center Operator'}
+                          </h2>
+                          <UserRoleBadge role={userRole} />
+                        </div>
+                        <p className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 mt-1 flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                          <span className="font-mono">@{usernameDisplay}</span>
+                          <span className="text-slate-300 dark:text-slate-600">•</span>
+                          <span>{profile.position || 'MDRRMO Command Center'}</span>
+                        </p>
+                      </div>
+
+                      {!isEditingProfile && (
+                        <button
+                          type="button"
+                          onClick={() => { setProfileDraft(profile); setIsEditingProfile(true); }}
+                          className="self-center sm:self-start inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-slate-100 hover:bg-slate-200/80 dark:bg-white/10 dark:hover:bg-white/15 text-slate-700 dark:text-slate-200 border border-slate-200/60 dark:border-white/10 transition-all duration-150 active:scale-95 cursor-pointer shadow-2xs"
+                        >
+                          <Pencil className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" strokeWidth={2} />
+                          <span>Edit Profile</span>
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Apple System Badges Row */}
+                    <div className="mt-4 pt-3.5 border-t border-slate-100 dark:border-white/5 flex flex-wrap items-center justify-center sm:justify-start gap-2 text-xs">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const id = currentUser?.user_id ? String(currentUser.user_id) : 'e8b29cab';
+                          navigator.clipboard.writeText(id);
+                          setCopiedId(true);
+                          setTimeout(() => setCopiedId(false), 2000);
+                        }}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100/70 hover:bg-slate-100 dark:bg-white/5 dark:hover:bg-white/10 text-slate-600 dark:text-slate-400 font-mono text-[11px] transition-colors cursor-pointer border border-slate-200/40 dark:border-white/5"
+                        title="Click to copy account ID"
+                      >
+                        {copiedId ? (
+                          <>
+                            <Check className="w-3 h-3 text-emerald-500" strokeWidth={2.5} />
+                            <span className="text-emerald-600 dark:text-emerald-400 font-semibold">Copied ID</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3 h-3 text-slate-400" strokeWidth={2} />
+                            <span>ID: {currentUser?.user_id ? String(currentUser.user_id).slice(0, 8) : 'e8b29cab'}</span>
+                          </>
+                        )}
+                      </button>
+
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 font-medium text-[11px] border border-emerald-200/60 dark:border-emerald-800/40">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                        Verified Dispatch Access
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* ── Apple Inset Grouped Section: Account Details ── */}
+              <div>
+                <div className="px-3 pb-2 flex items-center justify-between">
+                  <span className="text-[11px] font-bold tracking-wider uppercase text-slate-400 dark:text-slate-500">
+                    Account Details
+                  </span>
+                  {isEditingProfile && (
+                    <span className="text-[11px] font-semibold text-[#0071E3] dark:text-sky-400">
+                      Editing Mode
+                    </span>
                   )}
                 </div>
 
-                {/* Profile Details Body */}
-                <div className="pt-6 flex flex-col md:flex-row gap-6 items-start">
-                  {/* Avatar & Role Tag */}
-                  <div className="flex sm:flex-row md:flex-col items-center gap-4 shrink-0">
-                    <div className="relative">
-                      {currentUser?.avatar_url ? (
-                        <img
-                          src={currentUser.avatar_url}
-                          alt={profile.fullName || 'User'}
-                          className="w-20 h-20 rounded-2xl object-cover border border-slate-200 dark:border-slate-700 shadow-xs"
+                <div className="rounded-2xl bg-white/80 dark:bg-[#111827]/80 backdrop-blur-xl border border-slate-200/80 dark:border-white/10 shadow-[0_2px_12px_rgba(0,0,0,0.03)] divide-y divide-slate-100 dark:divide-white/5 overflow-hidden">
+                  {isEditingProfile ? (
+                    <form onSubmit={handleSaveProfile} className="divide-y divide-slate-100 dark:divide-white/5">
+                      {/* Full Name */}
+                      <div className="px-4 sm:px-5 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 hover:bg-slate-50/40 dark:hover:bg-white/[0.015] transition-colors">
+                        <div className="flex items-center gap-3 shrink-0">
+                          <div className="w-8 h-8 rounded-xl bg-blue-500/10 text-[#0071E3] dark:bg-blue-500/20 dark:text-sky-400 flex items-center justify-center shrink-0">
+                            <User className="w-4 h-4" strokeWidth={2} />
+                          </div>
+                          <span className="text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300">
+                            Full Name <span className="text-rose-500">*</span>
+                          </span>
+                        </div>
+                        <input
+                          type="text"
+                          value={profileDraft.fullName}
+                          onChange={(e) => setProfileDraft({ ...profileDraft, fullName: e.target.value })}
+                          required
+                          placeholder="Enter your full name"
+                          className="w-full sm:max-w-xs px-3 py-1.5 text-xs sm:text-sm rounded-xl bg-slate-100/70 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0071E3]/30 dark:focus:ring-sky-400/30 text-left sm:text-right"
                         />
-                      ) : (
-                        <div className="w-20 h-20 rounded-2xl bg-blue-500/10 dark:bg-blue-500/20 text-[#0071E3] dark:text-sky-400 border border-blue-500/20 font-bold text-2xl flex items-center justify-center shadow-xs">
-                          {(profile.fullName || currentUser?.email || 'U')[0].toUpperCase()}
+                      </div>
+
+                      {/* Username */}
+                      <div className="px-4 sm:px-5 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 hover:bg-slate-50/40 dark:hover:bg-white/[0.015] transition-colors">
+                        <div className="flex items-center gap-3 shrink-0">
+                          <div className="w-8 h-8 rounded-xl bg-purple-500/10 text-purple-600 dark:bg-purple-500/20 dark:text-purple-400 flex items-center justify-center shrink-0">
+                            <AtSign className="w-4 h-4" strokeWidth={2} />
+                          </div>
+                          <span className="text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300">
+                            Username
+                          </span>
+                        </div>
+                        <span className="text-xs sm:text-sm font-mono text-slate-400 dark:text-slate-500 px-3 py-1 text-left sm:text-right">
+                          @{usernameDisplay} (System Managed)
+                        </span>
+                      </div>
+
+                      {/* Email */}
+                      <div className="px-4 sm:px-5 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 hover:bg-slate-50/40 dark:hover:bg-white/[0.015] transition-colors">
+                        <div className="flex items-center gap-3 shrink-0">
+                          <div className="w-8 h-8 rounded-xl bg-sky-500/10 text-sky-600 dark:bg-sky-500/20 dark:text-sky-400 flex items-center justify-center shrink-0">
+                            <Mail className="w-4 h-4" strokeWidth={2} />
+                          </div>
+                          <span className="text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300">
+                            Email Address
+                          </span>
+                        </div>
+                        <span className="text-xs sm:text-sm font-mono text-slate-400 dark:text-slate-500 px-3 py-1 text-left sm:text-right truncate max-w-xs">
+                          {currentUser?.email || 'No email attached'}
+                        </span>
+                      </div>
+
+                      {/* Phone */}
+                      <div className="px-4 sm:px-5 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 hover:bg-slate-50/40 dark:hover:bg-white/[0.015] transition-colors">
+                        <div className="flex items-center gap-3 shrink-0">
+                          <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                            <Phone className="w-4 h-4" strokeWidth={2} />
+                          </div>
+                          <span className="text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300">
+                            Contact Phone
+                          </span>
+                        </div>
+                        <input
+                          type="tel"
+                          value={profileDraft.phone}
+                          onChange={(e) => setProfileDraft({ ...profileDraft, phone: e.target.value })}
+                          placeholder="09XX-XXX-XXXX"
+                          className="w-full sm:max-w-xs px-3 py-1.5 text-xs sm:text-sm font-mono rounded-xl bg-slate-100/70 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0071E3]/30 dark:focus:ring-sky-400/30 text-left sm:text-right"
+                        />
+                      </div>
+
+                      {/* Title & Unit */}
+                      <div className="px-4 sm:px-5 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 hover:bg-slate-50/40 dark:hover:bg-white/[0.015] transition-colors">
+                        <div className="flex items-center gap-3 shrink-0">
+                          <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400 flex items-center justify-center shrink-0">
+                            <ShieldCheck className="w-4 h-4" strokeWidth={2} />
+                          </div>
+                          <span className="text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300">
+                            Official Role &amp; Unit
+                          </span>
+                        </div>
+                        <input
+                          type="text"
+                          value={profileDraft.position}
+                          onChange={(e) => setProfileDraft({ ...profileDraft, position: e.target.value })}
+                          placeholder="e.g. Lead Dispatcher • MDRRMO Command"
+                          className="w-full sm:max-w-xs px-3 py-1.5 text-xs sm:text-sm rounded-xl bg-slate-100/70 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0071E3]/30 dark:focus:ring-sky-400/30 text-left sm:text-right"
+                        />
+                      </div>
+
+                      {profileError && (
+                        <div className="p-3.5 bg-rose-50/80 dark:bg-rose-950/40 text-xs text-rose-700 dark:text-rose-300 flex items-center gap-2">
+                          <AlertCircle className="w-4 h-4 shrink-0 text-rose-500" strokeWidth={2} />
+                          <span>{profileError}</span>
                         </div>
                       )}
-                      <span
-                        className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-slate-900"
-                        title="Active Status"
-                      />
+
+                      {/* Action Bar */}
+                      <div className="px-4 sm:px-5 py-3 bg-slate-50/60 dark:bg-white/[0.02] flex items-center justify-end gap-2.5">
+                        <button
+                          type="button"
+                          onClick={() => { setIsEditingProfile(false); setProfileError(null); }}
+                          disabled={isSavingProfile}
+                          className="px-3.5 py-1.5 rounded-full text-xs font-semibold text-slate-600 hover:text-slate-800 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-white/10 transition-colors cursor-pointer"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          disabled={isSavingProfile}
+                          className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold bg-[#0071E3] hover:bg-[#0077ED] text-white shadow-xs active:scale-95 transition-all disabled:opacity-50 cursor-pointer"
+                        >
+                          {isSavingProfile ? (
+                            <>
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              <span>Saving...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Check className="w-3.5 h-3.5" strokeWidth={2.5} />
+                              <span>Save Changes</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </form>
+                  ) : (
+                    /* Non-editing Inset Grouped Rows */
+                    <>
+                      {/* Full Name */}
+                      <div className="px-4 sm:px-5 py-3.5 flex items-center justify-between gap-4 hover:bg-slate-50/50 dark:hover:bg-white/[0.02] transition-colors">
+                        <div className="flex items-center gap-3.5 min-w-0">
+                          <div className="w-8 h-8 rounded-xl bg-blue-500/10 text-[#0071E3] dark:bg-blue-500/20 dark:text-sky-400 flex items-center justify-center shrink-0">
+                            <User className="w-4 h-4" strokeWidth={2} />
+                          </div>
+                          <span className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-300">
+                            Full Name
+                          </span>
+                        </div>
+                        <span className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white truncate">
+                          {profile.fullName || 'Not provided'}
+                        </span>
+                      </div>
+
+                      {/* Username */}
+                      <div className="px-4 sm:px-5 py-3.5 flex items-center justify-between gap-4 hover:bg-slate-50/50 dark:hover:bg-white/[0.02] transition-colors">
+                        <div className="flex items-center gap-3.5 min-w-0">
+                          <div className="w-8 h-8 rounded-xl bg-purple-500/10 text-purple-600 dark:bg-purple-500/20 dark:text-purple-400 flex items-center justify-center shrink-0">
+                            <AtSign className="w-4 h-4" strokeWidth={2} />
+                          </div>
+                          <span className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-300">
+                            Username
+                          </span>
+                        </div>
+                        <span className="text-xs sm:text-sm font-mono font-medium text-slate-800 dark:text-slate-200">
+                          @{usernameDisplay}
+                        </span>
+                      </div>
+
+                      {/* Email */}
+                      <div className="px-4 sm:px-5 py-3.5 flex items-center justify-between gap-4 hover:bg-slate-50/50 dark:hover:bg-white/[0.02] transition-colors">
+                        <div className="flex items-center gap-3.5 min-w-0">
+                          <div className="w-8 h-8 rounded-xl bg-sky-500/10 text-sky-600 dark:bg-sky-500/20 dark:text-sky-400 flex items-center justify-center shrink-0">
+                            <Mail className="w-4 h-4" strokeWidth={2} />
+                          </div>
+                          <span className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-300">
+                            Email Address
+                          </span>
+                        </div>
+                        <span className="text-xs sm:text-sm font-mono font-medium text-slate-800 dark:text-slate-200 truncate max-w-[240px] sm:max-w-md">
+                          {currentUser?.email || 'No email attached'}
+                        </span>
+                      </div>
+
+                      {/* Phone */}
+                      <div className="px-4 sm:px-5 py-3.5 flex items-center justify-between gap-4 hover:bg-slate-50/50 dark:hover:bg-white/[0.02] transition-colors">
+                        <div className="flex items-center gap-3.5 min-w-0">
+                          <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                            <Phone className="w-4 h-4" strokeWidth={2} />
+                          </div>
+                          <span className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-300">
+                            Contact Phone
+                          </span>
+                        </div>
+                        <span className="text-xs sm:text-sm font-mono font-medium text-slate-800 dark:text-slate-200">
+                          {profile.phone || 'None recorded'}
+                        </span>
+                      </div>
+
+                      {/* Role & Unit */}
+                      <div className="px-4 sm:px-5 py-3.5 flex items-center justify-between gap-4 hover:bg-slate-50/50 dark:hover:bg-white/[0.02] transition-colors">
+                        <div className="flex items-center gap-3.5 min-w-0">
+                          <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400 flex items-center justify-center shrink-0">
+                            <ShieldCheck className="w-4 h-4" strokeWidth={2} />
+                          </div>
+                          <span className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-300">
+                            Official Role &amp; Unit
+                          </span>
+                        </div>
+                        <span className="text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 text-right">
+                          {profile.position}
+                        </span>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* ── Apple Inset Grouped Section: Danger Zone ── */}
+              <div>
+                <div className="px-3 pb-2">
+                  <span className="text-[11px] font-bold tracking-wider uppercase text-rose-500 dark:text-rose-400">
+                    Danger Zone
+                  </span>
+                </div>
+
+                <div className="rounded-2xl bg-white/80 dark:bg-[#111827]/80 backdrop-blur-xl border border-rose-200/70 dark:border-rose-900/40 p-4 sm:p-5 shadow-[0_2px_12px_rgba(244,63,94,0.04)] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="flex items-start sm:items-center gap-3.5">
+                    <div className="w-8 h-8 rounded-xl bg-rose-500/10 text-rose-600 dark:bg-rose-500/20 dark:text-rose-400 flex items-center justify-center shrink-0 mt-0.5 sm:mt-0">
+                      <Trash2 className="w-4 h-4" strokeWidth={2} />
                     </div>
-                    <div className="text-left md:text-center">
-                      <UserRoleBadge role={userRole} />
-                      <p className="text-[11px] font-mono text-slate-400 dark:text-slate-500 mt-1.5 whitespace-nowrap">
-                        ID: {currentUser?.user_id ? String(currentUser.user_id).slice(0, 8) : 'ACTIVE'}
+                    <div>
+                      <h3 className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white">
+                        Delete Account
+                      </h3>
+                      <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">
+                        Permanently delete your profile and revoke system access. Requires password &amp; email OTP verification.
                       </p>
                     </div>
                   </div>
 
-                  {/* Form or Info Display */}
-                  <div className="flex-1 w-full">
-                    {isEditingProfile ? (
-                      <form onSubmit={handleSaveProfile} className="space-y-4">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          <div className="space-y-1">
-                            <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">
-                              Full Name <span className="text-rose-500">*</span>
-                            </label>
-                            <input
-                              type="text"
-                              value={profileDraft.fullName}
-                              onChange={(e) => setProfileDraft({ ...profileDraft, fullName: e.target.value })}
-                              required
-                              className="w-full px-3.5 py-2.5 rounded-xl text-xs sm:text-sm bg-slate-50/70 focus:bg-white dark:bg-slate-800/50 dark:focus:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-900/10 dark:focus:ring-white/10 transition-colors"
-                            />
-                          </div>
-
-                          <div className="space-y-1">
-                            <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">
-                              Username
-                            </label>
-                            <input
-                              type="text"
-                              value={usernameDisplay}
-                              disabled
-                              readOnly
-                              className="w-full px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-mono bg-slate-100/70 dark:bg-slate-800/30 border border-slate-200/60 dark:border-slate-800 text-slate-500 cursor-not-allowed select-none"
-                            />
-                          </div>
-
-                          <div className="space-y-1">
-                            <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">
-                              Email Address
-                            </label>
-                            <input
-                              type="email"
-                              value={currentUser?.email || ''}
-                              disabled
-                              readOnly
-                              className="w-full px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-mono bg-slate-100/70 dark:bg-slate-800/30 border border-slate-200/60 dark:border-slate-800 text-slate-500 cursor-not-allowed select-none"
-                            />
-                          </div>
-
-                          <div className="space-y-1">
-                            <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">
-                              Phone Number
-                            </label>
-                            <input
-                              type="tel"
-                              value={profileDraft.phone}
-                              onChange={(e) => setProfileDraft({ ...profileDraft, phone: e.target.value })}
-                              placeholder="09XX-XXX-XXXX"
-                              className="w-full px-3.5 py-2.5 rounded-xl text-xs sm:text-sm bg-slate-50/70 focus:bg-white dark:bg-slate-800/50 dark:focus:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-900/10 dark:focus:ring-white/10 transition-colors"
-                            />
-                          </div>
-
-                          <div className="sm:col-span-2 space-y-1">
-                            <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">
-                              Title &amp; Unit
-                            </label>
-                            <input
-                              type="text"
-                              value={profileDraft.position}
-                              onChange={(e) => setProfileDraft({ ...profileDraft, position: e.target.value })}
-                              placeholder="e.g. Lead Dispatcher • MDRRMO Command"
-                              className="w-full px-3.5 py-2.5 rounded-xl text-xs sm:text-sm bg-slate-50/70 focus:bg-white dark:bg-slate-800/50 dark:focus:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-900/10 dark:focus:ring-white/10 transition-colors"
-                            />
-                          </div>
-                        </div>
-
-                        {profileError && (
-                          <div className="p-3 rounded-xl bg-rose-50 border border-rose-200/70 text-xs text-rose-700 flex items-center gap-2">
-                            <AlertCircle className="w-4 h-4 shrink-0" strokeWidth={1.75} />
-                            <span>{profileError}</span>
-                          </div>
-                        )}
-
-                        <div className="flex items-center gap-2 pt-2 justify-end">
-                          <CleanButton
-                            variant="secondary"
-                            onClick={() => { setIsEditingProfile(false); setProfileError(null); }}
-                            disabled={isSavingProfile}
-                          >
-                            Cancel
-                          </CleanButton>
-                          <CleanButton
-                            type="submit"
-                            variant="primary"
-                            disabled={isSavingProfile}
-                          >
-                            {isSavingProfile ? (
-                              <>
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                                <span>Saving...</span>
-                              </>
-                            ) : (
-                              'Save Changes'
-                            )}
-                          </CleanButton>
-                        </div>
-                      </form>
-                    ) : (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div className="p-3.5 rounded-xl bg-slate-50/80 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-800">
-                          <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider block">
-                            Full Name
-                          </span>
-                          <span className="text-sm font-semibold text-slate-800 dark:text-slate-200 mt-0.5 block">
-                            {profile.fullName || 'Not provided'}
-                          </span>
-                        </div>
-
-                        <div className="p-3.5 rounded-xl bg-slate-50/80 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-800">
-                          <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider block">
-                            Username
-                          </span>
-                          <span className="text-sm font-mono text-slate-800 dark:text-slate-200 mt-0.5 block">
-                            @{usernameDisplay}
-                          </span>
-                        </div>
-
-                        <div className="p-3.5 rounded-xl bg-slate-50/80 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-800">
-                          <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider block">
-                            Email Address
-                          </span>
-                          <span className="text-sm font-mono text-slate-800 dark:text-slate-200 mt-0.5 block truncate">
-                            {currentUser?.email || 'No email attached'}
-                          </span>
-                        </div>
-
-                        <div className="p-3.5 rounded-xl bg-slate-50/80 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-800">
-                          <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider block">
-                            Contact Phone
-                          </span>
-                          <span className="text-sm font-mono text-slate-800 dark:text-slate-200 mt-0.5 block">
-                            {profile.phone || 'None recorded'}
-                          </span>
-                        </div>
-
-                        <div className="sm:col-span-2 p-3.5 rounded-xl bg-slate-50/80 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-800">
-                          <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider block">
-                            Official Role &amp; Unit
-                          </span>
-                          <span className="text-sm font-medium text-slate-800 dark:text-slate-200 mt-0.5 block">
-                            {profile.position}
-                          </span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </SoftCard>
-
-              {/* Danger Zone: Account Deletion */}
-              <SoftCard className="border-rose-200/60 dark:border-rose-900/30">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div>
-                    <h3 className="text-sm sm:text-base font-semibold text-rose-700 dark:text-rose-400">
-                      Delete Account
-                    </h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                      Permanently delete your profile and revoke system access. Requires password &amp; email OTP verification.
-                    </p>
-                  </div>
-                  <CleanButton
-                    variant="danger"
-                    icon={Trash2}
+                  <button
+                    type="button"
                     onClick={openDeleteMyAccountModal}
+                    className="self-start sm:self-auto shrink-0 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-500/15 dark:hover:bg-rose-500/25 dark:text-rose-400 border border-rose-200/60 dark:border-rose-500/20 transition-all duration-150 active:scale-95 cursor-pointer shadow-2xs whitespace-nowrap"
                   >
-                    Delete Account
-                  </CleanButton>
+                    <Trash2 className="w-3.5 h-3.5" strokeWidth={2} />
+                    <span>Delete Account</span>
+                  </button>
                 </div>
-              </SoftCard>
+              </div>
+
             </div>
           </StaggerItem>
         )}
