@@ -40,11 +40,11 @@ import { formatPhilippineDateTime } from '../utils/dateUtils';
 const APPLE_SLIDE_SPRING = { type: 'spring', stiffness: 400, damping: 32, mass: 0.8 } as const;
 
 const LOCK_BTN_VARIANTS: Variants = {
-  rest: { scale: 1, rotate: 0 },
+  rest: { scale: 1, y: 0 },
   hover: {
-    scale: [1, 1.25, 1.12],
-    rotate: [0, -14, 14, -8, 8, 0],
-    transition: { duration: 0.5, ease: 'easeInOut' },
+    scale: 1.12,
+    y: -1,
+    transition: { type: 'spring', stiffness: 500, damping: 18 },
   },
 };
 
@@ -1841,7 +1841,7 @@ export default function Settings() {
                           whileHover="hover"
                           whileTap={{ scale: 0.97 }}
                           animate="rest"
-                          className="group inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-xs sm:text-sm font-semibold text-white bg-[#0071E3] hover:bg-[#0077ED] shadow-[0_2px_8px_rgba(0,113,227,0.25)] hover:shadow-[0_4px_16px_rgba(0,113,227,0.4)] transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed select-none"
+                          className="group inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-xs sm:text-sm font-semibold text-white bg-[#0071E3] hover:bg-[#0077ED] shadow-[0_2px_8px_rgba(0,113,227,0.25)] hover:shadow-[0_6px_20px_rgba(0,113,227,0.42)] hover:-translate-y-0.5 active:translate-y-0 active:scale-95 transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed select-none"
                         >
                           {isSubmittingPassword ? (
                             <>
