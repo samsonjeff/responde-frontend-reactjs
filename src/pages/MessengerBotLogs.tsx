@@ -58,7 +58,7 @@ export function analyzeConvoNLP(convo: Conversation): ConvoNLPAnalysis {
   const hasModerate = moderateKeywords.some((k) => allUserText.includes(k));
   const isExplicitNoise = noiseKeywords.some((k) => allUserText.includes(k)) && !hasHigh;
 
-  let incidentType = convo.type || "General";
+  let incidentType = (convo.type && convo.type.toLowerCase() !== "none") ? convo.type : "General Incident";
   if (allUserText.includes("ambulance") || allUserText.includes("sugat") || allUserText.includes("first aid") || typeLower.includes("medical")) {
     incidentType = "Medical Emergency";
   } else if (allUserText.includes("rescue") || allUserText.includes("naipit") || allUserText.includes("naanod") || typeLower.includes("search")) {
@@ -69,6 +69,8 @@ export function analyzeConvoNLP(convo: Conversation): ConvoNLPAnalysis {
     incidentType = "Landslide / Geohazard";
   } else if (allUserText.includes("tubig") || allUserText.includes("food") || allUserText.includes("relief") || typeLower.includes("food")) {
     incidentType = "Food & Water Relief";
+  } else if (allUserText.includes("baha") || typeLower.includes("typhoon")) {
+    incidentType = "Typhoon";
   }
 
   const actionableNeeds: string[] = [];
@@ -432,8 +434,17 @@ export default function MessengerBotLogs() {
   }, [conversations]);
 
   const availableTypes = useMemo(() => {
-    const list = Array.from(new Set(conversations.map((c) => c.type).filter(Boolean))).sort();
-    return list.length > 0 ? list : ["Medical", "Search & Rescue", "Food & Water", "Infrastructure"];
+    const STANDARD_TYPES = [
+      "Medical",
+      "Search & Rescue",
+      "Food & Water",
+      "Infrastructure",
+      "Typhoon",
+    ];
+    const extra = conversations
+      .map((c) => c.type)
+      .filter((t): t is string => Boolean(t) && t.toLowerCase() !== "none" && !STANDARD_TYPES.some(st => st.toLowerCase() === t.toLowerCase()));
+    return [...STANDARD_TYPES, ...extra].sort();
   }, [conversations]);
 
   const resetFilters = () => {
@@ -487,8 +498,17 @@ export default function MessengerBotLogs() {
       if (debouncedBarangay !== "All Barangays" && c.barangay?.toLowerCase() !== debouncedBarangay.toLowerCase()) {
         return false;
       }
-      if (debouncedType !== "All Types" && c.type?.toLowerCase() !== debouncedType.toLowerCase()) {
-        return false;
+      if (debouncedType !== "All Types") {
+        const query = debouncedType.toLowerCase();
+        const cType = (c.type || "").toLowerCase();
+        const nlpType = (c.nlp?.incidentType || "").toLowerCase();
+        const matches = cType.includes(query) || nlpType.includes(query) ||
+          (query.includes("medical") && (cType.includes("medical") || nlpType.includes("medical"))) ||
+          (query.includes("rescue") && (cType.includes("rescue") || nlpType.includes("rescue"))) ||
+          (query.includes("food") && (cType.includes("food") || nlpType.includes("food"))) ||
+          (query.includes("infrastructure") && (cType.includes("infrastructure") || nlpType.includes("infrastructure"))) ||
+          (query.includes("typhoon") && (cType.includes("typhoon") || nlpType.includes("typhoon")));
+        if (!matches) return false;
       }
       if (debouncedUrgency !== "All Urgency" && c.nlp?.urgency?.toLowerCase() !== debouncedUrgency.toLowerCase()) {
         return false;
@@ -549,6 +569,35 @@ export default function MessengerBotLogs() {
   const selectedInitials = selectedConversation
     ? getInitials(selectedConversation.name)
     : "U";
+
+  // Semantic Urgency Badge (Matches Scraper styling)
+  const renderUrgencyBadge = (urgency?: string) => {
+    switch (urgency) {
+      case "High":
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 tabular-nums">
+            <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse shrink-0" />
+            High
+          </span>
+        );
+      case "Moderate":
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 tabular-nums">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+            Moderate
+          </span>
+        );
+      case "Low":
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-green-500/15 text-green-700 dark:text-green-300 border border-green-500/30 tabular-nums">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#22c55e] shrink-0" />
+            Low
+          </span>
+        );
+      default:
+        return null;
+    }
+  };
 
   // Skeleton — shown only on initial cold load before any conversations exist
   if (loading && conversations.length === 0) {
@@ -1153,12 +1202,16 @@ export default function MessengerBotLogs() {
                               >
                                 {getLastMessage(convo)}
                               </p>
-                              <div className="mt-1 flex items-center gap-1.5 flex-wrap text-[11px] text-slate-400 dark:text-slate-500 font-medium">
+                              <div className="flex items-center gap-1.5 mb-1 text-[11px] text-slate-400 dark:text-slate-500 font-medium">
                                 <span className="truncate max-w-[140px] sm:max-w-none flex items-center gap-1">
-                                  <span>{convo.type}</span>
+                                  <span>{convo.nlp?.incidentType && convo.nlp.incidentType.toLowerCase() !== "none" ? convo.nlp.incidentType : (convo.type && convo.type.toLowerCase() !== "none" ? convo.type : "General Incident")}</span>
                                   <span className="text-slate-300 dark:text-slate-600">•</span>
                                   <span className={convo.barangay === "Unknown" ? "italic text-slate-400" : ""}>{convo.barangay}</span>
                                 </span>
+                              </div>
+
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                {renderUrgencyBadge(convo.nlp?.urgency)}
 
                                 <span
                                   className={`inline-flex items-center gap-1 text-[10px] font-semibold rounded-full px-2 py-0.5 border transition-colors duration-200 ${
@@ -1291,79 +1344,83 @@ export default function MessengerBotLogs() {
                           <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 sm:gap-1.5 mt-0.5 truncate">
                             <span className="truncate">{selectedConversation.barangay}</span>
                             <span className="text-slate-300 dark:text-slate-600 shrink-0">•</span>
-                            <span className="truncate">{selectedConversation.nlp.incidentType}</span>
+                            <span className="truncate">{selectedConversation.nlp?.incidentType && selectedConversation.nlp.incidentType.toLowerCase() !== "none" ? selectedConversation.nlp.incidentType : (selectedConversation.type && selectedConversation.type.toLowerCase() !== "none" ? selectedConversation.type : "General Incident")}</span>
                             <span className="hidden md:inline text-slate-300 dark:text-slate-600 shrink-0">•</span>
                             <span className="hidden md:inline font-mono text-[10px] sm:text-[11px] text-slate-400 dark:text-slate-500 shrink-0">PSID: {selectedConversation.psid}</span>
                           </p>
                         </div>
                       </div>
 
-                      {/* Apple Segmented 1-Click Status Switcher Capsule */}
-                      <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
-                        <span className="hidden sm:inline-flex items-center text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 select-none">
-                          Status
-                        </span>
-                        <div
-                          role="group"
-                          aria-label="Conversation Status"
-                          className="inline-flex items-center p-0.5 sm:p-1 bg-slate-100/90 dark:bg-slate-800/80 backdrop-blur-md rounded-full border border-slate-200/70 dark:border-white/10 shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]"
-                        >
-                          {/* Incomplete Option */}
-                          <button
-                            type="button"
-                            onClick={() => updateConversationStatus(selectedConversation.id, "Incomplete")}
-                            className={`relative flex items-center gap-1.5 px-3 sm:px-3.5 py-1 sm:py-1.5 rounded-full text-xs tracking-tight transition-all duration-200 select-none active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 cursor-pointer ${
-                              selectedConversation.status === "Incomplete"
-                                ? "text-amber-700 dark:text-amber-300 font-bold"
-                                : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-black/[0.03] dark:hover:bg-white/[0.04] font-medium"
-                            }`}
-                            title="Mark conversation as Incomplete"
-                          >
-                            {selectedConversation.status === "Incomplete" && (
-                              <motion.div
-                                layoutId="activeStatusCapsule"
-                                transition={APPLE_SPRING}
-                                className="absolute inset-0 bg-amber-500/18 dark:bg-amber-500/25 border border-amber-500/40 dark:border-amber-400/40 rounded-full shadow-[0_2px_8px_rgba(245,158,11,0.18)] backdrop-blur-md"
-                              />
-                            )}
-                            <span
-                              className={`relative z-10 w-2 h-2 rounded-full transition-colors ${
-                                selectedConversation.status === "Incomplete"
-                                  ? "bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.6)] animate-pulse"
-                                  : "bg-amber-500/60"
-                              }`}
-                            />
-                            <span className="relative z-10">Incomplete</span>
-                          </button>
+                      {/* Urgency Badge + Apple Segmented 1-Click Status Switcher Capsule */}
+                      <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+                        {renderUrgencyBadge(selectedConversation.nlp?.urgency)}
 
-                          {/* Complete Option */}
-                          <button
-                            type="button"
-                            onClick={() => updateConversationStatus(selectedConversation.id, "Complete")}
-                            className={`relative flex items-center gap-1.5 px-3 sm:px-3.5 py-1 sm:py-1.5 rounded-full text-xs tracking-tight transition-all duration-200 select-none active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 cursor-pointer ${
-                              selectedConversation.status === "Complete"
-                                ? "text-emerald-700 dark:text-emerald-300 font-bold"
-                                : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-black/[0.03] dark:hover:bg-white/[0.04] font-medium"
-                            }`}
-                            title="Mark conversation as Complete"
+                        <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+                          <span className="hidden sm:inline-flex items-center text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 select-none">
+                            Status
+                          </span>
+                          <div
+                            role="group"
+                            aria-label="Conversation Status"
+                            className="inline-flex items-center p-0.5 sm:p-1 bg-slate-100/90 dark:bg-slate-800/80 backdrop-blur-md rounded-full border border-slate-200/70 dark:border-white/10 shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]"
                           >
-                            {selectedConversation.status === "Complete" && (
-                              <motion.div
-                                layoutId="activeStatusCapsule"
-                                transition={APPLE_SPRING}
-                                className="absolute inset-0 bg-emerald-500/18 dark:bg-emerald-500/25 border border-emerald-500/40 dark:border-emerald-400/40 rounded-full shadow-[0_2px_8px_rgba(16,185,129,0.18)] backdrop-blur-md"
-                              />
-                            )}
-                            <CheckCircle2
-                              className={`relative z-10 w-3.5 h-3.5 transition-colors ${
-                                selectedConversation.status === "Complete"
-                                  ? "text-emerald-600 dark:text-emerald-400"
-                                  : "text-emerald-500/60"
+                            {/* Incomplete Option */}
+                            <button
+                              type="button"
+                              onClick={() => updateConversationStatus(selectedConversation.id, "Incomplete")}
+                              className={`relative flex items-center gap-1.5 px-3 sm:px-3.5 py-1 sm:py-1.5 rounded-full text-xs tracking-tight transition-all duration-200 select-none active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 cursor-pointer ${
+                                selectedConversation.status === "Incomplete"
+                                  ? "text-amber-700 dark:text-amber-300 font-bold"
+                                  : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-black/[0.03] dark:hover:bg-white/[0.04] font-medium"
                               }`}
-                              strokeWidth={2.25}
-                            />
-                            <span className="relative z-10">Complete</span>
-                          </button>
+                              title="Mark conversation as Incomplete"
+                            >
+                              {selectedConversation.status === "Incomplete" && (
+                                <motion.div
+                                  layoutId="activeStatusCapsule"
+                                  transition={APPLE_SPRING}
+                                  className="absolute inset-0 bg-amber-500/18 dark:bg-amber-500/25 border border-amber-500/40 dark:border-amber-400/40 rounded-full shadow-[0_2px_8px_rgba(245,158,11,0.18)] backdrop-blur-md"
+                                />
+                              )}
+                              <span
+                                className={`relative z-10 w-2 h-2 rounded-full transition-colors ${
+                                  selectedConversation.status === "Incomplete"
+                                    ? "bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.6)] animate-pulse"
+                                    : "bg-amber-500/60"
+                                }`}
+                              />
+                              <span className="relative z-10">Incomplete</span>
+                            </button>
+
+                            {/* Complete Option */}
+                            <button
+                              type="button"
+                              onClick={() => updateConversationStatus(selectedConversation.id, "Complete")}
+                              className={`relative flex items-center gap-1.5 px-3 sm:px-3.5 py-1 sm:py-1.5 rounded-full text-xs tracking-tight transition-all duration-200 select-none active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 cursor-pointer ${
+                                selectedConversation.status === "Complete"
+                                  ? "text-emerald-700 dark:text-emerald-300 font-bold"
+                                  : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-black/[0.03] dark:hover:bg-white/[0.04] font-medium"
+                              }`}
+                              title="Mark conversation as Complete"
+                            >
+                              {selectedConversation.status === "Complete" && (
+                                <motion.div
+                                  layoutId="activeStatusCapsule"
+                                  transition={APPLE_SPRING}
+                                  className="absolute inset-0 bg-emerald-500/18 dark:bg-emerald-500/25 border border-emerald-500/40 dark:border-emerald-400/40 rounded-full shadow-[0_2px_8px_rgba(16,185,129,0.18)] backdrop-blur-md"
+                                />
+                              )}
+                              <CheckCircle2
+                                className={`relative z-10 w-3.5 h-3.5 transition-colors ${
+                                  selectedConversation.status === "Complete"
+                                    ? "text-emerald-600 dark:text-emerald-400"
+                                    : "text-emerald-500/60"
+                                }`}
+                                strokeWidth={2.25}
+                              />
+                              <span className="relative z-10">Complete</span>
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
