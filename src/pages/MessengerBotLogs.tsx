@@ -14,6 +14,17 @@ import { TALISAY_BARANGAYS } from "../data/talisay-barangays";
 import { extractDisplayTime, formatPhilippineTimeOnly } from "../utils/dateUtils";
 import { useDebounce } from "../hooks/useDebounce";
 
+// Canonical incident type choices matching Responde Talisay taxonomy
+export const INCIDENT_TYPE_CHOICES = [
+  "General",
+  "Flood",
+  "Volcanic Eruption",
+  "Typhoon",
+  "Landslide",
+  "Fire",
+  "Earthquake",
+] as const;
+
 // -- NLP Analysis for Messenger Conversations --
 export interface ConvoNLPAnalysis {
   isIncident: boolean;
@@ -58,19 +69,22 @@ export function analyzeConvoNLP(convo: Conversation): ConvoNLPAnalysis {
   const hasModerate = moderateKeywords.some((k) => allUserText.includes(k));
   const isExplicitNoise = noiseKeywords.some((k) => allUserText.includes(k)) && !hasHigh;
 
-  let incidentType = (convo.type && convo.type.toLowerCase() !== "none") ? convo.type : "General Incident";
-  if (allUserText.includes("ambulance") || allUserText.includes("sugat") || allUserText.includes("first aid") || typeLower.includes("medical")) {
-    incidentType = "Medical Emergency";
-  } else if (allUserText.includes("rescue") || allUserText.includes("naipit") || allUserText.includes("naanod") || typeLower.includes("search")) {
-    incidentType = "Search & Rescue";
-  } else if (allUserText.includes("bubong") || allUserText.includes("puno") || allUserText.includes("poste") || typeLower.includes("infrastructure")) {
-    incidentType = "Infrastructure / Hazard";
-  } else if (allUserText.includes("landslide") || allUserText.includes("pagguho")) {
-    incidentType = "Landslide / Geohazard";
-  } else if (allUserText.includes("tubig") || allUserText.includes("food") || allUserText.includes("relief") || typeLower.includes("food")) {
-    incidentType = "Food & Water Relief";
-  } else if (allUserText.includes("baha") || typeLower.includes("typhoon")) {
+  let incidentType = "General";
+  if (allUserText.includes("bulkan") || allUserText.includes("volcan") || allUserText.includes("ash") || allUserText.includes("abo") || typeLower.includes("volcan")) {
+    incidentType = "Volcanic Eruption";
+  } else if (allUserText.includes("baha") || allUserText.includes("flood") || allUserText.includes("lubog") || allUserText.includes("anod") || typeLower.includes("flood")) {
+    incidentType = "Flood";
+  } else if (allUserText.includes("bagyo") || allUserText.includes("typhoon") || allUserText.includes("hangin") || typeLower.includes("typhoon")) {
     incidentType = "Typhoon";
+  } else if (allUserText.includes("landslide") || allUserText.includes("pagguho") || allUserText.includes("guho") || typeLower.includes("landslide")) {
+    incidentType = "Landslide";
+  } else if (allUserText.includes("sunog") || allUserText.includes("apoy") || allUserText.includes("fire") || typeLower.includes("fire")) {
+    incidentType = "Fire";
+  } else if (allUserText.includes("lindol") || allUserText.includes("earthquake") || allUserText.includes("yanig") || typeLower.includes("earthquake") || typeLower.includes("quake")) {
+    incidentType = "Earthquake";
+  } else if (convo.type && convo.type.toLowerCase() !== "none") {
+    const matched = INCIDENT_TYPE_CHOICES.find((c) => c.toLowerCase() === convo.type.toLowerCase());
+    incidentType = matched || convo.type;
   }
 
   const actionableNeeds: string[] = [];
@@ -434,18 +448,8 @@ export default function MessengerBotLogs() {
   }, [conversations]);
 
   const availableTypes = useMemo(() => {
-    const STANDARD_TYPES = [
-      "Medical",
-      "Search & Rescue",
-      "Food & Water",
-      "Infrastructure",
-      "Typhoon",
-    ];
-    const extra = conversations
-      .map((c) => c.type)
-      .filter((t): t is string => Boolean(t) && t.toLowerCase() !== "none" && !STANDARD_TYPES.some(st => st.toLowerCase() === t.toLowerCase()));
-    return [...STANDARD_TYPES, ...extra].sort();
-  }, [conversations]);
+    return [...INCIDENT_TYPE_CHOICES];
+  }, []);
 
   const resetFilters = () => {
     setFilterBarangay("All Barangays");
@@ -502,12 +506,7 @@ export default function MessengerBotLogs() {
         const query = debouncedType.toLowerCase();
         const cType = (c.type || "").toLowerCase();
         const nlpType = (c.nlp?.incidentType || "").toLowerCase();
-        const matches = cType.includes(query) || nlpType.includes(query) ||
-          (query.includes("medical") && (cType.includes("medical") || nlpType.includes("medical"))) ||
-          (query.includes("rescue") && (cType.includes("rescue") || nlpType.includes("rescue"))) ||
-          (query.includes("food") && (cType.includes("food") || nlpType.includes("food"))) ||
-          (query.includes("infrastructure") && (cType.includes("infrastructure") || nlpType.includes("infrastructure"))) ||
-          (query.includes("typhoon") && (cType.includes("typhoon") || nlpType.includes("typhoon")));
+        const matches = cType === query || nlpType === query || cType.includes(query) || nlpType.includes(query);
         if (!matches) return false;
       }
       if (debouncedUrgency !== "All Urgency" && c.nlp?.urgency?.toLowerCase() !== debouncedUrgency.toLowerCase()) {
@@ -1204,7 +1203,7 @@ export default function MessengerBotLogs() {
                               </p>
                               <div className="flex items-center gap-1.5 mb-1 text-[11px] text-slate-400 dark:text-slate-500 font-medium">
                                 <span className="truncate max-w-[140px] sm:max-w-none flex items-center gap-1">
-                                  <span>{convo.nlp?.incidentType && convo.nlp.incidentType.toLowerCase() !== "none" ? convo.nlp.incidentType : (convo.type && convo.type.toLowerCase() !== "none" ? convo.type : "General Incident")}</span>
+                                  <span>{convo.nlp?.incidentType && convo.nlp.incidentType.toLowerCase() !== "none" ? convo.nlp.incidentType : (convo.type && convo.type.toLowerCase() !== "none" ? convo.type : "General")}</span>
                                   <span className="text-slate-300 dark:text-slate-600">•</span>
                                   <span className={convo.barangay === "Unknown" ? "italic text-slate-400" : ""}>{convo.barangay}</span>
                                 </span>
@@ -1344,7 +1343,7 @@ export default function MessengerBotLogs() {
                           <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 sm:gap-1.5 mt-0.5 truncate">
                             <span className="truncate">{selectedConversation.barangay}</span>
                             <span className="text-slate-300 dark:text-slate-600 shrink-0">•</span>
-                            <span className="truncate">{selectedConversation.nlp?.incidentType && selectedConversation.nlp.incidentType.toLowerCase() !== "none" ? selectedConversation.nlp.incidentType : (selectedConversation.type && selectedConversation.type.toLowerCase() !== "none" ? selectedConversation.type : "General Incident")}</span>
+                            <span className="truncate">{selectedConversation.nlp?.incidentType && selectedConversation.nlp.incidentType.toLowerCase() !== "none" ? selectedConversation.nlp.incidentType : (selectedConversation.type && selectedConversation.type.toLowerCase() !== "none" ? selectedConversation.type : "General")}</span>
                             <span className="hidden md:inline text-slate-300 dark:text-slate-600 shrink-0">•</span>
                             <span className="hidden md:inline font-mono text-[10px] sm:text-[11px] text-slate-400 dark:text-slate-500 shrink-0">PSID: {selectedConversation.psid}</span>
                           </p>
