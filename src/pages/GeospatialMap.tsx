@@ -1507,15 +1507,15 @@ export default function GeospatialMap() {
             {/* ── Filters & Layer Controls ── */}
             <div className="pt-3.5 border-t border-slate-200/60 dark:border-white/5 flex flex-col xl:flex-row xl:items-center justify-between gap-3">
               {/* Left Side: Segmented Filter Control */}
-              <div className="w-full xl:w-auto overflow-x-auto no-scrollbar scroll-smooth flex items-center justify-start py-0.5 shrink-0">
-                <div className="inline-flex items-center gap-1 sm:gap-1.5 p-1 bg-slate-100/70 dark:bg-white/[0.05] backdrop-blur-xl rounded-2xl border border-slate-200/70 dark:border-white/10 shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] dark:shadow-[inset_0_1px_2px_rgba(0,0,0,0.4)] min-w-max">
-                  <div className="group/filters flex items-center gap-1 px-2.5 py-1 text-[#0071E3] dark:text-sky-400 cursor-default select-none shrink-0">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 w-full xl:w-auto">
+                <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-1 sm:gap-1.5 p-1 bg-slate-100/70 dark:bg-white/[0.05] backdrop-blur-xl rounded-2xl border border-slate-200/70 dark:border-white/10 shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] dark:shadow-[inset_0_1px_2px_rgba(0,0,0,0.4)] w-full xl:w-auto">
+                  <div className="col-span-2 sm:col-span-auto flex items-center gap-1 px-2.5 py-1 text-[#0071E3] dark:text-sky-400 cursor-default select-none shrink-0">
                     <Filter className="w-3.5 h-3.5 transition-transform duration-300 group-hover/filters:scale-110 text-[#0071E3] dark:text-sky-400" strokeWidth={1.8} />
                     <span className="text-[10px] font-bold uppercase tracking-wider">Filters</span>
                   </div>
 
                   {/* Filter Pills */}
-                  <div className="min-w-[130px]">
+                  <div className="col-span-1 sm:col-span-auto flex-1 sm:flex-initial min-w-0 sm:min-w-[130px]">
                     <FilterDropdown
                       value={filterStatus}
                       options={['Verified Only', 'All Reports', 'Under Review', 'Resolved']}
@@ -1523,7 +1523,7 @@ export default function GeospatialMap() {
                     />
                   </div>
 
-                  <div className="min-w-[120px]">
+                  <div className="col-span-1 sm:col-span-auto flex-1 sm:flex-initial min-w-0 sm:min-w-[120px]">
                     <FilterDropdown
                       value={filterUrgency}
                       options={['All Urgency', 'High', 'Moderate', 'Low']}
@@ -1531,7 +1531,7 @@ export default function GeospatialMap() {
                     />
                   </div>
 
-                  <div className="min-w-[130px]">
+                  <div className="col-span-2 sm:col-span-auto flex-1 sm:flex-initial min-w-0 sm:min-w-[130px]">
                     <FilterDropdown
                       value={filterType}
                       options={availableIncidentTypes}
@@ -1549,7 +1549,7 @@ export default function GeospatialMap() {
                         transition={{ duration: 0.15 }}
                         type="button"
                         onClick={resetFilters}
-                        className="inline-flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-[11px] sm:text-xs font-semibold text-[#0071E3] hover:text-blue-700 dark:text-sky-400 bg-blue-500/10 hover:bg-blue-500/15 rounded-xl transition-all active:scale-[0.97] cursor-pointer shrink-0 border border-blue-500/20"
+                        className="col-span-2 sm:col-span-auto inline-flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-[11px] sm:text-xs font-semibold text-[#0071E3] hover:text-blue-700 dark:text-sky-400 bg-blue-500/10 hover:bg-blue-500/15 rounded-xl transition-all active:scale-[0.97] cursor-pointer shrink-0 border border-blue-500/20"
                         title="Reset filters"
                       >
                         <RotateCcw className="w-3.5 h-3.5" strokeWidth={1.75} />
@@ -1561,8 +1561,8 @@ export default function GeospatialMap() {
               </div>
 
               {/* Right Side: Segmented Layer Control */}
-              <div className="w-full xl:w-auto overflow-x-auto no-scrollbar scroll-smooth flex items-center justify-start xl:justify-end py-0.5 shrink-0">
-                <div className="inline-flex items-center gap-1 sm:gap-1.5 p-1 bg-slate-100/70 dark:bg-white/[0.05] backdrop-blur-xl rounded-2xl border border-slate-200/70 dark:border-white/10 shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] dark:shadow-[inset_0_1px_2px_rgba(0,0,0,0.4)] min-w-max">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 w-full xl:w-auto xl:justify-end">
+                <div className="flex flex-wrap items-center gap-1 sm:gap-1.5 p-1 bg-slate-100/70 dark:bg-white/[0.05] backdrop-blur-xl rounded-2xl border border-slate-200/70 dark:border-white/10 shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] dark:shadow-[inset_0_1px_2px_rgba(0,0,0,0.4)] w-full xl:w-auto">
                   <div className="group/layers flex items-center gap-1 px-2 py-1 text-[#0071E3] dark:text-sky-400 cursor-default select-none shrink-0">
                     <Layers className="w-3.5 h-3.5 transition-transform duration-300 group-hover/layers:scale-110 text-[#0071E3] dark:text-sky-400" strokeWidth={1.8} />
                     <span className="text-[10px] font-bold uppercase tracking-wider hidden sm:inline">Layers</span>

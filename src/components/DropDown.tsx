@@ -10,10 +10,22 @@ interface FilterDropdownProps {
 
 export default function FilterDropdown({ value, options, onChange, className }: FilterDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [alignRight, setAlignRight] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const toggleRef = useRef<HTMLButtonElement>(null);
 
   const hide = () => setIsOpen(false);
+
+  useEffect(() => {
+    if (isOpen && toggleRef.current) {
+      const rect = toggleRef.current.getBoundingClientRect();
+      if (window.innerWidth - rect.left < 200) {
+        setAlignRight(true);
+      } else {
+        setAlignRight(false);
+      }
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -42,12 +54,14 @@ export default function FilterDropdown({ value, options, onChange, className }: 
     };
   }, [isOpen]);
 
-  // Scroll active item into view on open
+  // Scroll active item into view on open (only within the dropdown menu itself, avoiding ancestor scrolling)
   useEffect(() => {
     if (isOpen && menuRef.current) {
       const activeEl = menuRef.current.querySelector('[aria-selected="true"]') as HTMLElement | null;
       if (activeEl) {
-        activeEl.scrollIntoView({ block: 'nearest' });
+        const menu = menuRef.current;
+        const top = activeEl.offsetTop - menu.offsetTop;
+        menu.scrollTop = Math.max(0, top - menu.clientHeight / 2 + activeEl.clientHeight / 2);
       }
     }
   }, [isOpen]);
@@ -70,7 +84,7 @@ export default function FilterDropdown({ value, options, onChange, className }: 
         type="button"
         aria-haspopup="listbox"
         aria-expanded={isOpen}
-        className={`group w-full md:w-auto px-3 py-1.5 sm:px-3 sm:py-2 text-xs font-medium rounded-xl flex items-center justify-between gap-2 cursor-pointer bg-white/90 dark:bg-slate-800/80 backdrop-blur-md border border-slate-200/80 dark:border-white/10 text-slate-700 dark:text-slate-200 hover:border-blue-400/80 dark:hover:border-blue-500/60 hover:bg-slate-50/90 dark:hover:bg-slate-700/80 hover:text-slate-900 dark:hover:text-white shadow-[0_1px_3px_rgba(0,0,0,0.03),inset_0_1px_1px_rgba(255,255,255,0.9)] dark:shadow-[0_1px_3px_rgba(0,0,0,0.3)] hover:shadow-[0_4px_14px_rgba(0,113,227,0.14)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 min-w-0 sm:min-w-32.5 ${className || ''}`}
+        className={`group w-full md:w-auto px-3 py-1.5 sm:px-3 sm:py-2 text-xs font-medium rounded-xl flex items-center justify-between gap-2 cursor-pointer bg-white/90 dark:bg-slate-800/80 backdrop-blur-md border border-slate-200/80 dark:border-white/10 text-slate-700 dark:text-slate-200 hover:border-blue-400/80 dark:hover:border-blue-500/60 hover:bg-slate-50/90 dark:hover:bg-slate-700/80 hover:text-slate-900 dark:hover:text-white shadow-[0_1px_3px_rgba(0,0,0,0.03),inset_0_1px_1px_rgba(255,255,255,0.9)] dark:shadow-[0_1px_3px_rgba(0,0,0,0.3)] hover:shadow-[0_4px_14px_rgba(0,113,227,0.14)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 min-w-0 sm:min-w-[130px] ${className || ''}`}
       >
         <span className="truncate">{value}</span>
         <ChevronDown
@@ -81,7 +95,7 @@ export default function FilterDropdown({ value, options, onChange, className }: 
       {isOpen && (
         <div
           ref={menuRef}
-          className="dropdown-scroll absolute left-0 mt-1.5 p-1.5 min-w-full sm:min-w-[140px] max-w-[min(260px,calc(100vw-2rem))] max-h-44 sm:max-h-52 overflow-y-auto bg-white/95 dark:bg-[#1C1C1E]/95 backdrop-blur-2xl border border-slate-200/80 dark:border-white/10 rounded-2xl shadow-[0_16px_40px_rgba(0,0,0,0.14)] z-50 text-xs scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700"
+          className={`dropdown-scroll absolute ${alignRight ? 'right-0' : 'left-0'} mt-1.5 p-1.5 min-w-full sm:min-w-[140px] max-w-[min(260px,calc(100vw-2rem))] max-h-44 sm:max-h-52 overflow-y-auto bg-white/95 dark:bg-[#1C1C1E]/95 backdrop-blur-2xl border border-slate-200/80 dark:border-white/10 rounded-2xl shadow-[0_16px_40px_rgba(0,0,0,0.14)] z-50 text-xs scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700`}
           role="listbox"
         >
           {options.map((option) => (

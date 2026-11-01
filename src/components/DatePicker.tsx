@@ -201,7 +201,7 @@ export default function DatePicker({ value, onChange, placeholder = 'Select date
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
-              <span className="text-sm font-semibold text-slate-800 dark:text-slate-100 min-w-20 sm:min-w-22.5 text-center">
+              <span className="text-sm font-semibold text-slate-800 dark:text-slate-100 min-w-[80px] sm:min-w-[90px] text-center">
                 {months[viewDate.getMonth()]}
               </span>
               <button

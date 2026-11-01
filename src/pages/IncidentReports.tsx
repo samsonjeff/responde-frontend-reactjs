@@ -1098,7 +1098,7 @@ export default function IncidentReports() {
                 </button>
               </div>
 
-              <div className="col-span-1 md:col-span-auto min-w-[130px]">
+              <div className="col-span-1 md:col-span-auto min-w-0 md:min-w-[130px] w-full md:w-auto">
                 <FilterDropdown
                   value={filterBarangay}
                   options={['All Barangays', ...Array.from(new Set([...TALISAY_BARANGAYS, ...reports.map(r => r.barangay)])).sort()]}
@@ -1106,7 +1106,7 @@ export default function IncidentReports() {
                 />
               </div>
 
-              <div className="col-span-1 md:col-span-auto min-w-[120px]">
+              <div className="col-span-1 md:col-span-auto min-w-0 md:min-w-[120px] w-full md:w-auto">
                 <FilterDropdown
                   value={filterType}
                   options={[
@@ -1119,7 +1119,7 @@ export default function IncidentReports() {
                 />
               </div>
 
-              <div className="col-span-2 sm:col-span-1 md:col-span-auto min-w-[120px]">
+              <div className="col-span-2 sm:col-span-1 md:col-span-auto min-w-0 md:min-w-[120px] w-full md:w-auto">
                 <FilterDropdown
                   value={filterUrgency}
                   options={['All Urgency', 'High', 'Moderate', 'Low']}
@@ -1131,13 +1131,13 @@ export default function IncidentReports() {
             {/* Right Date Scope Container + Preserved Reset Option */}
             <div className="col-span-2 md:col-span-auto flex flex-wrap sm:flex-nowrap items-center gap-2.5 sm:gap-3 md:ml-auto w-full md:w-auto">
               <div className="grid grid-cols-1 sm:grid-cols-2 md:inline-flex md:items-center gap-2 sm:gap-2.5 md:gap-1.5 md:p-1 md:bg-slate-100/70 md:dark:bg-white/[0.05] md:backdrop-blur-xl md:rounded-2xl md:border md:border-slate-200/70 md:dark:border-white/10 md:shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] md:px-2.5 w-full md:w-auto">
-                <div className="flex items-center gap-1.5 flex-1 sm:flex-initial min-w-[125px]">
+                <div className="flex items-center gap-1.5 flex-1 sm:flex-initial min-w-0 sm:min-w-[125px] w-full sm:w-auto">
                   <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 whitespace-nowrap pl-0.5">
                     From:
                   </span>
                   <DatePicker value={fromDate} onChange={setFromDate} placeholder="Select Date" />
                 </div>
-                <div className="flex items-center gap-1.5 flex-1 sm:flex-initial min-w-[125px]">
+                <div className="flex items-center gap-1.5 flex-1 sm:flex-initial min-w-0 sm:min-w-[125px] w-full sm:w-auto">
                   <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 whitespace-nowrap">
                     To:
                   </span>
