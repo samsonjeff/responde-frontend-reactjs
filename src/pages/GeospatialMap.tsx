@@ -7,9 +7,6 @@ import {
   Navigation,
   RotateCcw,
   Siren,
-  HeartPulse,
-  Droplets,
-  HardHat,
   ShieldCheck,
   FileText,
   User,
@@ -29,11 +26,6 @@ import {
   CheckCircle2,
   Trash2,
   Box,
-  Flame,
-  Wind,
-  Mountain,
-  Waves,
-  Activity,
 } from 'lucide-react';
 
 import { useTheme } from '../components/ThemeContent';
@@ -58,80 +50,6 @@ const INITIAL_LAYERS: MapLayerState = {
 // ── Soft UI Evolution / Emil Kowalski Spring & Panel Transitions ──
 const SOFT_SPRING = { type: 'spring', stiffness: 240, damping: 26, mass: 0.9 } as const;
 const PANEL_TRANSITION = { duration: 0.38, ease: [0.16, 1, 0.3, 1] } as const;
-
-// Standard Line Icons for Incident Types
-const TYPE_ICONS: Record<string, React.ReactNode> = {
-  'General': <FileText className="w-3.5 h-3.5 stroke-[1.75]" />,
-  'Flood': <Waves className="w-3.5 h-3.5 stroke-[1.75]" />,
-  'Volcanic Eruption': <Flame className="w-3.5 h-3.5 stroke-[1.75]" />,
-  'Typhoon': <Wind className="w-3.5 h-3.5 stroke-[1.75]" />,
-  'Landslide': <Mountain className="w-3.5 h-3.5 stroke-[1.75]" />,
-  'Fire': <Flame className="w-3.5 h-3.5 stroke-[1.75]" />,
-  'Earthquake': <Activity className="w-3.5 h-3.5 stroke-[1.75]" />,
-  'Search & Rescue': <Siren className="w-3.5 h-3.5 stroke-[1.75]" />,
-  'Medical': <HeartPulse className="w-3.5 h-3.5 stroke-[1.75]" />,
-  'Food & Water': <Droplets className="w-3.5 h-3.5 stroke-[1.75]" />,
-  'Infrastructure': <HardHat className="w-3.5 h-3.5 stroke-[1.75]" />,
-};
-
-// Calm, non-glaring pastel tones
-const CATEGORY_STYLES: Record<string, { text: string; bg: string; border: string }> = {
-  'General': {
-    text: 'text-slate-600 dark:text-slate-300',
-    bg: 'bg-slate-100 dark:bg-white/[0.08]',
-    border: 'border-slate-200/80 dark:border-white/10',
-  },
-  'Flood': {
-    text: 'text-blue-600 dark:text-blue-400',
-    bg: 'bg-blue-500/10 dark:bg-blue-500/15',
-    border: 'border-blue-500/20',
-  },
-  'Volcanic Eruption': {
-    text: 'text-orange-600 dark:text-orange-400',
-    bg: 'bg-orange-500/10 dark:bg-orange-500/15',
-    border: 'border-orange-500/20',
-  },
-  'Typhoon': {
-    text: 'text-indigo-600 dark:text-indigo-400',
-    bg: 'bg-indigo-500/10 dark:bg-indigo-500/15',
-    border: 'border-indigo-500/20',
-  },
-  'Landslide': {
-    text: 'text-amber-600 dark:text-amber-400',
-    bg: 'bg-amber-500/10 dark:bg-amber-500/15',
-    border: 'border-amber-500/20',
-  },
-  'Fire': {
-    text: 'text-rose-600 dark:text-rose-400',
-    bg: 'bg-rose-500/10 dark:bg-rose-500/15',
-    border: 'border-rose-500/20',
-  },
-  'Earthquake': {
-    text: 'text-purple-600 dark:text-purple-400',
-    bg: 'bg-purple-500/10 dark:bg-purple-500/15',
-    border: 'border-purple-500/20',
-  },
-  'Search & Rescue': {
-    text: 'text-rose-600 dark:text-rose-400',
-    bg: 'bg-rose-500/10 dark:bg-rose-500/15',
-    border: 'border-rose-500/20',
-  },
-  'Medical': {
-    text: 'text-emerald-600 dark:text-emerald-400',
-    bg: 'bg-emerald-500/10 dark:bg-emerald-500/15',
-    border: 'border-emerald-500/20',
-  },
-  'Food & Water': {
-    text: 'text-sky-600 dark:text-sky-400',
-    bg: 'bg-sky-500/10 dark:bg-sky-500/15',
-    border: 'border-sky-500/20',
-  },
-  'Infrastructure': {
-    text: 'text-amber-600 dark:text-amber-400',
-    bg: 'bg-amber-500/10 dark:bg-amber-500/15',
-    border: 'border-amber-500/20',
-  },
-};
 
 // Semantic Micro-Dot Urgency Badges (Calm, non-glaring)
 const URGENCY_BADGES: Record<string, { bg: string; text: string; border: string; dot: string }> = {
@@ -196,11 +114,6 @@ function SoftPanel({
 function IncidentListItem({ report, index, onClick }: { report: Report; index: number; onClick: () => void }) {
   const badge = URGENCY_BADGES[report.urgency] || URGENCY_BADGES['Low'];
   const formattedCode = formatReportCode(report.id, report.source);
-  const catStyle = CATEGORY_STYLES[report.type] || {
-    text: 'text-blue-600 dark:text-blue-400',
-    bg: 'bg-blue-500/10 dark:bg-blue-500/15',
-    border: 'border-blue-500/20',
-  };
 
   return (
     <motion.div
@@ -210,11 +123,11 @@ function IncidentListItem({ report, index, onClick }: { report: Report; index: n
       onClick={onClick}
       className="group relative overflow-hidden rounded-2xl p-3 bg-white/90 dark:bg-slate-800/80 backdrop-blur-md border border-slate-200/70 dark:border-white/10 shadow-[0_1px_3px_rgba(0,0,0,0.03)] hover:border-blue-400/50 hover:bg-white dark:hover:bg-slate-800 transition-all duration-150 cursor-pointer active:scale-[0.99] text-left space-y-2.5"
     >
-      {/* Top row: Category round glyph + Barangay title + Urgency capsule */}
+      {/* Top row: Alert light icon + Barangay title + Urgency capsule */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 border ${catStyle.bg} ${catStyle.border} ${catStyle.text}`}>
-            {TYPE_ICONS[report.type] || <Siren className="w-3.5 h-3.5" />}
+          <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 border bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20">
+            <Siren className="w-3.5 h-3.5" />
           </div>
           <div className="min-w-0">
             <h4 className="text-[13px] font-semibold text-slate-900 dark:text-slate-100 group-hover:text-[#0071E3] dark:group-hover:text-sky-400 truncate tracking-tight transition-colors">
@@ -375,7 +288,7 @@ function BarangayDetailCard({ name, reports, onClose, onViewList }: {
                 <div key={type} className="p-2.5 rounded-xl bg-slate-50/80 dark:bg-slate-800/50 border border-slate-200/50 dark:border-white/5 space-y-1.5">
                   <div className="flex items-center justify-between text-xs">
                     <span className="flex items-center gap-2 font-medium text-slate-700 dark:text-slate-300">
-                      <span className="text-slate-400">{TYPE_ICONS[type] || <Siren className="w-3.5 h-3.5" />}</span>
+                      <span className="text-slate-400"><Siren className="w-3.5 h-3.5" /></span>
                       <span>{type}</span>
                     </span>
                     <div className="flex items-center gap-1.5 font-mono text-[11px]">
@@ -462,7 +375,7 @@ function IncidentDetailCard({
       <div className="flex items-center justify-between px-3.5 py-3 border-b border-slate-200/50 dark:border-white/5 bg-white/60 dark:bg-[#111827]/60 backdrop-blur-md shrink-0">
         <div className="flex items-center gap-2.5 min-w-0">
           <div className="w-7 h-7 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center border border-blue-500/20 shrink-0">
-            {TYPE_ICONS[report.type] || <Siren className="w-3.5 h-3.5" />}
+            <Siren className="w-3.5 h-3.5" />
           </div>
           <div className="min-w-0">
             <h3 className="text-[13px] font-semibold text-slate-900 dark:text-white tracking-tight truncate">{report.type}</h3>
