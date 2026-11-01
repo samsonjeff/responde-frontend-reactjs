@@ -102,7 +102,7 @@ function SoftPanel({
 }) {
   return (
     <div
-      className={`relative backdrop-blur-2xl bg-white/90 dark:bg-[#111827]/90 rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_4px_24px_rgba(15,23,42,0.04)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.5)] border-t-white/90 dark:border-t-white/15 transition-all ${className}`}
+      className={`relative backdrop-blur-2xl bg-white/95 dark:bg-[#1C1C1E]/95 rounded-3xl border border-slate-200/80 dark:border-white/10 shadow-[0_12px_36px_-8px_rgba(0,0,0,0.06),0_2px_8px_rgba(0,0,0,0.03)] dark:shadow-[0_16px_40px_-8px_rgba(0,0,0,0.6)] transition-all ${className}`}
     >
       {children}
     </div>
@@ -1029,8 +1029,8 @@ function LayerToggle({ active, label, activeDot, onClick }: {
       onClick={onClick}
       className={`group relative flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl text-[11px] sm:text-xs font-semibold tracking-tight transition-all duration-200 cursor-pointer shrink-0 select-none ${
         active
-          ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-[0_2px_8px_rgba(0,113,227,0.14)] dark:shadow-[0_2px_12px_rgba(0,0,0,0.5)] ring-1 ring-[#0071E3]/25 dark:ring-blue-400/30'
-          : 'text-slate-500 dark:text-slate-400 hover:text-[#0071E3] dark:hover:text-sky-300 hover:bg-blue-50/70 dark:hover:bg-blue-950/40 hover:shadow-xs'
+          ? 'bg-white dark:bg-slate-800/90 text-slate-900 dark:text-white shadow-[0_2px_8px_rgba(0,0,0,0.08),inset_0_1px_1px_rgba(255,255,255,0.9)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.4)] ring-1 ring-slate-200/80 dark:ring-white/10'
+          : 'text-slate-600 dark:text-slate-400 hover:text-[#0071E3] dark:hover:text-sky-300 hover:bg-white/60 dark:hover:bg-white/[0.06] hover:shadow-2xs'
       }`}
     >
       <span className="relative flex h-2 w-2 items-center justify-center shrink-0">
@@ -1458,7 +1458,7 @@ export default function GeospatialMap() {
             {/* ── Page Header (Soft UI Evolution) ── */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3.5">
               <div className="flex items-center gap-3.5">
-                <div className="w-11 h-11 rounded-2xl bg-blue-500/10 dark:bg-blue-500/20 text-blue-600 dark:text-sky-400 border border-blue-500/20 flex items-center justify-center shrink-0">
+                <div className="w-11 h-11 rounded-2xl bg-blue-500/10 dark:bg-blue-500/20 text-[#0071E3] dark:text-sky-400 border border-blue-500/20 flex items-center justify-center shrink-0 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]">
                   <Map className="w-5 h-5" strokeWidth={1.75} />
                 </div>
                 <div>
@@ -1473,7 +1473,7 @@ export default function GeospatialMap() {
 
               {/* Apple Maps Live Telemetry Status Capsule */}
               <div
-                className="inline-flex items-center gap-2.5 px-3.5 py-2 rounded-2xl bg-white/80 dark:bg-slate-800/80 backdrop-blur-md border border-slate-200/80 dark:border-white/10 shadow-xs select-none shrink-0"
+                className="inline-flex items-center gap-2.5 px-3.5 py-2 rounded-2xl bg-slate-50/80 dark:bg-white/[0.06] backdrop-blur-xl border border-slate-200/70 dark:border-white/10 shadow-[0_1px_3px_rgba(0,0,0,0.03),inset_0_1px_1px_rgba(255,255,255,0.8)] select-none shrink-0"
               >
                 {/* Active Radar Beacon */}
                 <span className="relative flex h-2 w-2 shrink-0">
@@ -1559,7 +1559,7 @@ export default function GeospatialMap() {
 
               {/* Right Side: Segmented Layer Control */}
               <div className="w-full xl:w-auto overflow-x-auto no-scrollbar scroll-smooth flex items-center justify-start xl:justify-end py-0.5 shrink-0">
-                <div className="inline-flex items-center gap-1 sm:gap-1.5 p-1 bg-slate-100/90 dark:bg-slate-800/90 backdrop-blur-md rounded-2xl border border-slate-200/60 dark:border-white/5 shadow-inner min-w-max">
+                <div className="inline-flex items-center gap-1 sm:gap-1.5 p-1 bg-slate-100/70 dark:bg-white/[0.05] backdrop-blur-xl rounded-2xl border border-slate-200/70 dark:border-white/10 shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] dark:shadow-[inset_0_1px_2px_rgba(0,0,0,0.4)] min-w-max">
                   <div className="group/layers flex items-center gap-1 px-2 py-1 text-[#0071E3] dark:text-sky-400 cursor-default select-none shrink-0">
                     <Layers className="w-3.5 h-3.5 transition-transform duration-300 group-hover/layers:scale-110 text-[#0071E3] dark:text-sky-400" strokeWidth={1.8} />
                     <span className="text-[10px] font-bold uppercase tracking-wider hidden sm:inline">Layers</span>

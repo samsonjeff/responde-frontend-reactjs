@@ -70,7 +70,7 @@ export default function FilterDropdown({ value, options, onChange, className }: 
         type="button"
         aria-haspopup="listbox"
         aria-expanded={isOpen}
-        className={`group w-full md:w-auto px-3 py-1.5 sm:px-3 sm:py-2 text-xs font-medium rounded-xl flex items-center justify-between gap-2 cursor-pointer bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:border-blue-400/80 dark:hover:border-blue-500/60 hover:bg-slate-50/90 dark:hover:bg-slate-600 hover:text-slate-900 dark:hover:text-white hover:shadow-[0_2px_10px_rgba(0,113,227,0.12)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 min-w-0 sm:min-w-32.5 ${className || ''}`}
+        className={`group w-full md:w-auto px-3 py-1.5 sm:px-3 sm:py-2 text-xs font-medium rounded-xl flex items-center justify-between gap-2 cursor-pointer bg-white/90 dark:bg-slate-800/80 backdrop-blur-md border border-slate-200/80 dark:border-white/10 text-slate-700 dark:text-slate-200 hover:border-blue-400/80 dark:hover:border-blue-500/60 hover:bg-slate-50/90 dark:hover:bg-slate-700/80 hover:text-slate-900 dark:hover:text-white shadow-[0_1px_3px_rgba(0,0,0,0.03),inset_0_1px_1px_rgba(255,255,255,0.9)] dark:shadow-[0_1px_3px_rgba(0,0,0,0.3)] hover:shadow-[0_4px_14px_rgba(0,113,227,0.14)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 min-w-0 sm:min-w-32.5 ${className || ''}`}
       >
         <span className="truncate">{value}</span>
         <ChevronDown
@@ -81,7 +81,7 @@ export default function FilterDropdown({ value, options, onChange, className }: 
       {isOpen && (
         <div
           ref={menuRef}
-          className="dropdown-scroll absolute left-0 mt-1.5 py-1 min-w-full sm:min-w-[140px] max-w-[min(260px,calc(100vw-2rem))] max-h-44 sm:max-h-52 overflow-y-auto bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-xl shadow-xl z-50 text-xs scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700"
+          className="dropdown-scroll absolute left-0 mt-1.5 p-1.5 min-w-full sm:min-w-[140px] max-w-[min(260px,calc(100vw-2rem))] max-h-44 sm:max-h-52 overflow-y-auto bg-white/95 dark:bg-[#1C1C1E]/95 backdrop-blur-2xl border border-slate-200/80 dark:border-white/10 rounded-2xl shadow-[0_16px_40px_rgba(0,0,0,0.14)] z-50 text-xs scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700"
           role="listbox"
         >
           {options.map((option) => (
@@ -91,9 +91,9 @@ export default function FilterDropdown({ value, options, onChange, className }: 
               role="option"
               aria-selected={value === option}
               title={option}
-              className={`w-full text-left px-3 py-1.5 sm:py-2 text-xs transition-colors duration-150 cursor-pointer truncate ${value === option
-                ? 'bg-blue-50 dark:bg-blue-900/30 text-[#0071E3] dark:text-sky-400 font-semibold'
-                : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white'
+              className={`w-full text-left px-3 py-1.5 sm:py-2 rounded-xl text-xs transition-all duration-150 cursor-pointer truncate ${value === option
+                ? 'bg-blue-500/10 dark:bg-blue-500/20 text-[#0071E3] dark:text-sky-400 font-semibold'
+                : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100/70 dark:hover:bg-white/[0.06] hover:text-slate-900 dark:hover:text-white'
                 }`}
             >
               {option}

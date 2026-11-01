@@ -185,12 +185,7 @@ function SoftCard({
 }) {
   return (
     <div
-      className={`rounded-2xl border transition-all duration-300 ${className}`}
-      style={{
-        backgroundColor: 'var(--soft-surface)',
-        borderColor: 'var(--soft-border)',
-        boxShadow: 'var(--soft-shadow-card)',
-      }}
+      className={`rounded-3xl border border-slate-200/80 dark:border-white/10 bg-white/95 dark:bg-[#1C1C1E]/95 backdrop-blur-2xl shadow-[0_12px_36px_-8px_rgba(0,0,0,0.06),0_2px_8px_rgba(0,0,0,0.03)] dark:shadow-[0_16px_40px_-8px_rgba(0,0,0,0.6)] transition-all duration-300 ${className}`}
     >
       {children}
     </div>
@@ -600,7 +595,7 @@ export default function Analytics() {
               {/* Title and Primary Actions */}
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div className="flex items-center gap-3.5">
-                  <div className="w-11 h-11 rounded-2xl bg-blue-500/10 dark:bg-blue-500/20 text-blue-600 dark:text-sky-400 border border-blue-500/20 flex items-center justify-center shrink-0">
+                  <div className="w-11 h-11 rounded-2xl bg-blue-500/10 dark:bg-blue-500/20 text-[#0071E3] dark:text-sky-400 border border-blue-500/20 flex items-center justify-center shrink-0 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]">
                     <BarChart3 className="w-5 h-5" strokeWidth={1.75} />
                   </div>
                   <div>
@@ -640,7 +635,7 @@ export default function Analytics() {
               </div>
 
               {/* Filter Bar with DatePicker and FilterDropdown */}
-              <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex flex-col md:flex-row md:flex-wrap lg:flex-nowrap items-stretch md:items-center justify-between gap-2.5 sm:gap-3 relative z-50">
+              <div className="pt-3.5 border-t border-slate-200/60 dark:border-white/5 flex flex-col md:flex-row md:flex-wrap lg:flex-nowrap items-stretch md:items-center justify-between gap-2.5 sm:gap-3 relative z-50">
                 <div className="flex flex-wrap items-center gap-2.5 relative z-50">
                   <div className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-blue-500/10 dark:bg-blue-500/20 text-[#0071E3] dark:text-sky-400 text-xs font-semibold shrink-0 border border-blue-500/25 dark:border-blue-400/25 shadow-2xs">
                     <Filter className="w-3.5 h-3.5 text-[#0071E3] dark:text-sky-400" strokeWidth={1.75} />
