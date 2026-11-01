@@ -1104,21 +1104,41 @@ export default function Settings() {
                 </div>
               </div>
 
-              {/* 2. Separate Danger Zone: Delete Account Card */}
-              <div className="rounded-3xl bg-white/80 dark:bg-[#111827]/80 backdrop-blur-xl border border-rose-200/70 dark:border-rose-900/40 p-6 sm:p-7 shadow-[0_4px_24px_rgba(244,63,94,0.03)] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                  <h3 className="text-sm sm:text-base font-semibold text-rose-600 dark:text-rose-400">
-                    Delete Account
-                  </h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">
-                    Permanently delete your profile and revoke system access. Requires password &amp; email OTP verification.
-                  </p>
+              {/* 2. Separate Danger Zone: Delete Account Card (Analytics Style with Red Top Gradient) */}
+              <div className="group/delcard relative overflow-hidden rounded-3xl bg-white/80 dark:bg-[#111827]/80 backdrop-blur-xl border border-rose-200/80 dark:border-rose-900/40 p-6 sm:p-7 shadow-[0_4px_24px_rgba(244,63,94,0.04)] flex flex-col sm:flex-row sm:items-center gap-5 justify-between transition-all duration-200 hover:shadow-[0_8px_30px_rgba(244,63,94,0.08)]">
+                {/* Fixed Top Accent Gradient Line in Red/Rose */}
+                <div className="absolute top-0 left-0 right-0 h-1 sm:h-1.5 bg-gradient-to-r from-rose-500 via-red-500 to-amber-500 opacity-100" />
+
+                {/* Left Side: Icon squircle + Information */}
+                <div className="flex items-start sm:items-center gap-4 sm:gap-5 flex-1 min-w-0 relative z-10">
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl border flex items-center justify-center shrink-0 shadow-2xs bg-rose-500/10 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 border-rose-500/20">
+                    <Trash2 className="w-6 h-6 sm:w-7 sm:h-7 transition-transform duration-200 ease-out group-hover/delcard:scale-110 group-hover/delcard:-rotate-6" strokeWidth={1.75} />
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="text-[11px] font-bold text-rose-500 dark:text-rose-400 uppercase tracking-wider">
+                        Danger Zone
+                      </p>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold border shadow-2xs bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20">
+                        Irreversible
+                      </span>
+                    </div>
+
+                    <h3 className="text-sm sm:text-base font-bold tracking-tight text-slate-900 dark:text-white mt-1">
+                      Delete Account
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">
+                      Permanently delete your profile and revoke system access. Requires password &amp; email OTP verification.
+                    </p>
+                  </div>
                 </div>
 
+                {/* Right Side: Non-solid Apple Danger Button */}
                 <button
                   type="button"
                   onClick={openDeleteMyAccountModal}
-                  className="group/del self-start sm:self-auto shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold bg-rose-50 hover:bg-rose-500 text-rose-600 hover:text-white dark:bg-rose-500/15 dark:hover:bg-rose-600 dark:text-rose-400 dark:hover:text-white border border-rose-200/70 hover:border-rose-500 dark:border-rose-500/30 dark:hover:border-rose-600 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_4px_14px_rgba(244,63,94,0.28)] active:translate-y-0 active:scale-95 cursor-pointer shadow-2xs whitespace-nowrap"
+                  className="group/del self-start sm:self-center shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold bg-rose-50/80 hover:bg-rose-100/90 text-rose-600 hover:text-rose-700 dark:bg-rose-500/10 dark:hover:bg-rose-500/20 dark:text-rose-300 border border-rose-200/80 hover:border-rose-300 dark:border-rose-500/25 dark:hover:border-rose-500/40 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xs active:translate-y-0 active:scale-95 cursor-pointer shadow-2xs whitespace-nowrap relative z-10"
                 >
                   <Trash2 className="w-3.5 h-3.5 transition-transform duration-200 ease-out group-hover/del:scale-110 group-hover/del:-rotate-6" strokeWidth={2} />
                   <span>Delete Account</span>
