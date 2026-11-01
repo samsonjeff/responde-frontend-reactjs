@@ -1310,10 +1310,10 @@ export default function MessengerBotLogs() {
                           <button
                             type="button"
                             onClick={() => updateConversationStatus(selectedConversation.id, "Incomplete")}
-                            className={`relative flex items-center gap-1.5 px-3 sm:px-3.5 py-1 sm:py-1.5 rounded-full text-xs font-semibold tracking-tight transition-all duration-200 select-none active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 cursor-pointer ${
+                            className={`relative flex items-center gap-1.5 px-3 sm:px-3.5 py-1 sm:py-1.5 rounded-full text-xs tracking-tight transition-all duration-200 select-none active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 cursor-pointer ${
                               selectedConversation.status === "Incomplete"
-                                ? "text-white"
-                                : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-black/[0.03] dark:hover:bg-white/[0.04]"
+                                ? "text-amber-700 dark:text-amber-300 font-bold"
+                                : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-black/[0.03] dark:hover:bg-white/[0.04] font-medium"
                             }`}
                             title="Mark conversation as Incomplete"
                           >
@@ -1321,14 +1321,14 @@ export default function MessengerBotLogs() {
                               <motion.div
                                 layoutId="activeStatusCapsule"
                                 transition={APPLE_SPRING}
-                                className="absolute inset-0 bg-gradient-to-r from-amber-500 to-amber-600 rounded-full shadow-[0_1px_4px_rgba(245,158,11,0.35)]"
+                                className="absolute inset-0 bg-amber-500/18 dark:bg-amber-500/25 border border-amber-500/40 dark:border-amber-400/40 rounded-full shadow-[0_2px_8px_rgba(245,158,11,0.18)] backdrop-blur-md"
                               />
                             )}
                             <span
-                              className={`relative z-10 w-1.5 h-1.5 rounded-full transition-colors ${
+                              className={`relative z-10 w-2 h-2 rounded-full transition-colors ${
                                 selectedConversation.status === "Incomplete"
-                                  ? "bg-white animate-pulse"
-                                  : "bg-amber-500"
+                                  ? "bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.6)] animate-pulse"
+                                  : "bg-amber-500/60"
                               }`}
                             />
                             <span className="relative z-10">Incomplete</span>
@@ -1338,10 +1338,10 @@ export default function MessengerBotLogs() {
                           <button
                             type="button"
                             onClick={() => updateConversationStatus(selectedConversation.id, "Complete")}
-                            className={`relative flex items-center gap-1.5 px-3 sm:px-3.5 py-1 sm:py-1.5 rounded-full text-xs font-semibold tracking-tight transition-all duration-200 select-none active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 cursor-pointer ${
+                            className={`relative flex items-center gap-1.5 px-3 sm:px-3.5 py-1 sm:py-1.5 rounded-full text-xs tracking-tight transition-all duration-200 select-none active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 cursor-pointer ${
                               selectedConversation.status === "Complete"
-                                ? "text-white"
-                                : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-black/[0.03] dark:hover:bg-white/[0.04]"
+                                ? "text-emerald-700 dark:text-emerald-300 font-bold"
+                                : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-black/[0.03] dark:hover:bg-white/[0.04] font-medium"
                             }`}
                             title="Mark conversation as Complete"
                           >
@@ -1349,16 +1349,16 @@ export default function MessengerBotLogs() {
                               <motion.div
                                 layoutId="activeStatusCapsule"
                                 transition={APPLE_SPRING}
-                                className="absolute inset-0 bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-full shadow-[0_1px_4px_rgba(16,185,129,0.35)]"
+                                className="absolute inset-0 bg-emerald-500/18 dark:bg-emerald-500/25 border border-emerald-500/40 dark:border-emerald-400/40 rounded-full shadow-[0_2px_8px_rgba(16,185,129,0.18)] backdrop-blur-md"
                               />
                             )}
                             <CheckCircle2
                               className={`relative z-10 w-3.5 h-3.5 transition-colors ${
                                 selectedConversation.status === "Complete"
-                                  ? "text-white"
-                                  : "text-emerald-500"
+                                  ? "text-emerald-600 dark:text-emerald-400"
+                                  : "text-emerald-500/60"
                               }`}
-                              strokeWidth={2}
+                              strokeWidth={2.25}
                             />
                             <span className="relative z-10">Complete</span>
                           </button>
