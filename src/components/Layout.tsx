@@ -810,7 +810,7 @@ export default function Layout() {
                             <button
                               type="button"
                               onClick={() => setConfirmDeleteTarget('all')}
-                              className="p-1.5 rounded-xl text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-500/10 transition-all active:scale-90 cursor-pointer"
+                              className="p-1.5 rounded-xl text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-950/40 border border-red-200/70 dark:border-red-800/50 hover:bg-red-100 dark:hover:bg-red-900/60 hover:text-red-600 dark:hover:text-red-300 shadow-2xs transition-all active:scale-90 cursor-pointer"
                               title="Clear all notifications"
                               aria-label="Clear all notifications"
                             >
@@ -1461,7 +1461,7 @@ function NotificationRow({
           e.stopPropagation();
           onDelete();
         }}
-        className="absolute top-3 right-3 p-1.5 rounded-xl text-slate-300 dark:text-slate-600 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-500/10 transition-all cursor-pointer active:scale-90"
+        className="absolute top-3 right-3 p-1.5 rounded-xl text-red-500 dark:text-red-400 bg-red-50/90 dark:bg-red-950/40 border border-red-200/70 dark:border-red-800/50 hover:bg-red-100 dark:hover:bg-red-900/60 hover:text-red-600 dark:hover:text-red-300 shadow-2xs transition-all cursor-pointer active:scale-90"
         title="Delete notification"
         aria-label="Delete notification"
       >
