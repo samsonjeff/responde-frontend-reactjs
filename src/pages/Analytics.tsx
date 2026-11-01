@@ -1430,31 +1430,31 @@ export default function Analytics() {
 
                   const cardTheme = isHigh
                     ? {
-                        bg: 'bg-gradient-to-br from-rose-500/[0.07] via-rose-50/70 to-amber-500/[0.04] dark:from-rose-950/35 dark:via-slate-900/85 dark:to-amber-950/20',
-                        border: 'border-rose-200/90 dark:border-rose-500/30',
-                        pinBg: 'bg-rose-500/15 dark:bg-rose-500/25 border-rose-500/25 text-rose-600 dark:text-rose-400',
-                        hover: 'hover:border-rose-400 hover:shadow-[0_12px_28px_rgba(244,63,94,0.18)] dark:hover:shadow-[0_12px_28px_rgba(244,63,94,0.25)] hover:from-rose-500/[0.12] hover:to-amber-500/[0.08]',
+                        bg: 'bg-white dark:bg-slate-900/90',
+                        border: 'border-slate-200/80 dark:border-white/10',
+                        pinBg: 'bg-rose-500/10 dark:bg-rose-500/20 border-rose-500/20 text-rose-600 dark:text-rose-400',
+                        hover: 'hover:border-slate-300 dark:hover:border-white/20 hover:shadow-[0_8px_24px_rgba(0,0,0,0.06)] dark:hover:shadow-[0_8px_24px_rgba(0,0,0,0.4)]',
                         topBar: 'from-rose-500 via-rose-400 to-amber-500',
-                        badge: 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30 shadow-2xs',
+                        badge: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20 shadow-2xs',
                         pulse: 'bg-rose-500',
                       }
                     : isModerate
                     ? {
-                        bg: 'bg-gradient-to-br from-amber-500/[0.07] via-amber-50/70 to-yellow-500/[0.04] dark:from-amber-950/35 dark:via-slate-900/85 dark:to-yellow-950/20',
-                        border: 'border-amber-200/90 dark:border-amber-500/30',
-                        pinBg: 'bg-amber-500/15 dark:bg-amber-500/25 border-amber-500/25 text-amber-600 dark:text-amber-400',
-                        hover: 'hover:border-amber-400 hover:shadow-[0_12px_28px_rgba(245,158,11,0.18)] dark:hover:shadow-[0_12px_28px_rgba(245,158,11,0.25)] hover:from-amber-500/[0.12] hover:to-yellow-500/[0.08]',
+                        bg: 'bg-white dark:bg-slate-900/90',
+                        border: 'border-slate-200/80 dark:border-white/10',
+                        pinBg: 'bg-amber-500/10 dark:bg-amber-500/20 border-amber-500/20 text-amber-600 dark:text-amber-400',
+                        hover: 'hover:border-slate-300 dark:hover:border-white/20 hover:shadow-[0_8px_24px_rgba(0,0,0,0.06)] dark:hover:shadow-[0_8px_24px_rgba(0,0,0,0.4)]',
                         topBar: 'from-amber-500 via-amber-400 to-yellow-400',
-                        badge: 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30 shadow-2xs',
+                        badge: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 shadow-2xs',
                         pulse: 'bg-amber-500',
                       }
                     : {
-                        bg: 'bg-gradient-to-br from-blue-500/[0.06] via-sky-50/70 to-emerald-500/[0.04] dark:from-blue-950/35 dark:via-slate-900/85 dark:to-emerald-950/20',
-                        border: 'border-blue-200/90 dark:border-blue-500/30',
-                        pinBg: 'bg-blue-500/15 dark:bg-blue-500/25 border-blue-500/25 text-[#0071E3] dark:text-sky-400',
-                        hover: 'hover:border-blue-400 hover:shadow-[0_12px_28px_rgba(0,113,227,0.18)] dark:hover:shadow-[0_12px_28px_rgba(0,113,227,0.25)] hover:from-blue-500/[0.12] hover:to-sky-500/[0.08]',
+                        bg: 'bg-white dark:bg-slate-900/90',
+                        border: 'border-slate-200/80 dark:border-white/10',
+                        pinBg: 'bg-blue-500/10 dark:bg-blue-500/20 border-blue-500/20 text-[#0071E3] dark:text-sky-400',
+                        hover: 'hover:border-slate-300 dark:hover:border-white/20 hover:shadow-[0_8px_24px_rgba(0,0,0,0.06)] dark:hover:shadow-[0_8px_24px_rgba(0,0,0,0.4)]',
                         topBar: 'from-[#0071E3] via-sky-400 to-emerald-400',
-                        badge: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 shadow-2xs',
+                        badge: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 shadow-2xs',
                         pulse: 'bg-[#10b981]',
                       };
 
