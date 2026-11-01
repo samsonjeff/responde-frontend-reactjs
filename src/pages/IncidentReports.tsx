@@ -1197,7 +1197,13 @@ export default function IncidentReports() {
         {/* ── Table (Soft UI Evolution Data Table) ── */}
         <StaggerItem className="flex-1 min-h-0 flex flex-col">
           <div className="relative z-10 bg-white dark:bg-[#111827] rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_1px_3px_rgba(15,23,42,0.04),0_8px_24px_rgba(15,23,42,0.03)] overflow-hidden flex flex-col flex-1 min-h-0">
-        <div className="overflow-x-auto w-full flex-1 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700">
+        <div
+          className="overflow-x-auto overflow-y-auto w-full flex-1 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700"
+          style={{
+            maskImage: 'linear-gradient(to bottom, black calc(100% - 36px), transparent 100%)',
+            WebkitMaskImage: 'linear-gradient(to bottom, black calc(100% - 36px), transparent 100%)',
+          }}
+        >
           <table className="w-full min-w-[980px] text-sm text-left border-separate border-spacing-0">
             <thead className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200/70 dark:border-white/10 sticky top-0 z-30 shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
               <tr>
@@ -1371,6 +1377,11 @@ export default function IncidentReports() {
                   </motion.tr>
                 ))
               )}
+                {paginatedReports.length > 0 && (
+                  <tr aria-hidden="true" className="h-4 pointer-events-none border-none">
+                    <td colSpan={9} className="p-0 border-0" />
+                  </tr>
+                )}
             </tbody>
           </table>
         </div>

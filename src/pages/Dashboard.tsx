@@ -593,7 +593,13 @@ export default function Dashboard() {
           </div>
 
           {/* Table Container */}
-          <div className="overflow-x-auto w-full flex-1 min-h-0 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700">
+          <div
+            className="overflow-x-auto overflow-y-auto w-full flex-1 min-h-0 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700"
+            style={{
+              maskImage: 'linear-gradient(to bottom, black calc(100% - 36px), transparent 100%)',
+              WebkitMaskImage: 'linear-gradient(to bottom, black calc(100% - 36px), transparent 100%)',
+            }}
+          >
             <table className="w-full min-w-[640px] text-sm text-left border-separate border-spacing-0">
               <thead className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200/60 dark:border-white/5 sticky top-0 z-30 shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
                 <tr>
@@ -661,6 +667,11 @@ export default function Dashboard() {
                       </tr>
                     );
                   })
+                )}
+                {displayReports.length > 0 && (
+                  <tr aria-hidden="true" className="h-4 pointer-events-none border-none">
+                    <td colSpan={6} className="p-0 border-0" />
+                  </tr>
                 )}
               </tbody>
             </table>
