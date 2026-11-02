@@ -7,6 +7,7 @@ import * as maplibregl from 'maplibre-gl';
 import type { FeatureCollection, LineString, Point } from 'geojson';
 import type { BarangayFeatureCollection } from '../types/geospatial';
 import { normalizeBarangayName } from '../data/talisay-barangays';
+import { formatReportUrgency } from '../services/incidentService';
 
 /**
  * Exact Coordinates of MDRRMO Talisay (Municipal Disaster Risk Reduction & Management Office)
@@ -31,7 +32,7 @@ export interface ActiveBarangayTarget {
   normalizedName: string;
   centroid: [number, number]; // [lng, lat]
   incidentCount: number;
-  highestUrgency: 'High' | 'Moderate' | 'Low';
+  highestUrgency: 'Critical' | 'High' | 'Moderate' | 'Low';
   color: string;
   glowColor: string;
 }
@@ -56,10 +57,10 @@ export function getActiveBarangaysFromReports(
 ): ActiveBarangayTarget[] {
   const barangayMap = new Map<
     string,
-    { count: number; highestUrgency: 'High' | 'Moderate' | 'Low' }
+    { count: number; highestUrgency: 'Critical' | 'High' | 'Moderate' | 'Low' }
   >();
 
-  const URGENCY_PRIORITY: Record<string, number> = { High: 3, Moderate: 2, Low: 1 };
+  const URGENCY_PRIORITY: Record<string, number> = { Critical: 4, High: 3, Moderate: 2, Low: 1 };
 
   for (const report of reports) {
     if (!report.barangay) continue;
@@ -69,7 +70,7 @@ export function getActiveBarangaysFromReports(
     const current = barangayMap.get(norm) || { count: 0, highestUrgency: 'Low' };
     current.count += 1;
 
-    const reportUrgency = (report.urgency || 'Low') as 'High' | 'Moderate' | 'Low';
+    const reportUrgency = (formatReportUrgency(report.urgency) || 'Low') as 'Critical' | 'High' | 'Moderate' | 'Low';
     if ((URGENCY_PRIORITY[reportUrgency] || 1) > (URGENCY_PRIORITY[current.highestUrgency] || 1)) {
       current.highestUrgency = reportUrgency;
     }
@@ -92,19 +93,28 @@ export function getActiveBarangaysFromReports(
     // High Urgency = Rose Red (#f43f5e)
     // Moderate Urgency = Amber (#f59e0b)
     // Low Urgency = Cyan (#06b6d4)
+    // Urgency Color Palette:
+    // Critical = Purple (#9333ea)
+    // High = Rose Red (#f43f5e)
+    // Moderate = Amber (#f59e0b)
+    // Low = Green (#22c55e)
     const color =
-      data.highestUrgency === 'High'
+      data.highestUrgency === 'Critical'
+        ? '#9333ea'
+        : data.highestUrgency === 'High'
         ? '#f43f5e'
         : data.highestUrgency === 'Moderate'
         ? '#f59e0b'
-        : '#06b6d4';
+        : '#22c55e';
 
     const glowColor =
-      data.highestUrgency === 'High'
+      data.highestUrgency === 'Critical'
+        ? 'rgba(147, 51, 234, 0.55)'
+        : data.highestUrgency === 'High'
         ? 'rgba(244, 63, 94, 0.55)'
         : data.highestUrgency === 'Moderate'
         ? 'rgba(245, 158, 11, 0.55)'
-        : 'rgba(6, 182, 212, 0.55)';
+        : 'rgba(34, 197, 94, 0.55)';
 
     results.push({
       name: feat.properties.name,

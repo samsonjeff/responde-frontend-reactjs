@@ -425,7 +425,7 @@ export default function Analytics() {
       .map(r => normalizeBarangayName(r.barangay) || r.barangay)
       .filter((b): b is string => Boolean(b && typeof b === 'string' && !['all barangays', 'none', 'unknown', 'unspecified', 'n/a', 'null'].includes(b.toLowerCase().trim()) && !(TALISAY_BARANGAYS as readonly string[]).includes(b)));
     const sorted = Array.from(new Set([...TALISAY_BARANGAYS, ...extra])).sort();
-    return ['All Barangays', 'None', 'Unknown', ...sorted];
+    return ['All Barangays', 'Unknown', ...sorted];
   }, [data]);
 
   const allTypes = useMemo(() => {
