@@ -1225,18 +1225,20 @@ export default function IncidentReports() {
         {/* ── Filter Bar & Bulk Actions ── */}
         <StaggerItem>
           <div className="relative z-30 flex flex-col gap-2.5 shrink-0">
-        <div className="relative z-20 backdrop-blur-xl bg-white/80 dark:bg-[#111827]/80 rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_1px_3px_rgba(15,23,42,0.04)] p-3 sm:px-4 sm:py-3.5 md:px-4.5 shrink-0">
+        <div className="relative z-20 backdrop-blur-xl bg-white/80 dark:bg-[#111827]/80 rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_1px_3px_rgba(15,23,42,0.04)] p-3 sm:p-3.5 shrink-0">
           {/* Mobile Filter Header Toggle (< md) */}
           <div className="flex md:hidden items-center justify-between w-full">
             <button
               type="button"
               onClick={() => setMobileFiltersOpen(!mobileFiltersOpen)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-500/10 dark:bg-blue-500/20 text-[#0071E3] dark:text-sky-400 border border-blue-500/25 dark:border-blue-400/25 text-xs font-semibold cursor-pointer select-none shadow-2xs active:scale-[0.98] transition-transform"
+              className="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-200 cursor-pointer select-none"
             >
-              <Filter className="w-3.5 h-3.5 text-[#0071E3] dark:text-sky-400" strokeWidth={1.75} />
-              <span>Filter Incident Reports</span>
+              <div className="w-7 h-7 rounded-lg bg-blue-500/10 text-[#0071E3] dark:text-sky-400 flex items-center justify-center">
+                <Filter className="w-3.5 h-3.5" strokeWidth={1.75} />
+              </div>
+              <span>Filters</span>
               {activeFilterCount > 0 && (
-                <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-[#0071E3] text-white">
+                <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-[#0071E3] text-white tabular-nums">
                   {activeFilterCount}
                 </span>
               )}
@@ -1255,103 +1257,98 @@ export default function IncidentReports() {
             )}
           </div>
 
-          {/* Filter Controls */}
-          <div className={`${mobileFiltersOpen ? 'grid' : 'hidden'} md:flex md:flex-nowrap grid-cols-2 gap-2 sm:gap-2.5 md:gap-2.5 md:items-center pt-2.5 md:pt-0 overflow-x-auto scrollbar-none pb-1 md:pb-0`}>
-            {/* Left Filter Scope Container */}
-            <div className="col-span-2 md:col-span-auto grid grid-cols-2 sm:grid-cols-4 md:inline-flex md:items-center gap-2 sm:gap-2.5 md:gap-2 md:p-1.5 md:px-2 md:bg-slate-100/70 md:dark:bg-white/[0.05] md:backdrop-blur-xl md:rounded-2xl md:border md:border-slate-200/70 md:dark:border-white/10 md:shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] w-full md:w-auto shrink-0">
-              <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 text-[#0071E3] dark:text-sky-400 cursor-default select-none shrink-0">
-                <Filter className="w-3.5 h-3.5 transition-transform duration-300 group-hover/filters:scale-110 text-[#0071E3] dark:text-sky-400" strokeWidth={1.8} />
-                <span className="text-[10px] font-bold uppercase tracking-wider">Filters</span>
-              </div>
+          {/* Filter Controls Row */}
+          <div className={`${mobileFiltersOpen ? 'grid' : 'hidden'} md:flex md:flex-wrap grid-cols-2 gap-2 sm:gap-2.5 md:gap-3 md:items-center pt-2.5 md:pt-0`}>
+            {/* Filter Label Pill */}
+            <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100/80 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 text-xs font-semibold shrink-0 border border-slate-200/50 dark:border-white/5">
+              <Filter className="w-3.5 h-3.5 text-[#0071E3]" strokeWidth={1.75} />
+              <span>Filters</span>
+            </div>
 
-              {/* Source Toggle Filter: [Bot] [Scraper] */}
-              <div className="col-span-2 sm:col-span-1 md:col-span-auto inline-flex items-center p-0.5 bg-white/90 dark:bg-slate-800/90 backdrop-blur-md rounded-xl border border-slate-200/70 dark:border-white/10 shadow-xs gap-1 shrink-0 h-[34px] sm:h-[36px]">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setFilterSource(prev => (prev === 'bot' ? 'all' : 'bot'));
-                    setCurrentPage(1);
-                  }}
-                  className={`h-full inline-flex items-center gap-1.5 px-2.5 sm:px-3 rounded-lg text-xs font-semibold tracking-tight transition-all duration-150 select-none active:scale-[0.96] cursor-pointer ${
-                    filterSource === 'bot'
-                      ? "bg-[#0071E3] text-white shadow-xs hover:bg-[#0077ED] hover:shadow-[0_2px_8px_rgba(0,113,227,0.3)] hover:-translate-y-0.5 active:translate-y-0"
-                      : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-white dark:hover:bg-slate-700 hover:shadow-2xs hover:-translate-y-0.5 active:translate-y-0"
-                  }`}
-                  title={filterSource === 'bot' ? 'Click to show all sources' : 'Filter by Bot reports'}
-                >
-                  <Bot className={`w-3.5 h-3.5 ${filterSource === 'bot' ? 'text-white' : 'text-[#0071E3]'}`} strokeWidth={1.75} />
-                  <span>Bot</span>
-                </button>
+            {/* Source Toggle Filter: [Bot] [Scraper] */}
+            <div className="col-span-2 sm:col-span-1 md:col-span-auto inline-flex items-center p-0.5 bg-slate-100/90 dark:bg-slate-800/90 backdrop-blur-md rounded-xl border border-slate-200/70 dark:border-white/10 shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] gap-1 shrink-0 h-[34px] sm:h-[36px]">
+              <button
+                type="button"
+                onClick={() => {
+                  setFilterSource(prev => (prev === 'bot' ? 'all' : 'bot'));
+                  setCurrentPage(1);
+                }}
+                className={`h-full inline-flex items-center gap-1.5 px-2.5 sm:px-3 rounded-lg text-xs font-semibold tracking-tight transition-all duration-200 select-none active:scale-[0.97] cursor-pointer ${
+                  filterSource === 'bot'
+                    ? "bg-[#0071E3] text-white shadow-xs"
+                    : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-700/50"
+                }`}
+                title={filterSource === 'bot' ? 'Click to show all sources' : 'Filter by Bot reports'}
+              >
+                <Bot className={`w-3.5 h-3.5 ${filterSource === 'bot' ? 'text-white' : 'text-[#0071E3]'}`} strokeWidth={1.75} />
+                <span>Bot</span>
+              </button>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    setFilterSource(prev => (prev === 'scraper' ? 'all' : 'scraper'));
-                    setCurrentPage(1);
-                  }}
-                  className={`h-full inline-flex items-center gap-1.5 px-2.5 sm:px-3 rounded-lg text-xs font-semibold tracking-tight transition-all duration-150 select-none active:scale-[0.96] cursor-pointer ${
-                    filterSource === 'scraper'
-                      ? "bg-[#0071E3] text-white shadow-xs hover:bg-[#0077ED] hover:shadow-[0_2px_8px_rgba(0,113,227,0.3)] hover:-translate-y-0.5 active:translate-y-0"
-                      : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-white dark:hover:bg-slate-700 hover:shadow-2xs hover:-translate-y-0.5 active:translate-y-0"
-                  }`}
-                  title={filterSource === 'scraper' ? 'Click to show all sources' : 'Filter by Scraper reports'}
-                >
-                  <Globe className={`w-3.5 h-3.5 ${filterSource === 'scraper' ? 'text-white' : 'text-purple-500'}`} strokeWidth={1.75} />
-                  <span>Scraper</span>
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setFilterSource(prev => (prev === 'scraper' ? 'all' : 'scraper'));
+                  setCurrentPage(1);
+                }}
+                className={`h-full inline-flex items-center gap-1.5 px-2.5 sm:px-3 rounded-lg text-xs font-semibold tracking-tight transition-all duration-200 select-none active:scale-[0.97] cursor-pointer ${
+                  filterSource === 'scraper'
+                    ? "bg-[#0071E3] text-white shadow-xs"
+                    : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-700/50"
+                }`}
+                title={filterSource === 'scraper' ? 'Click to show all sources' : 'Filter by Scraper reports'}
+              >
+                <Globe className={`w-3.5 h-3.5 ${filterSource === 'scraper' ? 'text-white' : 'text-purple-500'}`} strokeWidth={1.75} />
+                <span>Scraper</span>
+              </button>
+            </div>
 
-              <div className="col-span-1 md:col-span-auto min-w-0 md:min-w-[110px] w-full md:w-auto">
-                <FilterDropdown
-                  labelPrefix="Barangay"
-                  value={filterBarangay}
-                  options={availableBarangayOptions}
-                  onChange={setFilterBarangay}
-                />
-              </div>
+            <div className="col-span-1 md:col-span-auto min-w-[130px]">
+              <FilterDropdown
+                labelPrefix="Barangay"
+                value={filterBarangay}
+                options={availableBarangayOptions}
+                onChange={setFilterBarangay}
+              />
+            </div>
 
-              <div className="col-span-1 md:col-span-auto min-w-0 md:min-w-[110px] w-full md:w-auto">
-                <FilterDropdown
-                  labelPrefix="Type"
-                  value={filterType}
-                  options={availableFilterTypes}
-                  onChange={setFilterType}
-                />
-              </div>
+            <div className="col-span-1 md:col-span-auto min-w-[120px]">
+              <FilterDropdown
+                labelPrefix="Type"
+                value={filterType}
+                options={availableFilterTypes}
+                onChange={setFilterType}
+              />
+            </div>
 
-              <div className="col-span-2 sm:col-span-1 md:col-span-auto min-w-0 md:min-w-[110px] w-full md:w-auto">
-                <FilterDropdown
-                  labelPrefix="Urgency"
-                  value={filterUrgency}
-                  options={['All Urgency', 'Critical', 'High', 'Moderate', 'Low']}
-                  onChange={setFilterUrgency}
-                />
-              </div>
-
+            <div className="col-span-1 md:col-span-auto min-w-[120px]">
+              <FilterDropdown
+                labelPrefix="Urgency"
+                value={filterUrgency}
+                options={['All Urgency', 'Critical', 'High', 'Moderate', 'Low']}
+                onChange={setFilterUrgency}
+              />
             </div>
 
             {/* Right Date Scope Container + Preserved Reset Option */}
-            <div className="col-span-2 md:col-span-auto flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-2.5 md:ml-auto w-full md:w-auto shrink-0">
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:inline-flex md:items-center gap-1.5 sm:gap-2 md:gap-2 md:p-1.5 md:bg-slate-100/70 md:dark:bg-white/[0.05] md:backdrop-blur-xl md:rounded-2xl md:border md:border-slate-200/70 md:dark:border-white/10 md:shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] md:px-2.5 w-full md:w-auto shrink-0">
-                <div className="flex items-center gap-1.5 flex-1 sm:flex-initial min-w-0 sm:min-w-[110px] w-full sm:w-auto">
-                  <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 whitespace-nowrap pl-0.5">
-                    From:
-                  </span>
-                  <DatePicker value={fromDate} onChange={setFromDate} placeholder="Select Date" />
-                </div>
-                <div className="flex items-center gap-1.5 flex-1 sm:flex-initial min-w-0 sm:min-w-[110px] w-full sm:w-auto">
-                  <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 whitespace-nowrap">
-                    To:
-                  </span>
-                  <DatePicker value={toDate} onChange={setToDate} placeholder="Select Date" />
-                </div>
+            <div className="col-span-2 md:col-span-auto flex flex-wrap sm:flex-nowrap items-center gap-2 md:ml-auto w-full md:w-auto">
+              <div className="flex items-center gap-1.5 flex-1 sm:flex-initial min-w-[125px]">
+                <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 whitespace-nowrap">
+                  From:
+                </span>
+                <DatePicker value={fromDate} onChange={setFromDate} placeholder="Select Date" />
+              </div>
+              <div className="flex items-center gap-1.5 flex-1 sm:flex-initial min-w-[125px]">
+                <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 whitespace-nowrap">
+                  To:
+                </span>
+                <DatePicker value={toDate} onChange={setToDate} placeholder="Select Date" />
               </div>
 
               {hasActiveFilters && (
                 <button
                   type="button"
                   onClick={resetFilters}
-                  className="inline-flex items-center justify-center w-[34px] h-[34px] sm:w-[36px] sm:h-[36px] text-[#0071E3] hover:text-blue-700 dark:text-sky-400 bg-blue-500/10 hover:bg-blue-500/15 rounded-xl transition-all duration-150 active:scale-[0.95] cursor-pointer shrink-0 ml-auto sm:ml-0 border border-blue-500/20"
+                  className="inline-flex items-center justify-center w-7 h-7 text-[#0071E3] hover:text-blue-700 dark:text-sky-400 bg-blue-500/10 hover:bg-blue-500/15 rounded-lg border border-blue-500/20 transition-all duration-150 active:scale-95 cursor-pointer shrink-0"
                   title="Reset all filters"
                   aria-label="Reset all filters"
                 >

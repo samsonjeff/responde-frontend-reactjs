@@ -9,7 +9,7 @@ interface FilterDropdownProps {
   labelPrefix?: string;
 }
 
-export default function FilterDropdown({ value, options, onChange, className, labelPrefix }: FilterDropdownProps) {
+export default function FilterDropdown({ value, options, onChange, className }: FilterDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [alignRight, setAlignRight] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -78,10 +78,9 @@ export default function FilterDropdown({ value, options, onChange, className, la
   };
 
   const isCustomValue = useMemo(() => {
-    if (!labelPrefix) return false;
     const lowerVal = (value || '').toLowerCase().trim();
     return !lowerVal.startsWith('all ') && lowerVal !== 'all';
-  }, [value, labelPrefix]);
+  }, [value]);
 
   return (
     <div className={`relative ${isOpen ? 'z-50' : 'z-10'}`}>
@@ -91,17 +90,11 @@ export default function FilterDropdown({ value, options, onChange, className, la
         type="button"
         aria-haspopup="listbox"
         aria-expanded={isOpen}
-        className={`group w-full md:w-auto px-3 py-2 sm:px-3 sm:py-2 text-xs font-medium rounded-xl flex items-center justify-between gap-2 cursor-pointer bg-white/90 dark:bg-slate-800/80 backdrop-blur-md border border-slate-200/80 dark:border-white/10 text-slate-700 dark:text-slate-200 hover:border-blue-400/80 dark:hover:border-blue-500/60 hover:bg-slate-50/90 dark:hover:bg-slate-700/80 hover:text-slate-900 dark:hover:text-white shadow-[0_1px_3px_rgba(0,0,0,0.03),inset_0_1px_1px_rgba(255,255,255,0.9)] dark:shadow-[0_1px_3px_rgba(0,0,0,0.3)] hover:shadow-[0_4px_14px_rgba(0,113,227,0.14)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 min-w-0 sm:min-w-[110px] md:min-w-[115px] ${className || ''}`}
+        title={value}
+        className={`group w-full md:w-auto px-3 py-1.5 sm:px-3 sm:py-2 text-xs font-medium rounded-xl flex items-center justify-between gap-2 cursor-pointer bg-white/90 dark:bg-slate-800/80 backdrop-blur-md border border-slate-200/80 dark:border-white/10 text-slate-700 dark:text-slate-200 hover:border-blue-400/80 dark:hover:border-blue-500/60 hover:bg-slate-50/90 dark:hover:bg-slate-700/80 hover:text-slate-900 dark:hover:text-white shadow-[0_1px_3px_rgba(0,0,0,0.03),inset_0_1px_1px_rgba(255,255,255,0.9)] dark:shadow-[0_1px_3px_rgba(0,0,0,0.3)] hover:shadow-[0_4px_14px_rgba(0,113,227,0.14)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 min-w-0 sm:min-w-32.5 ${className || ''}`}
       >
-        <span className="truncate flex items-center gap-1">
-          {isCustomValue && (
-            <span className="text-slate-400 dark:text-slate-500 font-normal shrink-0">
-              {labelPrefix}:
-            </span>
-          )}
-          <span className={isCustomValue ? "font-semibold text-slate-900 dark:text-white truncate" : "truncate"}>
-            {value}
-          </span>
+        <span className={isCustomValue ? "font-semibold text-slate-900 dark:text-white truncate" : "truncate"}>
+          {value}
         </span>
         <ChevronDown
           className={`w-3.5 h-3.5 text-slate-400 dark:text-slate-400 group-hover:text-[#0071E3] dark:group-hover:text-sky-400 transition-all duration-150 shrink-0 ${isOpen ? 'rotate-180' : ''}`}
