@@ -36,8 +36,8 @@ export function isReportIncomplete(report?: { barangay?: string | null; type?: s
   if (!report) return true;
   const b = (report.barangay || '').trim().toLowerCase();
   const t = (report.type || '').trim().toLowerCase();
-  const isUnknownBarangay = !b || b === 'unknown';
-  const isNoneType = !t || t === 'none' || t === 'unclassified';
+  const isUnknownBarangay = !b || b === 'unknown' || b === 'none' || b.includes('missing');
+  const isNoneType = !t || t === 'none' || t === 'unclassified' || t.includes('not mentioned') || t.includes('out of scope');
   return isUnknownBarangay || isNoneType;
 }
 
@@ -47,8 +47,8 @@ export function getIncompleteReasons(report?: { barangay?: string | null; type?:
   const reasons: string[] = [];
   const b = (report.barangay || '').trim().toLowerCase();
   const t = (report.type || '').trim().toLowerCase();
-  if (!b || b === 'unknown') reasons.push('Unknown Barangay');
-  if (!t || t === 'none' || t === 'unclassified') reasons.push('Out of Scope (None)');
+  if (!b || b === 'unknown' || b === 'none' || b.includes('missing')) reasons.push('Missing Barangay');
+  if (!t || t === 'none' || t === 'unclassified' || t.includes('not mentioned') || t.includes('out of scope')) reasons.push('Missing Type');
   return reasons;
 }
 

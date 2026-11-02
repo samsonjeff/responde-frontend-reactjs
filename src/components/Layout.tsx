@@ -261,6 +261,26 @@ export default function Layout() {
 
   const { incompleteCount } = useBotConversations();
 
+  const [globalSearch, setGlobalSearch] = useState('');
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const q = params.get('search') || params.get('q') || '';
+    if (location.pathname === '/incident-reports') {
+      setGlobalSearch(q);
+    }
+  }, [location.pathname, location.search]);
+
+  const handleGlobalSearchSubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const query = globalSearch.trim();
+    if (query) {
+      navigate(`/incident-reports?search=${encodeURIComponent(query)}`);
+    } else if (location.pathname === '/incident-reports') {
+      navigate('/incident-reports');
+    }
+  };
+
   // Scroll container ref for notification dropdown
   const listContainerRef = useRef<HTMLDivElement>(null);
   const [viewedNotifIds, setViewedNotifIds] = useState<Set<string>>(new Set());
@@ -708,7 +728,10 @@ export default function Layout() {
                 <Menu className="w-5 h-5" />
               </button>
               {/* Search — floating pill inside the floating header */}
-              <div className="hidden sm:flex items-center relative flex-1 max-w-sm">
+              <form
+                onSubmit={handleGlobalSearchSubmit}
+                className="hidden sm:flex items-center relative flex-1 max-w-sm"
+              >
                 <div className="
                 w-full flex items-center gap-2 px-3
                 bg-white/50 dark:bg-slate-800/60
@@ -721,14 +744,37 @@ export default function Layout() {
                 focus-within:shadow-[0_4px_16px_rgba(59,130,246,0.14),inset_0_1px_2px_rgba(255,255,255,0.8)]
                 dark:focus-within:shadow-[0_4px_16px_rgba(59,130,246,0.22)]
               ">
-                  <Search className="shrink-0 w-4 h-4 text-slate-400" />
+                  <button
+                    type="submit"
+                    className="shrink-0 p-0 text-slate-400 hover:text-[#0071E3] transition-colors cursor-pointer"
+                    aria-label="Search"
+                  >
+                    <Search className="w-4 h-4" />
+                  </button>
                   <input
                     type="text"
+                    value={globalSearch}
+                    onChange={(e) => setGlobalSearch(e.target.value)}
                     placeholder="Search incidents, logs, or barangays..."
                     className="w-full py-2 bg-transparent border-0 text-sm text-slate-700 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none"
                   />
+                  {globalSearch && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setGlobalSearch('');
+                        if (location.pathname === '/incident-reports') {
+                          navigate('/incident-reports');
+                        }
+                      }}
+                      className="shrink-0 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer"
+                      aria-label="Clear search"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                 </div>
-              </div>
+              </form>
             </div>
 
             <div className="flex items-center gap-4">

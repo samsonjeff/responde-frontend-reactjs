@@ -28,7 +28,7 @@ import { formatPhilippineTimeOnly, getPhilippineTimestampNow } from '../utils/da
 
 export type TabKey = 'under_review' | 'incomplete' | 'verified' | 'resolved' | 'rejected';
 
-export const BASE_INCIDENT_TYPES = ['Earthquake', 'Fire', 'Flood', 'General', 'Landslide'] as const;
+export const BASE_INCIDENT_TYPES = ['Earthquake', 'Fire', 'Flood', 'Landslide', 'None'] as const;
 
 const formatBubbleTime = (iso?: string) => formatPhilippineTimeOnly(iso);
 
@@ -259,8 +259,8 @@ function BarangaySelect({ value, onChange, options }: BarangaySelectProps) {
   }, [isOpen]);
 
   const allOptions = useMemo(() => {
-    const list = [...options];
-    if (value && value !== 'Unknown' && !list.includes(value)) {
+    const list = ['None (Missing / Unknown)', ...options];
+    if (value && value !== 'Unknown' && value !== 'None' && value !== 'None (Missing / Unknown)' && !list.includes(value)) {
       list.unshift(value);
     }
     return list;
@@ -272,7 +272,7 @@ function BarangaySelect({ value, onChange, options }: BarangaySelectProps) {
     return allOptions.filter(opt => opt.toLowerCase().includes(query));
   }, [allOptions, searchTerm]);
 
-  const isPlaceholder = !value || value === 'Unknown';
+  const isPlaceholder = !value || value.toLowerCase() === 'unknown' || value.toLowerCase() === 'none';
 
   return (
     <div ref={containerRef} className={`relative w-full ${isOpen ? 'z-40' : 'z-10'}`}>
@@ -284,7 +284,7 @@ function BarangaySelect({ value, onChange, options }: BarangaySelectProps) {
         aria-expanded={isOpen}
       >
         <span className={`truncate ${isPlaceholder ? 'text-slate-400 dark:text-slate-500 font-normal' : 'text-slate-800 dark:text-slate-100 font-medium'}`}>
-          {isPlaceholder ? (value === 'Unknown' ? 'Unknown (Select Barangay)' : 'Select Barangay') : value}
+          {isPlaceholder ? 'None (Missing / Unknown)' : value}
         </span>
         <ChevronDown
           className={`w-4 h-4 text-slate-400 dark:text-slate-500 transition-transform duration-200 shrink-0 ${isOpen ? 'rotate-180 text-[#0071E3]' : ''}`}
@@ -330,7 +330,9 @@ function BarangaySelect({ value, onChange, options }: BarangaySelectProps) {
                 </div>
               ) : (
                 filteredOptions.map(opt => {
-                  const isSelected = value === opt;
+                  const isSelected = opt === 'None (Missing / Unknown)'
+                    ? (!value || value.toLowerCase() === 'none' || value.toLowerCase() === 'unknown')
+                    : value === opt;
                   return (
                     <button
                       key={opt}
@@ -338,7 +340,7 @@ function BarangaySelect({ value, onChange, options }: BarangaySelectProps) {
                       role="option"
                       aria-selected={isSelected}
                       onClick={() => {
-                        onChange(opt);
+                        onChange(opt === 'None (Missing / Unknown)' ? 'None' : opt);
                         setIsOpen(false);
                         setSearchTerm('');
                       }}
@@ -392,6 +394,14 @@ export default function IncidentReports() {
   const [searchParams] = useSearchParams();
   const urlBarangay = searchParams.get('barangay');
   const urlFocus = searchParams.get('focus');
+  const urlSearch = searchParams.get('search') || searchParams.get('q') || '';
+  const [searchQuery, setSearchQuery] = useState(() => urlSearch);
+
+  useEffect(() => {
+    if (urlSearch !== searchQuery) {
+      setSearchQuery(urlSearch);
+    }
+  }, [urlSearch]);
 
   // Filters
   const [filterSource, setFilterSource] = useState<'all' | 'bot' | 'scraper'>('all');
@@ -404,7 +414,7 @@ export default function IncidentReports() {
     if (urlFocus && reports.length > 0) {
       const match = reports.find((r) => r.id === urlFocus);
       if (match) {
-        setReviewingReport(match);
+        openReview(match);
         if (match.status === 'verified' || match.status === 'resolved' || match.status === 'rejected') {
           setActiveTab(match.status);
         } else {
@@ -415,6 +425,7 @@ export default function IncidentReports() {
   }, [urlFocus, reports]);
 
   const resetFilters = () => {
+    setSearchQuery('');
     setFilterSource('all');
     setFilterBarangay('All Barangays');
     setFilterType('All Types');
@@ -425,6 +436,7 @@ export default function IncidentReports() {
   };
 
   const hasActiveFilters =
+    searchQuery.trim() !== '' ||
     filterSource !== 'all' ||
     filterBarangay !== 'All Barangays' ||
     filterType !== 'All Types' ||
@@ -433,6 +445,7 @@ export default function IncidentReports() {
     Boolean(toDate);
 
   const activeFilterCount =
+    (searchQuery.trim() !== '' ? 1 : 0) +
     (filterSource !== 'all' ? 1 : 0) +
     (filterBarangay !== 'All Barangays' ? 1 : 0) +
     (filterType !== 'All Types' ? 1 : 0) +
@@ -528,21 +541,25 @@ export default function IncidentReports() {
     const set = new Set<string>(BASE_INCIDENT_TYPES);
     reports.forEach(r => {
       const norm = (r.type || '').trim().toLowerCase();
-      if (r.type && norm && r.type !== 'All Types' && norm !== 'unclassified' && norm !== 'none') {
+      if (r.type && norm && r.type !== 'All Types' && norm !== 'unclassified') {
         set.add(r.type);
       }
     });
     const editNorm = (editForm.type || '').trim().toLowerCase();
-    if (editForm.type && editNorm && editForm.type !== 'All Types' && editNorm !== 'unclassified' && editNorm !== 'none') {
+    if (editForm.type && editNorm && editForm.type !== 'All Types' && editNorm !== 'unclassified') {
       set.add(editForm.type);
     }
-    return Array.from(set).filter(t => t.toLowerCase() !== 'unclassified' && t.toLowerCase() !== 'none').sort();
+    return Array.from(set).filter(t => t.toLowerCase() !== 'unclassified').sort((a, b) => {
+      if (a === 'None') return -1;
+      if (b === 'None') return 1;
+      return a.localeCompare(b);
+    });
   }, [reports, editForm.type]);
 
   const openReview = (report: Report) => {
     setReviewingReport(report);
 
-    const initialType = (!report.type || report.type.toLowerCase() === 'unclassified' || report.type.toLowerCase() === 'none') ? 'General' : report.type;
+    const initialType = (!report.type || report.type.toLowerCase() === 'unclassified') ? 'None' : report.type;
 
     setEditForm({
       ...report,
@@ -615,6 +632,28 @@ export default function IncidentReports() {
       await contextUpdateReport(targetId, updated);
     } catch (err) {
       console.error('Failed to save draft:', err);
+    }
+  };
+
+  const handleSaveIncomplete = async () => {
+    if (!reviewingReport || !editForm) return;
+    const targetId = reviewingReport.id;
+    const reasonsStr = modalIncompleteReasons.length > 0 ? ` (${modalIncompleteReasons.join(', ')})` : '';
+    const actionDesc = editForm.action || `Flagged as incomplete${reasonsStr}`;
+    const updated = {
+      ...reviewingReport,
+      ...editForm,
+      status: 'under_review',
+      action: actionDesc,
+      actionTaken: actionDesc,
+    } as Report;
+    showToast(`Report ${formatReportCode(targetId, reviewingReport.source)} saved to Incomplete queue`, 'info');
+    closeReview();
+
+    try {
+      await contextUpdateReport(targetId, updated);
+    } catch (err) {
+      console.error('Failed to save incomplete report:', err);
     }
   };
 
@@ -786,6 +825,29 @@ export default function IncidentReports() {
 
   const filteredReports = useMemo(() => {
     return reports.filter(r => {
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase().trim();
+        const code = formatReportCode(r.id, r.source).toLowerCase();
+        const id = (r.id || '').toLowerCase();
+        const brgy = (r.barangay || '').toLowerCase();
+        const type = (r.type || '').toLowerCase();
+        const reporter = (r.reporter || '').toLowerCase();
+        const contact = (r.contact || '').toLowerCase();
+        const text = (r.originalText || r.description || '').toLowerCase();
+        const action = (r.action || '').toLowerCase();
+        if (
+          !code.includes(q) &&
+          !id.includes(q) &&
+          !brgy.includes(q) &&
+          !type.includes(q) &&
+          !reporter.includes(q) &&
+          !contact.includes(q) &&
+          !text.includes(q) &&
+          !action.includes(q)
+        ) {
+          return false;
+        }
+      }
       if (activeTab === 'under_review') {
         const isUnderReviewOrPending = r.status === 'under_review' || r.status === 'pending';
         if (!isUnderReviewOrPending || isReportIncomplete(r)) return false;
@@ -810,7 +872,14 @@ export default function IncidentReports() {
           return false;
         }
       }
-      if (filterUrgency !== 'All Urgency' && r.urgency?.toLowerCase() !== filterUrgency.toLowerCase()) return false;
+      if (filterUrgency !== 'All Urgency') {
+        const u = (r.urgency || '').toLowerCase();
+        const fu = filterUrgency.toLowerCase();
+        if (fu === 'critical' && u !== 'critical') return false;
+        if (fu === 'high' && u !== 'high') return false;
+        if (fu === 'moderate' && u !== 'moderate' && u !== 'mod') return false;
+        if (fu === 'low' && u !== 'low') return false;
+      }
       if (fromDate) {
         const repDate = getReportDateString(r);
         if (repDate && repDate < fromDate) return false;
@@ -821,7 +890,7 @@ export default function IncidentReports() {
       }
       return true;
     });
-  }, [reports, activeTab, filterSource, filterBarangay, filterType, filterUrgency, fromDate, toDate]);
+  }, [reports, activeTab, filterSource, filterBarangay, filterType, filterUrgency, fromDate, toDate, searchQuery]);
 
   const totalPages = Math.ceil(filteredReports.length / itemsPerPage);
   const paginatedReports = filteredReports.slice(
@@ -830,22 +899,30 @@ export default function IncidentReports() {
   );
 
   const getUrgencyBadge = (urgency: string) => {
-    switch (urgency) {
-      case 'High':
+    switch ((urgency || '').toLowerCase()) {
+      case 'critical':
+        return (
+          <span className="inline-flex items-center justify-center gap-1.5 w-[82px] py-0.5 rounded-full text-xs font-semibold bg-rose-600/15 text-rose-700 dark:text-rose-400 border border-rose-600/30">
+            <span className="w-1.5 h-1.5 rounded-full bg-rose-600 shrink-0 animate-pulse" />
+            <span>Critical</span>
+          </span>
+        );
+      case 'high':
         return (
           <span className="inline-flex items-center justify-center gap-1.5 w-[82px] py-0.5 rounded-full text-xs font-semibold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
             <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
             <span>High</span>
           </span>
         );
-      case 'Moderate':
+      case 'moderate':
+      case 'mod':
         return (
           <span className="inline-flex items-center justify-center gap-1.5 w-[82px] py-0.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
             <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
             <span>Moderate</span>
           </span>
         );
-      case 'Low':
+      case 'low':
       default:
         return (
           <span className="inline-flex items-center justify-center gap-1.5 w-[82px] py-0.5 rounded-full text-xs font-semibold bg-green-500/15 text-green-700 dark:text-green-300 border border-green-500/30">
@@ -1122,9 +1199,37 @@ export default function IncidentReports() {
               <div className="col-span-2 sm:col-span-1 md:col-span-auto min-w-0 md:min-w-[120px] w-full md:w-auto">
                 <FilterDropdown
                   value={filterUrgency}
-                  options={['All Urgency', 'High', 'Moderate', 'Low']}
+                  options={['All Urgency', 'Critical', 'High', 'Moderate', 'Low']}
                   onChange={setFilterUrgency}
                 />
+              </div>
+
+              {/* Instant Search Bar */}
+              <div className="col-span-2 md:col-span-auto relative flex items-center min-w-0 md:min-w-[200px] flex-1">
+                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 pointer-events-none" strokeWidth={1.75} />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  placeholder="Search code, resident, keyword..."
+                  className="w-full pl-8.5 pr-7 py-2 text-xs bg-white/70 dark:bg-slate-800/70 border border-slate-200/80 dark:border-white/10 rounded-xl text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-[#0071E3] transition-all shadow-2xs"
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearchQuery('');
+                      setCurrentPage(1);
+                    }}
+                    className="absolute right-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                    aria-label="Clear filter search"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
               </div>
             </div>
 
@@ -1202,10 +1307,153 @@ export default function IncidentReports() {
         </StaggerItem>
 
         {/* ── Table (Soft UI Evolution Data Table) ── */}
-        <StaggerItem className="flex-1 min-h-0 flex flex-col">
-          <div className="relative z-10 bg-white dark:bg-[#111827] rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_1px_3px_rgba(15,23,42,0.04),0_8px_24px_rgba(15,23,42,0.03)] overflow-hidden flex flex-col flex-1 min-h-0">
+        <StaggerItem className="w-full flex-1 lg:min-h-0 flex flex-col">
+          <div className="relative z-10 bg-white dark:bg-[#111827] rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_1px_3px_rgba(15,23,42,0.04),0_8px_24px_rgba(15,23,42,0.03)] overflow-hidden flex flex-col flex-1 lg:min-h-0">
+        {/* Mobile Incident Cards (< sm) */}
+        <div className="sm:hidden divide-y divide-slate-100 dark:divide-white/5 overflow-y-auto flex-1">
+          {paginatedReports.length === 0 ? (
+            <div className="py-16 px-4 text-center text-slate-400 dark:text-slate-500">
+              <span className="text-sm font-medium">
+                {activeTab === 'incomplete'
+                  ? 'No incomplete reports. All reports have complete information!'
+                  : 'No reports found.'}
+              </span>
+            </div>
+          ) : (
+            paginatedReports.map((report) => (
+              <div
+                key={report.id}
+                className={`p-3.5 space-y-3 transition-colors ${
+                  selectedIds.includes(report.id)
+                    ? 'bg-blue-50/40 dark:bg-blue-900/15'
+                    : report.status === 'pending'
+                      ? 'bg-blue-50/20 dark:bg-blue-900/5'
+                      : ''
+                }`}
+              >
+                {/* Top Row: Select Checkbox, ID Code, Source Pill, Time */}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.includes(report.id)}
+                      onChange={() => toggleSelect(report.id)}
+                      className="rounded-md border-slate-300 dark:border-slate-600 text-[#0071E3] focus:ring-0 w-4 h-4 cursor-pointer"
+                    />
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      {report.status === 'pending' && (
+                        <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0 ring-4 ring-blue-500/20 animate-pulse" title="Pending" />
+                      )}
+                      <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200/50 dark:border-white/5 truncate">
+                        {formatReportCode(report.id, report.source)}
+                      </span>
+                    </div>
+                    {(report.source || '').trim().toLowerCase() === 'scraper' ? (
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-semibold bg-purple-500/10 dark:bg-purple-500/20 text-purple-600 dark:text-purple-400 border border-purple-500/25 shrink-0">
+                        <Globe className="w-2.5 h-2.5" />
+                        <span>Scraper</span>
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-semibold bg-blue-500/10 dark:bg-blue-500/20 text-[#0071E3] dark:text-sky-400 border border-blue-500/20 shrink-0">
+                        <Bot className="w-2.5 h-2.5" />
+                        <span>Bot</span>
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-slate-400 dark:text-slate-500 text-[11px] font-mono tabular-nums shrink-0">
+                    {report.time}
+                  </span>
+                </div>
+
+                {/* Middle: Barangay & Type */}
+                <div className="flex items-center justify-between gap-2 text-xs">
+                  <div className="min-w-0 flex items-center gap-1.5 font-medium text-slate-700 dark:text-slate-200">
+                    {(!report.barangay || report.barangay.toLowerCase() === 'unknown' || report.barangay.toLowerCase() === 'none') ? (
+                      <span className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-400 font-semibold">
+                        <AlertTriangle className="w-3.5 h-3.5" /> Missing Barangay
+                      </span>
+                    ) : (
+                      <span className="truncate">{report.barangay}</span>
+                    )}
+                  </div>
+                  <div className="shrink-0">{getTypeBadge(report.type)}</div>
+                </div>
+
+                {/* Bottom Row: Urgency, Status, and Actions */}
+                <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-100/80 dark:border-white/5">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {getUrgencyBadge(report.urgency)}
+                    {getStatusBadge(report.status, isReportIncomplete(report))}
+                  </div>
+
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {(report.status === 'pending' || report.status === 'under_review') && (
+                      <button
+                        type="button"
+                        onClick={() => openReview(report)}
+                        className={`px-3 py-1.5 min-h-[36px] text-xs font-semibold rounded-xl transition-all flex items-center gap-1 active:scale-[0.96] shadow-2xs cursor-pointer ${
+                          isReportIncomplete(report)
+                            ? 'text-amber-700 dark:text-amber-300 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30'
+                            : 'text-amber-700 dark:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20'
+                        }`}
+                      >
+                        <ShieldCheck className="w-3.5 h-3.5" strokeWidth={1.75} />
+                        <span>{isReportIncomplete(report) ? 'Complete' : 'Review'}</span>
+                      </button>
+                    )}
+
+                    {report.status === 'verified' && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => openReview(report)}
+                          className="px-2.5 py-1.5 min-h-[36px] text-xs font-semibold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200/60 dark:border-white/10 rounded-xl transition-all flex items-center gap-1 active:scale-[0.96] shadow-2xs cursor-pointer"
+                        >
+                          <Eye className="w-3.5 h-3.5" strokeWidth={1.75} />
+                          <span>View</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/geospatial?focus=${report.id}`)}
+                          className="px-2.5 py-1.5 min-h-[36px] text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 rounded-xl transition-all flex items-center gap-1 active:scale-[0.96] shadow-2xs cursor-pointer"
+                        >
+                          <MapPinned className="w-3.5 h-3.5" strokeWidth={1.75} />
+                          <span>Map</span>
+                        </button>
+                      </>
+                    )}
+
+                    {(report.status === 'resolved' || report.status === 'rejected') && (
+                      <button
+                        type="button"
+                        onClick={() => openReview(report)}
+                        className="px-2.5 py-1.5 min-h-[36px] text-xs font-semibold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200/60 dark:border-white/10 rounded-xl transition-all flex items-center gap-1 active:scale-[0.96] shadow-2xs cursor-pointer"
+                      >
+                        <Eye className="w-3.5 h-3.5" strokeWidth={1.75} />
+                        <span>View</span>
+                      </button>
+                    )}
+
+                    {report.status === 'rejected' && (
+                      <button
+                        type="button"
+                        onClick={() => handleRestore(report.id)}
+                        className="px-2.5 py-1.5 min-h-[36px] text-xs font-semibold text-[#0071E3] dark:text-sky-300 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 rounded-xl transition-all flex items-center gap-1 active:scale-[0.96] shadow-2xs cursor-pointer"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5" strokeWidth={1.75} />
+                        <span>Restore</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Desktop/Tablet Table (>= sm) */}
         <div
-          className="overflow-x-auto overflow-y-auto w-full flex-1 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700"
+          className="hidden sm:block overflow-x-auto overflow-y-auto w-full flex-1 min-h-0 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700"
           style={{
             maskImage: 'linear-gradient(to bottom, black calc(100% - 36px), transparent 100%)',
             WebkitMaskImage: 'linear-gradient(to bottom, black calc(100% - 36px), transparent 100%)',
@@ -1421,7 +1669,7 @@ export default function IncidentReports() {
             animate="visible"
             exit="exit"
             transition={{ duration: 0.28, ease: 'easeOut' }}
-            className="fixed inset-0 z-[200] flex items-center justify-center p-3 sm:p-6 bg-slate-900/50 dark:bg-black/70 backdrop-blur-md"
+            className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-0 sm:p-6 bg-slate-900/50 dark:bg-black/70 backdrop-blur-md"
             onClick={closeReview}
           >
             <motion.div
@@ -1430,7 +1678,7 @@ export default function IncidentReports() {
               animate="visible"
               exit="exit"
               transition={MODAL_TRANSITION}
-              className="bg-white dark:bg-[#111827] rounded-2xl sm:rounded-3xl border border-slate-200/80 dark:border-white/10 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.3)] w-full max-w-4xl max-h-[92vh] sm:max-h-[88vh] overflow-hidden flex flex-col transform-gpu will-change-transform"
+              className="bg-white dark:bg-[#111827] rounded-t-3xl sm:rounded-3xl border border-slate-200/80 dark:border-white/10 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.3)] w-full max-w-4xl max-h-[92vh] sm:max-h-[88vh] overflow-hidden flex flex-col transform-gpu will-change-transform"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Modal Header */}
@@ -1646,15 +1894,14 @@ export default function IncidentReports() {
                         <div>
                           <label className="block text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400 mb-1">Type</label>
                           <select
-                            value={editForm.type || ''}
+                            value={editForm.type || 'None'}
                             onChange={e => setEditForm(prev => ({ ...prev, type: e.target.value }))}
                             className="w-full px-3.5 py-2.5 text-sm bg-slate-50 dark:bg-slate-800/70 border border-slate-200/80 dark:border-white/10 rounded-xl text-slate-800 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-blue-500/20 focus:border-[#0071E3] outline-none transition-all cursor-pointer shadow-2xs"
                           >
-                            {!editForm.type && (
-                              <option value="" disabled>Select Type</option>
-                            )}
                             {availableIncidentTypes.map(t => (
-                              <option key={t} value={t}>{t}</option>
+                              <option key={t} value={t}>
+                                {t === 'None' ? 'None (Incident Not Mentioned / Out of Scope)' : t}
+                              </option>
                             ))}
                           </select>
                         </div>
@@ -1662,11 +1909,11 @@ export default function IncidentReports() {
                         <div>
                           <label className="block text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400 mb-1">Urgency</label>
                           <select
-                            value={editForm.urgency || ''}
+                            value={editForm.urgency || 'Low'}
                             onChange={e => setEditForm(prev => ({ ...prev, urgency: e.target.value }))}
                             className="w-full px-3.5 py-2.5 text-sm bg-slate-50 dark:bg-slate-800/70 border border-slate-200/80 dark:border-white/10 rounded-xl text-slate-800 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-blue-500/20 focus:border-[#0071E3] outline-none transition-all cursor-pointer shadow-2xs"
                           >
-                            {['High', 'Moderate', 'Low'].map(u => (
+                            {['Critical', 'High', 'Moderate', 'Low'].map(u => (
                               <option key={u} value={u}>{u}</option>
                             ))}
                           </select>
@@ -1853,17 +2100,27 @@ export default function IncidentReports() {
                 <div className="flex items-center justify-between sm:justify-start gap-2 flex-wrap">
                   {(reviewingReport.status === 'pending' || reviewingReport.status === 'under_review') && (
                     <>
-                      <button
-                        type="button"
-                        onClick={handleSaveDraft}
-                        className="flex-1 sm:flex-none justify-center px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-white/10 rounded-xl transition-all active:scale-[0.97] flex items-center cursor-pointer"
-                      >
-                        Save Draft
-                      </button>
+                      {isModalReportIncomplete ? (
+                        <button
+                          type="button"
+                          onClick={handleSaveIncomplete}
+                          className="flex-1 sm:flex-none justify-center px-4 py-2.5 min-h-[42px] text-xs font-semibold text-amber-700 dark:text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 rounded-xl transition-all flex items-center gap-1.5 active:scale-[0.97] cursor-pointer"
+                        >
+                          <AlertTriangle className="w-3.5 h-3.5" strokeWidth={1.75} /> Save to Incomplete
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={handleSaveDraft}
+                          className="flex-1 sm:flex-none justify-center px-4 py-2.5 min-h-[42px] text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-white/10 rounded-xl transition-all active:scale-[0.97] flex items-center cursor-pointer"
+                        >
+                          Save Draft
+                        </button>
+                      )}
                       <button
                         type="button"
                         onClick={() => setShowRejectPanel(true)}
-                        className="flex-1 sm:flex-none justify-center px-4 py-2 text-xs font-semibold text-rose-700 dark:text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 rounded-xl transition-all flex items-center gap-1.5 active:scale-[0.97] cursor-pointer"
+                        className="flex-1 sm:flex-none justify-center px-4 py-2.5 min-h-[42px] text-xs font-semibold text-rose-700 dark:text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 rounded-xl transition-all flex items-center gap-1.5 active:scale-[0.97] cursor-pointer"
                       >
                         <AlertOctagon className="w-3.5 h-3.5" strokeWidth={1.75} /> Reject
                       </button>
@@ -1909,7 +2166,7 @@ export default function IncidentReports() {
                   <button
                     type="button"
                     onClick={closeReview}
-                    className="flex-1 sm:flex-none justify-center px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-white/10 rounded-xl transition-all active:scale-[0.97] flex items-center cursor-pointer"
+                    className="flex-1 sm:flex-none justify-center px-4 py-2.5 min-h-[42px] text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-white/10 rounded-xl transition-all active:scale-[0.97] flex items-center cursor-pointer"
                   >
                     Close
                   </button>
@@ -1926,7 +2183,7 @@ export default function IncidentReports() {
                             ? 'Complete the checklist first'
                             : 'Verify and plot on map'
                       }
-                      className="flex-1 sm:flex-none justify-center px-5 py-2 text-xs font-semibold text-white bg-[#0071E3] hover:bg-[#0077ED] disabled:opacity-40 disabled:cursor-not-allowed rounded-xl transition-all shadow-[0_2px_8px_rgba(0,113,227,0.25)] flex items-center gap-1.5 active:scale-[0.97] cursor-pointer"
+                      className="flex-1 sm:flex-none justify-center px-5 py-2.5 min-h-[42px] text-xs font-semibold text-white bg-[#0071E3] hover:bg-[#0077ED] disabled:opacity-40 disabled:cursor-not-allowed rounded-xl transition-all shadow-[0_2px_8px_rgba(0,113,227,0.25)] flex items-center gap-1.5 active:scale-[0.97] cursor-pointer"
                     >
                       <Send className="w-3.5 h-3.5" strokeWidth={1.75} /> Verify & Plot
                     </button>
