@@ -419,24 +419,67 @@ export default function IncidentReports() {
   const [filterUrgency, setFilterUrgency] = useState('All Urgency');
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
+  const handledFocusRef = useRef<string | null>(null);
+
   useEffect(() => {
-    if (urlFocus && reports.length > 0) {
-      const match = reports.find((r) => r.id === urlFocus);
-      if (match) {
-        openReview(match);
-        if (match.status === 'verified' || match.status === 'resolved' || match.status === 'rejected') {
-          setActiveTab(match.status);
-        } else {
-          setActiveTab(isReportIncomplete(match) ? 'incomplete' : 'under_review');
+    if (!urlFocus) {
+      handledFocusRef.current = null;
+      return;
+    }
+    if (reports.length === 0) return;
+    if (handledFocusRef.current === urlFocus) return;
+
+    const match = reports.find((r) => {
+      if (!r || !r.id) return false;
+      const target = String(urlFocus).trim().toLowerCase();
+      const rid = String(r.id).trim().toLowerCase();
+      if (rid === target) return true;
+
+      const rCode = formatReportCode(r.id, r.source).toLowerCase();
+      if (rCode === target || rCode.replace('#', '') === target) return true;
+
+      const numTarget = target.replace(/\D/g, '');
+      const numRid = rid.replace(/\D/g, '');
+      if (numTarget !== '' && numTarget === numRid) {
+        if (
+          (target.includes('bot') || target.includes('conv')) &&
+          (rid.includes('bot') || rid.includes('conv') || r.source === 'Bot')
+        ) {
+          return true;
         }
-        // Clean focus query param so page reloads don't repeatedly open the modal
-        const nextParams = new URLSearchParams(searchParams);
-        nextParams.delete('focus');
-        const nextQuery = nextParams.toString();
-        navigate(nextQuery ? `?${nextQuery}` : location.pathname, { replace: true });
+        if (target.includes('fb') && (rid.includes('fb') || r.source === 'Scraper')) {
+          return true;
+        }
+        if (!isNaN(Number(target)) && !isNaN(Number(rid))) {
+          return true;
+        }
+      }
+      return false;
+    });
+
+    if (match) {
+      handledFocusRef.current = urlFocus;
+      openReview(match);
+      if (match.status === 'verified' || match.status === 'resolved' || match.status === 'rejected') {
+        setActiveTab(match.status);
+      } else {
+        setActiveTab(isReportIncomplete(match) ? 'incomplete' : 'under_review');
+      }
+
+      // Quietly strip focus param from browser address bar without triggering React Router re-render
+      // This prevents the incomplete report modal from popping up again if the officer manually refreshes the page
+      try {
+        const currentUrl = new URL(window.location.href);
+        if (currentUrl.searchParams.has('focus')) {
+          currentUrl.searchParams.delete('focus');
+          const cleanPath = currentUrl.pathname + (currentUrl.search ? currentUrl.search : '');
+          window.history.replaceState(null, '', cleanPath);
+        }
+      } catch {
+        // ignore fallback
       }
     }
-  }, [urlFocus, reports, searchParams, navigate, location.pathname]);
+  }, [urlFocus, reports]);
 
   const resetFilters = () => {
     setSearchQuery('');
@@ -624,11 +667,17 @@ export default function IncidentReports() {
     setShowIncompletePanel(false);
     setIncompleteReasonChoice('both');
     setCoordError(false);
-    if (searchParams.get('focus')) {
-      const nextParams = new URLSearchParams(searchParams);
-      nextParams.delete('focus');
-      const nextQuery = nextParams.toString();
-      navigate(nextQuery ? `?${nextQuery}` : location.pathname, { replace: true });
+    handledFocusRef.current = null;
+
+    try {
+      const currentUrl = new URL(window.location.href);
+      if (currentUrl.searchParams.has('focus')) {
+        currentUrl.searchParams.delete('focus');
+        const cleanPath = currentUrl.pathname + (currentUrl.search ? currentUrl.search : '');
+        window.history.replaceState(null, '', cleanPath);
+      }
+    } catch {
+      // ignore
     }
   };
 
