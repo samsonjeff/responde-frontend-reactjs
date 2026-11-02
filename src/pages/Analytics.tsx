@@ -1434,102 +1434,170 @@ export default function Analytics() {
             </div>
           </motion.div>
 
-          {/* ── 6. HIGH-RISK BARANGAYS RANKING (Calm, Non-Glaring Priority Table) ── */}
+          {/* ── 6. HIGH-RISK BARANGAYS RANKING (Minimalist iOS Priority Table) ── */}
           <motion.div variants={itemVariants} className="relative z-10">
             <SoftCard className="p-5 sm:p-6 h-full flex flex-col">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
-                <SectionHeader
-                  icon={AlertTriangle}
-                  title="High-Risk Barangays"
-                  description="Priority ranking determined by cumulative volume & urgency score"
-                  iconColor="#EF4444"
-                />
-              </div>
+              <SectionHeader
+                icon={AlertTriangle}
+                title="High-Risk Barangays"
+                description="Priority ranking determined by cumulative volume & urgency score"
+                iconColor="#EF4444"
+                badge={
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 shadow-2xs tabular-nums">
+                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
+                    <span>Top {riskData.length} Priority Zones</span>
+                  </span>
+                }
+              />
 
-              <div className="overflow-x-auto rounded-2xl border border-slate-200/80 dark:border-white/10 bg-white/70 dark:bg-white/[0.02] backdrop-blur-md shadow-xs">
-                <table className="w-full min-w-[500px] text-xs sm:text-sm text-left border-collapse">
-                  <thead className="bg-slate-50/80 dark:bg-white/[0.04] border-b border-slate-200/70 dark:border-white/5">
-                    <tr>
-                      <th className="py-3 px-4 sm:px-5 text-[11px] uppercase tracking-wider font-bold text-slate-500 dark:text-slate-400 whitespace-nowrap">
-                        Barangay
-                      </th>
-                      <th className="py-3 px-3 sm:px-4 text-center text-[11px] uppercase tracking-wider font-bold text-slate-500 dark:text-slate-400 whitespace-nowrap">
-                        Reports
-                      </th>
-                      <th className="py-3 px-3 sm:px-4 text-center text-[11px] uppercase tracking-wider font-bold text-slate-500 dark:text-slate-400 whitespace-nowrap">
-                        High Urgency
-                      </th>
-                      <th className="py-3 px-3 sm:px-4 text-center text-[11px] uppercase tracking-wider font-bold text-slate-500 dark:text-slate-400 whitespace-nowrap">
-                        Priority
-                      </th>
-                      <th className="py-3 px-4 sm:px-5 text-[11px] uppercase tracking-wider font-bold text-slate-500 dark:text-slate-400 whitespace-nowrap">
-                        Dominant Need
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100/80 dark:divide-white/5">
-                    {riskData.length > 0 ? (
-                      riskData.map((item) => {
-                        const isCritical = item.priority === 'Critical';
-                        const isHigh = item.priority === 'High';
-                        const isModerate = item.priority === 'Moderate';
+              {(() => {
+                const maxRiskIncidents = Math.max(...riskData.map((r) => r.incidents), 1);
 
-                        return (
-                          <tr
-                            key={item.barangay}
-                            className="border-b border-slate-100/80 dark:border-white/5 last:border-b-0 hover:bg-slate-50/70 dark:hover:bg-white/[0.025] transition-colors duration-150"
-                          >
-                            <td className="py-3.5 px-4 sm:px-5 font-semibold text-slate-800 dark:text-slate-200 whitespace-nowrap">
-                              {item.barangay}
-                            </td>
-                            <td className="py-3.5 px-3 sm:px-4 text-center text-slate-600 dark:text-slate-300 font-mono tabular-nums whitespace-nowrap">
-                              {item.incidents}
-                            </td>
-                            <td className="py-3.5 px-3 sm:px-4 text-center font-bold text-rose-600 dark:text-rose-400 font-mono tabular-nums whitespace-nowrap">
-                              {item.high}
-                            </td>
-                            <td className="py-3.5 px-3 sm:px-4 text-center whitespace-nowrap">
-                              <span
-                                className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border shadow-2xs ${
-                                  isCritical
-                                    ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/25'
-                                    : isHigh
-                                    ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/25'
-                                    : isModerate
-                                    ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/25'
-                                    : 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/25'
-                                }`}
+                return (
+                  <div className="overflow-x-auto rounded-2xl border border-slate-200/80 dark:border-white/10 bg-white/70 dark:bg-white/[0.02] backdrop-blur-md shadow-xs">
+                    <table className="w-full min-w-[650px] text-xs sm:text-sm text-left border-collapse">
+                      <thead className="bg-slate-50/80 dark:bg-white/[0.04] border-b border-slate-200/70 dark:border-white/5">
+                        <tr>
+                          <th className="py-3 px-4 sm:px-5 text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                            Barangay &amp; Sector
+                          </th>
+                          <th className="py-3 px-4 text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                            Incident Density
+                          </th>
+                          <th className="py-3 px-4 text-center text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                            High Urgency
+                          </th>
+                          <th className="py-3 px-4 text-center text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                            Risk Priority
+                          </th>
+                          <th className="py-3 px-4 sm:px-5 text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                            Dominant Need
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100/80 dark:divide-white/5">
+                        {riskData.length > 0 ? (
+                          riskData.map((item, index) => {
+                            const isCritical = item.priority === 'Critical';
+                            const isHigh = item.priority === 'High';
+                            const isModerate = item.priority === 'Moderate';
+                            const need = getDominantNeedMeta(item.dominantType);
+                            const densityPct = Math.round((item.incidents / maxRiskIncidents) * 100);
+
+                            return (
+                              <tr
+                                key={item.barangay}
+                                className="border-b border-slate-100/80 dark:border-white/5 last:border-b-0 hover:bg-slate-50/70 dark:hover:bg-white/[0.025] transition-colors duration-150 group"
                               >
-                                <span
-                                  className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                                    isCritical
-                                      ? 'bg-purple-500 shadow-[0_0_6px_rgba(168,85,247,0.8)]'
-                                      : isHigh
-                                      ? 'bg-rose-500 shadow-[0_0_6px_rgba(244,63,94,0.8)]'
-                                      : isModerate
-                                      ? 'bg-amber-500 shadow-[0_0_6px_rgba(245,158,11,0.8)]'
-                                      : 'bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.8)]'
-                                  }`}
-                                />
-                                <span>{item.priority}</span>
-                              </span>
-                            </td>
-                            <td className="py-3.5 px-4 sm:px-5 text-slate-600 dark:text-slate-400 font-medium whitespace-nowrap">
-                              {item.dominantType}
+                                {/* 1. Ranked Barangay & Sector */}
+                                <td className="py-3.5 px-4 sm:px-5 whitespace-nowrap">
+                                  <div className="flex items-center gap-3">
+                                    <span
+                                      className={`w-6 h-6 rounded-lg flex items-center justify-center font-bold text-[11px] tabular-nums shrink-0 shadow-2xs border ${
+                                        index === 0
+                                          ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/35 ring-1 ring-amber-500/20'
+                                          : index === 1
+                                          ? 'bg-slate-200/90 dark:bg-slate-700 text-slate-800 dark:text-slate-200 border-slate-300/60 dark:border-white/10'
+                                          : index === 2
+                                          ? 'bg-orange-500/15 text-orange-800 dark:text-orange-300 border-orange-500/30'
+                                          : 'bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-slate-400 border-slate-200/60 dark:border-white/5'
+                                      }`}
+                                    >
+                                      {index + 1}
+                                    </span>
+                                    <div className="flex items-center gap-1.5 min-w-0">
+                                      <MapPin className="w-3.5 h-3.5 text-[#0071E3] dark:text-sky-400 shrink-0" strokeWidth={1.75} />
+                                      <span className="font-semibold text-slate-900 dark:text-white truncate">
+                                        {item.barangay}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </td>
+
+                                {/* 2. Reports & Recessed Incident Density Bar */}
+                                <td className="py-3.5 px-4 whitespace-nowrap">
+                                  <div className="space-y-1.5 min-w-[130px] max-w-[180px]">
+                                    <div className="flex items-center justify-between text-xs">
+                                      <span className="font-bold text-slate-800 dark:text-slate-200 tabular-nums">
+                                        {item.incidents} {item.incidents === 1 ? 'report' : 'reports'}
+                                      </span>
+                                      <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 tabular-nums">
+                                        {densityPct}%
+                                      </span>
+                                    </div>
+                                    <div className="h-1.5 w-full bg-slate-100 dark:bg-white/10 rounded-full overflow-hidden">
+                                      <div
+                                        className="h-full rounded-full bg-gradient-to-r from-blue-500 to-[#0071E3] transition-all duration-500"
+                                        style={{ width: `${Math.max(10, densityPct)}%` }}
+                                      />
+                                    </div>
+                                  </div>
+                                </td>
+
+                                {/* 3. High Urgency Count Pill */}
+                                <td className="py-3.5 px-4 text-center whitespace-nowrap">
+                                  {item.high > 0 ? (
+                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 shadow-2xs tabular-nums">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shadow-[0_0_6px_rgba(244,63,94,0.7)] animate-pulse shrink-0" />
+                                      <span>{item.high} Urgent</span>
+                                    </span>
+                                  ) : (
+                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100/70 dark:bg-white/[0.04] text-slate-400 dark:text-slate-500 border border-slate-200/50 dark:border-white/5 tabular-nums">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-slate-600 shrink-0" />
+                                      <span>0 Urgent</span>
+                                    </span>
+                                  )}
+                                </td>
+
+                                {/* 4. Risk Priority Apple Pill */}
+                                <td className="py-3.5 px-4 text-center whitespace-nowrap">
+                                  <span
+                                    className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border shadow-2xs ${
+                                      isCritical
+                                        ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/25'
+                                        : isHigh
+                                        ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/25'
+                                        : isModerate
+                                        ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/25'
+                                        : 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/25'
+                                    }`}
+                                  >
+                                    <span
+                                      className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                                        isCritical
+                                          ? 'bg-purple-500 shadow-[0_0_6px_rgba(168,85,247,0.8)]'
+                                          : isHigh
+                                          ? 'bg-rose-500 shadow-[0_0_6px_rgba(244,63,94,0.8)]'
+                                          : isModerate
+                                          ? 'bg-amber-500 shadow-[0_0_6px_rgba(245,158,11,0.8)]'
+                                          : 'bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.8)]'
+                                      }`}
+                                    />
+                                    <span>{item.priority}</span>
+                                  </span>
+                                </td>
+
+                                {/* 5. Dominant Need Pill */}
+                                <td className="py-3.5 px-4 sm:px-5 whitespace-nowrap">
+                                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border shadow-2xs ${need.pill}`}>
+                                    <span>{need.label}</span>
+                                  </span>
+                                </td>
+                              </tr>
+                            );
+                          })
+                        ) : (
+                          <tr>
+                            <td colSpan={5} className="py-8 text-center text-xs text-slate-400 dark:text-slate-500">
+                              No verified geospatial risk data recorded yet.
                             </td>
                           </tr>
-                        );
-                      })
-                    ) : (
-                      <tr>
-                        <td colSpan={5} className="py-8 text-center text-xs text-slate-400 dark:text-slate-500">
-                          No verified geospatial risk data recorded yet.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                );
+              })()}
             </SoftCard>
           </motion.div>
 
