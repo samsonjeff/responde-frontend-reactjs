@@ -95,9 +95,9 @@ export function isReportIncomplete(report?: { barangay?: string | null; type?: s
   if (!report) return true;
   const b = (report.barangay || '').trim().toLowerCase();
   const isUnknownBarangay = !b || b === 'unknown' || b === 'none' || b === 'unspecified' || b === 'n/a' || b === 'null';
-  const t = (report.type || '').trim().toLowerCase();
-  const isUnknownType = !t || t === 'none' || t === 'unclassified' || t === 'unknown' || t === 'unspecified' || t === 'n/a' || t === 'null' || t === 'undefined';
-  return isUnknownBarangay || isUnknownType;
+  // Only a missing barangay makes a report incomplete. Reports with type "None"
+  // stay in Under Review (matches the original working behavior).
+  return isUnknownBarangay;
 }
 
 /** Returns list of human-readable missing/incomplete reasons */
