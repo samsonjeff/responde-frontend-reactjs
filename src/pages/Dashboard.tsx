@@ -628,12 +628,8 @@ export default function Dashboard() {
                 return (
                   <div
                     key={report.id}
-                    onClick={() => {
-                      const rType = report.type || 'General';
-                      setSelectedType((prev) => (prev === rType ? null : rType));
-                    }}
-                    className={`p-3.5 space-y-2.5 transition-colors cursor-pointer ${
-                      isTypeMatch ? 'bg-blue-50/50 dark:bg-blue-900/15' : 'active:bg-slate-50 dark:active:bg-slate-800/40'
+                    className={`p-3.5 space-y-2.5 transition-colors ${
+                      isTypeMatch ? 'bg-blue-50/50 dark:bg-blue-900/15' : ''
                     }`}
                   >
                     <div className="flex items-center justify-between gap-2">
@@ -705,25 +701,21 @@ export default function Dashboard() {
                     return (
                       <tr
                         key={report.id}
-                        onClick={() => {
-                          const rType = report.type || 'General';
-                          setSelectedType((prev) => (prev === rType ? null : rType));
-                        }}
-                        className={`transition-colors duration-150 group cursor-pointer ${
+                        className={`transition-colors duration-150 ${
                           isTypeMatch
                             ? 'bg-blue-50/60 dark:bg-blue-900/20'
-                            : 'hover:bg-blue-50/30 dark:hover:bg-slate-800/40'
+                            : 'hover:bg-slate-50/70 dark:hover:bg-slate-800/30'
                         }`}
                       >
                         <td className="px-4 py-3.5 whitespace-nowrap">
                           <span
-                            className="font-mono text-xs font-semibold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200/50 dark:border-white/5 group-hover:border-blue-300/60 dark:group-hover:border-blue-600/40 group-hover:bg-white dark:group-hover:bg-slate-750 transition-all duration-150 truncate inline-block shadow-2xs"
+                            className="font-mono text-xs font-semibold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200/50 dark:border-white/5 transition-all duration-150 truncate inline-block shadow-2xs"
                             title={`ID: ${report.id}`}
                           >
                             {formatReportCode(report.id, report.source)}
                           </span>
                         </td>
-                        <td className="px-4 py-3.5 whitespace-nowrap font-medium text-slate-900 dark:text-slate-100 text-xs sm:text-sm group-hover:text-[#0071E3] group-active:text-[#0071E3] dark:group-hover:text-sky-400 dark:group-active:text-sky-400 transition-colors duration-150">
+                        <td className="px-4 py-3.5 whitespace-nowrap font-medium text-slate-900 dark:text-slate-100 text-xs sm:text-sm ">
                           {report.barangay || 'Unknown'}
                         </td>
                         <td className="px-4 py-3.5 whitespace-nowrap">
