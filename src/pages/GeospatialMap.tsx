@@ -1770,22 +1770,22 @@ export default function GeospatialMap() {
                 <motion.div
                   layout="position"
                   transition={SOFT_SPRING}
-                  className="pointer-events-auto flex items-center gap-2 sm:gap-2.5 text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 px-3 py-1.5 rounded-xl bg-white/95 dark:bg-[#111827]/95 backdrop-blur-xl border border-slate-200/80 dark:border-white/10 shadow-[0_4px_16px_rgba(15,23,42,0.08)] dark:shadow-[0_4px_16px_rgba(0,0,0,0.4)] select-none shrink-0"
+                  className="pointer-events-auto flex flex-col items-start gap-1.5 text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 px-2.5 py-2 rounded-xl bg-white/95 dark:bg-[#111827]/95 backdrop-blur-xl border border-slate-200/80 dark:border-white/10 shadow-[0_4px_16px_rgba(15,23,42,0.08)] dark:shadow-[0_4px_16px_rgba(0,0,0,0.4)] select-none shrink-0"
                 >
-                  <span className="flex items-center gap-1 font-medium">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#22c55e]" />
+                  <span className="flex items-center gap-1.5 font-medium leading-none">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#22c55e] shrink-0" />
                     <span>Low</span>
                   </span>
-                  <span className="flex items-center gap-1 font-medium">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                  <span className="flex items-center gap-1.5 font-medium leading-none">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
                     <span>Mod</span>
                   </span>
-                  <span className="flex items-center gap-1 font-medium">
-                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                  <span className="flex items-center gap-1.5 font-medium leading-none">
+                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
                     <span>High</span>
                   </span>
-                  <span className="flex items-center gap-1 font-medium">
-                    <span className="w-1.5 h-1.5 rounded-full bg-purple-600 shadow-[0_0_8px_rgba(147,51,234,0.45)]" />
+                  <span className="flex items-center gap-1.5 font-medium leading-none">
+                    <span className="w-1.5 h-1.5 rounded-full bg-purple-600 shadow-[0_0_8px_rgba(147,51,234,0.45)] shrink-0" />
                     <span>Critical</span>
                   </span>
                 </motion.div>
