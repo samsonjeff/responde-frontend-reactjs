@@ -6,7 +6,7 @@ import {
   Clock, User, Phone, MessageSquare,
   CheckCircle2, AlertTriangle, RotateCcw, Send,
   ShieldCheck, FileText, AlertOctagon, MapPinned, Bot, Globe,
-  Check, Search,
+  Check, Search, MinusCircle,
 } from 'lucide-react';
 import DatePicker from '../components/DatePicker';
 import FilterDropdown from '../components/DropDown';
@@ -27,7 +27,16 @@ import { formatPhilippineTimeOnly, getPhilippineTimestampNow } from '../utils/da
 
 export type TabKey = 'under_review' | 'incomplete' | 'verified' | 'resolved' | 'rejected';
 
-export const BASE_INCIDENT_TYPES = ['Earthquake', 'Fire', 'Flood', 'Landslide', 'None'] as const;
+export const BASE_INCIDENT_TYPES = [
+  'Earthquake',
+  'Fire',
+  'Flood',
+  'General',
+  'Landslide',
+  'Typhoon',
+  'Volcanic Eruption',
+  'None',
+] as const;
 
 const formatBubbleTime = (iso?: string) => formatPhilippineTimeOnly(iso);
 
@@ -884,9 +893,11 @@ export default function IncidentReports() {
           return false;
         }
       }
+      const isFilteringNoneBarangay = filterBarangay.toLowerCase().trim() === 'none' || filterBarangay.toLowerCase().trim() === 'unknown';
       if (activeTab === 'under_review') {
         const isUnderReviewOrPending = r.status === 'under_review' || r.status === 'pending';
-        if (!isUnderReviewOrPending || isReportIncomplete(r)) return false;
+        if (!isUnderReviewOrPending) return false;
+        if (!isFilteringNoneBarangay && isReportIncomplete(r)) return false;
       } else if (activeTab === 'incomplete') {
         const isUnderReviewOrPending = r.status === 'under_review' || r.status === 'pending';
         if (!isUnderReviewOrPending || !isReportIncomplete(r)) return false;
@@ -901,19 +912,19 @@ export default function IncidentReports() {
       if (filterBarangay !== 'All Barangays') {
         const normFilter = filterBarangay.toLowerCase().trim();
         const rBrgy = (r.barangay || '').toLowerCase().trim();
+        const isNoneBarangay = !rBrgy || rBrgy === 'none' || rBrgy === 'unknown' || rBrgy === 'unspecified' || rBrgy === 'n/a' || rBrgy === 'null';
         if (normFilter === 'none' || normFilter === 'unknown') {
-          if (rBrgy && rBrgy !== 'none' && rBrgy !== 'unknown' && rBrgy !== 'unspecified' && rBrgy !== 'n/a' && rBrgy !== 'null') {
-            return false;
-          }
+          if (!isNoneBarangay) return false;
         } else if (rBrgy !== normFilter) {
           return false;
         }
       }
       if (filterType !== 'All Types') {
-        const normFilter = filterType.toLowerCase();
-        const repType = (r.type || 'none').toLowerCase();
+        const normFilter = filterType.toLowerCase().trim();
+        const repType = (r.type || '').trim().toLowerCase();
+        const isNoneType = !repType || repType === 'none' || repType === 'unclassified' || repType === 'unknown' || repType === 'null' || repType === 'undefined' || repType === 'n/a' || repType === 'unspecified';
         if (normFilter === 'none') {
-          if (repType !== 'none' && repType !== 'unclassified') return false;
+          if (!isNoneType) return false;
         } else if (repType !== normFilter) {
           return false;
         }
@@ -1022,10 +1033,10 @@ export default function IncidentReports() {
 
   const getTypeBadge = (type: string) => {
     const norm = (type || '').trim().toLowerCase();
-    if (!norm || norm === 'none' || norm === 'unclassified') {
+    if (!norm || norm === 'none' || norm === 'unclassified' || norm === 'unknown' || norm === 'null' || norm === 'unspecified') {
       return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
-          <AlertTriangle className="w-3 h-3 text-rose-500 shrink-0" strokeWidth={1.75} />
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-500/10 dark:bg-slate-500/15 text-slate-600 dark:text-slate-400 border border-slate-500/20">
+          <MinusCircle className="w-3 h-3 text-slate-400 dark:text-slate-500 shrink-0" strokeWidth={1.75} />
           <span>None</span>
         </span>
       );
