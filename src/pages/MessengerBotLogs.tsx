@@ -74,15 +74,114 @@ export const DISTRESS_KEYWORDS = [
   "critical"
 ];
 
+// Multi-word emergency phrases with high distress intent
+const DISTRESS_PHRASES = [
+  "kailangan ng tulong", "need help", "need rescue", "kailangan ng rescue",
+  "evacuate now", "tumaas ang tubig", "inabot ng baha", "inanod ng baha",
+  "putok ng bulkan", "tulung po", "tulong po", "saklolo po", "tulungan nyo kami",
+  "tulungan niyo kami", "tulungan kami", "rescue us", "please help",
+  "hindi makalabas", "di makalabas", "lubog sa baha", "lubog ang bahay",
+  "nasusunog ang", "may sunog", "gumuho ang", "nagcollapse",
+  "na-trap", "na-trapped", "bata pong inanod", "may bata pong", "may namatay"
+];
+
+// Single keywords evaluated with whole-word token boundaries (prevents "simbahan" matching "baha")
+const DISTRESS_SINGLE_WORDS = new Set([
+  // Trapped / danger
+  "trapped", "trap", "natrap", "naipit", "ipit", "stuck",
+  "bumagsak", "bagsak", "nabagsakan", "guho", "pagguho", "gumuho", "landslide",
+  "natabunan", "tabunan", "tinabunan", "lubog", "lumubog", "palubog", "naanod", "inanod", "anod",
+  "nasira", "wasak",
+
+  // Casualties / life threatening
+  "patay", "mamatay", "mamamatay", "namatay", "dying", "delikado", "peligro",
+
+  // Medical / injuries
+  "sugat", "nasugatan", "duguan", "dugo", "nabalian", "ambulance", "ambulansya",
+  "ospital", "hospital", "hika",
+
+  // Help / rescue / evacuation
+  "saklolo", "rescue", "iligtas", "tulong", "tulungan", "tulung",
+  "emergency", "saklolohan", "sos", "evacuate", "lumikas", "evacuation", "likas",
+
+  // Disasters
+  "sunog", "nasusunog", "nasunog",
+  "binaha", "bumaha", "baha",
+  "lindol", "lumindol",
+  "ashfall"
+]);
+
+const ROUTINE_GREETING_RE = /^(magandang\s+(umaga|hapon|gabi|araw)|good\s+(morning|afternoon|evening|day)|hello|hi(\s+po)?|hey|kamusta(\s+po)?)[!.,\s]*$/i;
+const ROUTINE_CONFIRM_RE = /^(tama(\s+po)?|opo|oopo|oo\s+po|yes(\s+po)?|sige(\s+po)?|ok(\s+po)?|okay(\s+po)?|noted(\s+po)?|salamat(\s+po)?|maraming\s+salamat(\s+po)?|thank\s+you(\s+po)?|thanks(\s+po)?|cge(\s+po)?|k(\s+po)?)[!.,\s]*$/i;
+const ROUTINE_PHONE_RE = /^(ang\s+)?(contact\s+number|number|cp|cellphone|telepono)(\s+ko\s+po|\s+ko|\s+po)?(\s+ay)?\s*[:\-\s]?\s*(\+?63|0)?[0-9\s\-]{7,15}[!.,\s]*$/i;
+const ROUTINE_LANDMARK_RE = /^(malapit\s+po\s+ito\s+dito|malapit\s+po\s+sa|malapit\s+sa|dito\s+po\s+sa|dito\s+sa|sa\s+may|sa\s+tapat\s+ng|tapat\s+ng|katabi\s+ng|tabi\s+ng|likod\s+ng|harap\s+ng|landmark\s*[:\-])/i;
+const ROUTINE_INQUIRY_RE = /^(may|meron|ano|saan|paano|kelan|kailan|sino|kamusta|kumusta|bukas|pwede|pede)\b.*\b(po\s+ba|ba\s+po|ba|\?)/i;
+
+const LIFE_SAFETY_CRITICAL = [
+  "rescue", "saklolo", "tulong", "trapped", "trap", "lubog", "inanod", "naanod",
+  "naipit", "nasusunog", "sunog", "apoy", "patay", "mamatay", "mamamatay", "sugat", "dugo",
+  "ambulance", "ambulansya", "emergency", "delikado", "peligro", "gumuho", "guho"
+];
+
 export function checkMessageHasDistress(text?: string): boolean {
-  if (!text) return false;
-  const t = text.toLowerCase();
-  return DISTRESS_KEYWORDS.some((kw) => t.includes(kw));
+  if (!text || typeof text !== "string") return false;
+  const t = text.trim().toLowerCase();
+  if (!t) return false;
+
+  // 1. Disqualify routine greetings
+  if (ROUTINE_GREETING_RE.test(t)) return false;
+
+  // 2. Disqualify routine confirmations / acknowledgments
+  if (ROUTINE_CONFIRM_RE.test(t)) return false;
+
+  // 3. Disqualify pure contact or phone number replies
+  if (ROUTINE_PHONE_RE.test(t)) return false;
+  const digitsOnly = t.replace(/[^0-9]/g, "");
+  if (
+    digitsOnly.length >= 7 &&
+    t.replace(/[\d\s+\-().,:;]|(contact|number|cp|cellphone|telepono|ang|ko|po|ay)/gi, "").length === 0
+  ) {
+    return false;
+  }
+
+  // Check if message has explicit life-safety distress keywords
+  const hasLifeSafety = LIFE_SAFETY_CRITICAL.some((kw) => {
+    const rx = new RegExp(`\\b${kw}\\b`, "i");
+    return rx.test(t);
+  });
+
+  // 4. Disqualify routine landmark descriptions if no urgent life-safety words
+  if (ROUTINE_LANDMARK_RE.test(t) && !hasLifeSafety) {
+    return false;
+  }
+
+  // 5. Disqualify informational inquiries / questions if no urgent life-safety words
+  if (ROUTINE_INQUIRY_RE.test(t) && !hasLifeSafety) {
+    return false;
+  }
+
+  // 6. Match high-confidence multi-word distress phrases
+  if (DISTRESS_PHRASES.some((phrase) => t.includes(phrase))) {
+    return true;
+  }
+
+  // 7. Token boundary matching for single words (avoids "simbahan" matching "baha")
+  const tokens = t.replace(/[^a-z0-9áéíóúñ\-\s]/g, " ").split(/\s+/).filter(Boolean);
+  for (const token of tokens) {
+    if (DISTRESS_SINGLE_WORDS.has(token)) return true;
+    if (token.startsWith("na-") || token.startsWith("nag-") || token.startsWith("pag-") || token.startsWith("i-") || token.startsWith("ma-")) {
+      const stem = token.replace(/^(na|nag|pag|i|ma|ipag)-/, "");
+      if (DISTRESS_SINGLE_WORDS.has(stem)) return true;
+    }
+    if (token.endsWith("ng") && DISTRESS_SINGLE_WORDS.has(token.slice(0, -2))) return true;
+  }
+
+  return false;
 }
 
 export function analyzeConvoNLP(convo: Conversation): ConvoNLPAnalysis {
-  const allUserText = (convo.messages || [])
-    .filter((m) => m.sender === "user")
+  const userMessages = (convo.messages || []).filter((m) => m.sender === "user");
+  const allUserText = userMessages
     .map((m) => m.text)
     .join(" ")
     .toLowerCase();
@@ -91,37 +190,24 @@ export function analyzeConvoNLP(convo: Conversation): ConvoNLPAnalysis {
   const intentLower = (convo.intent || "").toLowerCase().trim();
   const urgencyLower = (convo.urgency || "").toLowerCase().trim();
 
-  const criticalKeywords = [
-    "critical", "trapped", "dying", "saklolo", "tulong", "buhay", "delikado",
-    "lubog", "nasusunog", "evacuate now", "bumagsak", "natabunan", "patay", "mamatay", "mamamatay",
-    "guho", "pagguho", "naipit", "naanod", "nabalian"
-  ];
-  const highKeywords = [
-    "saklolo", "rescue", "baha", "nasira", "bubong", "ambulance", "sugat",
-    "emergency", "pagguho", "landslide", "tulong", "naipit", "naanod", "nabalian", "sunog", "apoy",
-    "trapped", "bumagsak", "natabunan", "patay", "mamatay", "bata"
-  ];
-  const moderateKeywords = [
-    "tubig", "supply", "puno", "kalsada", "daan", "poste", "interruption",
-    "first aid", "gamot", "food", "pagkain", "evacuate", "lumikas"
-  ];
-  const noiseKeywords = [
-    "may baha po ba", "may kuryente po ba", "saan po ang", "ano po hotline",
-    "bukas po ba", "good morning", "magandang", "hello", "hi po", "salamat", "thank you", "test", "ingat"
-  ];
+  // Find genuine emergency distress messages
+  const genuineDistressIndices: number[] = [];
+  (convo.messages || []).forEach((m, idx) => {
+    if (m.sender === "user" && checkMessageHasDistress(m.text)) {
+      genuineDistressIndices.push(idx);
+    }
+  });
+  const hasAnyDistressMessage = genuineDistressIndices.length > 0;
 
-  const hasCritical =
-    criticalKeywords.some((k) => allUserText.includes(k)) ||
-    urgencyLower.includes("critical");
-  const hasHigh =
-    highKeywords.some((k) => allUserText.includes(k)) ||
-    urgencyLower.includes("high");
-  const hasModerate =
-    moderateKeywords.some((k) => allUserText.includes(k)) ||
-    urgencyLower.includes("moderate") ||
-    urgencyLower.includes("mod");
+  const isExplicitNoiseIntent =
+    intentLower === "casual or greeting" ||
+    intentLower === "status inquiry" ||
+    intentLower === "feedback or thanks" ||
+    intentLower === "other" ||
+    intentLower === "inquiry" ||
+    intentLower === "chatter";
 
-  const isExplicitIntent =
+  const isExplicitIncidentIntent =
     intentLower.includes("emergency") ||
     intentLower.includes("incident") ||
     intentLower.includes("resource") ||
@@ -137,45 +223,58 @@ export function analyzeConvoNLP(convo: Conversation): ConvoNLPAnalysis {
     typeLower !== "unknown" &&
     typeLower !== "n/a";
 
-  const isExplicitNoise =
-    noiseKeywords.some((k) => allUserText.includes(k)) &&
-    !hasHigh &&
-    !hasCritical &&
-    !isExplicitIntent;
+  const isIncident =
+    (hasAnyDistressMessage || isExplicitIncidentIntent || (isExplicitIncidentType && !isExplicitNoiseIntent)) &&
+    !(isExplicitNoiseIntent && !hasAnyDistressMessage);
+
+  // Strictly populate distressMessageIndices ONLY for confirmed incidents
+  const distressMessageIndices: number[] = isIncident ? genuineDistressIndices : [];
+  const distressMessageIdx = distressMessageIndices.length > 0 ? distressMessageIndices[0] : -1;
+
+  const criticalKeywords = [
+    "critical", "trapped", "dying", "saklolo", "buhay", "delikado",
+    "lubog", "nasusunog", "evacuate now", "bumagsak", "natabunan", "patay", "mamatay", "mamamatay",
+    "guho", "pagguho", "naipit", "naanod", "nabalian"
+  ];
+  const highKeywords = [
+    "saklolo", "rescue", "nasira", "bubong", "ambulance", "sugat",
+    "emergency", "pagguho", "landslide", "tulong", "naipit", "naanod", "nabalian", "sunog", "apoy",
+    "trapped", "bumagsak", "natabunan", "patay", "mamatay"
+  ];
+  const moderateKeywords = [
+    "tubig", "supply", "puno", "kalsada", "daan", "poste", "interruption",
+    "first aid", "gamot", "food", "pagkain", "evacuate", "lumikas"
+  ];
+
+  const hasCritical =
+    urgencyLower.includes("critical") ||
+    (hasAnyDistressMessage && criticalKeywords.some((k) => allUserText.includes(k)));
+  const hasHigh =
+    urgencyLower.includes("high") ||
+    (hasAnyDistressMessage && highKeywords.some((k) => allUserText.includes(k)));
+  const hasModerate =
+    urgencyLower.includes("moderate") ||
+    urgencyLower.includes("mod") ||
+    (hasAnyDistressMessage && moderateKeywords.some((k) => allUserText.includes(k)));
 
   const actionableNeeds: string[] = [];
-  if (allUserText.includes("ambulance") || allUserText.includes("sugat")) actionableNeeds.push("Ambulance & Paramedics");
-  if (allUserText.includes("first aid")) actionableNeeds.push("First Aid Supplies");
-  if (allUserText.includes("rescue") || allUserText.includes("boat")) actionableNeeds.push("Rescue Boat Unit");
-  if (allUserText.includes("bubong")) actionableNeeds.push("Shelter Repair Kit");
-  if (allUserText.includes("puno") || allUserText.includes("daan")) actionableNeeds.push("Road Clearing Crew");
-  if (allUserText.includes("tubig")) actionableNeeds.push("Potable Drinking Water");
-  if (allUserText.includes("pagguho") || allUserText.includes("landslide")) actionableNeeds.push("Evacuation Assistance");
-  if (actionableNeeds.length === 0 && (hasHigh || hasModerate)) {
-    actionableNeeds.push("On-Site Verification");
+  if (isIncident) {
+    if (allUserText.includes("ambulance") || allUserText.includes("sugat") || allUserText.includes("dugo")) actionableNeeds.push("Ambulance & Paramedics");
+    if (allUserText.includes("first aid") || allUserText.includes("gamot")) actionableNeeds.push("First Aid Supplies");
+    if (allUserText.includes("rescue") || allUserText.includes("boat") || allUserText.includes("anod") || allUserText.includes("lubog")) actionableNeeds.push("Rescue Boat Unit");
+    if (allUserText.includes("bubong") || allUserText.includes("wasak")) actionableNeeds.push("Shelter Repair Kit");
+    if (allUserText.includes("puno") || allUserText.includes("kalsada") || allUserText.includes("daan")) actionableNeeds.push("Road Clearing Crew");
+    if (allUserText.includes("tubig") || allUserText.includes("inumin")) actionableNeeds.push("Potable Drinking Water");
+    if (allUserText.includes("pagguho") || allUserText.includes("landslide") || allUserText.includes("guho")) actionableNeeds.push("Evacuation Assistance");
+    if (actionableNeeds.length === 0 && (hasHigh || hasModerate || hasCritical)) {
+      actionableNeeds.push("On-Site Verification");
+    }
   }
 
-  const distressMessageIndices: number[] = [];
-  (convo.messages || []).forEach((m, idx) => {
-    if (m.sender === "user") {
-      const text = (m.text || "").toLowerCase();
-      const isDistress = DISTRESS_KEYWORDS.some((k) => text.includes(k));
-      if (isDistress) {
-        distressMessageIndices.push(idx);
-      }
-    }
-  });
-
-  const isIncident =
-    (hasCritical ||
-      hasHigh ||
-      hasModerate ||
-      isExplicitIntent ||
-      isExplicitIncidentType) &&
-    !isExplicitNoise;
-
   let incidentType = "None";
-  if (isExplicitIncidentType) {
+  if (!isIncident) {
+    incidentType = "None";
+  } else if (isExplicitIncidentType) {
     const matched = INCIDENT_TYPE_CHOICES.find((c) => c.toLowerCase() === convo.type.toLowerCase());
     incidentType = matched || convo.type;
   } else if (allUserText.includes("bulkan") || allUserText.includes("volcan") || allUserText.includes("ash") || allUserText.includes("abo") || typeLower.includes("volcan")) {
@@ -190,29 +289,23 @@ export function analyzeConvoNLP(convo: Conversation): ConvoNLPAnalysis {
     incidentType = "Fire";
   } else if (allUserText.includes("lindol") || allUserText.includes("earthquake") || allUserText.includes("yanig") || typeLower.includes("earthquake") || typeLower.includes("quake")) {
     incidentType = "Earthquake";
-  } else if (typeLower === "general") {
-    incidentType = "General";
-  } else if (isIncident) {
-    incidentType = "General";
   } else {
-    incidentType = "None";
+    incidentType = "General";
   }
 
-  if (distressMessageIndices.length === 0 && isIncident) {
-    const firstUserIdx = (convo.messages || []).findIndex((m) => m.sender === "user");
-    if (firstUserIdx !== -1) {
-      distressMessageIndices.push(firstUserIdx);
-    }
-  }
+  const urgency: "Critical" | "High" | "Moderate" | "Low" = !isIncident
+    ? "Low"
+    : hasCritical
+      ? "Critical"
+      : convo.urgency && convo.urgency.toLowerCase() !== "low"
+        ? (formatReportUrgency(convo.urgency) as "Critical" | "High" | "Moderate" | "Low")
+        : hasHigh
+          ? "High"
+          : hasModerate
+            ? "Moderate"
+            : "Low";
 
-  const distressMessageIdx = distressMessageIndices.length > 0 ? distressMessageIndices[0] : -1;
-
-  const urgency: "Critical" | "High" | "Moderate" | "Low" = hasCritical
-    ? "Critical"
-    : convo.urgency && convo.urgency.toLowerCase() !== "low"
-      ? (formatReportUrgency(convo.urgency) as "Critical" | "High" | "Moderate" | "Low")
-      : (hasHigh ? "High" : hasModerate ? "Moderate" : "Low");
-  const confidence = isIncident ? (hasCritical ? 98 : (hasHigh ? 96 : 89)) : 18;
+  const confidence = isIncident ? (hasCritical ? 98 : hasHigh ? 96 : 89) : 15;
 
   let nlpReason = "";
   if (isIncident) {
@@ -1680,12 +1773,11 @@ export default function MessengerBotLogs() {
                       <div className="space-y-3 sm:space-y-4">
                         {(selectedConversation.messages ?? []).map((msg, idx) => {
                           const msgTime = formatMsgTime(msg.timestamp, selectedConversation.time);
-                          const isDistress = msg.sender === "user" && (
-                            checkMessageHasDistress(msg.text) ||
-                            Boolean(selectedConversation.nlp?.distressMessageIndices?.includes(idx)) ||
-                            idx === selectedConversation.nlp?.distressMessageIdx ||
-                            (Boolean(selectedConversation.nlp?.isIncident) && (selectedConversation.messages ?? []).findIndex(m => m.sender === "user") === idx)
-                          );
+                          const isDistress =
+                            Boolean(selectedConversation.nlp?.isIncident) &&
+                            msg.sender === "user" &&
+                            (checkMessageHasDistress(msg.text) ||
+                              Boolean(selectedConversation.nlp?.distressMessageIndices?.includes(idx)));
 
                           return msg.sender === "bot" ? (
                             <div key={idx}>
