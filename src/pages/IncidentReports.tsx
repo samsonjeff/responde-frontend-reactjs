@@ -926,8 +926,8 @@ export default function IncidentReports() {
       case 'low':
       default:
         return (
-          <span className="inline-flex items-center justify-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-500/10 text-slate-600 dark:text-slate-300 border border-slate-500/20">
-            <span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" />
+          <span className="inline-flex items-center justify-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />
             <span>Low</span>
           </span>
         );
@@ -945,12 +945,6 @@ export default function IncidentReports() {
     }
     switch (status) {
       case 'pending':
-        return (
-          <span className="inline-flex items-center justify-center gap-1.5 w-[104px] py-0.5 rounded-full text-xs font-semibold bg-blue-500/10 text-[#0071E3] dark:text-sky-400 border border-blue-500/20">
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse shrink-0" />
-            <span>Pending</span>
-          </span>
-        );
       case 'under_review':
         return (
           <span className="inline-flex items-center justify-center gap-1.5 w-[104px] py-0.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">

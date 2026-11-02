@@ -1,7 +1,10 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
+import { supabase } from '../lib/supabaseClient';
 import { TALISAY_BARANGAYS } from '../data/talisay-barangays';
 import { formatTimestampPHT } from '../utils/dateUtils';
 import { apiRequest } from '../services/apiClient';
+import { isIncidentIntent, normalizeIntent } from '../utils/intentUtils';
+import { formatReportType, formatReportUrgency } from '../services/incidentService';
 
 // ── Types ──
 export interface BotMessage {
@@ -16,6 +19,8 @@ export interface BotConversation {
   name: string;
   barangay: string;
   type: string;
+  urgency?: string;
+  intent?: string;
   status: 'Incomplete' | 'Complete';
   time: string;
   createdAt?: string;
@@ -126,17 +131,28 @@ export function BotConversationsProvider({ children }: { children: ReactNode }) 
 
     let data: any[] | null = null;
     try {
-      // Use cached, deduplicated apiRequest with automatic 429 retry
-      const json = await apiRequest<{ data?: any[] }>(
-        '/api/auth/data/conversations?limit=100',
-        {
-          signal,
-          forceRefresh,
-          cacheTtlMs: 8000,
-        }
-      );
-      data = json.data ?? [];
-      setError(null);
+      // 1. Fetch directly from Supabase conversations table
+      const { data: supaRows, error: supaErr } = await supabase
+        .from('conversations')
+        .select('*')
+        .order('timestamp', { ascending: true });
+
+      if (!supaErr && Array.isArray(supaRows) && supaRows.length > 0) {
+        data = supaRows;
+        setError(null);
+      } else {
+        // Fallback to backend API
+        const json = await apiRequest<{ data?: any[] }>(
+          '/api/auth/data/conversations?limit=500',
+          {
+            signal,
+            forceRefresh,
+            cacheTtlMs: 8000,
+          }
+        );
+        data = (json.data ?? []).sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+        setError(null);
+      }
     } catch (netErr: any) {
       if (netErr.name === 'AbortError') return;
       console.warn('[BotConversationsContext] Fetch warning:', netErr.message);
@@ -153,6 +169,9 @@ export function BotConversationsProvider({ children }: { children: ReactNode }) 
       lastTime: number;
       barangay: string;
       type: string;
+      urgency: string;
+      intent: string;
+      hasIncidentIntent: boolean;
       needsReview: boolean;
       messages: BotMessage[];
     };
@@ -166,6 +185,18 @@ export function BotConversationsProvider({ children }: { children: ReactNode }) 
       }
     }
 
+    function isRealType(t?: string | null): boolean {
+      if (!t) return false;
+      const l = t.trim().toLowerCase();
+      return !['none', 'null', 'undefined', 'unclassified', 'unknown', 'n/a'].includes(l);
+    }
+
+    function isRealBarangay(b?: string | null): boolean {
+      if (!b) return false;
+      const l = b.trim().toLowerCase();
+      return !['unknown', 'none', 'null', 'unspecified', 'n/a', 'general'].includes(l);
+    }
+
     const sessions: Session[] = [];
     const psidToLastIdx = new Map<string, number>();
 
@@ -177,7 +208,11 @@ export function BotConversationsProvider({ children }: { children: ReactNode }) 
       const rowBarangay = row.barangay && String(row.barangay).trim() ? String(row.barangay).trim() : '';
       const rowType = row.incident_type && String(row.incident_type).trim()
         ? String(row.incident_type).trim()
-        : (row.intent && String(row.intent).trim() ? String(row.intent).trim() : '');
+        : '';
+      const rowIntent = row.intent && String(row.intent).trim() ? String(row.intent).trim() : 'OTHER';
+      const isRowIncident = isIncidentIntent(rowIntent);
+      const rowUrgency = row.urgency && String(row.urgency).trim() ? String(row.urgency).trim() : 'Low';
+
       const rowNeedsReview = Boolean(
         row.needs_review === true ||
         row.location_status === 'not_found' ||
@@ -191,8 +226,11 @@ export function BotConversationsProvider({ children }: { children: ReactNode }) 
           psid,
           senderName: resolvedName,
           lastTime: rowTime,
-          barangay: rowBarangay,
-          type: rowType,
+          barangay: isRealBarangay(rowBarangay) ? rowBarangay : '',
+          type: isRealType(rowType) ? rowType : '',
+          urgency: rowUrgency,
+          intent: rowIntent,
+          hasIncidentIntent: isRowIncident,
           needsReview: rowNeedsReview,
           messages: [],
         };
@@ -204,11 +242,22 @@ export function BotConversationsProvider({ children }: { children: ReactNode }) 
         if (session.senderName === 'Unknown User' && resolvedName !== 'Unknown User') {
           session.senderName = resolvedName;
         }
-        if (!session.barangay && rowBarangay) {
-          session.barangay = rowBarangay;
+        if (isRowIncident) {
+          session.hasIncidentIntent = true;
+          session.intent = rowIntent;
+          if (rowUrgency) session.urgency = rowUrgency;
+        } else if (!session.hasIncidentIntent && rowIntent) {
+          session.intent = rowIntent;
         }
-        if (!session.type && rowType) {
-          session.type = rowType;
+        if (isRealBarangay(rowBarangay)) {
+          if (!isRealBarangay(session.barangay) || isRowIncident) {
+            session.barangay = rowBarangay;
+          }
+        }
+        if (isRealType(rowType)) {
+          if (!isRealType(session.type) || isRowIncident) {
+            session.type = rowType;
+          }
         }
         if (rowNeedsReview) {
           session.needsReview = true;
@@ -241,8 +290,10 @@ export function BotConversationsProvider({ children }: { children: ReactNode }) 
               session.senderName !== 'Unknown User'
                 ? session.senderName
                 : `PSID: ${session.psid.slice(-6)}`,
-            barangay: session.barangay ? normalizeBarangayName(session.barangay) : 'General',
-            type: session.type ? titleCase(session.type) : 'Emergency',
+            barangay: isRealBarangay(session.barangay) ? normalizeBarangayName(session.barangay) : 'General',
+            type: isRealType(session.type) ? formatReportType(session.type) : 'None',
+            urgency: session.urgency ? formatReportUrgency(session.urgency) : 'Low',
+            intent: normalizeIntent(session.intent),
             status: override || calculatedStatus,
             time: timeFormatted,
             createdAt: new Date(session.lastTime).toISOString(),

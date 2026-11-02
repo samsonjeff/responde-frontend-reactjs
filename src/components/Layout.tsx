@@ -9,6 +9,7 @@ import {
   Sun, Moon, Copy, Check, Siren, ShieldAlert, MapPin, Inbox,
 } from 'lucide-react';
 import SignOutModal from './SignOutModal';
+import GlobalSearch from './GlobalSearch';
 import {
   useNotifications,
   type AppNotification,
@@ -88,6 +89,8 @@ export interface LayoutOutletContext {
   collapsed: boolean;
   setCollapsed: React.Dispatch<React.SetStateAction<boolean>>;
   toggleSidebar: () => void;
+  globalSearch: string;
+  setGlobalSearch: React.Dispatch<React.SetStateAction<string>>;
 }
 
 export function prefetchRoute(path: string) {
@@ -270,16 +273,6 @@ export default function Layout() {
       setGlobalSearch(q);
     }
   }, [location.pathname, location.search]);
-
-  const handleGlobalSearchSubmit = (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    const query = globalSearch.trim();
-    if (query) {
-      navigate(`/incident-reports?search=${encodeURIComponent(query)}`);
-    } else if (location.pathname === '/incident-reports') {
-      navigate('/incident-reports');
-    }
-  };
 
   // Scroll container ref for notification dropdown
   const listContainerRef = useRef<HTMLDivElement>(null);
@@ -727,59 +720,23 @@ export default function Layout() {
               >
                 <Menu className="w-5 h-5" />
               </button>
-              {/* Search — floating pill inside the floating header */}
-              <form
-                onSubmit={handleGlobalSearchSubmit}
-                className="hidden sm:flex items-center relative flex-1 max-w-sm"
-              >
-                <div className="
-                w-full flex items-center gap-2 px-3
-                bg-white/50 dark:bg-slate-800/60
-                border border-white/60 dark:border-white/10
-                shadow-sm
-                rounded-xl
-                transition-all duration-200
-                focus-within:bg-white/80 dark:focus-within:bg-slate-800/90
-                focus-within:border-blue-400/60 dark:focus-within:border-blue-500/50
-                focus-within:shadow-[0_4px_16px_rgba(59,130,246,0.14),inset_0_1px_2px_rgba(255,255,255,0.8)]
-                dark:focus-within:shadow-[0_4px_16px_rgba(59,130,246,0.22)]
-              ">
-                  <button
-                    type="submit"
-                    className="shrink-0 p-0 text-slate-400 hover:text-[#0071E3] transition-colors cursor-pointer"
-                    aria-label="Search"
-                  >
-                    <Search className="w-4 h-4" />
-                  </button>
-                  <input
-                    type="text"
-                    value={globalSearch}
-                    onChange={(e) => setGlobalSearch(e.target.value)}
-                    placeholder="Search incidents, logs, or barangays..."
-                    className="w-full py-2 bg-transparent border-0 text-sm text-slate-700 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none"
-                  />
-                  {globalSearch && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setGlobalSearch('');
-                        if (location.pathname === '/incident-reports') {
-                          navigate('/incident-reports');
-                        }
-                      }}
-                      className="shrink-0 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer"
-                      aria-label="Clear search"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                </div>
-              </form>
+              {/* Global Search — Spotlight & Command Palette */}
+              <GlobalSearch />
             </div>
 
             <div className="flex items-center gap-4">
               {/* ── Notification Bell ── */}
-              <div ref={notifRef} className="relative z-10">
+              {/* Mobile Search Trigger Button (< sm) */}
+                <button
+                  type="button"
+                  onClick={() => window.dispatchEvent(new CustomEvent('open-global-search'))}
+                  className="sm:hidden p-2 text-slate-500 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-white/10 rounded-xl transition-colors active:scale-95 cursor-pointer"
+                  aria-label="Open search"
+                >
+                  <Search className="w-5 h-5" />
+                </button>
+
+                <div ref={notifRef} className="relative z-10">
                 <button
                   id="notification-bell-btn"
                   onClick={handleBellClick}
@@ -1250,7 +1207,7 @@ export default function Layout() {
               }}
               className="flex-1 flex flex-col min-h-full h-full w-full"
             >
-              <Outlet context={{ collapsed, setCollapsed, toggleSidebar: () => setCollapsed((prev) => !prev) } satisfies LayoutOutletContext} />
+              <Outlet context={{ collapsed, setCollapsed, toggleSidebar: () => setCollapsed((prev) => !prev), globalSearch, setGlobalSearch } satisfies LayoutOutletContext} />
             </motion.div>
           </AnimatePresence>
         </div>

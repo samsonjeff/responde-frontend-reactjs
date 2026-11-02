@@ -31,25 +31,102 @@ export interface Report {
   possibleDuplicateOf: string | null;
 }
 
-/** Check if report has missing barangay or out-of-scope type */
+/** Standard base incident disaster types recognized across Responde pages */
+export const BASE_INCIDENT_TYPES = [
+  'Earthquake',
+  'Fire',
+  'Flood',
+  'General',
+  'Landslide',
+  'Typhoon',
+  'Volcanic Eruption',
+  'None',
+] as const;
+
+/** Canonical urgency levels recognized across Responde */
+export const BASE_URGENCY_LEVELS = ['Low', 'Moderate', 'High', 'Critical'] as const;
+
+/**
+ * Standardize urgency level strings to match canonical categories.
+ * Maps 'CRITICAL', 'critical' to 'Critical', 'medium' to 'Moderate', etc.
+ */
+export function formatReportUrgency(u?: string | null): string {
+  if (!u) return 'Low';
+  const clean = String(u).trim();
+  const lower = clean.toLowerCase();
+  if (lower === 'critical') return 'Critical';
+  if (lower === 'high') return 'High';
+  if (lower === 'moderate' || lower === 'medium') return 'Moderate';
+  if (lower === 'low') return 'Low';
+  return clean.charAt(0).toUpperCase() + clean.slice(1);
+}
+
+/**
+ * Standardize incident type strings to match canonical categories.
+ * Maps 'none', 'null', 'unclassified' to 'None', and normalizes known disasters.
+ */
+export function formatReportType(t?: string | null): string {
+  if (!t) return 'None';
+  const clean = String(t).trim();
+  const lower = clean.toLowerCase();
+  if (
+    lower === 'none' ||
+    lower === 'null' ||
+    lower === 'unclassified' ||
+    lower === 'unknown' ||
+    lower === 'n/a' ||
+    lower === 'unspecified' ||
+    lower === 'undefined'
+  ) {
+    return 'None';
+  }
+  if (lower === 'earthquake') return 'Earthquake';
+  if (lower === 'fire') return 'Fire';
+  if (lower === 'flood') return 'Flood';
+  if (lower === 'landslide') return 'Landslide';
+  if (lower === 'general') return 'General';
+  if (lower === 'typhoon') return 'Typhoon';
+  if (lower === 'volcanic_eruption' || lower === 'volcanic eruption') return 'Volcanic Eruption';
+  return clean.charAt(0).toUpperCase() + clean.slice(1);
+}
+
+/** Check if report is incomplete (missing a valid barangay) */
 export function isReportIncomplete(report?: { barangay?: string | null; type?: string | null } | null): boolean {
   if (!report) return true;
   const b = (report.barangay || '').trim().toLowerCase();
-  const t = (report.type || '').trim().toLowerCase();
-  const isUnknownBarangay = !b || b === 'unknown' || b === 'none' || b.includes('missing');
-  const isNoneType = !t || t === 'none' || t === 'unclassified' || t.includes('not mentioned') || t.includes('out of scope');
-  return isUnknownBarangay || isNoneType;
+  const isUnknownBarangay = !b || b === 'unknown' || b === 'none' || b === 'unspecified' || b === 'n/a' || b === 'null';
+  return isUnknownBarangay;
 }
 
 /** Returns list of human-readable missing/incomplete reasons */
 export function getIncompleteReasons(report?: { barangay?: string | null; type?: string | null } | null): string[] {
-  if (!report) return ['Missing Information'];
+  if (!report) return ['Missing Barangay'];
   const reasons: string[] = [];
   const b = (report.barangay || '').trim().toLowerCase();
-  const t = (report.type || '').trim().toLowerCase();
-  if (!b || b === 'unknown' || b === 'none' || b.includes('missing')) reasons.push('Missing Barangay');
-  if (!t || t === 'none' || t === 'unclassified' || t.includes('not mentioned') || t.includes('out of scope')) reasons.push('Missing Type');
-  return reasons;
+  if (!b || b === 'unknown' || b === 'none' || b === 'unspecified' || b === 'n/a' || b === 'null') {
+    reasons.push('Missing Barangay');
+  }
+  return reasons.length > 0 ? reasons : ['Missing Barangay'];
+}
+
+/**
+ * Maps disaster/incident types to their canonical brand hex colors.
+ * Synchronized with Dashboard "Reports by type" bar chart and Analytics.
+ */
+export function getTypeHexColor(type: string): string {
+  const norm = (type || '').toLowerCase().trim();
+  if (!norm || norm === 'general' || norm === 'none' || norm === 'unclassified') return '#64748B';
+  if (norm.includes('flood')) return '#3B82F6';
+  if (norm.includes('typhoon') || norm.includes('storm')) return '#6366F1';
+  if (norm.includes('volcan')) return '#F97316';
+  if (norm.includes('landslide')) return '#EAB308';
+  if (norm.includes('fire')) return '#F43F5E';
+  if (norm.includes('earthquake') || norm.includes('quake')) return '#F59E0B';
+  if (norm.includes('medic')) return '#10B981';
+  if (norm.includes('search') || norm.includes('rescue')) return '#F97316';
+  if (norm.includes('food') || norm.includes('water')) return '#0071E3';
+  if (norm.includes('infra') || norm.includes('kuryente')) return '#A855F7';
+  return '#64748B';
 }
 
 /**
@@ -90,40 +167,124 @@ export function formatReportCode(id?: string | null, source?: string | null): st
 }
 
 /**
- * Maps disaster/incident types to their canonical brand hex colors.
- * Synchronized with the Dashboard "Reports by type" bar chart.
- */
-export function getTypeHexColor(type: string): string {
-  const norm = (type || '').toLowerCase().trim();
-  if (!norm || norm === 'general' || norm === 'none' || norm === 'unclassified') return '#64748B';
-  if (norm.includes('flood')) return '#3B82F6';
-  if (norm.includes('typhoon') || norm.includes('storm')) return '#6366F1';
-  if (norm.includes('volcan')) return '#F97316';
-  if (norm.includes('landslide')) return '#EAB308';
-  if (norm.includes('fire')) return '#F43F5E';
-  if (norm.includes('earthquake') || norm.includes('quake')) return '#F59E0B';
-  if (norm.includes('medic')) return '#10B981';
-  if (norm.includes('search') || norm.includes('rescue')) return '#14B8A6';
-  if (norm.includes('food') || norm.includes('water')) return '#0EA5E9';
-  if (norm.includes('infrastructure')) return '#A855F7';
-  return '#64748B';
-}
-
-/**
- * Fetch unified emergency incident reports from the backend REST API.
+ * Fetch unified emergency incident reports from the backend REST API
+ * reconciled against live Supabase incident_reports, conversations, and fb_comments tables.
  * Backend aggregates Messenger bot conversations, Facebook comments, and persisted officer triages.
  */
 export async function fetchReports(): Promise<Report[]> {
-  const json = await apiRequest<{ data?: Report[] }>('/api/auth/data/incident-reports', {
-    cacheTtlMs: 8000,
-  });
-  const rawReports: Report[] = json?.data ?? [];
+  // 1. Concurrently fetch aggregated reports from backend and underlying Supabase source-of-truth records
+  const [backendResult, supabaseIncResult, supabaseConvResult, supabaseFbResult] = await Promise.allSettled([
+    apiRequest<{ data?: Report[] }>('/api/auth/data/incident-reports', {
+      cacheTtlMs: 8000,
+    }),
+    supabase.from('incident_reports').select('*'),
+    supabase.from('conversations').select('id, incident_type, barangay, urgency, status'),
+    supabase.from('fb_comments').select('id, incident_type, barangay, urgency, status'),
+  ]);
+
+  const rawReports: Report[] = (backendResult.status === 'fulfilled' ? backendResult.value?.data : []) ?? [];
+  const triagedRows: any[] = (supabaseIncResult.status === 'fulfilled' ? supabaseIncResult.value?.data : []) ?? [];
+  const convRows: any[] = (supabaseConvResult.status === 'fulfilled' ? supabaseConvResult.value?.data : []) ?? [];
+  const fbRows: any[] = (supabaseFbResult.status === 'fulfilled' ? supabaseFbResult.value?.data : []) ?? [];
+
+  // 2. Build quick lookup maps for triaged reports, conversations, and fb_comments
+  const triagedMap = new Map<string, any>();
+  if (Array.isArray(triagedRows)) {
+    for (const row of triagedRows) {
+      if (row.id) {
+        triagedMap.set(String(row.id).trim(), row);
+      }
+    }
+  }
+
+  const convMap = new Map<string, any>();
+  if (Array.isArray(convRows)) {
+    for (const c of convRows) {
+      if (c.id !== undefined && c.id !== null) {
+        convMap.set(`conv-${c.id}`, c);
+      }
+    }
+  }
+
+  const fbMap = new Map<string, any>();
+  if (Array.isArray(fbRows)) {
+    for (const f of fbRows) {
+      if (f.id !== undefined && f.id !== null) {
+        fbMap.set(`fb-${f.id}`, f);
+        fbMap.set(String(f.id).trim(), f);
+      }
+    }
+  }
+
+  // 3. Map reports, overlaying verified Supabase data so officer triages & raw disaster classifications are 1:1 with Supabase
   return rawReports
-    .map((r: any) => ({
-      ...r,
-      time: (r.createdAt ? formatTimestampPHT(r.createdAt) : null) || (r.time ? formatTimestampPHT(r.time) : '') || r.time,
-      verifiedAt: r.verifiedAt ? (formatTimestampPHT(r.verifiedAt) || r.verifiedAt) : null,
-    }))
+    .map((r: any) => {
+      const report: Report = {
+        ...r,
+        time: (r.createdAt ? formatTimestampPHT(r.createdAt) : null) || (r.time ? formatTimestampPHT(r.time) : '') || r.time,
+        verifiedAt: r.verifiedAt ? (formatTimestampPHT(r.verifiedAt) || r.verifiedAt) : null,
+      };
+
+      // A. If saved in Supabase incident_reports, officer triage is the authoritative source of truth
+      const triaged = triagedMap.get(report.id);
+      if (triaged) {
+        if (triaged.type !== undefined && triaged.type !== null) {
+          report.type = formatReportType(triaged.type);
+        }
+        if (triaged.barangay !== undefined && triaged.barangay !== null) {
+          report.barangay = triaged.barangay;
+        }
+        if (triaged.urgency !== undefined && triaged.urgency !== null) {
+          report.urgency = formatReportUrgency(triaged.urgency);
+        }
+        if (triaged.status !== undefined && triaged.status !== null) {
+          report.status = triaged.status;
+        }
+        if (triaged.action !== undefined && triaged.action !== null) {
+          report.action = triaged.action;
+          report.actionTaken = triaged.action;
+        }
+        if (triaged.verified_by !== undefined) {
+          report.verifiedBy = triaged.verified_by;
+        }
+        if (triaged.verified_at !== undefined) {
+          report.verifiedAt = triaged.verified_at ? formatTimestampPHT(triaged.verified_at) : null;
+        }
+        if (triaged.rejection_reason !== undefined) {
+          report.rejectionReason = triaged.rejection_reason;
+        }
+        if (triaged.possible_duplicate_of !== undefined) {
+          report.possibleDuplicateOf = triaged.possible_duplicate_of;
+        }
+        if (triaged.coordinates !== undefined && triaged.coordinates !== null) {
+          report.coordinates = triaged.coordinates;
+        }
+        if (triaged.landmark !== undefined && triaged.landmark !== null) {
+          report.landmark = triaged.landmark;
+        }
+        return report;
+      }
+
+      // B. For un-triaged records, check Supabase conversations or fb_comments to restore actual classification & urgency
+      const conv = convMap.get(report.id);
+      const fb = fbMap.get(report.id) || fbMap.get(String(report.id).replace(/^fb[-_]/i, ''));
+      const rawSupabaseType = conv ? conv.incident_type : (fb ? fb.incident_type : null);
+      const rawSupabaseUrgency = conv ? conv.urgency : (fb ? fb.urgency : null);
+
+      if (rawSupabaseType !== undefined && rawSupabaseType !== null) {
+        report.type = formatReportType(rawSupabaseType);
+      } else {
+        report.type = formatReportType(report.type);
+      }
+
+      if (rawSupabaseUrgency !== undefined && rawSupabaseUrgency !== null) {
+        report.urgency = formatReportUrgency(rawSupabaseUrgency);
+      } else {
+        report.urgency = formatReportUrgency(report.urgency);
+      }
+
+      return report;
+    })
     .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
 }
 
