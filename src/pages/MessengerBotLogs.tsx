@@ -14,6 +14,7 @@ import { TALISAY_BARANGAYS } from "../data/talisay-barangays";
 import { extractDisplayTime, formatPhilippineTimeOnly, formatPhilippineDateOnly } from "../utils/dateUtils";
 import { BASE_INCIDENT_TYPES, formatReportUrgency } from "../services/incidentService";
 import { useDebounce } from "../hooks/useDebounce";
+import { isIncidentIntent } from "../utils/intentUtils";
 
 // Canonical incident type choices matching Responde Talisay taxonomy
 export const INCIDENT_TYPE_CHOICES = [
@@ -44,6 +45,41 @@ export type AnalyzedConversation = Conversation & {
   nlp: ConvoNLPAnalysis;
 };
 
+export const DISTRESS_KEYWORDS = [
+  // Trapped / physical danger / structural damage
+  "trapped", "trap", "na-trapped", "natrap", "na-trap", "naipit", "ipit", "stuck",
+  "bumagsak", "bagsak", "nabagsakan", "guho", "pagguho", "gumuho", "landslide",
+  "natabunan", "tabunan", "tinabunan", "lubog", "lumubog", "palubog", "naanod", "anod",
+  "nasira", "wasak", "bubong",
+
+  // Casualties & Life-threatening states
+  "patay", "mamatay", "mamamatay", "namatay", "dying", "buhay", "delikado", "peligro",
+  "bata", "matanda", "buntis", "sangol", "sanggol", "anak", "lola", "lolo",
+
+  // Medical emergencies & Injuries
+  "sugat", "nasugatan", "duguan", "dugo", "nabalian", "bali", "ambulance", "ambulansya",
+  "hospital", "ospital", "doktor", "first aid", "gamot", "oxygen", "dextrose", "hika",
+
+  // Urgent help, rescue & evacuation
+  "saklolo", "rescue", "ire-rescue", "iligtas", "tulong", "tulungan", "tulung", "tulung po",
+  "emergency", "saklolohan", "sos", "help", "need help", "kailangan ng tulong",
+  "evacuate", "lumikas", "evacuation", "likas", "evacuate now",
+
+  // Disaster types
+  "sunog", "apoy", "nasusunog", "nasunog", "fire",
+  "baha", "binaha", "flood", "tubig baha", "tumaas ang tubig", "inabot ng baha",
+  "lindol", "lumindol", "yanig", "earthquake", "quake",
+  "bulkan", "volcano", "volcanic", "ashfall", "abo", "putok ng bulkan",
+  "bagyo", "hangin", "typhoon", "storm",
+  "critical"
+];
+
+export function checkMessageHasDistress(text?: string): boolean {
+  if (!text) return false;
+  const t = text.toLowerCase();
+  return DISTRESS_KEYWORDS.some((kw) => t.includes(kw));
+}
+
 export function analyzeConvoNLP(convo: Conversation): ConvoNLPAnalysis {
   const allUserText = (convo.messages || [])
     .filter((m) => m.sender === "user")
@@ -51,17 +87,19 @@ export function analyzeConvoNLP(convo: Conversation): ConvoNLPAnalysis {
     .join(" ")
     .toLowerCase();
 
-  const typeLower = (convo.type || "").toLowerCase();
+  const typeLower = (convo.type || "").toLowerCase().trim();
+  const intentLower = (convo.intent || "").toLowerCase().trim();
+  const urgencyLower = (convo.urgency || "").toLowerCase().trim();
 
   const criticalKeywords = [
     "critical", "trapped", "dying", "saklolo", "tulong", "buhay", "delikado",
-    "lubog", "nasusunog", "evacuate now", "bumagsak", "natabunan", "patay", "mamamatay",
+    "lubog", "nasusunog", "evacuate now", "bumagsak", "natabunan", "patay", "mamatay", "mamamatay",
     "guho", "pagguho", "naipit", "naanod", "nabalian"
   ];
   const highKeywords = [
     "saklolo", "rescue", "baha", "nasira", "bubong", "ambulance", "sugat",
     "emergency", "pagguho", "landslide", "tulong", "naipit", "naanod", "nabalian", "sunog", "apoy",
-    "trapped", "bumagsak", "natabunan", "patay", "bata"
+    "trapped", "bumagsak", "natabunan", "patay", "mamatay", "bata"
   ];
   const moderateKeywords = [
     "tubig", "supply", "puno", "kalsada", "daan", "poste", "interruption",
@@ -72,21 +110,38 @@ export function analyzeConvoNLP(convo: Conversation): ConvoNLPAnalysis {
     "bukas po ba", "good morning", "magandang", "hello", "hi po", "salamat", "thank you", "test", "ingat"
   ];
 
-  const distressKeywords = Array.from(
-    new Set([
-      ...criticalKeywords,
-      ...highKeywords,
-      ...moderateKeywords,
-      "trapped", "bumagsak", "natabunan", "patay", "bata", "mamamatay", "guho",
-      "rescue", "saklolo", "tulong", "emergency", "sunog", "apoy", "baha", "landslide",
-      "sugat", "ambulance", "naipit", "naanod", "nabalian"
-    ])
-  );
+  const hasCritical =
+    criticalKeywords.some((k) => allUserText.includes(k)) ||
+    urgencyLower.includes("critical");
+  const hasHigh =
+    highKeywords.some((k) => allUserText.includes(k)) ||
+    urgencyLower.includes("high");
+  const hasModerate =
+    moderateKeywords.some((k) => allUserText.includes(k)) ||
+    urgencyLower.includes("moderate") ||
+    urgencyLower.includes("mod");
 
-  const hasCritical = criticalKeywords.some((k) => allUserText.includes(k)) || (convo.urgency || "").toLowerCase().includes("critical");
-  const hasHigh = highKeywords.some((k) => allUserText.includes(k));
-  const hasModerate = moderateKeywords.some((k) => allUserText.includes(k));
-  const isExplicitNoise = noiseKeywords.some((k) => allUserText.includes(k)) && !hasHigh && !hasCritical;
+  const isExplicitIntent =
+    intentLower.includes("emergency") ||
+    intentLower.includes("incident") ||
+    intentLower.includes("resource") ||
+    intentLower.includes("distress") ||
+    isIncidentIntent(convo.intent);
+
+  const isExplicitIncidentType =
+    typeLower !== "" &&
+    typeLower !== "none" &&
+    typeLower !== "general" &&
+    typeLower !== "all types" &&
+    typeLower !== "unclassified" &&
+    typeLower !== "unknown" &&
+    typeLower !== "n/a";
+
+  const isExplicitNoise =
+    noiseKeywords.some((k) => allUserText.includes(k)) &&
+    !hasHigh &&
+    !hasCritical &&
+    !isExplicitIntent;
 
   let incidentType = "General";
   if (allUserText.includes("bulkan") || allUserText.includes("volcan") || allUserText.includes("ash") || allUserText.includes("abo") || typeLower.includes("volcan")) {
@@ -121,23 +176,23 @@ export function analyzeConvoNLP(convo: Conversation): ConvoNLPAnalysis {
   const distressMessageIndices: number[] = [];
   (convo.messages || []).forEach((m, idx) => {
     if (m.sender === "user") {
-      const text = m.text.toLowerCase();
-      const isDistress = distressKeywords.some((k) => text.includes(k));
+      const text = (m.text || "").toLowerCase();
+      const isDistress = DISTRESS_KEYWORDS.some((k) => text.includes(k));
       if (isDistress) {
         distressMessageIndices.push(idx);
       }
     }
   });
 
-  if (
-    distressMessageIndices.length === 0 &&
+  const isIncident =
     (hasCritical ||
       hasHigh ||
-      convo.urgency?.toLowerCase() === "critical" ||
-      convo.urgency?.toLowerCase() === "high" ||
-      convo.intent?.toLowerCase().includes("emergency") ||
-      convo.intent?.toLowerCase().includes("incident"))
-  ) {
+      hasModerate ||
+      isExplicitIntent ||
+      isExplicitIncidentType) &&
+    !isExplicitNoise;
+
+  if (distressMessageIndices.length === 0 && isIncident) {
     const firstUserIdx = (convo.messages || []).findIndex((m) => m.sender === "user");
     if (firstUserIdx !== -1) {
       distressMessageIndices.push(firstUserIdx);
@@ -146,17 +201,16 @@ export function analyzeConvoNLP(convo: Conversation): ConvoNLPAnalysis {
 
   const distressMessageIdx = distressMessageIndices.length > 0 ? distressMessageIndices[0] : -1;
 
-  const isIncident = (hasCritical || hasHigh || hasModerate || typeLower === "emergency" || typeLower === "medical" || typeLower === "search & rescue") && !isExplicitNoise;
   const urgency: "Critical" | "High" | "Moderate" | "Low" = hasCritical
     ? "Critical"
-    : convo.urgency
+    : convo.urgency && convo.urgency.toLowerCase() !== "low"
       ? (formatReportUrgency(convo.urgency) as "Critical" | "High" | "Moderate" | "Low")
       : (hasHigh ? "High" : hasModerate ? "Moderate" : "Low");
   const confidence = isIncident ? (hasCritical ? 98 : (hasHigh ? 96 : 89)) : 18;
 
   let nlpReason = "";
   if (isIncident) {
-    nlpReason = hasHigh
+    nlpReason = hasHigh || hasCritical
       ? "Distress intent detected: critical emergency event requiring immediate dispatch of rescue or medical responders."
       : "Community hazard or relief request detected requiring municipal response.";
   } else {
@@ -1628,18 +1682,25 @@ export default function MessengerBotLogs() {
                       }}
                     >
                       <div className="space-y-3 sm:space-y-4">
-                        {([...(selectedConversation.messages ?? [])].reverse()).map((msg, idx) => {
+                        {(selectedConversation.messages ?? []).map((msg, idx) => {
                           const msgDate = formatMsgDate(msg.timestamp, selectedConversation.time);
                           const msgTime = formatMsgTime(msg.timestamp, selectedConversation.time);
+                          const isDistress = msg.sender === "user" && (
+                            checkMessageHasDistress(msg.text) ||
+                            Boolean(selectedConversation.nlp?.distressMessageIndices?.includes(idx)) ||
+                            idx === selectedConversation.nlp?.distressMessageIdx ||
+                            (Boolean(selectedConversation.nlp?.isIncident) && (selectedConversation.messages ?? []).findIndex(m => m.sender === "user") === idx)
+                          );
+
                           return msg.sender === "bot" ? (
                             <div key={idx}>
                               <div className="flex items-end gap-1.5 sm:gap-2 justify-end">
                                 <div className="flex flex-col items-end max-w-[85%] sm:max-w-[74%] min-w-0">
-                                  <div className="bg-[#0071E3] text-white rounded-[20px] rounded-br-[4px] px-4 py-3 shadow-[0_2px_10px_rgba(0,113,227,0.22)] transition-all">
-                                    <p className="text-xs sm:text-[13.5px] leading-relaxed whitespace-pre-wrap break-words [overflow-wrap:anywhere] [word-break:break-word] font-normal">{msg.text}</p>
+                                  <div className="bg-[#0071E3] text-white rounded-[18px] sm:rounded-[20px] rounded-br-[4px] px-3.5 sm:px-4 py-2 sm:py-2.5 shadow-[0_2px_10px_rgba(0,113,227,0.22)] transition-all">
+                                    <p className="text-xs sm:text-sm leading-relaxed whitespace-pre-wrap break-words [overflow-wrap:anywhere] [word-break:break-word] font-normal">{msg.text}</p>
                                   </div>
                                   <div className="flex flex-col items-end mt-1 mr-1">
-                                    <span className="text-[10px] sm:text-[11px] text-slate-400 dark:text-slate-500 font-medium flex items-center gap-1.5">
+                                    <span className="text-[9px] sm:text-[10px] text-slate-400 dark:text-slate-500 font-medium flex items-center gap-1.5">
                                       <Bot className="w-3 h-3 text-[#0071E3] dark:text-sky-400 shrink-0" strokeWidth={1.75} />
                                       <span>Responde Bot</span>
                                       {msgTime && (
@@ -1650,7 +1711,7 @@ export default function MessengerBotLogs() {
                                       )}
                                     </span>
                                     {msgDate && (
-                                      <span className="text-[9.5px] sm:text-[10px] text-slate-400/80 dark:text-slate-500/80 font-normal tabular-nums mt-0.5">
+                                      <span className="text-[9px] sm:text-[9.5px] text-slate-400/80 dark:text-slate-500/80 font-normal tabular-nums mt-0.5">
                                         {msgDate}
                                       </span>
                                     )}
@@ -1664,7 +1725,7 @@ export default function MessengerBotLogs() {
                           ) : (
                             <div
                               key={idx}
-                              data-distress-idx={selectedConversation.nlp.isIncident && (selectedConversation.nlp.distressMessageIndices?.includes(idx) || idx === selectedConversation.nlp.distressMessageIdx) ? idx : undefined}
+                              data-distress-idx={isDistress ? idx : undefined}
                               className="relative"
                             >
                               <div className="flex items-end gap-1.5 sm:gap-2 justify-start">
@@ -1675,21 +1736,21 @@ export default function MessengerBotLogs() {
                                 </div>
                                 <div className="flex flex-col items-start max-w-[85%] sm:max-w-[74%] min-w-0">
                                   {/* Emergency Distress Tag on User Message */}
-                                  {selectedConversation.nlp.isIncident && (selectedConversation.nlp.distressMessageIndices?.includes(idx) || idx === selectedConversation.nlp.distressMessageIdx) && (
+                                  {isDistress && (
                                     <span className="inline-flex items-center gap-1 text-[9px] font-bold text-rose-600 dark:text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-md px-1.5 py-0.5 mb-1">
                                       <TriangleAlert className="w-2.5 h-2.5" strokeWidth={1.75} />
                                       <span>Distress Intent Extracted</span>
                                     </span>
                                   )}
-                                  <div className={`bg-white dark:bg-[#1e293b] text-slate-800 dark:text-slate-100 rounded-[20px] rounded-bl-[4px] px-4 py-2.5 shadow-[0_1px_3px_rgba(15,23,42,0.04)] border transition-all duration-200 ${
+                                  <div className={`bg-white/90 dark:bg-[#111827]/90 text-slate-800 dark:text-slate-100 rounded-[18px] sm:rounded-[20px] rounded-bl-[4px] px-3.5 sm:px-4 py-2 sm:py-2.5 shadow-[0_1px_3px_rgba(15,23,42,0.03)] border transition-all duration-200 ${
                                     highlightedDistressIdx === idx
                                       ? "border-rose-500/80 ring-2 ring-rose-500/50 shadow-[0_0_18px_rgba(244,63,94,0.35)] scale-[1.01]"
                                       : "border-slate-200/80 dark:border-white/10"
                                   }`}>
-                                    <p className="text-xs sm:text-[13.5px] leading-relaxed whitespace-pre-wrap break-words [overflow-wrap:anywhere] [word-break:break-word] font-normal">{msg.text}</p>
+                                    <p className="text-xs sm:text-sm leading-relaxed whitespace-pre-wrap break-words [overflow-wrap:anywhere] [word-break:break-word] font-normal">{msg.text}</p>
                                   </div>
                                   <div className="flex flex-col items-start mt-1 ml-1">
-                                    <span className="text-[10px] sm:text-[11px] text-slate-400 dark:text-slate-500 font-medium flex items-center gap-1.5">
+                                    <span className="text-[9px] sm:text-[10px] text-slate-400 dark:text-slate-500 font-medium flex items-center gap-1">
                                       <span>{selectedConversation.name}</span>
                                       {msgTime && (
                                         <>
@@ -1699,7 +1760,7 @@ export default function MessengerBotLogs() {
                                       )}
                                     </span>
                                     {msgDate && (
-                                      <span className="text-[9.5px] sm:text-[10px] text-slate-400/80 dark:text-slate-500/80 font-normal tabular-nums mt-0.5">
+                                      <span className="text-[9px] sm:text-[9.5px] text-slate-400/80 dark:text-slate-500/80 font-normal tabular-nums mt-0.5">
                                         {msgDate}
                                       </span>
                                     )}
