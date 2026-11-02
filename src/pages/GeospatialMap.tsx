@@ -907,16 +907,6 @@ function IncidentSidebarContent({
               );
             })}
           </div>
-
-          {isFiltered && (
-            <button
-              type="button"
-              onClick={() => setSourceFilter('all')}
-              className="text-[#0071E3] dark:text-sky-400 hover:underline text-xs font-semibold pr-1 cursor-pointer"
-            >
-              Reset
-            </button>
-          )}
         </div>
       </div>
 
