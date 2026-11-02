@@ -435,9 +435,9 @@ export default function ScraperFeed() {
   const availableTypes = useMemo(() => {
     const fromPosts = posts.map((p) => p.type).filter(Boolean);
     const sorted = Array.from(new Set([...BASE_INCIDENT_TYPES, ...fromPosts]))
-      .filter((t): t is string => Boolean(t && t.toLowerCase() !== 'all types' && t.toLowerCase() !== 'unclassified'))
+      .filter((t): t is string => Boolean(t && t.toLowerCase() !== 'all types' && t.toLowerCase() !== 'unclassified' && t.toLowerCase() !== 'none'))
       .sort();
-    return ["All Types", ...sorted];
+    return ["All Types", "None", ...sorted];
   }, [posts]);
 
   const getPostDateString = (p: ScrapedPost): string | null => {
