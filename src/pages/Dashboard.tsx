@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useReports } from '../context/ReportsContext';
-import { formatReportCode, getTypeHexColor } from '../services/incidentService';
+import { formatReportCode, getTypeHexColor, formatReportUrgency } from '../services/incidentService';
 import PageLoader from '../components/PageLoader';
 import AnimatedNumber from '../components/AnimatedNumber';
 import { StaggerContainer, StaggerItem } from '../components/Stagger';
@@ -145,6 +145,7 @@ interface TooltipPayloadItem {
   name: string;
   count: number;
   percentage: number;
+  critical: number;
   high: number;
   mod: number;
   low: number;
@@ -176,7 +177,7 @@ function TypeTooltip({ active, payload }: TypeTooltipProps) {
         <div className="flex items-center justify-between gap-4 text-[11px]">
           <span className="text-slate-500 dark:text-slate-400">Urgency:</span>
           <span className="font-semibold tabular-nums text-slate-700 dark:text-slate-300">
-            <span className="text-rose-500">{item.high} High</span> · <span className="text-amber-500">{item.mod} Mod</span> · <span className="text-[#22c55e] dark:text-green-400">{item.low} Low</span>
+            <span className="text-purple-600 dark:text-purple-400 font-semibold">{item.critical || 0} Crit</span> · <span className="text-rose-500">{item.high} High</span> · <span className="text-amber-500">{item.mod} Mod</span> · <span className="text-[#22c55e] dark:text-green-400">{item.low} Low</span>
           </span>
         </div>
       </div>
@@ -231,8 +232,8 @@ export default function Dashboard() {
 
   const highUrgencyCount = useMemo(() => {
     return reports.filter((r) => {
-      const u = (r.urgency || '').toLowerCase();
-      return u === 'high' || u === 'critical';
+      const urg = formatReportUrgency(r.urgency);
+      return urg === 'High' || urg === 'Critical';
     }).length;
   }, [reports]);
 
@@ -252,10 +253,10 @@ export default function Dashboard() {
         counts[norm] = { count: 0, critical: 0, high: 0, mod: 0, low: 0, brgys: {} };
       }
       counts[norm].count += 1;
-      const u = (r.urgency || '').toLowerCase();
-      if (u === 'critical') counts[norm].critical += 1;
-      else if (u === 'high') counts[norm].high += 1;
-      else if (u === 'moderate' || u === 'mod') counts[norm].mod += 1;
+      const urg = formatReportUrgency(r.urgency);
+      if (urg === 'Critical') counts[norm].critical += 1;
+      else if (urg === 'High') counts[norm].high += 1;
+      else if (urg === 'Moderate') counts[norm].mod += 1;
       else counts[norm].low += 1;
 
       const brgy = r.barangay || 'Unknown';
@@ -271,6 +272,7 @@ export default function Dashboard() {
           type,
           count: data.count,
           percentage: Math.round((data.count / total) * 100),
+          critical: data.critical,
           high: data.high,
           mod: data.mod,
           low: data.low,
@@ -292,13 +294,10 @@ export default function Dashboard() {
     });
 
     const total = matching.length;
-    const critical = matching.filter((r) => (r.urgency || '').toLowerCase() === 'critical').length;
-    const high = matching.filter((r) => (r.urgency || '').toLowerCase() === 'high').length;
-    const mod = matching.filter((r) => {
-      const u = (r.urgency || '').toLowerCase();
-      return u === 'moderate' || u === 'mod';
-    }).length;
-    const low = matching.filter((r) => (r.urgency || '').toLowerCase() === 'low').length;
+    const critical = matching.filter((r) => formatReportUrgency(r.urgency) === 'Critical').length;
+    const high = matching.filter((r) => formatReportUrgency(r.urgency) === 'High').length;
+    const mod = matching.filter((r) => formatReportUrgency(r.urgency) === 'Moderate').length;
+    const low = matching.filter((r) => formatReportUrgency(r.urgency) === 'Low').length;
 
     const verified = matching.filter((r) => r.status === 'verified').length;
     const underReview = matching.filter((r) => r.status === 'under_review' || r.status === 'pending').length;
@@ -343,16 +342,13 @@ export default function Dashboard() {
     });
 
     if (filterUrgency === 'Critical') {
-      list = list.filter((r) => (r.urgency || '').toLowerCase() === 'critical');
+      list = list.filter((r) => formatReportUrgency(r.urgency) === 'Critical');
     } else if (filterUrgency === 'High') {
-      list = list.filter((r) => (r.urgency || '').toLowerCase() === 'high');
+      list = list.filter((r) => formatReportUrgency(r.urgency) === 'High');
     } else if (filterUrgency === 'Mod') {
-      list = list.filter((r) => {
-        const u = (r.urgency || '').toLowerCase();
-        return u === 'moderate' || u === 'mod';
-      });
+      list = list.filter((r) => formatReportUrgency(r.urgency) === 'Moderate');
     } else if (filterUrgency === 'Low') {
-      list = list.filter((r) => (r.urgency || '').toLowerCase() === 'low');
+      list = list.filter((r) => formatReportUrgency(r.urgency) === 'Low');
     }
 
     if (selectedType) {
@@ -971,12 +967,8 @@ export default function Dashboard() {
                       Urgency Levels
                     </span>
                     <div className="flex items-center gap-1.5 flex-wrap text-[11px] font-medium">
-                      {selectedTypeDetails.critical > 0 && (
-                        <>
-                          <span className="text-rose-700 dark:text-rose-400 font-bold">{selectedTypeDetails.critical} Crit</span>
-                          <span className="text-slate-300 dark:text-slate-600">·</span>
-                        </>
-                      )}
+                      <span className="text-purple-600 dark:text-purple-400 font-semibold">{selectedTypeDetails.critical} Crit</span>
+                      <span className="text-slate-300 dark:text-slate-600">·</span>
                       <span className="text-rose-600 dark:text-rose-400 font-semibold">{selectedTypeDetails.high} High</span>
                       <span className="text-slate-300 dark:text-slate-600">·</span>
                       <span className="text-amber-600 dark:text-amber-400">{selectedTypeDetails.mod} Mod</span>

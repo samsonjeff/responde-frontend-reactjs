@@ -56,7 +56,7 @@ export function formatReportUrgency(u?: string | null): string {
   const lower = clean.toLowerCase();
   if (lower === 'critical') return 'Critical';
   if (lower === 'high') return 'High';
-  if (lower === 'moderate' || lower === 'medium') return 'Moderate';
+  if (lower === 'moderate' || lower === 'medium' || lower === 'mod') return 'Moderate';
   if (lower === 'low') return 'Low';
   return clean.charAt(0).toUpperCase() + clean.slice(1);
 }
