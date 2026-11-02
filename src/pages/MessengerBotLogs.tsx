@@ -11,7 +11,8 @@ import PageLoader from "../components/PageLoader";
 import { StaggerContainer, StaggerItem } from "../components/Stagger";
 import { useBotConversations, type BotConversation as Conversation } from "../context/BotConversationsContext";
 import { TALISAY_BARANGAYS } from "../data/talisay-barangays";
-import { extractDisplayTime, formatPhilippineTimeOnly } from "../utils/dateUtils";
+import { extractDisplayTime, formatPhilippineTimeOnly, formatPhilippineDateOnly } from "../utils/dateUtils";
+import { BASE_INCIDENT_TYPES, formatReportUrgency } from "../services/incidentService";
 import { useDebounce } from "../hooks/useDebounce";
 
 // Canonical incident type choices matching Responde Talisay taxonomy
@@ -31,7 +32,7 @@ export interface ConvoNLPAnalysis {
   confidence: number;
   nlpCategory: "Incident" | "Inquiry / Chatter";
   incidentType: string;
-  urgency: "High" | "Moderate" | "Low";
+  urgency: "Critical" | "High" | "Moderate" | "Low";
   nlpReason: string;
   actionableNeeds: string[];
   extractedLocation: string;
@@ -114,9 +115,15 @@ export function analyzeConvoNLP(convo: Conversation): ConvoNLPAnalysis {
 
   const distressMessageIdx = distressMessageIndices.length > 0 ? distressMessageIndices[0] : -1;
 
-  const isIncident = (hasHigh || hasModerate || typeLower === "emergency" || typeLower === "medical" || typeLower === "search & rescue") && !isExplicitNoise;
-  const urgency: "High" | "Moderate" | "Low" = hasHigh ? "High" : hasModerate ? "Moderate" : "Low";
-  const confidence = isIncident ? (hasHigh ? 96 : 89) : 18;
+  const criticalKeywords = ["critical", "trapped", "dying", "saklolo", "tulong", "buhay", "delikado", "lubog", "nasusunog", "evacuate now"];
+  const hasCritical = criticalKeywords.some((k) => allUserText.includes(k)) || (convo.urgency || "").toLowerCase().includes("critical");
+  const isIncident = (hasCritical || hasHigh || hasModerate || typeLower === "emergency" || typeLower === "medical" || typeLower === "search & rescue") && !isExplicitNoise;
+  const urgency: "Critical" | "High" | "Moderate" | "Low" = hasCritical
+    ? "Critical"
+    : convo.urgency
+      ? (formatReportUrgency(convo.urgency) as "Critical" | "High" | "Moderate" | "Low")
+      : (hasHigh ? "High" : hasModerate ? "Moderate" : "Low");
+  const confidence = isIncident ? (hasCritical ? 98 : (hasHigh ? 96 : 89)) : 18;
 
   let nlpReason = "";
   if (isIncident) {
@@ -195,6 +202,26 @@ function getLastMessage(convo: Conversation): string {
 
 function formatDisplayTime(timeStr: string): string {
   return extractDisplayTime(timeStr);
+}
+
+function formatMsgDate(timestamp?: string, convoTime?: string): string {
+  if (timestamp) {
+    const formatted = formatPhilippineDateOnly(timestamp);
+    if (formatted) return formatted;
+  }
+  if (convoTime) {
+    const formatted = formatPhilippineDateOnly(convoTime);
+    if (formatted) return formatted;
+    const m = convoTime.match(/^(\d{1,2})\/(\d{1,2})/);
+    if (m) {
+      const year = new Date().getFullYear();
+      const d = new Date(year, parseInt(m[1], 10) - 1, parseInt(m[2], 10));
+      if (!isNaN(d.getTime())) {
+        return formatPhilippineDateOnly(d);
+      }
+    }
+  }
+  return '';
 }
 
 function formatMsgTime(timestamp?: string, convoTime?: string): string {
@@ -463,21 +490,16 @@ export default function MessengerBotLogs() {
       .map((c) => c.barangay)
       .filter((b): b is string => Boolean(b && !['all barangays', 'none', 'unknown', 'general', 'unspecified', 'n/a', 'null'].includes(b.toLowerCase().trim())));
     const sorted = Array.from(new Set([...TALISAY_BARANGAYS, ...fromConversations])).sort();
-    return ["None", "Unknown", ...sorted];
+    return ["All Barangays", "None", "Unknown", ...sorted];
   }, [conversations]);
 
   const availableTypes = useMemo(() => {
-    return [
-      "None",
-      "Earthquake",
-      "Fire",
-      "Flood",
-      "General",
-      "Landslide",
-      "Typhoon",
-      "Volcanic Eruption",
-    ];
-  }, []);
+    const fromConversations = conversations.map((c) => c.type).filter(Boolean);
+    const sorted = Array.from(new Set([...BASE_INCIDENT_TYPES, ...fromConversations]))
+      .filter((t): t is string => Boolean(t && t.toLowerCase() !== 'all types' && t.toLowerCase() !== 'unclassified' && t.toLowerCase() !== 'none'))
+      .sort();
+    return ["All Types", "None", ...sorted];
+  }, [conversations]);
 
   const resetFilters = () => {
     setFilterBarangay("All Barangays");
@@ -1007,10 +1029,11 @@ export default function MessengerBotLogs() {
                 <button
                   type="button"
                   onClick={resetFilters}
-                  className="inline-flex items-center gap-1 text-xs font-semibold text-[#0071E3] dark:text-sky-400 hover:underline cursor-pointer"
+                  className="inline-flex items-center justify-center w-7 h-7 text-[#0071E3] hover:text-blue-700 dark:text-sky-400 bg-blue-500/10 hover:bg-blue-500/15 rounded-lg border border-blue-500/20 transition-all duration-150 active:scale-95 cursor-pointer shrink-0"
+                  title="Reset all filters"
+                  aria-label="Reset all filters"
                 >
-                  <RotateCcw className="w-3 h-3" strokeWidth={1.75} />
-                  <span>Reset</span>
+                  <RotateCcw className="w-3.5 h-3.5" strokeWidth={1.75} />
                 </button>
               )}
             </div>
@@ -1026,14 +1049,14 @@ export default function MessengerBotLogs() {
                 <div className="col-span-1 md:col-span-auto min-w-0 md:min-w-[135px] w-full md:w-auto">
                   <FilterDropdown
                     value={filterBarangay}
-                    options={["All Barangays", ...availableBarangays]}
+                    options={availableBarangays}
                     onChange={(val) => { setFilterBarangay(val); setSelectedId(""); }}
                   />
                 </div>
                 <div className="col-span-1 md:col-span-auto min-w-0 md:min-w-[125px] w-full md:w-auto">
                   <FilterDropdown
                     value={filterType}
-                    options={["All Types", ...availableTypes]}
+                    options={availableTypes}
                     onChange={(val) => { setFilterType(val); setSelectedId(""); }}
                   />
                 </div>
@@ -1429,8 +1452,7 @@ export default function MessengerBotLogs() {
                             <span className="truncate">{selectedConversation.barangay}</span>
                             <span className="text-slate-300 dark:text-slate-600 shrink-0">•</span>
                             <span className="truncate">{selectedConversation.nlp?.incidentType && selectedConversation.nlp.incidentType.toLowerCase() !== "none" ? selectedConversation.nlp.incidentType : (selectedConversation.type && selectedConversation.type.toLowerCase() !== "none" ? selectedConversation.type : "General")}</span>
-                            <span className="hidden md:inline text-slate-300 dark:text-slate-600 shrink-0">•</span>
-                            <span className="hidden md:inline font-mono text-[10px] sm:text-[11px] text-slate-400 dark:text-slate-500 shrink-0">PSID: {selectedConversation.psid}</span>
+                            
                           </p>
                         </div>
                       </div>
@@ -1520,7 +1542,8 @@ export default function MessengerBotLogs() {
                       }}
                     >
                       <div className="space-y-3 sm:space-y-4">
-                        {(selectedConversation.messages ?? []).map((msg, idx) => {
+                        {([...(selectedConversation.messages ?? [])].reverse()).map((msg, idx) => {
+                          const msgDate = formatMsgDate(msg.timestamp, selectedConversation.time);
                           const msgTime = formatMsgTime(msg.timestamp, selectedConversation.time);
                           return msg.sender === "bot" ? (
                             <div key={idx}>
@@ -1529,16 +1552,23 @@ export default function MessengerBotLogs() {
                                   <div className="bg-[#0071E3] text-white rounded-[20px] rounded-br-[4px] px-4 py-3 shadow-[0_2px_10px_rgba(0,113,227,0.22)] transition-all">
                                     <p className="text-xs sm:text-[13.5px] leading-relaxed whitespace-pre-wrap break-words [overflow-wrap:anywhere] [word-break:break-word] font-normal">{msg.text}</p>
                                   </div>
-                                  <span className="text-[10px] sm:text-[11px] text-slate-400 dark:text-slate-500 mt-1 mr-1 font-medium flex items-center gap-1.5">
-                                    <Bot className="w-3 h-3 text-[#0071E3] dark:text-sky-400 shrink-0" strokeWidth={1.75} />
-                                    <span>Responde Bot</span>
-                                    {msgTime && (
-                                      <>
-                                        <span className="text-slate-300 dark:text-slate-600">•</span>
-                                        <span className="tabular-nums">{msgTime}</span>
-                                      </>
+                                  <div className="flex flex-col items-end mt-1 mr-1">
+                                    <span className="text-[10px] sm:text-[11px] text-slate-400 dark:text-slate-500 font-medium flex items-center gap-1.5">
+                                      <Bot className="w-3 h-3 text-[#0071E3] dark:text-sky-400 shrink-0" strokeWidth={1.75} />
+                                      <span>Responde Bot</span>
+                                      {msgTime && (
+                                        <>
+                                          <span className="text-slate-300 dark:text-slate-600">•</span>
+                                          <span className="tabular-nums">{msgTime}</span>
+                                        </>
+                                      )}
+                                    </span>
+                                    {msgDate && (
+                                      <span className="text-[9.5px] sm:text-[10px] text-slate-400/80 dark:text-slate-500/80 font-normal tabular-nums mt-0.5">
+                                        {msgDate}
+                                      </span>
                                     )}
-                                  </span>
+                                  </div>
                                 </div>
                                 <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-blue-100 dark:bg-blue-950/80 flex items-center justify-center text-[10px] sm:text-[11px] font-bold text-[#0071E3] dark:text-blue-400 shrink-0 mb-3 sm:mb-4 ring-1 ring-blue-500/20 shadow-2xs">
                                   <Bot className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#0071E3]" strokeWidth={1.75} />
@@ -1572,15 +1602,22 @@ export default function MessengerBotLogs() {
                                   }`}>
                                     <p className="text-xs sm:text-[13.5px] leading-relaxed whitespace-pre-wrap break-words [overflow-wrap:anywhere] [word-break:break-word] font-normal">{msg.text}</p>
                                   </div>
-                                  <span className="text-[10px] sm:text-[11px] text-slate-400 dark:text-slate-500 mt-1 ml-1 font-medium flex items-center gap-1.5">
-                                    <span>{selectedConversation.name}</span>
-                                    {msgTime && (
-                                      <>
-                                        <span className="text-slate-300 dark:text-slate-600">•</span>
-                                        <span className="tabular-nums">{msgTime}</span>
-                                      </>
+                                  <div className="flex flex-col items-start mt-1 ml-1">
+                                    <span className="text-[10px] sm:text-[11px] text-slate-400 dark:text-slate-500 font-medium flex items-center gap-1.5">
+                                      <span>{selectedConversation.name}</span>
+                                      {msgTime && (
+                                        <>
+                                          <span className="text-slate-300 dark:text-slate-600">•</span>
+                                          <span className="tabular-nums">{msgTime}</span>
+                                        </>
+                                      )}
+                                    </span>
+                                    {msgDate && (
+                                      <span className="text-[9.5px] sm:text-[10px] text-slate-400/80 dark:text-slate-500/80 font-normal tabular-nums mt-0.5">
+                                        {msgDate}
+                                      </span>
                                     )}
-                                  </span>
+                                  </div>
                                 </div>
                               </div>
                             </div>

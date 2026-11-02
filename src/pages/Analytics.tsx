@@ -49,6 +49,8 @@ import { useReports } from '../context/ReportsContext';
 import PageLoader from '../components/PageLoader';
 import { containerVariants, itemVariants } from '../components/Stagger';
 import { BarangayBarChart, type BarangayBarChartProps } from '../components/BarangayBarChart';
+import { TALISAY_BARANGAYS, normalizeBarangayName } from '../data/talisay-barangays';
+import { BASE_INCIDENT_TYPES } from '../services/incidentService';
 
 export { BarangayBarChart, type BarangayBarChartProps };
 
@@ -419,17 +421,20 @@ export default function Analytics() {
   const [typeViewMode, setTypeViewMode] = useState<'donut' | 'bar'>('donut');
 
   const allBarangays = useMemo(() => {
-    const unique = Array.from(new Set(
-      data
-        .map(r => r.barangay)
-        .filter((b) => Boolean(b && !['all barangays', 'none', 'unknown', 'unspecified', 'n/a', 'null'].includes(b.toLowerCase().trim())))
-    )).sort();
-    return ['All Barangays', 'None', 'Unknown', ...unique];
+    const extra = data
+      .map(r => normalizeBarangayName(r.barangay) || r.barangay)
+      .filter((b): b is string => Boolean(b && typeof b === 'string' && !['all barangays', 'none', 'unknown', 'unspecified', 'n/a', 'null'].includes(b.toLowerCase().trim()) && !(TALISAY_BARANGAYS as readonly string[]).includes(b)));
+    const sorted = Array.from(new Set([...TALISAY_BARANGAYS, ...extra])).sort();
+    return ['All Barangays', 'None', 'Unknown', ...sorted];
   }, [data]);
 
   const allTypes = useMemo(() => {
-    return ['All Types', 'None', ...CANONICAL_INCIDENT_TYPES];
-  }, []);
+    const fromReports = data.map(r => r.type).filter(Boolean);
+    const sorted = Array.from(new Set([...BASE_INCIDENT_TYPES, ...CANONICAL_INCIDENT_TYPES, ...fromReports]))
+      .filter((t): t is string => Boolean(t && t.toLowerCase() !== 'all types' && t.toLowerCase() !== 'unclassified' && t.toLowerCase() !== 'none'))
+      .sort();
+    return ['All Types', 'None', ...sorted];
+  }, [data]);
 
   const allSources = useMemo(() => ['All Sources', 'Bot', 'Scraper'], []);
 
