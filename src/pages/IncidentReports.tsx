@@ -952,8 +952,8 @@ export default function IncidentReports() {
         );
       case 'under_review':
         return (
-          <span className="inline-flex items-center justify-center gap-1.5 w-[104px] py-0.5 rounded-full text-xs font-semibold bg-orange-600/12 text-orange-800 dark:text-orange-300 border border-orange-600/25">
-            <span className="w-1.5 h-1.5 rounded-full bg-orange-600 animate-pulse shrink-0" />
+          <span className="inline-flex items-center justify-center gap-1.5 w-[104px] py-0.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0 animate-pulse" />
             <span>Under Review</span>
           </span>
         );

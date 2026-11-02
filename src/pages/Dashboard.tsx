@@ -407,8 +407,8 @@ export default function Dashboard() {
       case 'under_review':
       case 'pending':
         return (
-          <span className="inline-flex items-center justify-center gap-1.5 w-[104px] py-0.5 rounded-full text-xs font-semibold bg-orange-600/12 text-orange-800 dark:text-orange-300 border border-orange-600/25">
-            <span className="w-1.5 h-1.5 rounded-full bg-orange-600 shrink-0 animate-pulse" />
+          <span className="inline-flex items-center justify-center gap-1.5 w-[104px] py-0.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0 animate-pulse" />
             <span>Under Review</span>
           </span>
         );
@@ -494,9 +494,9 @@ export default function Dashboard() {
         </div>
 
         {/* Under Review */}
-        <div className="relative overflow-hidden bg-white/80 dark:bg-[#111827]/80 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)] p-3.5 sm:p-4 md:p-5 flex items-center justify-between group transition-[transform,box-shadow,border-color,background-color] duration-250 ease-[cubic-bezier(0.23,1,0.32,1)] hover:-translate-y-1 hover:bg-white/95 dark:hover:bg-[#151e31]/95 hover:border-orange-600/35 dark:hover:border-orange-500/40 hover:shadow-[0_12px_28px_-6px_rgba(234,88,12,0.15),0_4px_12px_-2px_rgba(15,23,42,0.05)] dark:hover:shadow-[0_12px_30px_-6px_rgba(234,88,12,0.22)] min-w-0">
-          <div className="pointer-events-none absolute -right-10 -top-10 w-44 h-44 rounded-full bg-[radial-gradient(circle,rgba(234,88,12,0.16)_0%,rgba(234,88,12,0.05)_45%,transparent_70%)] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[2.5px] bg-gradient-to-r from-transparent via-orange-600/70 to-transparent scale-x-0 group-hover:scale-x-100 transition-transform duration-300 ease-[cubic-bezier(0.23,1,0.32,1)]" />
+        <div className="relative overflow-hidden bg-white/80 dark:bg-[#111827]/80 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)] p-3.5 sm:p-4 md:p-5 flex items-center justify-between group transition-[transform,box-shadow,border-color,background-color] duration-250 ease-[cubic-bezier(0.23,1,0.32,1)] hover:-translate-y-1 hover:bg-white/95 dark:hover:bg-[#151e31]/95 hover:border-amber-500/35 dark:hover:border-amber-500/40 hover:shadow-[0_12px_28px_-6px_rgba(245,158,11,0.15),0_4px_12px_-2px_rgba(15,23,42,0.05)] dark:hover:shadow-[0_12px_30px_-6px_rgba(245,158,11,0.22)] min-w-0">
+          <div className="pointer-events-none absolute -right-10 -top-10 w-44 h-44 rounded-full bg-[radial-gradient(circle,rgba(245,158,11,0.16)_0%,rgba(245,158,11,0.05)_45%,transparent_70%)] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[2.5px] bg-gradient-to-r from-transparent via-amber-500/70 to-transparent scale-x-0 group-hover:scale-x-100 transition-transform duration-300 ease-[cubic-bezier(0.23,1,0.32,1)]" />
           <div className="relative z-10 space-y-1 min-w-0">
             <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors duration-200 truncate">
               Under Review
@@ -507,8 +507,8 @@ export default function Dashboard() {
             <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] font-medium min-w-0">
               {underReviewCount > 0 ? (
                 <>
-                  <span className="w-1.5 h-1.5 rounded-full bg-orange-600 animate-pulse shrink-0 group-hover:shadow-[0_0_8px_rgba(234,88,12,0.85)] transition-shadow duration-200" />
-                  <span className="text-orange-700 dark:text-orange-300 font-semibold truncate">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse shrink-0 group-hover:shadow-[0_0_8px_rgba(245,158,11,0.85)] transition-shadow duration-200" />
+                  <span className="text-amber-600 dark:text-amber-400 font-semibold truncate">
                     Needs triage
                   </span>
                 </>
@@ -522,7 +522,7 @@ export default function Dashboard() {
               )}
             </div>
           </div>
-          <div className="relative z-10 w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-xl sm:rounded-2xl bg-orange-600/12 group-hover:bg-orange-600/18 text-orange-700 dark:text-orange-300 border border-orange-600/25 group-hover:border-orange-600/35 shadow-[0_0_16px_rgba(234,88,12,0.15)] group-hover:shadow-[0_0_24px_rgba(234,88,12,0.3)] group-hover:scale-108 transition-[transform,background-color,border-color,box-shadow] duration-250 ease-[cubic-bezier(0.23,1,0.32,1)] flex items-center justify-center shrink-0">
+          <div className="relative z-10 w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-xl sm:rounded-2xl bg-amber-500/10 group-hover:bg-amber-500/18 text-amber-600 dark:text-amber-400 border border-amber-500/20 group-hover:border-amber-500/35 shadow-[0_0_16px_rgba(245,158,11,0.15)] group-hover:shadow-[0_0_24px_rgba(245,158,11,0.3)] group-hover:scale-108 transition-[transform,background-color,border-color,box-shadow] duration-250 ease-[cubic-bezier(0.23,1,0.32,1)] flex items-center justify-center shrink-0">
             <Clock className="w-4.5 h-4.5 sm:w-5 sm:h-5 md:w-6 md:h-6 transition-transform duration-250 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:scale-110" strokeWidth={1.75} />
           </div>
         </div>
@@ -947,7 +947,7 @@ export default function Dashboard() {
                       Status Flow
                     </span>
                     <div className="flex items-center gap-1.5 flex-wrap text-[11px] font-medium">
-                      <span className="text-orange-700 dark:text-orange-400 font-semibold">{selectedTypeDetails.underReview} Review</span>
+                      <span className="text-amber-600 dark:text-amber-400 font-semibold">{selectedTypeDetails.underReview} Review</span>
                       <span className="text-slate-300 dark:text-slate-600">·</span>
                       <span className="text-emerald-600 dark:text-emerald-400">{selectedTypeDetails.verified} Ver</span>
                       <span className="text-slate-300 dark:text-slate-600">·</span>
