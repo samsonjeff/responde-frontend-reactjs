@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { motion, AnimatePresence, type Variants } from "framer-motion";
 import {
-  Filter, AlertCircle, X, CheckCircle2, RefreshCw, MessageSquare,
+  Filter, AlertCircle, X, Minus, CheckCircle2, RefreshCw, MessageSquare,
   ChevronRight, ChevronLeft, ChevronDown, Bot, RotateCcw,
   Layers, AlertTriangle, ArrowUp, ArrowDown
 } from "lucide-react";
@@ -330,7 +330,7 @@ export default function MessengerBotLogs() {
     } catch {}
   };
 
-  const [selectedId, setSelectedId] = useState<string>(() => conversations[0]?.id || "");
+  const [selectedId, setSelectedId] = useState<string>("");
   const [mobileView, setMobileView] = useState<'list' | 'chat'>('list');
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [fromDate, setFromDate] = useState("");
@@ -443,13 +443,20 @@ export default function MessengerBotLogs() {
     setMobileView('chat');
   };
 
-  // Keep first conversation selected once loaded
+  const handleCloseConversation = useCallback(() => {
+    setSelectedId("");
+    setMobileView('list');
+  }, []);
+
   useEffect(() => {
-    if (conversations.length > 0 && !selectedId) {
-      setSelectedId(conversations[0].id);
-      markConvoSeen(conversations[0].id);
-    }
-  }, [conversations, selectedId]);
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && selectedId) {
+        handleCloseConversation();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedId, handleCloseConversation]);
 
   // -- Toast State --
   const [toasts, setToasts] = useState<Toast[]>([]);
@@ -602,19 +609,17 @@ export default function MessengerBotLogs() {
     return filteredConversations.slice(start, start + PAGE_SIZE);
   }, [filteredConversations, currentPage]);
 
-  const selectedConversation =
-    filteredConversations.find((c) => c.id === selectedId) || filteredConversations[0] || null;
+  const selectedConversation = selectedId
+    ? filteredConversations.find((c) => c.id === selectedId) || null
+    : null;
 
-  // Sync selectedId with first filtered item when active filter excludes previous selection
+  // Sync selectedId when active filter excludes previous selection
   useEffect(() => {
-    if (filteredConversations.length > 0) {
+    if (selectedId && filteredConversations.length > 0) {
       const exists = filteredConversations.some((c) => c.id === selectedId);
       if (!exists) {
-        setSelectedId(filteredConversations[0].id);
-        markConvoSeen(filteredConversations[0].id);
+        setSelectedId("");
       }
-    } else {
-      setSelectedId("");
     }
   }, [filteredConversations, selectedId]);
 
@@ -1114,9 +1119,10 @@ export default function MessengerBotLogs() {
             {/* LEFT: Conversation List — Soft Messages Sidebar */}
             <div
               className={`
-                ${mobileView === 'chat' ? 'hidden md:flex' : 'flex'}
-                md:col-span-5 lg:col-span-5 bg-white/85 dark:bg-[#111827]/85 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_1px_3px_rgba(15,23,42,0.04),0_8px_24px_rgba(15,23,42,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.3)] flex-col overflow-hidden
-                min-h-[460px] md:min-h-0 h-[calc(100vh-12rem)] md:h-full
+                ${mobileView === 'chat' && selectedConversation ? 'hidden md:flex' : 'flex'}
+                ${selectedConversation ? 'md:col-span-5 lg:col-span-5' : 'md:col-span-12 w-full'}
+                bg-white/85 dark:bg-[#111827]/85 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_1px_3px_rgba(15,23,42,0.04),0_8px_24px_rgba(15,23,42,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.3)] flex-col overflow-hidden
+                min-h-[460px] md:min-h-0 h-[calc(100vh-12rem)] md:h-full transition-all duration-200
               `}
             >
               {/* Apple Segmented Stream Switcher Header */}
@@ -1408,15 +1414,20 @@ export default function MessengerBotLogs() {
             </div>
 
             {/* RIGHT: Message Detail — macOS Soft Messages Style */}
-            <div
-              className={`
-                ${mobileView === 'list' ? 'hidden md:flex' : 'flex'}
-                md:col-span-7 lg:col-span-7 bg-white/90 dark:bg-[#111827]/90 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_1px_3px_rgba(15,23,42,0.04),0_8px_24px_rgba(15,23,42,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.3)] flex-col overflow-hidden
-                min-h-[480px] md:min-h-0 h-[calc(100vh-12rem)] md:h-full
-              `}
-            >
-              <AnimatePresence mode="wait">
-                {selectedConversation ? (
+            <AnimatePresence mode="wait">
+              {selectedConversation && (
+                <motion.div
+                  key="convo-detail-panel"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                  transition={{ duration: 0.2, ease: "easeOut" }}
+                  className={`
+                    ${mobileView === 'list' ? 'hidden md:flex' : 'flex'}
+                    md:col-span-7 lg:col-span-7 bg-white/90 dark:bg-[#111827]/90 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_1px_3px_rgba(15,23,42,0.04),0_8px_24px_rgba(15,23,42,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.3)] flex-col overflow-hidden
+                    min-h-[480px] md:min-h-0 h-[calc(100vh-12rem)] md:h-full
+                  `}
+                >
                   <motion.div
                     key={selectedConversation.id}
                     variants={contentVariants}
@@ -1431,7 +1442,7 @@ export default function MessengerBotLogs() {
                         {/* Mobile Back Button to Conversation List (< md) */}
                         <button
                           type="button"
-                          onClick={() => setMobileView('list')}
+                          onClick={handleCloseConversation}
                           className="md:hidden inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold text-[#0071E3] dark:text-sky-400 bg-blue-500/10 hover:bg-blue-500/15 active:scale-95 transition-all shrink-0 cursor-pointer"
                           aria-label="Back to conversations list"
                         >
@@ -1527,6 +1538,28 @@ export default function MessengerBotLogs() {
                               <span className="relative z-10">Complete</span>
                             </button>
                           </div>
+                        </div>
+
+                        {/* Minimize / Close Conversation Buttons */}
+                        <div className="flex items-center gap-1 shrink-0 ml-1 sm:ml-2 pl-1 sm:pl-2 border-l border-slate-200/60 dark:border-white/10">
+                          <button
+                            type="button"
+                            onClick={handleCloseConversation}
+                            className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl text-slate-400 hover:text-slate-700 dark:text-slate-500 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-150 flex items-center justify-center active:scale-95 cursor-pointer"
+                            title="Minimize conversation (Esc)"
+                            aria-label="Minimize conversation"
+                          >
+                            <Minus className="w-3.5 h-3.5 sm:w-4 sm:h-4" strokeWidth={2} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleCloseConversation}
+                            className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl text-slate-400 hover:text-rose-600 dark:text-slate-500 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-all duration-150 flex items-center justify-center active:scale-95 cursor-pointer"
+                            title="Close conversation (Esc)"
+                            aria-label="Close conversation"
+                          >
+                            <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" strokeWidth={2} />
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -1695,38 +1728,9 @@ export default function MessengerBotLogs() {
                       )}
                     </AnimatePresence>
                   </motion.div>
-                ) : (
-                  <motion.div
-                    key="empty"
-                    variants={contentVariants}
-                    initial="hidden"
-                    animate="visible"
-                    exit="exit"
-                    className="h-full flex-1 flex flex-col items-center justify-center p-8 text-center"
-                  >
-                    <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-slate-100 dark:bg-white/[0.04] border border-slate-200/60 dark:border-white/10 flex items-center justify-center text-slate-400 dark:text-slate-500 mb-3 shadow-inner">
-                      <MessageSquare className="w-7 h-7 sm:w-8 sm:h-8 stroke-[1.5]" />
-                    </div>
-                    <h4 className="font-semibold text-slate-800 dark:text-slate-200 text-sm sm:text-base">
-                      No Conversation Selected
-                    </h4>
-                    <p className="text-xs text-slate-400 dark:text-slate-500 max-w-[260px] mt-1">
-                      {viewMode === "structured"
-                        ? "Select an active incident report from the list to view extracted details and chat history."
-                        : "Select an active conversation from the list to inspect logs and AI bot exchanges."}
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => setMobileView('list')}
-                      className="lg:hidden mt-4 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold text-white bg-[#0071E3] hover:bg-[#0077ED] transition-colors cursor-pointer"
-                    >
-                      <ChevronLeft className="w-4 h-4" strokeWidth={1.75} />
-                      <span>View Conversations</span>
-                    </button>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </StaggerItem>
       </StaggerContainer>
