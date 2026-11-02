@@ -598,7 +598,7 @@ export default function MessengerBotLogs() {
       .map((c) => c.barangay)
       .filter((b): b is string => Boolean(b && !['all barangays', 'none', 'unknown', 'general', 'unspecified', 'n/a', 'null'].includes(b.toLowerCase().trim())));
     const sorted = Array.from(new Set([...TALISAY_BARANGAYS, ...fromConversations])).sort();
-    return ["All Barangays", "None", "Unknown", ...sorted];
+    return ["All Barangays", "None", ...sorted];
   }, [conversations]);
 
   const availableTypes = useMemo(() => {
@@ -1137,74 +1137,79 @@ export default function MessengerBotLogs() {
               relative z-30 bg-white/80 dark:bg-[#111827]/80 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_1px_3px_rgba(15,23,42,0.04)] p-3 sm:p-3.5 flex-col gap-3 transition-all duration-200 shrink-0
             `}
           >
-            {/* Filter Controls Row — Always visible on all screens, never hidden */}
-            <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 md:gap-3">
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100/80 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 text-xs font-semibold shrink-0 border border-slate-200/50 dark:border-white/5">
-                <Filter className="w-3.5 h-3.5 text-[#0071E3]" strokeWidth={1.75} />
-                <span>Filters</span>
-                {activeFilterCount > 0 && (
-                  <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-[#0071E3] text-white tabular-nums">
-                    {activeFilterCount}
-                  </span>
-                )}
-              </div>
+            {/* Filter Controls Row with Grouped Inset Containers */}
+            <div className="flex flex-col md:flex-row md:flex-wrap lg:flex-nowrap items-stretch md:items-center justify-between gap-2.5 sm:gap-3 overflow-x-auto scrollbar-none pb-1 md:pb-0">
+              {/* Left Filter Scope Container */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 md:inline-flex md:items-center gap-2 sm:gap-2.5 md:gap-2 md:p-1.5 md:px-2 bg-slate-100/70 dark:bg-white/[0.05] backdrop-blur-xl rounded-2xl border border-slate-200/70 dark:border-white/10 shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] w-full md:w-auto shrink-0">
+                <div className="col-span-2 sm:col-span-auto flex items-center gap-1.5 px-2.5 py-1.5 text-[#0071E3] dark:text-sky-400 cursor-default select-none shrink-0">
+                  <Filter className="w-3.5 h-3.5 transition-transform duration-300 group-hover/filters:scale-110 text-[#0071E3] dark:text-sky-400" strokeWidth={1.8} />
+                  <span className="text-[10px] font-bold uppercase tracking-wider">Filters</span>
+                  {activeFilterCount > 0 && (
+                    <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-[#0071E3] text-white tabular-nums">
+                      {activeFilterCount}
+                    </span>
+                  )}
+                </div>
 
-              <div className="min-w-[130px]">
-                <FilterDropdown
-                  labelPrefix="Barangay"
-                  value={filterBarangay}
-                  options={availableBarangays}
-                  onChange={(val) => { setFilterBarangay(val); setSelectedId(""); }}
-                />
-              </div>
+                <div className="col-span-1 md:col-span-auto min-w-0 md:min-w-[130px] w-full md:w-auto">
+                  <FilterDropdown
+                    labelPrefix="Barangay"
+                    value={filterBarangay}
+                    options={availableBarangays}
+                    onChange={(val) => { setFilterBarangay(val); setSelectedId(""); }}
+                  />
+                </div>
 
-              <div className="min-w-[120px]">
-                <FilterDropdown
-                  labelPrefix="Type"
-                  value={filterType}
-                  options={availableTypes}
-                  onChange={(val) => { setFilterType(val); setSelectedId(""); }}
-                />
-              </div>
+                <div className="col-span-1 md:col-span-auto min-w-0 md:min-w-[120px] w-full md:w-auto">
+                  <FilterDropdown
+                    labelPrefix="Type"
+                    value={filterType}
+                    options={availableTypes}
+                    onChange={(val) => { setFilterType(val); setSelectedId(""); }}
+                  />
+                </div>
 
-              <div className="min-w-[120px]">
-                <FilterDropdown
-                  labelPrefix="Urgency"
-                  value={filterUrgency}
-                  options={["All Urgency", "Critical", "High", "Moderate", "Low"]}
-                  onChange={(val) => { setFilterUrgency(val); setSelectedId(""); }}
-                />
-              </div>
+                <div className="col-span-1 md:col-span-auto min-w-0 md:min-w-[120px] w-full md:w-auto">
+                  <FilterDropdown
+                    labelPrefix="Urgency"
+                    value={filterUrgency}
+                    options={["All Urgency", "Critical", "High", "Moderate", "Low"]}
+                    onChange={(val) => { setFilterUrgency(val); setSelectedId(""); }}
+                  />
+                </div>
 
-              <div className="min-w-[120px]">
-                <FilterDropdown
-                  labelPrefix="Status"
-                  value={filterStatus}
-                  options={["All Status", "Incomplete", "Complete"]}
-                  onChange={(val) => { setFilterStatus(val); setSelectedId(""); }}
-                />
+                <div className="col-span-1 md:col-span-auto min-w-0 md:min-w-[120px] w-full md:w-auto">
+                  <FilterDropdown
+                    labelPrefix="Status"
+                    value={filterStatus}
+                    options={["All Status", "Incomplete", "Complete"]}
+                    onChange={(val) => { setFilterStatus(val); setSelectedId(""); }}
+                  />
+                </div>
               </div>
 
               {/* Right Date Scope Container + Preserved Reset Option */}
-              <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 md:ml-auto w-full md:w-auto">
-                <div className="flex items-center gap-1.5 flex-1 sm:flex-initial min-w-[125px]">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 whitespace-nowrap">
-                    From:
-                  </span>
-                  <DatePicker value={fromDate} onChange={setFromDate} placeholder="Select Date" />
-                </div>
-                <div className="flex items-center gap-1.5 flex-1 sm:flex-initial min-w-[125px]">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 whitespace-nowrap">
-                    To:
-                  </span>
-                  <DatePicker value={toDate} onChange={setToDate} placeholder="Select Date" />
+              <div className="col-span-2 md:col-span-auto flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-2.5 md:ml-auto w-full md:w-auto shrink-0">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:inline-flex md:items-center gap-1.5 sm:gap-2 md:gap-2 md:p-1.5 md:bg-slate-100/70 md:dark:bg-white/[0.05] md:backdrop-blur-xl md:rounded-2xl md:border md:border-slate-200/70 md:dark:border-white/10 md:shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] md:px-2.5 w-full md:w-auto shrink-0">
+                  <div className="flex items-center gap-1.5 flex-1 sm:flex-initial min-w-0 sm:min-w-[125px] w-full sm:w-auto">
+                    <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 whitespace-nowrap pl-0.5">
+                      From:
+                    </span>
+                    <DatePicker value={fromDate} onChange={setFromDate} placeholder="Select Date" />
+                  </div>
+                  <div className="flex items-center gap-1.5 flex-1 sm:flex-initial min-w-0 sm:min-w-[125px] w-full sm:w-auto">
+                    <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 whitespace-nowrap">
+                      To:
+                    </span>
+                    <DatePicker value={toDate} onChange={setToDate} placeholder="Select Date" />
+                  </div>
                 </div>
 
                 {hasActiveFilters && (
                   <button
                     type="button"
                     onClick={resetFilters}
-                    className="inline-flex items-center justify-center w-7 h-7 text-[#0071E3] hover:text-blue-700 dark:text-sky-400 bg-blue-500/10 hover:bg-blue-500/15 rounded-lg border border-blue-500/20 transition-all duration-150 active:scale-95 cursor-pointer shrink-0"
+                    className="inline-flex items-center justify-center w-[34px] h-[34px] sm:w-[36px] sm:h-[36px] text-[#0071E3] hover:text-blue-700 dark:text-sky-400 bg-blue-500/10 hover:bg-blue-500/15 rounded-xl transition-all duration-150 active:scale-[0.95] cursor-pointer shrink-0 border border-blue-500/20"
                     title="Reset all filters"
                     aria-label="Reset all filters"
                   >
