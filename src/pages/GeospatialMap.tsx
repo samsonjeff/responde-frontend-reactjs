@@ -17,6 +17,10 @@ import {
   MapPin,
   AlertTriangle,
   ChevronRight,
+  ChevronDown,
+  HeartPulse,
+  Droplets,
+  HardHat,
   Bot,
   Globe,
   MessageSquare,
@@ -51,8 +55,46 @@ const INITIAL_LAYERS: MapLayerState = {
 const SOFT_SPRING = { type: 'spring', stiffness: 240, damping: 26, mass: 0.9 } as const;
 const PANEL_TRANSITION = { duration: 0.38, ease: [0.16, 1, 0.3, 1] } as const;
 
+// Standard Line Icons for Incident Types
+const TYPE_ICONS: Record<string, React.ReactNode> = {
+  'Search & Rescue': <Siren className="w-4 h-4 stroke-[1.75]" />,
+  'Medical': <HeartPulse className="w-4 h-4 stroke-[1.75]" />,
+  'Food & Water': <Droplets className="w-4 h-4 stroke-[1.75]" />,
+  'Infrastructure': <HardHat className="w-4 h-4 stroke-[1.75]" />,
+};
+
+// Calm, non-glaring pastel tones
+const CATEGORY_STYLES: Record<string, { text: string; bg: string; border: string }> = {
+  'Search & Rescue': {
+    text: 'text-rose-600 dark:text-rose-400',
+    bg: 'bg-rose-500/10 dark:bg-rose-500/15',
+    border: 'border-rose-500/20',
+  },
+  'Medical': {
+    text: 'text-emerald-600 dark:text-emerald-400',
+    bg: 'bg-emerald-500/10 dark:bg-emerald-500/15',
+    border: 'border-emerald-500/20',
+  },
+  'Food & Water': {
+    text: 'text-sky-600 dark:text-sky-400',
+    bg: 'bg-sky-500/10 dark:bg-sky-500/15',
+    border: 'border-sky-500/20',
+  },
+  'Infrastructure': {
+    text: 'text-amber-600 dark:text-amber-400',
+    bg: 'bg-amber-500/10 dark:bg-amber-500/15',
+    border: 'border-amber-500/20',
+  },
+};
+
 // Semantic Micro-Dot Urgency Badges (Calm, non-glaring)
 const URGENCY_BADGES: Record<string, { bg: string; text: string; border: string; dot: string }> = {
+  'Critical': {
+    bg: 'bg-purple-100 dark:bg-purple-900/30',
+    text: 'text-purple-700 dark:text-purple-300',
+    border: 'border-purple-200/80 dark:border-purple-800/40',
+    dot: 'bg-purple-600',
+  },
   'High': {
     bg: 'bg-rose-50 dark:bg-rose-950/40',
     text: 'text-rose-700 dark:text-rose-300',
@@ -114,6 +156,11 @@ function SoftPanel({
 function IncidentListItem({ report, index, onClick }: { report: Report; index: number; onClick: () => void }) {
   const badge = URGENCY_BADGES[report.urgency] || URGENCY_BADGES['Low'];
   const formattedCode = formatReportCode(report.id, report.source);
+  const catStyle = CATEGORY_STYLES[report.type] || {
+    text: 'text-blue-600 dark:text-blue-400',
+    bg: 'bg-blue-500/10 dark:bg-blue-500/15',
+    border: 'border-blue-500/20',
+  };
 
   return (
     <motion.div
@@ -126,14 +173,14 @@ function IncidentListItem({ report, index, onClick }: { report: Report; index: n
       {/* Top row: Alert light icon + Barangay title + Urgency capsule */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 border bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20">
-            <Siren className="w-3.5 h-3.5" />
+          <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 border ${catStyle.bg} ${catStyle.text} ${catStyle.border}`}>
+            {TYPE_ICONS[report.type] || <Siren className="w-3.5 h-3.5" />}
           </div>
           <div className="min-w-0">
             <h4 className="text-[13px] font-semibold text-slate-900 dark:text-slate-100 group-hover:text-[#0071E3] dark:group-hover:text-sky-400 truncate tracking-tight transition-colors">
               {report.barangay}
             </h4>
-            <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate">
+            <p className={`text-[11px] font-medium truncate ${catStyle.text}`}>
               {report.type}
             </p>
           </div>
@@ -288,7 +335,7 @@ function BarangayDetailCard({ name, reports, onClose, onViewList }: {
                 <div key={type} className="p-2.5 rounded-xl bg-slate-50/80 dark:bg-slate-800/50 border border-slate-200/50 dark:border-white/5 space-y-1.5">
                   <div className="flex items-center justify-between text-xs">
                     <span className="flex items-center gap-2 font-medium text-slate-700 dark:text-slate-300">
-                      <span className="text-slate-400"><Siren className="w-3.5 h-3.5" /></span>
+                      <span className="text-slate-400">{TYPE_ICONS[type] || <Siren className="w-3.5 h-3.5" />}</span>
                       <span>{type}</span>
                     </span>
                     <div className="flex items-center gap-1.5 font-mono text-[11px]">
@@ -359,6 +406,11 @@ function IncidentDetailCard({
 }) {
   const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
   const badge = URGENCY_BADGES[report.urgency] || URGENCY_BADGES['Low'];
+  const catStyle = CATEGORY_STYLES[report.type] || {
+    text: 'text-blue-600 dark:text-blue-400',
+    bg: 'bg-blue-500/10 dark:bg-blue-500/15',
+    border: 'border-blue-500/20',
+  };
 
   return (
     <motion.div
@@ -374,8 +426,8 @@ function IncidentDetailCard({
       {/* Pinned Header */}
       <div className="flex items-center justify-between px-3.5 py-3 border-b border-slate-200/50 dark:border-white/5 bg-white/60 dark:bg-[#111827]/60 backdrop-blur-md shrink-0">
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-7 h-7 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center border border-blue-500/20 shrink-0">
-            <Siren className="w-3.5 h-3.5" />
+          <div className={`w-7 h-7 rounded-full flex items-center justify-center border shrink-0 ${catStyle.bg} ${catStyle.text} ${catStyle.border}`}>
+            {TYPE_ICONS[report.type] || <Siren className="w-3.5 h-3.5" />}
           </div>
           <div className="min-w-0">
             <h3 className="text-[13px] font-semibold text-slate-900 dark:text-white tracking-tight truncate">{report.type}</h3>
@@ -1206,6 +1258,7 @@ export default function GeospatialMap() {
     return true;
   });
   const [sidebarTab, setSidebarTab] = useState<'plotted' | 'incomplete'>('plotted');
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [filterStatus, setFilterStatus] = useState<string>('Verified Only');
   const [filterUrgency, setFilterUrgency] = useState<string>('All Urgency');
   const [filterType, setFilterType] = useState<string>('All Types');
@@ -1229,10 +1282,15 @@ export default function GeospatialMap() {
     return () => window.removeEventListener('map-pitch-changed', handlePitchChange);
   }, []);
 
-  const hasActiveFilters =
-    filterStatus !== 'Verified Only' ||
-    (filterUrgency !== 'All Urgency' && filterUrgency !== 'All') ||
-    (filterType !== 'All Types' && filterType !== 'All');
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (filterStatus !== 'Verified Only') count++;
+    if (filterUrgency !== 'All Urgency' && filterUrgency !== 'All') count++;
+    if (filterType !== 'All Types' && filterType !== 'All') count++;
+    return count;
+  }, [filterStatus, filterUrgency, filterType]);
+
+  const hasActiveFilters = activeFilterCount > 0;
 
   const resetFilters = () => {
     setFilterStatus('Verified Only');
@@ -1264,14 +1322,15 @@ export default function GeospatialMap() {
   }, [reports]);
 
   const matchStatus = useCallback((itemStatus?: string) => {
+    const s = (itemStatus || '').trim().toLowerCase().replace(/\s+/g, '_');
     if (!filterStatus || filterStatus === 'Verified Only' || filterStatus === 'Verified') {
-      return itemStatus?.trim().toLowerCase() === 'verified';
+      return s === 'verified';
     }
     if (filterStatus === 'All Reports' || filterStatus === 'All') {
-      return itemStatus?.trim().toLowerCase() !== 'rejected';
+      return s !== 'rejected';
     }
     const target = filterStatus.trim().toLowerCase().replace(/\s+/g, '_');
-    return itemStatus?.trim().toLowerCase() === target;
+    return s === target;
   }, [filterStatus]);
 
   const matchUrgency = useCallback((itemUrgency?: string) => {
@@ -1359,7 +1418,7 @@ export default function GeospatialMap() {
   }, [completeReports]);
 
   // Compute barangay max urgency level (High=3, Moderate=2, Low=1) reflecting active filters and pins
-  const URGENCY_WEIGHTS: Record<string, number> = { High: 3, Moderate: 2, Low: 1 };
+  const URGENCY_WEIGHTS: Record<string, number> = { Critical: 4, High: 3, Moderate: 2, Low: 1 };
   const barangayCounts = useMemo(() => {
     const maxUrgency: Record<string, number> = {};
     pinReports.forEach((r) => {
@@ -1450,8 +1509,8 @@ export default function GeospatialMap() {
   if (loading) return <PageLoader variant="geospatial" />;
 
   return (
-    <div className="geospatial-soft flex flex-col flex-1 min-h-0 gap-3 sm:gap-4 h-full">
-      <StaggerContainer className="flex flex-col flex-1 min-h-0 gap-3 sm:gap-4 h-full">
+    <div className="geospatial-soft flex flex-col flex-1 w-full lg:h-full lg:min-h-0 gap-3 sm:gap-4 relative">
+      <StaggerContainer className="flex flex-col flex-1 gap-3 sm:gap-4 w-full lg:h-full lg:min-h-0">
         {/* ── Floating Command Toolbar Capsule with Soft Header ── */}
         <StaggerItem className="shrink-0">
           <SoftPanel className="p-4 sm:p-5 relative z-30 space-y-4">
@@ -1506,8 +1565,36 @@ export default function GeospatialMap() {
 
             {/* ── Filters & Layer Controls ── */}
             <div className="pt-3.5 border-t border-slate-200/60 dark:border-white/5 flex flex-col xl:flex-row xl:items-center justify-between gap-3">
-              {/* Left Side: Segmented Filter Control */}
-              <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 w-full xl:w-auto">
+              {/* Mobile Header Bar with Toggle & Active Filter Count (< md) */}
+              <div className="flex items-center justify-between md:hidden">
+                <button
+                  type="button"
+                  onClick={() => setMobileFiltersOpen(!mobileFiltersOpen)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-500/10 dark:bg-blue-500/20 text-[#0071E3] dark:text-sky-400 border border-blue-500/25 dark:border-blue-400/25 text-xs font-semibold cursor-pointer select-none active:scale-[0.98] transition-transform shadow-2xs"
+                >
+                  <Filter className="w-3.5 h-3.5 text-[#0071E3] dark:text-sky-400" strokeWidth={1.75} />
+                  <span>Filter Incidents</span>
+                  {activeFilterCount > 0 && (
+                    <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-[#0071E3] text-white tabular-nums">
+                      {activeFilterCount}
+                    </span>
+                  )}
+                  <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${mobileFiltersOpen ? 'rotate-180' : ''}`} strokeWidth={1.75} />
+                </button>
+                {hasActiveFilters && (
+                  <button
+                    type="button"
+                    onClick={resetFilters}
+                    className="inline-flex items-center gap-1 text-xs font-semibold text-[#0071E3] dark:text-sky-400 hover:underline cursor-pointer"
+                  >
+                    <RotateCcw className="w-3 h-3" strokeWidth={1.75} />
+                    <span>Reset</span>
+                  </button>
+                )}
+              </div>
+
+              {/* Left Side: Segmented Filter Control — collapsible on mobile (< md), always visible on tablet/desktop (>= md) */}
+              <div className={`${mobileFiltersOpen ? 'flex' : 'hidden'} md:flex flex-wrap items-center gap-2 sm:gap-2.5 w-full xl:w-auto pt-2 md:pt-0 border-t md:border-t-0 border-slate-200/60 dark:border-white/5`}>
                 <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-1 sm:gap-1.5 p-1 bg-slate-100/70 dark:bg-white/[0.05] backdrop-blur-xl rounded-2xl border border-slate-200/70 dark:border-white/10 shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] dark:shadow-[inset_0_1px_2px_rgba(0,0,0,0.4)] w-full xl:w-auto">
                   <div className="col-span-2 sm:col-span-auto flex items-center gap-1 px-2.5 py-1 text-[#0071E3] dark:text-sky-400 cursor-default select-none shrink-0">
                     <Filter className="w-3.5 h-3.5 transition-transform duration-300 group-hover/filters:scale-110 text-[#0071E3] dark:text-sky-400" strokeWidth={1.8} />
@@ -1526,7 +1613,7 @@ export default function GeospatialMap() {
                   <div className="col-span-1 sm:col-span-auto flex-1 sm:flex-initial min-w-0 sm:min-w-[120px]">
                     <FilterDropdown
                       value={filterUrgency}
-                      options={['All Urgency', 'High', 'Moderate', 'Low']}
+                      options={['All Urgency', 'Critical', 'High', 'Moderate', 'Low']}
                       onChange={setFilterUrgency}
                     />
                   </div>
@@ -1539,7 +1626,7 @@ export default function GeospatialMap() {
                     />
                   </div>
 
-                  {/* Animated Reset Button */}
+                  {/* Animated Reset Button for Desktop */}
                   <AnimatePresence>
                     {hasActiveFilters && (
                       <motion.button
@@ -1549,7 +1636,7 @@ export default function GeospatialMap() {
                         transition={{ duration: 0.15 }}
                         type="button"
                         onClick={resetFilters}
-                        className="col-span-2 sm:col-span-auto inline-flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-[11px] sm:text-xs font-semibold text-[#0071E3] hover:text-blue-700 dark:text-sky-400 bg-blue-500/10 hover:bg-blue-500/15 rounded-xl transition-all active:scale-[0.97] cursor-pointer shrink-0 border border-blue-500/20"
+                        className="hidden md:inline-flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-[11px] sm:text-xs font-semibold text-[#0071E3] hover:text-blue-700 dark:text-sky-400 bg-blue-500/10 hover:bg-blue-500/15 rounded-xl transition-all active:scale-[0.97] cursor-pointer shrink-0 border border-blue-500/20"
                         title="Reset filters"
                       >
                         <RotateCcw className="w-3.5 h-3.5" strokeWidth={1.75} />
@@ -1614,7 +1701,7 @@ export default function GeospatialMap() {
         </StaggerItem>
 
         {/* ── Main Canvas: Map + Side Panel ── */}
-        <StaggerItem className="flex-1 min-h-[360px] sm:min-h-[460px] md:min-h-0 h-[calc(100dvh-18rem-env(safe-area-inset-bottom,0px))] md:h-full flex flex-row relative">
+        <StaggerItem className="flex-1 min-h-[420px] sm:min-h-[480px] lg:min-h-0 lg:h-full flex flex-row relative">
 
           {/* Desktop Sidebar (inline, animated width & margin) */}
           <AnimatePresence initial={false}>
