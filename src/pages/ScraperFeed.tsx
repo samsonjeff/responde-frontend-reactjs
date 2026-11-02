@@ -614,39 +614,35 @@ export default function ScraperFeed() {
 
   // ── Semantic Micro-Dot Status System (No Glaring Neon Blocks) ──
   const renderUrgencyBadge = (urgency: string) => {
-    switch (urgency) {
-      case "Critical":
+    switch ((urgency || "").toLowerCase()) {
+      case "critical":
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border border-purple-200/80 dark:border-purple-800/40 tabular-nums shadow-xs">
-            <span className="w-1.5 h-1.5 rounded-full bg-purple-600 animate-pulse shrink-0" />
-            Critical
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-purple-500/15 text-purple-700 dark:text-purple-300 border border-purple-500/30 tabular-nums">
+            <span className="w-1.5 h-1.5 rounded-full bg-purple-600 shrink-0" />
+            <span>Critical</span>
           </span>
         );
-      case "High":
+      case "high":
         return (
           <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 tabular-nums">
-            <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse shrink-0" />
-            High
+            <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
+            <span>High</span>
           </span>
         );
-      case "Moderate":
+      case "moderate":
+      case "mod":
         return (
           <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 tabular-nums">
             <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
-            Moderate
+            <span>Moderate</span>
           </span>
         );
-      case "Low":
-        return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-slate-100/90 dark:bg-white/[0.06] text-slate-600 dark:text-slate-400 border border-slate-200/60 dark:border-white/[0.06] tabular-nums">
-            <span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" />
-            Low
-          </span>
-        );
+      case "low":
       default:
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-slate-100/90 dark:bg-white/[0.06] text-slate-600 dark:text-slate-400 border border-slate-200/60 dark:border-white/[0.06] tabular-nums">
-            {urgency}
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 tabular-nums">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+            <span>Low</span>
           </span>
         );
     }

@@ -11,7 +11,7 @@ import PageLoader from "../components/PageLoader";
 import { StaggerContainer, StaggerItem } from "../components/Stagger";
 import { useBotConversations, type BotConversation as Conversation } from "../context/BotConversationsContext";
 import { TALISAY_BARANGAYS } from "../data/talisay-barangays";
-import { extractDisplayTime, formatPhilippineTimeOnly, formatPhilippineDateOnly } from "../utils/dateUtils";
+import { extractDisplayTime, formatPhilippineTimeOnly, formatPhilippineDateOnly, formatTimestampPHT } from "../utils/dateUtils";
 import { BASE_INCIDENT_TYPES, formatReportUrgency } from "../services/incidentService";
 import { useDebounce } from "../hooks/useDebounce";
 
@@ -200,8 +200,20 @@ function getLastMessage(convo: Conversation): string {
   return userMsg ? userMsg.text : convo.messages[convo.messages.length - 1].text;
 }
 
-function formatDisplayTime(timeStr: string): string {
-  return extractDisplayTime(timeStr);
+function formatConvoDateTime(timeStr?: string, createdAt?: string): string {
+  if (createdAt) {
+    const formatted = formatTimestampPHT(createdAt);
+    if (formatted) return formatted;
+  }
+  if (timeStr) {
+    if (timeStr.includes('/') || timeStr.includes(',')) {
+      return timeStr;
+    }
+    const formatted = formatTimestampPHT(timeStr);
+    if (formatted) return formatted;
+    return timeStr;
+  }
+  return '';
 }
 
 function formatMsgDate(timestamp?: string, convoTime?: string): string {
@@ -668,8 +680,8 @@ export default function MessengerBotLogs() {
         );
       case "low":
         return (
-          <span className="inline-flex items-center justify-center gap-1.5 w-[84px] py-0.5 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 tabular-nums">
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />
+          <span className="inline-flex items-center justify-center gap-1.5 w-[84px] py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 tabular-nums">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
             <span>Low</span>
           </span>
         );
@@ -1119,14 +1131,15 @@ export default function MessengerBotLogs() {
 
         {/* Two Column Layout / Responsive Split-Pane */}
         <StaggerItem className="flex-1 lg:min-h-0 flex flex-col">
-          <div className="flex-1 flex flex-col md:grid md:grid-cols-12 gap-3 md:gap-4 lg:gap-6 lg:min-h-0 lg:h-full">
+          <div className="flex-1 flex flex-col md:flex-row gap-3 md:gap-4 lg:gap-6 lg:min-h-0 lg:h-full overflow-hidden">
             {/* LEFT: Conversation List — Soft Messages Sidebar */}
             <div
               className={`
                 ${mobileView === 'chat' && selectedConversation ? 'hidden md:flex' : 'flex'}
-                ${selectedConversation ? 'md:col-span-5 lg:col-span-5' : 'md:col-span-12 w-full'}
+                ${selectedConversation ? 'md:w-[42%] lg:w-[38%] shrink-0' : 'md:w-full flex-1'}
                 bg-white/85 dark:bg-[#111827]/85 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_1px_3px_rgba(15,23,42,0.04),0_8px_24px_rgba(15,23,42,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.3)] flex-col overflow-hidden
-                min-h-[460px] md:min-h-0 h-[calc(100vh-12rem)] md:h-full transition-all duration-200
+                min-h-[460px] md:min-h-0 h-[calc(100vh-12rem)] md:h-full
+                transition-[width] duration-300 ease-in-out
               `}
             >
               {/* Apple Segmented Stream Switcher Header */}
@@ -1353,13 +1366,13 @@ export default function MessengerBotLogs() {
                             <div className="flex flex-col items-end justify-between self-stretch shrink-0 py-0.5 pl-1">
                               <div className="flex items-center gap-1">
                                 <span
-                                  className={`text-[10px] sm:text-[11px] tabular-nums transition-colors duration-200 ${
+                                  className={`text-[10px] sm:text-[11px] tabular-nums whitespace-nowrap transition-colors duration-200 ${
                                     !isSeen
                                       ? "font-semibold text-blue-600 dark:text-blue-400"
                                       : "font-normal text-slate-400 dark:text-slate-500"
                                   }`}
                                 >
-                                  {formatDisplayTime(convo.time)}
+                                  {formatConvoDateTime(convo.time, convo.createdAt)}
                                 </span>
                                 <AnimatePresence>
                                   {isIncomplete && (
@@ -1418,17 +1431,17 @@ export default function MessengerBotLogs() {
             </div>
 
             {/* RIGHT: Message Detail — macOS Soft Messages Style */}
-            <AnimatePresence mode="wait">
+            <AnimatePresence>
               {selectedConversation && (
                 <motion.div
                   key="convo-detail-panel"
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 20 }}
-                  transition={{ duration: 0.2, ease: "easeOut" }}
+                  transition={{ duration: 0.25, ease: "easeInOut" }}
                   className={`
                     ${mobileView === 'list' ? 'hidden md:flex' : 'flex'}
-                    md:col-span-7 lg:col-span-7 bg-white/90 dark:bg-[#111827]/90 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_1px_3px_rgba(15,23,42,0.04),0_8px_24px_rgba(15,23,42,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.3)] flex-col overflow-hidden
+                    flex-1 min-w-0 bg-white/90 dark:bg-[#111827]/90 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_1px_3px_rgba(15,23,42,0.04),0_8px_24px_rgba(15,23,42,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.3)] flex-col overflow-hidden
                     min-h-[480px] md:min-h-0 h-[calc(100vh-12rem)] md:h-full
                   `}
                 >

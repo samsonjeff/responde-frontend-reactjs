@@ -1043,8 +1043,8 @@ export default function IncidentReports() {
       case 'low':
       default:
         return (
-          <span className="inline-flex items-center justify-center gap-1.5 w-[84px] py-0.5 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />
+          <span className="inline-flex items-center justify-center gap-1.5 w-[84px] py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
             <span>Low</span>
           </span>
         );
