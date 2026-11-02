@@ -417,7 +417,6 @@ export default function IncidentReports() {
   const [filterBarangay, setFilterBarangay] = useState(() => urlBarangay || 'All Barangays');
   const [filterType, setFilterType] = useState('All Types');
   const [filterUrgency, setFilterUrgency] = useState('All Urgency');
-  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   const handledFocusRef = useRef<string | null>(null);
 
@@ -1225,48 +1224,22 @@ export default function IncidentReports() {
         {/* ── Filter Bar & Bulk Actions ── */}
         <StaggerItem>
           <div className="relative z-30 flex flex-col gap-2.5 shrink-0">
-        <div className="relative z-20 backdrop-blur-xl bg-white/80 dark:bg-[#111827]/80 rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_1px_3px_rgba(15,23,42,0.04)] p-3 sm:p-3.5 shrink-0">
-          {/* Mobile Filter Header Toggle (< md) */}
-          <div className="flex md:hidden items-center justify-between w-full">
-            <button
-              type="button"
-              onClick={() => setMobileFiltersOpen(!mobileFiltersOpen)}
-              className="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-200 cursor-pointer select-none"
-            >
-              <div className="w-7 h-7 rounded-lg bg-blue-500/10 text-[#0071E3] dark:text-sky-400 flex items-center justify-center">
-                <Filter className="w-3.5 h-3.5" strokeWidth={1.75} />
-              </div>
+        <div className="relative z-30 backdrop-blur-xl bg-white/80 dark:bg-[#111827]/80 rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_1px_3px_rgba(15,23,42,0.04)] p-3 sm:p-3.5 shrink-0">
+          {/* Filter Controls Row — Always visible on all screen sizes, never hidden */}
+          <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 md:gap-3">
+            {/* Filter Label Pill */}
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100/80 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 text-xs font-semibold shrink-0 border border-slate-200/50 dark:border-white/5">
+              <Filter className="w-3.5 h-3.5 text-[#0071E3]" strokeWidth={1.75} />
               <span>Filters</span>
               {activeFilterCount > 0 && (
                 <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-[#0071E3] text-white tabular-nums">
                   {activeFilterCount}
                 </span>
               )}
-              <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${mobileFiltersOpen ? 'rotate-180' : ''}`} strokeWidth={1.75} />
-            </button>
-            {hasActiveFilters && (
-              <button
-                type="button"
-                onClick={resetFilters}
-                className="inline-flex items-center justify-center w-7 h-7 text-[#0071E3] hover:text-blue-700 dark:text-sky-400 bg-blue-500/10 hover:bg-blue-500/15 rounded-lg border border-blue-500/20 transition-all duration-150 active:scale-95 cursor-pointer shrink-0"
-                title="Reset all filters"
-                aria-label="Reset all filters"
-              >
-                <RotateCcw className="w-3.5 h-3.5" strokeWidth={1.75} />
-              </button>
-            )}
-          </div>
-
-          {/* Filter Controls Row */}
-          <div className={`${mobileFiltersOpen ? 'grid' : 'hidden'} md:flex md:flex-wrap grid-cols-2 gap-2 sm:gap-2.5 md:gap-3 md:items-center pt-2.5 md:pt-0`}>
-            {/* Filter Label Pill */}
-            <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100/80 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 text-xs font-semibold shrink-0 border border-slate-200/50 dark:border-white/5">
-              <Filter className="w-3.5 h-3.5 text-[#0071E3]" strokeWidth={1.75} />
-              <span>Filters</span>
             </div>
 
             {/* Source Toggle Filter: [Bot] [Scraper] */}
-            <div className="col-span-2 sm:col-span-1 md:col-span-auto inline-flex items-center p-0.5 bg-slate-100/90 dark:bg-slate-800/90 backdrop-blur-md rounded-xl border border-slate-200/70 dark:border-white/10 shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] gap-1 shrink-0 h-[34px] sm:h-[36px]">
+            <div className="inline-flex items-center p-0.5 bg-slate-100/90 dark:bg-slate-800/90 backdrop-blur-md rounded-xl border border-slate-200/70 dark:border-white/10 shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] gap-1 shrink-0 h-[34px] sm:h-[36px]">
               <button
                 type="button"
                 onClick={() => {
@@ -1302,7 +1275,7 @@ export default function IncidentReports() {
               </button>
             </div>
 
-            <div className="col-span-1 md:col-span-auto min-w-[130px]">
+            <div className="min-w-[130px]">
               <FilterDropdown
                 labelPrefix="Barangay"
                 value={filterBarangay}
@@ -1311,7 +1284,7 @@ export default function IncidentReports() {
               />
             </div>
 
-            <div className="col-span-1 md:col-span-auto min-w-[120px]">
+            <div className="min-w-[120px]">
               <FilterDropdown
                 labelPrefix="Type"
                 value={filterType}
@@ -1320,7 +1293,7 @@ export default function IncidentReports() {
               />
             </div>
 
-            <div className="col-span-1 md:col-span-auto min-w-[120px]">
+            <div className="min-w-[120px]">
               <FilterDropdown
                 labelPrefix="Urgency"
                 value={filterUrgency}
@@ -1330,7 +1303,7 @@ export default function IncidentReports() {
             </div>
 
             {/* Right Date Scope Container + Preserved Reset Option */}
-            <div className="col-span-2 md:col-span-auto flex flex-wrap sm:flex-nowrap items-center gap-2 md:ml-auto w-full md:w-auto">
+            <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 md:ml-auto w-full md:w-auto">
               <div className="flex items-center gap-1.5 flex-1 sm:flex-initial min-w-[125px]">
                 <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 whitespace-nowrap">
                   From:
