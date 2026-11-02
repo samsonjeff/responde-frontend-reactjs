@@ -1503,8 +1503,8 @@ export default function GeospatialMap() {
     <div className="geospatial-soft flex flex-col flex-1 w-full lg:h-full lg:min-h-0 gap-3 sm:gap-4 relative">
       <StaggerContainer className="flex flex-col flex-1 gap-3 sm:gap-4 w-full lg:h-full lg:min-h-0">
         {/* ── Floating Command Toolbar Capsule with Soft Header ── */}
-        <StaggerItem className="shrink-0">
-          <SoftPanel className="p-4 sm:p-5 relative z-30 space-y-4">
+        <StaggerItem className="shrink-0 relative z-40">
+          <SoftPanel className="p-4 sm:p-5 relative z-40 space-y-4">
             {/* ── Page Header (Soft UI Evolution) ── */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3.5">
               <div className="flex items-center gap-3.5">
@@ -1523,7 +1523,7 @@ export default function GeospatialMap() {
             </div>
 
             {/* ── Filters & Layer Controls ── */}
-            <div className="pt-3.5 border-t border-slate-200/60 dark:border-white/5 flex flex-col xl:flex-row xl:items-center justify-between gap-3">
+            <div className="pt-3.5 border-t border-slate-200/60 dark:border-white/5 flex flex-col xl:flex-row xl:items-center justify-between gap-3 relative z-40">
               {/* Mobile Header Bar with Toggle & Active Filter Count (< md) */}
               <div className="flex items-center justify-between md:hidden">
                 <button
@@ -1554,11 +1554,16 @@ export default function GeospatialMap() {
               </div>
 
               {/* Left Side: Segmented Filter Control — collapsible on mobile (< md), always visible on tablet/desktop (>= md) */}
-              <div className={`${mobileFiltersOpen ? 'flex' : 'hidden'} md:flex flex-wrap items-center gap-2 sm:gap-2.5 w-full xl:w-auto pt-2 md:pt-0 border-t md:border-t-0 border-slate-200/60 dark:border-white/5`}>
-                <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 sm:gap-2.5 p-1.5 px-2 bg-slate-100/70 dark:bg-white/[0.05] backdrop-blur-xl rounded-2xl border border-slate-200/70 dark:border-white/10 shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] dark:shadow-[inset_0_1px_2px_rgba(0,0,0,0.4)] w-full xl:w-auto">
+              <div className={`${mobileFiltersOpen ? 'flex' : 'hidden'} md:flex flex-wrap items-center gap-2 sm:gap-2.5 w-full xl:w-auto pt-2 md:pt-0 border-t md:border-t-0 border-slate-200/60 dark:border-white/5 relative z-40`}>
+                <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 sm:gap-2.5 p-1.5 px-2 bg-slate-100/70 dark:bg-white/[0.05] backdrop-blur-xl rounded-2xl border border-slate-200/70 dark:border-white/10 shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] dark:shadow-[inset_0_1px_2px_rgba(0,0,0,0.4)] w-full xl:w-auto relative z-40">
                   <div className="col-span-2 sm:col-span-auto flex items-center gap-1.5 px-3 py-1.5 text-[#0071E3] dark:text-sky-400 cursor-default select-none shrink-0">
                     <Filter className="w-3.5 h-3.5 transition-transform duration-300 group-hover/filters:scale-110 text-[#0071E3] dark:text-sky-400" strokeWidth={1.8} />
                     <span className="text-[10px] font-bold uppercase tracking-wider">Filters</span>
+                    {activeFilterCount > 0 && (
+                      <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-[#0071E3] text-white tabular-nums">
+                        {activeFilterCount}
+                      </span>
+                    )}
                   </div>
 
                   {/* Filter Pills */}

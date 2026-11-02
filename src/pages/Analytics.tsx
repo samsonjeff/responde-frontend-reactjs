@@ -706,14 +706,19 @@ export default function Analytics() {
     setActiveType(null);
   };
 
-  const hasActiveFilters =
-    barangayFilter !== 'All Barangays' ||
-    typeFilter !== 'All Types' ||
-    sourceFilter !== 'All Sources' ||
-    Boolean(fromDate) ||
-    Boolean(toDate) ||
-    Boolean(activeBarangay) ||
-    Boolean(activeType);
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (barangayFilter !== 'All Barangays') count++;
+    if (typeFilter !== 'All Types') count++;
+    if (sourceFilter !== 'All Sources') count++;
+    if (Boolean(fromDate)) count++;
+    if (Boolean(toDate)) count++;
+    if (Boolean(activeBarangay)) count++;
+    if (Boolean(activeType)) count++;
+    return count;
+  }, [barangayFilter, typeFilter, sourceFilter, fromDate, toDate, activeBarangay, activeType]);
+
+  const hasActiveFilters = activeFilterCount > 0;
 
   // ── Render ────────────────────────────────────────────────────────────────
   if (loading) return <PageLoader variant="analytics" />;
@@ -775,9 +780,14 @@ export default function Analytics() {
               <div className="pt-3.5 border-t border-slate-200/60 dark:border-white/5 flex flex-col md:flex-row md:flex-wrap lg:flex-nowrap items-stretch md:items-center justify-between gap-2.5 sm:gap-3 relative z-50">
                 {/* Left Filter Scope Container */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 md:inline-flex md:items-center gap-2.5 sm:gap-3 md:gap-2.5 md:p-1.5 md:px-2 bg-slate-100/70 dark:bg-white/[0.05] backdrop-blur-xl rounded-2xl border border-slate-200/70 dark:border-white/10 shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] w-full md:w-auto relative z-50">
-                  <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 text-[#0071E3] dark:text-sky-400 cursor-default select-none shrink-0">
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 text-[#0071E3] dark:text-sky-400 cursor-default select-none shrink-0">
                     <Filter className="w-3.5 h-3.5 transition-transform duration-300 group-hover/filters:scale-110 text-[#0071E3] dark:text-sky-400" strokeWidth={1.8} />
                     <span className="text-[10px] font-bold uppercase tracking-wider">Filters</span>
+                    {activeFilterCount > 0 && (
+                      <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-[#0071E3] text-white tabular-nums">
+                        {activeFilterCount}
+                      </span>
+                    )}
                   </div>
 
                   {/* Barangay DropDown */}

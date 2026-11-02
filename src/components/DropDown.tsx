@@ -107,7 +107,7 @@ export default function FilterDropdown({ value, options, onChange, className }: 
       {isOpen && (
         <div
           ref={menuRef}
-          className={`dropdown-scroll absolute ${alignRight ? 'right-0' : 'left-0'} mt-1.5 p-1.5 min-w-full sm:min-w-[140px] max-w-[min(260px,calc(100vw-2rem))] max-h-44 sm:max-h-52 overflow-y-auto bg-white/95 dark:bg-[#1C1C1E]/95 backdrop-blur-2xl border border-slate-200/80 dark:border-white/10 rounded-2xl shadow-[0_16px_40px_rgba(0,0,0,0.14)] z-50 text-xs scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700`}
+          className={`dropdown-scroll absolute top-full ${alignRight ? 'right-0' : 'left-0'} mt-1.5 p-1.5 min-w-full sm:min-w-[140px] max-w-[min(260px,calc(100vw-2rem))] max-h-44 sm:max-h-52 overflow-y-auto bg-white/95 dark:bg-[#1C1C1E]/95 backdrop-blur-2xl border border-slate-200/80 dark:border-white/10 rounded-2xl shadow-[0_16px_40px_rgba(0,0,0,0.14)] z-50 text-xs scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700`}
           role="listbox"
         >
           {options.map((option) => (

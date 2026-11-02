@@ -825,13 +825,13 @@ export default function ScraperFeed() {
         </StaggerItem>
 
         {/* Stage 2: Filters Bar */}
-        <StaggerItem>
+        <StaggerItem className="relative z-40">
           {/* Filters Bar — Soft tactile elevation */}
-          <div className={`${mobileView === 'detail' ? 'hidden md:block' : 'block'} relative z-30 backdrop-blur-xl bg-white/80 dark:bg-[#111827]/80 rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_1px_3px_rgba(15,23,42,0.04)] p-3 sm:p-3.5 transition-all shrink-0`}>
+          <div className={`${mobileView === 'detail' ? 'hidden md:block' : 'block'} relative z-40 backdrop-blur-xl bg-white/80 dark:bg-[#111827]/80 rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_1px_3px_rgba(15,23,42,0.04)] p-3 sm:p-3.5 transition-all shrink-0`}>
             {/* Filter Controls Row with Grouped Inset Containers */}
-            <div className="flex flex-col md:flex-row md:flex-wrap lg:flex-nowrap items-stretch md:items-center justify-between gap-2.5 sm:gap-3 overflow-x-auto scrollbar-none pb-1 md:pb-0">
+            <div className="flex flex-col md:flex-row md:flex-wrap lg:flex-nowrap items-stretch md:items-center justify-between gap-2.5 sm:gap-3 overflow-visible pb-1 md:pb-0 relative z-40">
               {/* Left Filter Scope Container */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 md:inline-flex md:items-center gap-2 sm:gap-2.5 md:gap-2 md:p-1.5 md:px-2 bg-slate-100/70 dark:bg-white/[0.05] backdrop-blur-xl rounded-2xl border border-slate-200/70 dark:border-white/10 shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] w-full md:w-auto shrink-0">
+              <div className="grid grid-cols-2 sm:grid-cols-4 md:inline-flex md:items-center gap-2 sm:gap-2.5 md:gap-2 md:p-1.5 md:px-2 bg-slate-100/70 dark:bg-white/[0.05] backdrop-blur-xl rounded-2xl border border-slate-200/70 dark:border-white/10 shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] w-full md:w-auto shrink-0 relative z-40">
                 <div className="col-span-2 sm:col-span-auto flex items-center gap-1.5 px-2.5 py-1.5 text-[#0071E3] dark:text-sky-400 cursor-default select-none shrink-0">
                   <Filter className="w-3.5 h-3.5 transition-transform duration-300 group-hover/filters:scale-110 text-[#0071E3] dark:text-sky-400" strokeWidth={1.8} />
                   <span className="text-[10px] font-bold uppercase tracking-wider">Filters</span>
