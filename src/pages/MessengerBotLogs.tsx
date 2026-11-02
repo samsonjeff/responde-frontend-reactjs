@@ -3,7 +3,7 @@ import { motion, AnimatePresence, type Variants } from "framer-motion";
 import {
   Filter, AlertCircle, X, Minus, CheckCircle2, RefreshCw, MessageSquare,
   ChevronRight, ChevronLeft, ChevronDown, Bot, RotateCcw,
-  Layers, AlertTriangle, ArrowUp, ArrowDown
+  Layers, AlertTriangle, TriangleAlert, ArrowUp, ArrowDown
 } from "lucide-react";
 import DatePicker from "../components/DatePicker";
 import FilterDropdown from "../components/DropDown";
@@ -53,9 +53,15 @@ export function analyzeConvoNLP(convo: Conversation): ConvoNLPAnalysis {
 
   const typeLower = (convo.type || "").toLowerCase();
 
+  const criticalKeywords = [
+    "critical", "trapped", "dying", "saklolo", "tulong", "buhay", "delikado",
+    "lubog", "nasusunog", "evacuate now", "bumagsak", "natabunan", "patay", "mamamatay",
+    "guho", "pagguho", "naipit", "naanod", "nabalian"
+  ];
   const highKeywords = [
     "saklolo", "rescue", "baha", "nasira", "bubong", "ambulance", "sugat",
-    "emergency", "pagguho", "landslide", "tulong", "naipit", "naanod", "nabalian", "sunog", "apoy"
+    "emergency", "pagguho", "landslide", "tulong", "naipit", "naanod", "nabalian", "sunog", "apoy",
+    "trapped", "bumagsak", "natabunan", "patay", "bata"
   ];
   const moderateKeywords = [
     "tubig", "supply", "puno", "kalsada", "daan", "poste", "interruption",
@@ -66,9 +72,21 @@ export function analyzeConvoNLP(convo: Conversation): ConvoNLPAnalysis {
     "bukas po ba", "good morning", "magandang", "hello", "hi po", "salamat", "thank you", "test", "ingat"
   ];
 
+  const distressKeywords = Array.from(
+    new Set([
+      ...criticalKeywords,
+      ...highKeywords,
+      ...moderateKeywords,
+      "trapped", "bumagsak", "natabunan", "patay", "bata", "mamamatay", "guho",
+      "rescue", "saklolo", "tulong", "emergency", "sunog", "apoy", "baha", "landslide",
+      "sugat", "ambulance", "naipit", "naanod", "nabalian"
+    ])
+  );
+
+  const hasCritical = criticalKeywords.some((k) => allUserText.includes(k)) || (convo.urgency || "").toLowerCase().includes("critical");
   const hasHigh = highKeywords.some((k) => allUserText.includes(k));
   const hasModerate = moderateKeywords.some((k) => allUserText.includes(k));
-  const isExplicitNoise = noiseKeywords.some((k) => allUserText.includes(k)) && !hasHigh;
+  const isExplicitNoise = noiseKeywords.some((k) => allUserText.includes(k)) && !hasHigh && !hasCritical;
 
   let incidentType = "General";
   if (allUserText.includes("bulkan") || allUserText.includes("volcan") || allUserText.includes("ash") || allUserText.includes("abo") || typeLower.includes("volcan")) {
@@ -104,19 +122,30 @@ export function analyzeConvoNLP(convo: Conversation): ConvoNLPAnalysis {
   (convo.messages || []).forEach((m, idx) => {
     if (m.sender === "user") {
       const text = m.text.toLowerCase();
-      const isDistress =
-        highKeywords.some((k) => text.includes(k)) ||
-        moderateKeywords.some((k) => text.includes(k));
+      const isDistress = distressKeywords.some((k) => text.includes(k));
       if (isDistress) {
         distressMessageIndices.push(idx);
       }
     }
   });
 
+  if (
+    distressMessageIndices.length === 0 &&
+    (hasCritical ||
+      hasHigh ||
+      convo.urgency?.toLowerCase() === "critical" ||
+      convo.urgency?.toLowerCase() === "high" ||
+      convo.intent?.toLowerCase().includes("emergency") ||
+      convo.intent?.toLowerCase().includes("incident"))
+  ) {
+    const firstUserIdx = (convo.messages || []).findIndex((m) => m.sender === "user");
+    if (firstUserIdx !== -1) {
+      distressMessageIndices.push(firstUserIdx);
+    }
+  }
+
   const distressMessageIdx = distressMessageIndices.length > 0 ? distressMessageIndices[0] : -1;
 
-  const criticalKeywords = ["critical", "trapped", "dying", "saklolo", "tulong", "buhay", "delikado", "lubog", "nasusunog", "evacuate now"];
-  const hasCritical = criticalKeywords.some((k) => allUserText.includes(k)) || (convo.urgency || "").toLowerCase().includes("critical");
   const isIncident = (hasCritical || hasHigh || hasModerate || typeLower === "emergency" || typeLower === "medical" || typeLower === "search & rescue") && !isExplicitNoise;
   const urgency: "Critical" | "High" | "Moderate" | "Low" = hasCritical
     ? "Critical"
@@ -1672,9 +1701,9 @@ export default function MessengerBotLogs() {
                                 <div className="flex flex-col items-start max-w-[85%] sm:max-w-[74%] min-w-0">
                                   {/* Emergency Distress Tag on User Message */}
                                   {selectedConversation.nlp.isIncident && (selectedConversation.nlp.distressMessageIndices?.includes(idx) || idx === selectedConversation.nlp.distressMessageIdx) && (
-                                    <span className="inline-flex items-center gap-1 text-[10px] sm:text-[11px] font-semibold text-rose-600 dark:text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-full px-2.5 py-0.5 mb-1.5 shadow-2xs">
-                                      <AlertTriangle className="w-3 h-3 text-rose-500 shrink-0" strokeWidth={2} />
-                                      <span>Distress Detected</span>
+                                    <span className="inline-flex items-center gap-1 text-[9px] font-bold text-rose-600 dark:text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-md px-1.5 py-0.5 mb-1">
+                                      <TriangleAlert className="w-2.5 h-2.5" strokeWidth={1.75} />
+                                      <span>Distress Intent Extracted</span>
                                     </span>
                                   )}
                                   <div className={`bg-white dark:bg-[#1e293b] text-slate-800 dark:text-slate-100 rounded-[20px] rounded-bl-[4px] px-4 py-2.5 shadow-[0_1px_3px_rgba(15,23,42,0.04)] border transition-all duration-200 ${
