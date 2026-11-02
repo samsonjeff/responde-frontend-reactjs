@@ -874,7 +874,7 @@ function IncidentSidebarContent({
           </button>
         </div>
 
-        {/* ── Single-Row Unified Utility Strip: Source Filter + Priority Micro-Dots ── */}
+        {/* ── Source Filter Utility Strip ── */}
         <div className="flex items-center justify-between gap-1 pt-0.5">
           <div className="inline-flex items-center p-0.5 bg-slate-200/50 dark:bg-slate-800/60 rounded-lg">
             {(['all', 'Bot', 'Scraper'] as const).map((src) => {
@@ -908,33 +908,15 @@ function IncidentSidebarContent({
             })}
           </div>
 
-          <div className="flex items-center gap-2 text-[10px] text-slate-400 dark:text-slate-500 pr-1 select-none">
-            <span className="flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#22c55e]" />
-              <span>Low</span>
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-              <span>Mod</span>
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
-              <span>High</span>
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-purple-600 shadow-[0_0_8px_rgba(147,51,234,0.45)]" />
-              <span>Critical</span>
-            </span>
-            {isFiltered && (
-              <button
-                type="button"
-                onClick={() => setSourceFilter('all')}
-                className="text-[#0071E3] dark:text-sky-400 hover:underline font-medium ml-1 cursor-pointer"
-              >
-                Reset
-              </button>
-            )}
-          </div>
+          {isFiltered && (
+            <button
+              type="button"
+              onClick={() => setSourceFilter('all')}
+              className="text-[#0071E3] dark:text-sky-400 hover:underline text-xs font-semibold pr-1 cursor-pointer"
+            >
+              Reset
+            </button>
+          )}
         </div>
       </div>
 
@@ -1758,33 +1740,61 @@ export default function GeospatialMap() {
           <div className="flex-1 min-w-0 h-full bg-white/90 dark:bg-[#111827]/90 backdrop-blur-xl rounded-3xl border border-slate-200/80 dark:border-white/10 shadow-[0_8px_30px_rgba(15,23,42,0.04)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.45)] p-2.5 sm:p-3 flex flex-col overflow-hidden min-h-0 relative transform-gpu border-t-white/80 dark:border-t-white/15">
             <div className="relative flex-1 min-h-0 w-full rounded-2xl overflow-hidden border border-slate-200/70 dark:border-white/10 shadow-inner bg-slate-100 dark:bg-slate-900">
 
-              {/* Re-open Incidents Drawer Floating Button */}
-              <AnimatePresence>
-                {!drawerOpen && (
-                  <motion.button
-                    initial={{ opacity: 0, scale: 0.92, x: -8 }}
-                    animate={{ opacity: 1, scale: 1, x: 0 }}
-                    exit={{ opacity: 0, scale: 0.92, x: -8 }}
-                    transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-                    whileHover={{ y: -1, scale: 1.02 }}
-                    whileTap={{ scale: 0.96 }}
-                    onClick={() => setDrawerOpen(true)}
-                    className="group absolute left-3 top-3 z-20 flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white/95 dark:bg-[#111827]/95 backdrop-blur-xl shadow-lg hover:shadow-[0_4px_16px_rgba(0,113,227,0.22)] border border-slate-200/80 dark:border-white/10 hover:border-blue-400/50 dark:hover:border-blue-500/40 text-slate-700 dark:text-slate-200 hover:text-[#0071E3] dark:hover:text-sky-300 transition-all text-xs font-semibold cursor-pointer"
-                    title="Show incident list"
-                  >
-                    <Navigation className="w-3.5 h-3.5 text-[#0071E3] dark:text-sky-400 transition-transform duration-200 group-hover:scale-110" />
-                    <span>Incidents</span>
-                    <span className="px-1.5 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 font-bold text-[10px] tabular-nums">
-                      {pinReports.length}
-                    </span>
-                    {incompleteReports.length > 0 && (
-                      <span className="px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-400 font-bold text-[10px] tabular-nums">
-                        {incompleteReports.length}
+              {/* Floating Top-Left Controls: Re-open Drawer & Urgency Legend */}
+              <div className="absolute left-3 top-3 z-20 flex flex-col items-start gap-2 pointer-events-none">
+                <AnimatePresence mode="popLayout">
+                  {!drawerOpen && (
+                    <motion.button
+                      key="reopen-incidents-drawer-btn"
+                      layout="position"
+                      initial={{ opacity: 0, scale: 0.92, y: -8 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.92, y: -8 }}
+                      transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+                      whileHover={{ y: -1, scale: 1.02 }}
+                      whileTap={{ scale: 0.96 }}
+                      onClick={() => setDrawerOpen(true)}
+                      className="group pointer-events-auto flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white/95 dark:bg-[#111827]/95 backdrop-blur-xl shadow-lg hover:shadow-[0_4px_16px_rgba(0,113,227,0.22)] border border-slate-200/80 dark:border-white/10 hover:border-blue-400/50 dark:hover:border-blue-500/40 text-slate-700 dark:text-slate-200 hover:text-[#0071E3] dark:hover:text-sky-300 transition-all text-xs font-semibold cursor-pointer"
+                      title="Show incident list"
+                    >
+                      <Navigation className="w-3.5 h-3.5 text-[#0071E3] dark:text-sky-400 transition-transform duration-200 group-hover:scale-110" />
+                      <span>Incidents</span>
+                      <span className="px-1.5 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 font-bold text-[10px] tabular-nums">
+                        {pinReports.length}
                       </span>
-                    )}
-                  </motion.button>
-                )}
-              </AnimatePresence>
+                      {incompleteReports.length > 0 && (
+                        <span className="px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-400 font-bold text-[10px] tabular-nums">
+                          {incompleteReports.length}
+                        </span>
+                      )}
+                    </motion.button>
+                  )}
+                </AnimatePresence>
+
+                {/* Floating Map Urgency Legend — smoothly moves vertically when the drawer/button changes */}
+                <motion.div
+                  layout="position"
+                  transition={SOFT_SPRING}
+                  className="pointer-events-auto flex items-center gap-2 sm:gap-2.5 text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 px-3 py-1.5 rounded-xl bg-white/95 dark:bg-[#111827]/95 backdrop-blur-xl border border-slate-200/80 dark:border-white/10 shadow-[0_4px_16px_rgba(15,23,42,0.08)] dark:shadow-[0_4px_16px_rgba(0,0,0,0.4)] select-none shrink-0"
+                >
+                  <span className="flex items-center gap-1 font-medium">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#22c55e]" />
+                    <span>Low</span>
+                  </span>
+                  <span className="flex items-center gap-1 font-medium">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                    <span>Mod</span>
+                  </span>
+                  <span className="flex items-center gap-1 font-medium">
+                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                    <span>High</span>
+                  </span>
+                  <span className="flex items-center gap-1 font-medium">
+                    <span className="w-1.5 h-1.5 rounded-full bg-purple-600 shadow-[0_0_8px_rgba(147,51,234,0.45)]" />
+                    <span>Critical</span>
+                  </span>
+                </motion.div>
+              </div>
 
               {/* Map Canvas (Underlay) */}
               <MapContainer
