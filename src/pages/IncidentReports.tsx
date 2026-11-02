@@ -98,13 +98,6 @@ const MODAL_TRANSITION = {
   y: { type: 'spring', stiffness: 220, damping: 26, mass: 0.8 },
 } as const;
 
-// ── Bulk bar: hardware-accelerated transform + opacity only ──
-const barActionVariants = {
-  hidden: { opacity: 0, y: -8, scale: 0.98 },
-  visible: { opacity: 1, y: 0, scale: 1 },
-  exit: { opacity: 0, y: -8, scale: 0.98 },
-};
-
 // ── Toast Type ──
 interface Toast {
   id: number;
@@ -267,8 +260,8 @@ function BarangaySelect({ value, onChange, options }: BarangaySelectProps) {
   }, [isOpen]);
 
   const allOptions = useMemo(() => {
-    const list = ['None (Missing / Unknown)', ...options];
-    if (value && value !== 'Unknown' && value !== 'None' && value !== 'None (Missing / Unknown)' && !list.includes(value)) {
+    const list = ['Unknown', ...options];
+    if (value && value !== 'Unknown' && value !== 'None' && !list.includes(value)) {
       list.unshift(value);
     }
     return list;
@@ -292,7 +285,7 @@ function BarangaySelect({ value, onChange, options }: BarangaySelectProps) {
         aria-expanded={isOpen}
       >
         <span className={`truncate ${isPlaceholder ? 'text-slate-400 dark:text-slate-500 font-normal' : 'text-slate-800 dark:text-slate-100 font-medium'}`}>
-          {isPlaceholder ? 'None (Missing / Unknown)' : value}
+          {isPlaceholder ? 'Unknown' : value}
         </span>
         <ChevronDown
           className={`w-4 h-4 text-slate-400 dark:text-slate-500 transition-transform duration-200 shrink-0 ${isOpen ? 'rotate-180 text-[#0071E3]' : ''}`}
@@ -338,7 +331,7 @@ function BarangaySelect({ value, onChange, options }: BarangaySelectProps) {
                 </div>
               ) : (
                 filteredOptions.map(opt => {
-                  const isSelected = opt === 'None (Missing / Unknown)'
+                  const isSelected = opt === 'Unknown'
                     ? (!value || value.toLowerCase() === 'none' || value.toLowerCase() === 'unknown')
                     : value === opt;
                   return (
@@ -348,7 +341,7 @@ function BarangaySelect({ value, onChange, options }: BarangaySelectProps) {
                       role="option"
                       aria-selected={isSelected}
                       onClick={() => {
-                        onChange(opt === 'None (Missing / Unknown)' ? 'None' : opt);
+                        onChange(opt);
                         setIsOpen(false);
                         setSearchTerm('');
                       }}
@@ -358,8 +351,10 @@ function BarangaySelect({ value, onChange, options }: BarangaySelectProps) {
                           : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/60'
                       }`}
                     >
-                      <span className="truncate">{opt}</span>
-                      {isSelected && <Check className="w-3.5 h-3.5 text-[#0071E3] dark:text-sky-400 shrink-0 ml-2" strokeWidth={2} />}
+                      <span>{opt}</span>
+                      {isSelected && (
+                        <Check className="w-3.5 h-3.5 text-[#0071E3] dark:text-sky-400 shrink-0" strokeWidth={2.5} />
+                      )}
                     </button>
                   );
                 })
@@ -379,9 +374,7 @@ export default function IncidentReports() {
     reports,
     loading,
     updateReport: contextUpdateReport,
-    bulkUpdateReports: contextBulkUpdateReports,
   } = useReports();
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<TabKey>('under_review');
   const [reviewingReport, setReviewingReport] = useState<Report | null>(null);
   const [fromDate, setFromDate] = useState('');
@@ -514,13 +507,6 @@ export default function IncidentReports() {
 
   // Edit form state inside modal
   const [editForm, setEditForm] = useState<Partial<Report>>({});
-  const [checklist, setChecklist] = useState({
-    barangayCorrect: false,
-    typeAccurate: false,
-    locationReal: false,
-    notDuplicate: false,
-    urgencyAppropriate: false,
-  });
   const [showRejectPanel, setShowRejectPanel] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
   const [showIncompletePanel, setShowIncompletePanel] = useState(false);
@@ -550,7 +536,6 @@ export default function IncidentReports() {
   // ── Bot conversation thread for the review modal ──
   const { conversations: botConversations } = useBotConversations();
   const isBotReport = reviewingReport?.source === 'Bot';
-  const isScraperReport = reviewingReport?.source === 'Scraper';
   const botThread = useMemo<BotMessage[]>(() => {
     if (!reviewingReport || reviewingReport.source !== 'Bot') return [];
     if (reviewingReport.threadMessages && reviewingReport.threadMessages.length > 0) {
@@ -595,7 +580,6 @@ export default function IncidentReports() {
 
   useEffect(() => {
     setCurrentPage(1);
-    setSelectedIds([]);
   }, [activeTab, filterSource, filterBarangay, filterType, filterUrgency, fromDate, toDate]);
 
   const availableBarangayOptions = useMemo(() => {
@@ -644,13 +628,6 @@ export default function IncidentReports() {
       coordinates: report.coordinates || '',
       contact: report.contact === '—' ? '' : (report.contact || ''),
     });
-    setChecklist({
-      barangayCorrect: false,
-      typeAccurate: false,
-      locationReal: false,
-      notDuplicate: false,
-      urgencyAppropriate: false,
-    });
     setShowRejectPanel(false);
     setRejectReason('');
     setCoordError(false);
@@ -680,22 +657,6 @@ export default function IncidentReports() {
     }
   };
 
-  const toggleSelect = (id: string) => {
-    setSelectedIds(prev =>
-      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
-    );
-  };
-
-  const toggleSelectAll = () => {
-    const visibleIds = paginatedReports.map(r => r.id);
-    const allSelected = visibleIds.every(id => selectedIds.includes(id));
-    if (allSelected) {
-      setSelectedIds(prev => prev.filter(id => !visibleIds.includes(id)));
-    } else {
-      setSelectedIds(prev => [...new Set([...prev, ...visibleIds])]);
-    }
-  };
-
   const validateCoordinates = (coords: string): boolean => {
     const pattern = /^-?\d+\.\d+\s*,\s*-?\d+\.\d+$/;
     return pattern.test(coords.trim());
@@ -705,24 +666,23 @@ export default function IncidentReports() {
     return value.replace(/[^0-9.,\-\s]/g, '');
   };
 
-  const handleSaveDraft = async () => {
+  const handleSaveChanges = async () => {
     if (!reviewingReport || !editForm) return;
     const targetId = reviewingReport.id;
-    const isOngoingStatus = reviewingReport.status === 'verified' || reviewingReport.status === 'resolved';
-    const actionDesc = editForm.action || (isOngoingStatus ? 'Updated report details' : 'Draft saved');
+    const actionDesc = editForm.action || 'Updated report details';
     const updated = {
       ...reviewingReport,
       ...editForm,
       action: actionDesc,
       actionTaken: actionDesc,
     } as Report;
-    showToast(isOngoingStatus ? `Report #${targetId} changes saved` : `Report #${targetId} draft saved`, 'info');
+    showToast(`Report #${targetId} changes saved`, 'info');
     closeReview();
 
     try {
       await contextUpdateReport(targetId, updated);
     } catch (err) {
-      console.error('Failed to save draft:', err);
+      console.error('Failed to save changes:', err);
     }
   };
 
@@ -856,7 +816,6 @@ export default function IncidentReports() {
   };
 
   const handleRestore = async (id: string) => {
-    setSelectedIds(prev => prev.filter(i => i !== id));
     const target = reports.find(r => r.id === id);
     const isIncomplete = target ? isReportIncomplete(target) : false;
     const destination = isIncomplete ? 'Incomplete' : 'Under Review';
@@ -874,34 +833,6 @@ export default function IncidentReports() {
       console.error('Failed to persist restore:', err);
     }
   };
-
-  const handleBulkResolve = async () => {
-    const count = selectedIds.length;
-    const targetIds = [...selectedIds];
-    showToast(`${count} reports marked as resolved`, 'success');
-    setSelectedIds([]);
-
-    try {
-      await contextBulkUpdateReports(targetIds, 'resolved', 'Marked resolved in bulk');
-    } catch (err) {
-      console.error('Failed to persist bulk resolve:', err);
-    }
-  };
-
-  const handleBulkRestore = async () => {
-    const count = selectedIds.length;
-    const targetIds = [...selectedIds];
-    showToast(`${count} reports restored (complete to Under Review, incomplete to Incomplete)`, 'info');
-    setSelectedIds([]);
-
-    try {
-      await contextBulkUpdateReports(targetIds, 'under_review', 'Restored from rejected in bulk');
-    } catch (err) {
-      console.error('Failed to persist bulk restore:', err);
-    }
-  };
-
-  const allChecklistChecked = Object.values(checklist).every(Boolean);
 
   const getReportDateString = (r: Report): string | null => {
     if (r.createdAt) {
@@ -1335,45 +1266,6 @@ export default function IncidentReports() {
             </div>
           </div>
         </div>
-
-        {/* Bulk Actions Floating Island */}
-        <AnimatePresence mode="wait">
-          {selectedIds.length > 0 && (
-            <motion.div
-              key="bulk-actions"
-              variants={barActionVariants}
-              initial="hidden"
-              animate="visible"
-              exit="exit"
-              transition={APPLE_SPRING}
-              className="relative z-10 flex flex-wrap items-center justify-between gap-2.5 bg-blue-50/90 dark:bg-blue-950/40 backdrop-blur-md border border-blue-200/80 dark:border-blue-800/60 rounded-2xl px-4 sm:px-5 py-2.5 shrink-0 shadow-sm"
-            >
-              <span className="text-xs font-semibold text-blue-800 dark:text-blue-300">
-                {selectedIds.length} report{selectedIds.length > 1 ? 's' : ''} selected
-              </span>
-              <div className="flex items-center gap-2 flex-wrap">
-                {activeTab === 'verified' && (
-                  <button
-                    type="button"
-                    onClick={handleBulkResolve}
-                    className="px-3.5 py-1.5 text-xs font-semibold text-emerald-700 bg-white dark:bg-slate-800 border border-emerald-200/80 dark:border-emerald-700/80 dark:text-emerald-300 rounded-xl hover:bg-emerald-50 dark:hover:bg-slate-700 transition-all flex items-center gap-1.5 active:scale-[0.96] shadow-2xs cursor-pointer"
-                  >
-                    <CheckCircle2 className="w-3.5 h-3.5" strokeWidth={1.75} /> Mark Resolved
-                  </button>
-                )}
-                {activeTab === 'rejected' && (
-                  <button
-                    type="button"
-                    onClick={handleBulkRestore}
-                    className="px-3.5 py-1.5 text-xs font-semibold text-[#0071E3] bg-white dark:bg-slate-800 border border-blue-200/80 dark:border-blue-700/80 dark:text-sky-300 rounded-xl hover:bg-blue-50 dark:hover:bg-slate-700 transition-all flex items-center gap-1.5 active:scale-[0.96] shadow-2xs cursor-pointer"
-                  >
-                    <RotateCcw className="w-3.5 h-3.5" strokeWidth={1.75} /> Restore to Pending
-                  </button>
-                )}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
           </div>
         </StaggerItem>
 
@@ -1395,30 +1287,20 @@ export default function IncidentReports() {
               <div
                 key={report.id}
                 className={`p-3.5 space-y-3 transition-colors ${
-                  selectedIds.includes(report.id)
-                    ? 'bg-blue-50/40 dark:bg-blue-900/15'
-                    : report.status === 'pending'
-                      ? 'bg-blue-50/20 dark:bg-blue-900/5'
-                      : ''
+                  report.status === 'pending'
+                    ? 'bg-blue-50/20 dark:bg-blue-900/5'
+                    : ''
                 }`}
               >
-                {/* Top Row: Select Checkbox, ID Code, Source Pill, Time */}
+                {/* Top Row: ID Code, Source Pill, Time */}
                 <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <input
-                      type="checkbox"
-                      checked={selectedIds.includes(report.id)}
-                      onChange={() => toggleSelect(report.id)}
-                      className="rounded-md border-slate-300 dark:border-slate-600 text-[#0071E3] focus:ring-0 w-4 h-4 cursor-pointer"
-                    />
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      {report.status === 'pending' && (
-                        <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0 ring-4 ring-blue-500/20 animate-pulse" title="Pending" />
-                      )}
-                      <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200/50 dark:border-white/5 truncate">
-                        {formatReportCode(report.id, report.source)}
-                      </span>
-                    </div>
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    {report.status === 'pending' && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0 ring-4 ring-blue-500/20 animate-pulse" title="Pending" />
+                    )}
+                    <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200/50 dark:border-white/5 truncate">
+                      {formatReportCode(report.id, report.source)}
+                    </span>
                     {(report.source || '').trim().toLowerCase() === 'scraper' ? (
                       <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-semibold bg-purple-500/10 dark:bg-purple-500/20 text-purple-600 dark:text-purple-400 border border-purple-500/25 shrink-0">
                         <Globe className="w-2.5 h-2.5" />
@@ -1529,16 +1411,8 @@ export default function IncidentReports() {
           <table className="w-full min-w-[980px] text-sm text-left border-separate border-spacing-0">
             <thead className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200/70 dark:border-white/10 sticky top-0 z-30 shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
               <tr>
-                <th className="px-3.5 py-3 w-10 shrink-0">
-                  <input
-                    type="checkbox"
-                    checked={paginatedReports.length > 0 && paginatedReports.every(r => selectedIds.includes(r.id))}
-                    onChange={toggleSelectAll}
-                    className="rounded-md border-slate-300 dark:border-slate-600 text-[#0071E3] focus:ring-0 w-4 h-4 cursor-pointer transition-all"
-                  />
-                </th>
-                <th className="px-3.5 py-3 w-28 min-w-[105px] text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400 whitespace-nowrap shrink-0">ID</th>
-                <th className="px-3.5 py-3 w-[25%] min-w-[160px] text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400">Barangay</th>
+                <th className="px-4 py-3 w-28 min-w-[105px] text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400 whitespace-nowrap shrink-0">ID</th>
+                <th className="px-3.5 py-3 w-[26%] min-w-[160px] text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400">Barangay</th>
                 <th className="px-3.5 py-3 w-[16%] min-w-[140px] text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400">Type</th>
                 <th className="px-3.5 py-3 w-[11%] min-w-[100px] text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400">Urgency</th>
                 <th className="px-3.5 py-3 w-[14%] min-w-[120px] text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400">Status</th>
@@ -1550,7 +1424,7 @@ export default function IncidentReports() {
             <tbody className="divide-y divide-slate-100 dark:divide-white/5">
               {paginatedReports.length === 0 ? (
                 <tr className="h-full">
-                  <td colSpan={9} className="h-full px-4 text-center text-slate-400 dark:text-slate-500 align-middle">
+                  <td colSpan={8} className="h-full px-4 text-center text-slate-400 dark:text-slate-500 align-middle">
                     <div className="flex flex-col items-center justify-center py-20">
                       <span className="text-sm font-medium">
                         {activeTab === 'incomplete'
@@ -1572,22 +1446,13 @@ export default function IncidentReports() {
                       delay: Math.min(index * 0.02, 0.15),
                     }}
                     onClick={() => openReview(report)}
-                    className={`cursor-pointer transition-colors duration-150 border-b border-slate-100 dark:border-white/5 group hover:bg-blue-50/30 dark:hover:bg-slate-800/40 active:bg-blue-50/50 dark:active:bg-slate-800/60 ${selectedIds.includes(report.id)
-                      ? 'bg-blue-50/40 dark:bg-blue-900/15'
-                      : report.status === 'pending'
+                    className={`cursor-pointer transition-colors duration-150 border-b border-slate-100 dark:border-white/5 group hover:bg-blue-50/30 dark:hover:bg-slate-800/40 active:bg-blue-50/50 dark:active:bg-slate-800/60 ${
+                      report.status === 'pending'
                         ? 'bg-blue-50/20 dark:bg-blue-900/5'
                         : ''
-                      }`}
+                    }`}
                   >
-                    <td className="px-3.5 py-3.5 w-10 shrink-0" onClick={(e) => e.stopPropagation()}>
-                      <input
-                        type="checkbox"
-                        checked={selectedIds.includes(report.id)}
-                        onChange={() => toggleSelect(report.id)}
-                        className="rounded-md border-slate-300 dark:border-slate-600 text-[#0071E3] focus:ring-0 w-4 h-4 cursor-pointer transition-all"
-                      />
-                    </td>
-                    <td className="px-3.5 py-3.5 w-28 min-w-[105px] whitespace-nowrap shrink-0">
+                    <td className="px-4 py-3.5 w-28 min-w-[105px] whitespace-nowrap shrink-0">
                       <div className="flex items-center gap-1.5">
                         {report.status === 'pending' && (
                           <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0 ring-4 ring-blue-500/20 animate-pulse" title="Pending" />
@@ -1600,7 +1465,7 @@ export default function IncidentReports() {
                         </span>
                       </div>
                     </td>
-                    <td className="px-3.5 py-3.5 w-[25%] min-w-[160px] text-slate-900 dark:text-slate-100 font-medium whitespace-nowrap group-hover:text-[#0071E3] group-active:text-[#0071E3] dark:group-hover:text-sky-400 dark:group-active:text-sky-400 transition-colors duration-150">
+                    <td className="px-3.5 py-3.5 w-[26%] min-w-[160px] text-slate-900 dark:text-slate-100 font-medium whitespace-nowrap group-hover:text-[#0071E3] group-active:text-[#0071E3] dark:group-hover:text-sky-400 dark:group-active:text-sky-400 transition-colors duration-150">
                       {(!report.barangay || report.barangay.trim().toLowerCase() === 'unknown' || report.barangay.trim().toLowerCase() === 'none') ? (
                         <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
                           <AlertTriangle className="w-3 h-3 text-rose-500 shrink-0" strokeWidth={1.75} />
@@ -2066,50 +1931,6 @@ export default function IncidentReports() {
                   </div>
                 </div>
 
-                {/* Verification Checklist — Apple Interactive Setting Cards */}
-                {(reviewingReport.status === 'pending' || reviewingReport.status === 'under_review') && (
-                  <div className="bg-slate-50/80 dark:bg-slate-900/50 rounded-2xl p-4 sm:p-4.5 border border-slate-200/70 dark:border-white/10">
-                    <h4 className="text-xs uppercase tracking-wider font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
-                      <ShieldCheck className="w-4 h-4 text-[#0071E3]" strokeWidth={1.75} />
-                      <span>Verification Checklist</span>
-                    </h4>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
-                      {[
-                        {
-                          key: 'barangayCorrect',
-                          label: isBotReport
-                            ? 'Barangay & phone number verified'
-                            : isScraperReport
-                              ? 'Barangay & location verified'
-                              : 'Barangay & coordinates verified',
-                        },
-                        { key: 'typeAccurate', label: 'Incident type is accurate' },
-                        { key: 'locationReal', label: 'Location / landmark is real' },
-                        { key: 'notDuplicate', label: 'Not a duplicate report' },
-                        { key: 'urgencyAppropriate', label: 'Urgency level is appropriate' },
-                      ].map((item) => (
-                        <label
-                          key={item.key}
-                          className={`p-3 rounded-xl border transition-all flex items-center gap-3 cursor-pointer select-none active:scale-[0.98] ${checklist[item.key as keyof typeof checklist]
-                            ? 'bg-blue-50/80 dark:bg-blue-900/25 border-blue-200 dark:border-blue-800/80 text-blue-950 dark:text-blue-200'
-                            : 'bg-white/80 dark:bg-slate-800/40 border-slate-200/70 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800'
-                            }`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={checklist[item.key as keyof typeof checklist]}
-                            onChange={(e) => setChecklist(prev => ({ ...prev, [item.key]: e.target.checked }))}
-                            className="rounded-md border-slate-300 dark:border-slate-600 text-[#0071E3] focus:ring-0 w-4 h-4 cursor-pointer"
-                          />
-                          <span className="text-xs font-medium leading-snug">
-                            {item.label}
-                          </span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
                 {/* Rejection Panel */}
                 <AnimatePresence>
                   {showRejectPanel && (
@@ -2243,13 +2064,6 @@ export default function IncidentReports() {
                     <>
                       <button
                         type="button"
-                        onClick={handleSaveDraft}
-                        className="flex-1 sm:flex-none justify-center px-4 py-2.5 min-h-[42px] text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-white/10 rounded-xl transition-all active:scale-[0.97] flex items-center cursor-pointer"
-                      >
-                        Save Draft
-                      </button>
-                      <button
-                        type="button"
                         onClick={() => {
                           setShowIncompletePanel(prev => !prev);
                           setShowRejectPanel(false);
@@ -2275,7 +2089,7 @@ export default function IncidentReports() {
                   {(reviewingReport.status === 'verified' || reviewingReport.status === 'resolved') && (
                     <button
                       type="button"
-                      onClick={handleSaveDraft}
+                      onClick={handleSaveChanges}
                       className="flex-1 sm:flex-none justify-center px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-white/10 rounded-xl transition-all active:scale-[0.97] flex items-center cursor-pointer"
                     >
                       Save Changes
@@ -2319,13 +2133,11 @@ export default function IncidentReports() {
                     <button
                       type="button"
                       onClick={handleVerify}
-                      disabled={!allChecklistChecked || isModalReportIncomplete}
+                      disabled={isModalReportIncomplete}
                       title={
                         isModalReportIncomplete
                           ? `Cannot verify: ${modalIncompleteReasons.join(', ')}`
-                          : !allChecklistChecked
-                            ? 'Complete the checklist first'
-                            : 'Verify and plot on map'
+                          : 'Verify and plot on map'
                       }
                       className="flex-1 sm:flex-none justify-center px-5 py-2.5 min-h-[42px] text-xs font-semibold text-white bg-[#0071E3] hover:bg-[#0077ED] disabled:opacity-40 disabled:cursor-not-allowed rounded-xl transition-all shadow-[0_2px_8px_rgba(0,113,227,0.25)] flex items-center gap-1.5 active:scale-[0.97] cursor-pointer"
                     >
