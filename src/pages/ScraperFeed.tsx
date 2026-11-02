@@ -560,24 +560,29 @@ export default function ScraperFeed() {
   // Filter logic
   const filteredPosts = useMemo(() => {
     return posts.filter((p) => {
-      // In structured mode, only show verified incident reports
-      if (viewMode === "structured" && !p.isIncident) return false;
+      const isFilteringNoneBarangay = filterBarangay.toLowerCase().trim() === "none" || filterBarangay.toLowerCase().trim() === "unknown";
+      const isFilteringNoneType = filterType.toLowerCase().trim() === "none" || filterType.toLowerCase().trim() === "unknown";
+      const isFilteringNone = isFilteringNoneBarangay || isFilteringNoneType;
+
+      // In structured mode, only show verified incident reports unless specifically inspecting unclassified/None
+      if (viewMode === "structured" && !isFilteringNone && !p.isIncident) return false;
+
       if (filterBarangay !== "All Barangays") {
         const normFilter = filterBarangay.toLowerCase().trim();
         const pBrgy = (p.barangay || "").toLowerCase().trim();
-        if (normFilter === "none" || normFilter === "unknown") {
-          if (pBrgy && pBrgy !== "none" && pBrgy !== "unknown" && pBrgy !== "unspecified" && pBrgy !== "n/a" && pBrgy !== "null") {
-            return false;
-          }
+        const isNoneBarangay = !pBrgy || pBrgy === "none" || pBrgy === "unknown" || pBrgy === "unspecified" || pBrgy === "n/a" || pBrgy === "null";
+        if (isFilteringNoneBarangay) {
+          if (!isNoneBarangay) return false;
         } else if (pBrgy !== normFilter) {
           return false;
         }
       }
       if (filterType !== "All Types") {
         const normFilter = filterType.toLowerCase().trim();
-        const pType = (p.type || "none").toLowerCase().trim();
-        if (normFilter === "none" || normFilter === "unknown") {
-          if (pType !== "none" && pType !== "unclassified" && pType !== "unknown") return false;
+        const pType = (p.type || "").toLowerCase().trim();
+        const isNoneType = !pType || pType === "none" || pType === "unclassified" || pType === "unknown" || pType === "null" || pType === "undefined" || pType === "n/a";
+        if (isFilteringNoneType) {
+          if (!isNoneType) return false;
         } else if (pType !== normFilter) {
           return false;
         }

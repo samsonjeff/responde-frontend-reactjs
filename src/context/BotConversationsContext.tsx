@@ -37,7 +37,7 @@ function titleCase(str: string): string {
 }
 
 function normalizeBarangayName(name: string): string {
-  if (!name) return 'General';
+  if (!name) return 'None';
   const trimmed = name.trim();
   const matched = TALISAY_BARANGAYS.find(
     (b) => b.toLowerCase() === trimmed.toLowerCase()
@@ -290,7 +290,7 @@ export function BotConversationsProvider({ children }: { children: ReactNode }) 
               session.senderName !== 'Unknown User'
                 ? session.senderName
                 : `PSID: ${session.psid.slice(-6)}`,
-            barangay: isRealBarangay(session.barangay) ? normalizeBarangayName(session.barangay) : 'General',
+            barangay: isRealBarangay(session.barangay) ? normalizeBarangayName(session.barangay) : 'None',
             type: isRealType(session.type) ? formatReportType(session.type) : 'None',
             urgency: session.urgency ? formatReportUrgency(session.urgency) : 'Low',
             intent: normalizeIntent(session.intent),

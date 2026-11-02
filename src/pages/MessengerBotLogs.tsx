@@ -143,24 +143,6 @@ export function analyzeConvoNLP(convo: Conversation): ConvoNLPAnalysis {
     !hasCritical &&
     !isExplicitIntent;
 
-  let incidentType = "General";
-  if (allUserText.includes("bulkan") || allUserText.includes("volcan") || allUserText.includes("ash") || allUserText.includes("abo") || typeLower.includes("volcan")) {
-    incidentType = "Volcanic Eruption";
-  } else if (allUserText.includes("baha") || allUserText.includes("flood") || allUserText.includes("lubog") || allUserText.includes("anod") || typeLower.includes("flood")) {
-    incidentType = "Flood";
-  } else if (allUserText.includes("bagyo") || allUserText.includes("typhoon") || allUserText.includes("hangin") || typeLower.includes("typhoon")) {
-    incidentType = "Typhoon";
-  } else if (allUserText.includes("landslide") || allUserText.includes("pagguho") || allUserText.includes("guho") || typeLower.includes("landslide")) {
-    incidentType = "Landslide";
-  } else if (allUserText.includes("sunog") || allUserText.includes("apoy") || allUserText.includes("fire") || typeLower.includes("fire")) {
-    incidentType = "Fire";
-  } else if (allUserText.includes("lindol") || allUserText.includes("earthquake") || allUserText.includes("yanig") || typeLower.includes("earthquake") || typeLower.includes("quake")) {
-    incidentType = "Earthquake";
-  } else if (convo.type && convo.type.toLowerCase() !== "none") {
-    const matched = INCIDENT_TYPE_CHOICES.find((c) => c.toLowerCase() === convo.type.toLowerCase());
-    incidentType = matched || convo.type;
-  }
-
   const actionableNeeds: string[] = [];
   if (allUserText.includes("ambulance") || allUserText.includes("sugat")) actionableNeeds.push("Ambulance & Paramedics");
   if (allUserText.includes("first aid")) actionableNeeds.push("First Aid Supplies");
@@ -191,6 +173,30 @@ export function analyzeConvoNLP(convo: Conversation): ConvoNLPAnalysis {
       isExplicitIntent ||
       isExplicitIncidentType) &&
     !isExplicitNoise;
+
+  let incidentType = "None";
+  if (isExplicitIncidentType) {
+    const matched = INCIDENT_TYPE_CHOICES.find((c) => c.toLowerCase() === convo.type.toLowerCase());
+    incidentType = matched || convo.type;
+  } else if (allUserText.includes("bulkan") || allUserText.includes("volcan") || allUserText.includes("ash") || allUserText.includes("abo") || typeLower.includes("volcan")) {
+    incidentType = "Volcanic Eruption";
+  } else if (allUserText.includes("baha") || allUserText.includes("flood") || allUserText.includes("lubog") || allUserText.includes("anod") || typeLower.includes("flood")) {
+    incidentType = "Flood";
+  } else if (allUserText.includes("bagyo") || allUserText.includes("typhoon") || allUserText.includes("hangin") || typeLower.includes("typhoon")) {
+    incidentType = "Typhoon";
+  } else if (allUserText.includes("landslide") || allUserText.includes("pagguho") || allUserText.includes("guho") || typeLower.includes("landslide")) {
+    incidentType = "Landslide";
+  } else if (allUserText.includes("sunog") || allUserText.includes("apoy") || allUserText.includes("fire") || typeLower.includes("fire")) {
+    incidentType = "Fire";
+  } else if (allUserText.includes("lindol") || allUserText.includes("earthquake") || allUserText.includes("yanig") || typeLower.includes("earthquake") || typeLower.includes("quake")) {
+    incidentType = "Earthquake";
+  } else if (typeLower === "general") {
+    incidentType = "General";
+  } else if (isIncident) {
+    incidentType = "General";
+  } else {
+    incidentType = "None";
+  }
 
   if (distressMessageIndices.length === 0 && isIncident) {
     const firstUserIdx = (convo.messages || []).findIndex((m) => m.sender === "user");
@@ -597,11 +603,12 @@ export default function MessengerBotLogs() {
 
   const availableTypes = useMemo(() => {
     const fromConversations = conversations.map((c) => c.type).filter(Boolean);
-    const sorted = Array.from(new Set([...BASE_INCIDENT_TYPES, ...fromConversations]))
+    const fromNLP = analyzedConversations.map((c) => c.nlp?.incidentType).filter(Boolean);
+    const sorted = Array.from(new Set([...BASE_INCIDENT_TYPES, ...fromConversations, ...fromNLP]))
       .filter((t): t is string => Boolean(t && t.toLowerCase() !== 'all types' && t.toLowerCase() !== 'unclassified' && t.toLowerCase() !== 'none'))
       .sort();
     return ["All Types", "None", ...sorted];
-  }, [conversations]);
+  }, [conversations, analyzedConversations]);
 
   const resetFilters = () => {
     setFilterBarangay("All Barangays");
@@ -649,42 +656,63 @@ export default function MessengerBotLogs() {
   };
 
   const filteredConversations = useMemo(() => {
+    const normFilterBarangay = debouncedBarangay.toLowerCase().trim();
+    const normFilterType = debouncedType.toLowerCase().trim();
+    const isFilteringNoneBarangay = normFilterBarangay === "none" || normFilterBarangay === "unknown";
+    const isFilteringNoneType = normFilterType === "none" || normFilterType === "unknown";
+    const isFilteringNone = isFilteringNoneBarangay || isFilteringNoneType;
+
     return analyzedConversations.filter((c) => {
-      if (viewMode === "structured" && !c.nlp.isIncident) return false;
+      // In structured mode, only show incidents unless actively filtering for unclassified/None
+      if (viewMode === "structured" && !isFilteringNone && !c.nlp.isIncident) return false;
+
+      // 1. Barangay filter
       if (debouncedBarangay !== "All Barangays") {
-        const normFilter = debouncedBarangay.toLowerCase().trim();
         const cBarangay = (c.barangay || "").toLowerCase().trim();
-        if (normFilter === "none" || normFilter === "unknown") {
-          if (cBarangay && cBarangay !== "none" && cBarangay !== "unknown" && cBarangay !== "general" && cBarangay !== "unspecified" && cBarangay !== "n/a" && cBarangay !== "null") {
-            return false;
-          }
-        } else if (cBarangay !== normFilter) {
+        const isNoneBarangay = !cBarangay || cBarangay === "none" || cBarangay === "unknown" || cBarangay === "unspecified" || cBarangay === "n/a" || cBarangay === "null" || cBarangay === "general";
+        if (isFilteringNoneBarangay) {
+          if (!isNoneBarangay) return false;
+        } else if (cBarangay !== normFilterBarangay) {
           return false;
         }
       }
+
+      // 2. Type filter
       if (debouncedType !== "All Types") {
-        const query = debouncedType.toLowerCase().trim();
         const cType = (c.type || "").toLowerCase().trim();
         const nlpType = (c.nlp?.incidentType || "").toLowerCase().trim();
-        if (query === "none") {
-          const isNone = (!cType || cType === "none" || cType === "unclassified" || cType === "null") && (!nlpType || nlpType === "none" || nlpType === "unclassified" || nlpType === "null");
-          if (!isNone) return false;
+        const resolvedType = (cType && cType !== "none" && cType !== "unclassified" && cType !== "null" && cType !== "unknown")
+          ? cType
+          : (nlpType && nlpType !== "none" && nlpType !== "unclassified" && nlpType !== "null" && nlpType !== "unknown" ? nlpType : "none");
+
+        const isNoneType = resolvedType === "none";
+
+        if (isFilteringNoneType) {
+          if (!isNoneType) return false;
         } else {
-          const matches = cType === query || nlpType === query || cType.includes(query) || nlpType.includes(query);
-          if (!matches) return false;
+          if (isNoneType) return false;
+          if (resolvedType !== normFilterType && cType !== normFilterType && nlpType !== normFilterType) {
+            return false;
+          }
         }
       }
+
+      // 3. Urgency filter
       if (debouncedUrgency !== "All Urgency") {
-        const u = (c.nlp?.urgency || "").toLowerCase();
+        const u = (c.nlp?.urgency || c.urgency || "").toLowerCase();
         const du = debouncedUrgency.toLowerCase();
         if (du === "critical" && u !== "critical") return false;
         if (du === "high" && u !== "high") return false;
         if (du === "moderate" && u !== "moderate" && u !== "mod") return false;
         if (du === "low" && u !== "low") return false;
       }
+
+      // 4. Status filter
       if (debouncedStatus !== "All Status" && c.status?.toLowerCase() !== debouncedStatus.toLowerCase()) {
         return false;
       }
+
+      // 5. Date filter
       if (debouncedFromDate) {
         const dStr = getConvoDateString(c);
         if (dStr && dStr < debouncedFromDate) return false;
@@ -1383,9 +1411,14 @@ export default function MessengerBotLogs() {
                               </p>
                               <div className="flex items-center gap-1.5 mb-1 text-[11px] text-slate-400 dark:text-slate-500 font-medium">
                                 <span className="truncate max-w-[140px] sm:max-w-none flex items-center gap-1">
-                                  <span>{convo.nlp?.incidentType && convo.nlp.incidentType.toLowerCase() !== "none" ? convo.nlp.incidentType : (convo.type && convo.type.toLowerCase() !== "none" ? convo.type : "General")}</span>
+                                  <span>{(() => {
+                                    const t = (convo.type && convo.type.toLowerCase() !== "none" && convo.type.toLowerCase() !== "unclassified")
+                                      ? convo.type
+                                      : (convo.nlp?.incidentType && convo.nlp.incidentType.toLowerCase() !== "none" ? convo.nlp.incidentType : "None");
+                                    return t;
+                                  })()}</span>
                                   <span className="text-slate-300 dark:text-slate-600">•</span>
-                                  <span className={convo.barangay === "Unknown" ? "italic text-slate-400" : ""}>{convo.barangay}</span>
+                                  <span className={convo.barangay === "Unknown" || convo.barangay === "None" ? "italic text-slate-400" : ""}>{convo.barangay || "None"}</span>
                                 </span>
                               </div>
 
@@ -1535,9 +1568,14 @@ export default function MessengerBotLogs() {
                             {selectedConversation.name}
                           </h3>
                           <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 sm:gap-1.5 mt-0.5 truncate">
-                            <span className="truncate">{selectedConversation.barangay}</span>
+                            <span className="truncate">{selectedConversation.barangay || "None"}</span>
                             <span className="text-slate-300 dark:text-slate-600 shrink-0">•</span>
-                            <span className="truncate">{selectedConversation.nlp?.incidentType && selectedConversation.nlp.incidentType.toLowerCase() !== "none" ? selectedConversation.nlp.incidentType : (selectedConversation.type && selectedConversation.type.toLowerCase() !== "none" ? selectedConversation.type : "General")}</span>
+                            <span className="truncate">{(() => {
+                              const t = (selectedConversation.type && selectedConversation.type.toLowerCase() !== "none" && selectedConversation.type.toLowerCase() !== "unclassified")
+                                ? selectedConversation.type
+                                : (selectedConversation.nlp?.incidentType && selectedConversation.nlp.incidentType.toLowerCase() !== "none" ? selectedConversation.nlp.incidentType : "None");
+                              return t;
+                            })()}</span>
 
                           </p>
                         </div>
