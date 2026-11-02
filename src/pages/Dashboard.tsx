@@ -370,8 +370,8 @@ export default function Dashboard() {
     switch ((urgency || '').toLowerCase()) {
       case 'critical':
         return (
-          <span className="inline-flex items-center justify-center gap-1.5 w-[82px] py-0.5 rounded-full text-xs font-semibold bg-rose-600/15 text-rose-700 dark:text-rose-400 border border-rose-600/30">
-            <span className="w-1.5 h-1.5 rounded-full bg-rose-600 shrink-0 animate-pulse" />
+          <span className="inline-flex items-center justify-center gap-1.5 w-[82px] py-0.5 rounded-full text-xs font-semibold bg-purple-500/15 text-purple-700 dark:text-purple-300 border border-purple-500/30">
+            <span className="w-1.5 h-1.5 rounded-full bg-purple-600 shrink-0 animate-pulse" />
             <span>Critical</span>
           </span>
         );

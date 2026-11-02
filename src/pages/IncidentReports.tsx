@@ -17,7 +17,6 @@ import {
   isReportIncomplete,
   getIncompleteReasons,
   formatReportCode,
-  getTypeHexColor,
   type Report,
   type ReportStatus,
 } from '../services/incidentService';
@@ -902,14 +901,13 @@ export default function IncidentReports() {
     switch ((urgency || '').toLowerCase()) {
       case 'critical':
         return (
-          <span className="inline-flex items-center justify-center gap-1.5 w-[82px] py-0.5 rounded-full text-xs font-semibold bg-rose-600/15 text-rose-700 dark:text-rose-400 border border-rose-600/30">
-            <span className="w-1.5 h-1.5 rounded-full bg-rose-600 shrink-0 animate-pulse" />
+          <span className="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-500/15 text-purple-700 dark:text-purple-300 border border-purple-500/30">
             <span>Critical</span>
           </span>
         );
       case 'high':
         return (
-          <span className="inline-flex items-center justify-center gap-1.5 w-[82px] py-0.5 rounded-full text-xs font-semibold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
+          <span className="inline-flex items-center justify-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
             <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
             <span>High</span>
           </span>
@@ -917,7 +915,7 @@ export default function IncidentReports() {
       case 'moderate':
       case 'mod':
         return (
-          <span className="inline-flex items-center justify-center gap-1.5 w-[82px] py-0.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+          <span className="inline-flex items-center justify-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
             <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
             <span>Moderate</span>
           </span>
@@ -925,8 +923,8 @@ export default function IncidentReports() {
       case 'low':
       default:
         return (
-          <span className="inline-flex items-center justify-center gap-1.5 w-[82px] py-0.5 rounded-full text-xs font-semibold bg-green-500/15 text-green-700 dark:text-green-300 border border-green-500/30">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#22c55e] shrink-0" />
+          <span className="inline-flex items-center justify-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-500/10 text-slate-600 dark:text-slate-300 border border-slate-500/20">
+            <span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" />
             <span>Low</span>
           </span>
         );
@@ -985,21 +983,31 @@ export default function IncidentReports() {
     const norm = (type || '').trim().toLowerCase();
     if (!norm || norm === 'none' || norm === 'unclassified') {
       return (
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
           <AlertTriangle className="w-3 h-3 text-rose-500 shrink-0" strokeWidth={1.75} />
-          <span>Out of Scope</span>
+          <span>None</span>
         </span>
       );
     }
 
-    const dotColor = getTypeHexColor(type);
+    const colorMap: Record<string, string> = {
+      'earthquake': 'text-amber-600 dark:text-amber-400',
+      'fire': 'text-rose-600 dark:text-rose-400',
+      'flood': 'text-cyan-600 dark:text-cyan-400',
+      'landslide': 'text-yellow-700 dark:text-yellow-500',
+      'search & rescue': 'text-orange-600 dark:text-orange-400',
+      'medical': 'text-emerald-600 dark:text-emerald-400',
+      'food & water': 'text-blue-600 dark:text-blue-400',
+      'infrastructure': 'text-purple-600 dark:text-purple-400',
+      'general': 'text-slate-700 dark:text-slate-300',
+      'typhoon': 'text-teal-600 dark:text-teal-400',
+      'volcanic eruption': 'text-orange-600 dark:text-orange-400',
+    };
+    const textColor = colorMap[norm] || 'text-slate-700 dark:text-slate-300';
 
     return (
-      <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200">
-        <span
-          className="w-2 h-2 rounded-full shrink-0"
-          style={{ backgroundColor: dotColor }}
-        />
+      <span className={`inline-flex items-center gap-1.5 text-xs font-semibold ${textColor}`}>
+        <span className="w-1.5 h-1.5 rounded-full bg-current shrink-0" />
         <span>{type}</span>
       </span>
     );
@@ -1204,33 +1212,6 @@ export default function IncidentReports() {
                 />
               </div>
 
-              {/* Instant Search Bar */}
-              <div className="col-span-2 md:col-span-auto relative flex items-center min-w-0 md:min-w-[200px] flex-1">
-                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 pointer-events-none" strokeWidth={1.75} />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => {
-                    setSearchQuery(e.target.value);
-                    setCurrentPage(1);
-                  }}
-                  placeholder="Search code, resident, keyword..."
-                  className="w-full pl-8.5 pr-7 py-2 text-xs bg-white/70 dark:bg-slate-800/70 border border-slate-200/80 dark:border-white/10 rounded-xl text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-[#0071E3] transition-all shadow-2xs"
-                />
-                {searchQuery && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSearchQuery('');
-                      setCurrentPage(1);
-                    }}
-                    className="absolute right-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
-                    aria-label="Clear filter search"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                )}
-              </div>
             </div>
 
             {/* Right Date Scope Container + Preserved Reset Option */}
@@ -1574,14 +1555,10 @@ export default function IncidentReports() {
                           <button
                             type="button"
                             onClick={() => openReview(report)}
-                            className={`group/btn px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all duration-200 inline-flex items-center justify-center gap-1.5 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.96] backdrop-blur-sm cursor-pointer ${
-                              isReportIncomplete(report)
-                                ? 'text-amber-700 dark:text-amber-300 bg-amber-500/22 hover:bg-amber-500/35 active:bg-amber-500/45 dark:bg-amber-500/30 dark:hover:bg-amber-500/45 border border-amber-500/50 hover:border-amber-500/80 dark:border-amber-400/40 shadow-[0_2px_10px_rgba(217,119,6,0.22)] hover:shadow-[0_4px_16px_rgba(217,119,6,0.35)]'
-                                : 'text-[#0071E3] dark:text-sky-300 bg-[#0071E3]/18 hover:bg-[#0071E3]/28 active:bg-[#0071E3]/38 dark:bg-[#0071E3]/25 dark:hover:bg-[#0071E3]/38 border border-[#0071E3]/45 hover:border-[#0071E3]/75 dark:border-sky-400/40 shadow-[0_2px_10px_rgba(0,113,227,0.22)] hover:shadow-[0_4px_16px_rgba(0,113,227,0.35)]'
-                            }`}
+                            className="group/btn px-3.5 py-1.5 text-xs font-bold text-amber-700 dark:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 active:bg-amber-500/30 border border-amber-500/30 rounded-xl transition-all duration-200 inline-flex items-center justify-center gap-1.5 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.96] shadow-2xs cursor-pointer"
                           >
-                            <ShieldCheck className="w-3.5 h-3.5 transition-transform duration-200 group-hover/btn:scale-110" strokeWidth={1.75} />
-                            <span>{isReportIncomplete(report) ? 'Review & Complete' : 'Review'}</span>
+                            <ShieldCheck className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 transition-transform duration-200 group-hover/btn:scale-110" strokeWidth={1.75} />
+                            <span>Review</span>
                           </button>
                         )}
 
