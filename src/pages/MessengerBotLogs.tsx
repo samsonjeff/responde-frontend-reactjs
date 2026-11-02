@@ -197,6 +197,22 @@ function formatDisplayTime(timeStr: string): string {
   return extractDisplayTime(timeStr);
 }
 
+function formatMsgTime(timestamp?: string, convoTime?: string): string {
+  if (timestamp) {
+    const formatted = formatPhilippineTimeOnly(timestamp);
+    if (formatted) return formatted;
+    const extracted = extractDisplayTime(timestamp);
+    if (extracted) return extracted;
+  }
+  if (convoTime) {
+    const extracted = extractDisplayTime(convoTime);
+    if (extracted) return extracted;
+    const formatted = formatPhilippineTimeOnly(convoTime);
+    if (formatted) return formatted;
+  }
+  return '3:07 AM';
+}
+
 // -- Toast Type --
 interface Toast {
   id: number;
@@ -571,26 +587,33 @@ export default function MessengerBotLogs() {
 
   // Semantic Urgency Badge (Matches Scraper styling)
   const renderUrgencyBadge = (urgency?: string) => {
-    switch (urgency) {
-      case "High":
+    switch ((urgency || "").toLowerCase()) {
+      case "critical":
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 tabular-nums">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-500/15 text-purple-700 dark:text-purple-300 border border-purple-500/30 tabular-nums">
+            <span className="w-1.5 h-1.5 rounded-full bg-purple-600 animate-pulse shrink-0" />
+            <span>Critical</span>
+          </span>
+        );
+      case "high":
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 tabular-nums">
             <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse shrink-0" />
-            High
+            <span>High</span>
           </span>
         );
-      case "Moderate":
+      case "moderate":
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 tabular-nums">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 tabular-nums">
             <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
-            Moderate
+            <span>Moderate</span>
           </span>
         );
-      case "Low":
+      case "low":
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-green-500/15 text-green-700 dark:text-green-300 border border-green-500/30 tabular-nums">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#22c55e] shrink-0" />
-            Low
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-500/10 text-slate-600 dark:text-slate-300 border border-slate-500/20 tabular-nums">
+            <span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" />
+            <span>Low</span>
           </span>
         );
       default:
@@ -606,7 +629,7 @@ export default function MessengerBotLogs() {
   // Error state only if zero conversations exist to show
   if (!loading && error && conversations.length === 0) {
     return (
-      <div className="messenger-soft flex flex-col flex-1 min-h-0 space-y-3 sm:space-y-3.5 w-full h-full relative">
+      <div className="messenger-soft flex flex-col flex-1 w-full lg:h-full lg:min-h-0 space-y-3 sm:space-y-3.5 relative">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-blue-500/10 dark:bg-blue-500/20 text-[#0071E3] dark:text-sky-400 flex items-center justify-center shrink-0 border border-blue-500/20 shadow-xs">
@@ -905,7 +928,7 @@ export default function MessengerBotLogs() {
         </AnimatePresence>
       </div>
 
-      <StaggerContainer className="flex flex-col flex-1 min-h-0 space-y-3 sm:space-y-3.5 w-full h-full">
+      <StaggerContainer className="flex flex-col flex-1 space-y-3 sm:space-y-3.5 w-full lg:h-full lg:min-h-0">
         {/* ── Top Page Header (Unified Soft UI Design) ── */}
         <StaggerItem>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
@@ -1033,14 +1056,14 @@ export default function MessengerBotLogs() {
         </StaggerItem>
 
         {/* Two Column Layout / Responsive Split-Pane */}
-        <StaggerItem className="flex-1 min-h-0 flex flex-col">
-          <div className="flex-1 flex flex-col md:grid md:grid-cols-12 gap-3 md:gap-4 lg:gap-6 min-h-0 h-full">
+        <StaggerItem className="flex-1 lg:min-h-0 flex flex-col">
+          <div className="flex-1 flex flex-col md:grid md:grid-cols-12 gap-3 md:gap-4 lg:gap-6 lg:min-h-0 lg:h-full">
             {/* LEFT: Conversation List — Soft Messages Sidebar */}
             <div
               className={`
                 ${mobileView === 'chat' ? 'hidden md:flex' : 'flex'}
                 md:col-span-5 lg:col-span-5 bg-white/85 dark:bg-[#111827]/85 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_1px_3px_rgba(15,23,42,0.04),0_8px_24px_rgba(15,23,42,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.3)] flex-col overflow-hidden
-                min-h-[460px] md:min-h-0 h-full
+                min-h-[460px] md:min-h-0 h-[calc(100vh-12rem)] md:h-full
               `}
             >
               {/* Apple Segmented Stream Switcher Header */}
@@ -1336,7 +1359,7 @@ export default function MessengerBotLogs() {
               className={`
                 ${mobileView === 'list' ? 'hidden md:flex' : 'flex'}
                 md:col-span-7 lg:col-span-7 bg-white/90 dark:bg-[#111827]/90 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_1px_3px_rgba(15,23,42,0.04),0_8px_24px_rgba(15,23,42,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.3)] flex-col overflow-hidden
-                min-h-[480px] md:min-h-0 h-full
+                min-h-[480px] md:min-h-0 h-[calc(100vh-12rem)] md:h-full
               `}
             >
               <AnimatePresence mode="wait">
@@ -1467,21 +1490,22 @@ export default function MessengerBotLogs() {
                       }}
                     >
                       <div className="space-y-3 sm:space-y-4">
-                        {(selectedConversation.messages ?? []).map((msg, idx) =>
-                          msg.sender === "bot" ? (
+                        {(selectedConversation.messages ?? []).map((msg, idx) => {
+                          const msgTime = formatMsgTime(msg.timestamp, selectedConversation.time);
+                          return msg.sender === "bot" ? (
                             <div key={idx}>
                               <div className="flex items-end gap-1.5 sm:gap-2 justify-end">
-                                <div className="flex flex-col items-end max-w-[85%] sm:max-w-[74%]">
-                                  <div className="bg-[#0071E3] text-white rounded-[18px] sm:rounded-[20px] rounded-br-[4px] px-3.5 sm:px-4 py-2 sm:py-2.5 shadow-[0_2px_10px_rgba(0,113,227,0.22)] transition-all">
-                                    <p className="text-xs sm:text-[13.5px] leading-relaxed whitespace-pre-wrap break-words font-normal">{msg.text}</p>
+                                <div className="flex flex-col items-end max-w-[85%] sm:max-w-[74%] min-w-0">
+                                  <div className="bg-[#0071E3] text-white rounded-[20px] rounded-br-[4px] px-4 py-3 shadow-[0_2px_10px_rgba(0,113,227,0.22)] transition-all">
+                                    <p className="text-xs sm:text-[13.5px] leading-relaxed whitespace-pre-wrap break-words [overflow-wrap:anywhere] [word-break:break-word] font-normal">{msg.text}</p>
                                   </div>
-                                  <span className="text-[9px] sm:text-[10px] text-slate-400 dark:text-slate-500 mt-1 mr-1 font-medium flex items-center gap-1">
-                                    <Bot className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-[#0071E3]" strokeWidth={1.75} />
+                                  <span className="text-[10px] sm:text-[11px] text-slate-400 dark:text-slate-500 mt-1 mr-1 font-medium flex items-center gap-1.5">
+                                    <Bot className="w-3 h-3 text-[#0071E3] dark:text-sky-400 shrink-0" strokeWidth={1.75} />
                                     <span>Responde Bot</span>
-                                    {msg.timestamp && (
+                                    {msgTime && (
                                       <>
                                         <span className="text-slate-300 dark:text-slate-600">•</span>
-                                        <span>{formatPhilippineTimeOnly(msg.timestamp)}</span>
+                                        <span className="tabular-nums">{msgTime}</span>
                                       </>
                                     )}
                                   </span>
@@ -1499,39 +1523,39 @@ export default function MessengerBotLogs() {
                             >
                               <div className="flex items-end gap-1.5 sm:gap-2 justify-start">
                                 <div
-                                  className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full ${selectedColor} flex items-center justify-center text-[9px] sm:text-[10px] font-bold text-white shrink-0 mb-3 sm:mb-4 shadow-xs ring-1 ring-black/5`}
+                                  className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full ${selectedColor} flex items-center justify-center text-[10px] sm:text-[11px] font-bold text-white shrink-0 mb-3 sm:mb-4 shadow-xs ring-1 ring-black/5`}
                                 >
                                   {selectedInitials}
                                 </div>
-                                <div className="flex flex-col items-start max-w-[85%] sm:max-w-[74%]">
+                                <div className="flex flex-col items-start max-w-[85%] sm:max-w-[74%] min-w-0">
                                   {/* Emergency Distress Tag on User Message */}
                                   {selectedConversation.nlp.isIncident && (selectedConversation.nlp.distressMessageIndices?.includes(idx) || idx === selectedConversation.nlp.distressMessageIdx) && (
-                                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-rose-600 dark:text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-full px-2 py-0.5 mb-1 shadow-2xs">
-                                      <AlertTriangle className="w-3 h-3" strokeWidth={2} />
+                                    <span className="inline-flex items-center gap-1 text-[10px] sm:text-[11px] font-semibold text-rose-600 dark:text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-full px-2.5 py-0.5 mb-1.5 shadow-2xs">
+                                      <AlertTriangle className="w-3 h-3 text-rose-500 shrink-0" strokeWidth={2} />
                                       <span>Distress Detected</span>
                                     </span>
                                   )}
-                                  <div className={`bg-white/95 dark:bg-[#111827]/95 text-slate-800 dark:text-slate-100 rounded-[18px] sm:rounded-[20px] rounded-bl-[4px] px-3.5 sm:px-4 py-2 sm:py-2.5 shadow-[0_1px_3px_rgba(15,23,42,0.04)] border transition-all duration-200 ${
+                                  <div className={`bg-white dark:bg-[#1e293b] text-slate-800 dark:text-slate-100 rounded-[20px] rounded-bl-[4px] px-4 py-2.5 shadow-[0_1px_3px_rgba(15,23,42,0.04)] border transition-all duration-200 ${
                                     highlightedDistressIdx === idx
                                       ? "border-rose-500/80 ring-2 ring-rose-500/50 shadow-[0_0_18px_rgba(244,63,94,0.35)] scale-[1.01]"
-                                      : "border-slate-200/60 dark:border-white/5"
+                                      : "border-slate-200/80 dark:border-white/10"
                                   }`}>
-                                    <p className="text-xs sm:text-[13.5px] leading-relaxed whitespace-pre-wrap break-words font-normal">{msg.text}</p>
+                                    <p className="text-xs sm:text-[13.5px] leading-relaxed whitespace-pre-wrap break-words [overflow-wrap:anywhere] [word-break:break-word] font-normal">{msg.text}</p>
                                   </div>
-                                  <span className="text-[9px] sm:text-[10px] text-slate-400 dark:text-slate-500 mt-1 ml-1 font-medium flex items-center gap-1">
+                                  <span className="text-[10px] sm:text-[11px] text-slate-400 dark:text-slate-500 mt-1 ml-1 font-medium flex items-center gap-1.5">
                                     <span>{selectedConversation.name}</span>
-                                    {msg.timestamp && (
+                                    {msgTime && (
                                       <>
                                         <span className="text-slate-300 dark:text-slate-600">•</span>
-                                        <span>{formatPhilippineTimeOnly(msg.timestamp)}</span>
+                                        <span className="tabular-nums">{msgTime}</span>
                                       </>
                                     )}
                                   </span>
                                 </div>
                               </div>
                             </div>
-                          )
-                        )}
+                          );
+                        })}
                       </div>
                     </div>
 
@@ -1545,57 +1569,60 @@ export default function MessengerBotLogs() {
                           transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
                           className="absolute bottom-3 left-1/2 -translate-x-1/2 z-30 pointer-events-auto"
                         >
-                          <div className="group flex items-center gap-1 p-1 rounded-full bg-white/95 dark:bg-[#242526]/95 backdrop-blur-xl border border-rose-500/35 dark:border-rose-500/40 shadow-[0_8px_24px_rgba(244,63,94,0.24)] dark:shadow-[0_8px_24px_rgba(244,63,94,0.3)] text-xs font-semibold select-none">
+                          <div className="group flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/95 dark:bg-[#1e293b]/95 backdrop-blur-xl border border-rose-500/30 dark:border-rose-500/40 shadow-[0_8px_24px_rgba(244,63,94,0.18)] dark:shadow-[0_8px_24px_rgba(244,63,94,0.28)] text-xs font-semibold select-none">
                             {/* Scroll up / Previous distress signal */}
-                            <button
-                              type="button"
-                              onClick={() => handleJumpDirection('up')}
-                              disabled={!canGoUp}
-                              className={`flex items-center justify-center w-6 h-6 rounded-full transition-all cursor-pointer ${
-                                canGoUp
-                                  ? 'text-rose-600 dark:text-rose-400 hover:bg-rose-500/15 active:scale-90'
-                                  : 'text-rose-300/40 dark:text-rose-500/30 cursor-not-allowed opacity-35'
-                              }`}
-                              title={canGoUp ? 'Previous distress signal (scroll up)' : 'Already at topmost distress signal'}
-                              aria-label="Previous distress signal"
-                            >
-                              <ArrowUp className="w-3.5 h-3.5" strokeWidth={2.2} />
-                            </button>
+                            {distressNav.total > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => handleJumpDirection('up')}
+                                disabled={!canGoUp}
+                                className={`flex items-center justify-center w-5 h-5 rounded-full transition-all cursor-pointer ${
+                                  canGoUp
+                                    ? 'text-rose-600 dark:text-rose-400 hover:bg-rose-500/15 active:scale-90'
+                                    : 'text-rose-300/40 dark:text-rose-500/30 cursor-not-allowed opacity-35'
+                                }`}
+                                title={canGoUp ? 'Previous distress signal' : 'At topmost distress signal'}
+                                aria-label="Previous distress signal"
+                              >
+                                <ArrowUp className="w-3.5 h-3.5" strokeWidth={2.2} />
+                              </button>
+                            )}
 
                             {/* Main action pill */}
                             <button
                               type="button"
                               onClick={handleJumpToDistress}
-                              className="flex items-center gap-1.5 px-3 py-1 rounded-full text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 active:scale-95 transition-all cursor-pointer"
-                              title={
-                                distressNav.total > 1
-                                  ? `Go to Distress (${distressNav.currentNumber}/${distressNav.total})`
-                                  : 'Go to Distress signal'
-                              }
+                              className="flex items-center gap-1.5 text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300 active:scale-95 transition-all cursor-pointer"
+                              title="Jump to distress signal"
                             >
+                              {distressNav.total <= 1 && (
+                                <ArrowUp className="w-3.5 h-3.5 text-rose-500 shrink-0" strokeWidth={2.2} />
+                              )}
                               <span>Go to Distress</span>
                               {distressNav.total > 1 && (
-                                <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/15 text-rose-700 dark:text-rose-300 tabular-nums">
+                                <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-rose-500/15 text-rose-700 dark:text-rose-300 tabular-nums ml-0.5">
                                   {distressNav.currentNumber}/{distressNav.total}
                                 </span>
                               )}
                             </button>
 
                             {/* Scroll down to next distress signal */}
-                            <button
-                              type="button"
-                              onClick={() => handleJumpDirection('down')}
-                              disabled={!canGoDown}
-                              className={`flex items-center justify-center w-6 h-6 rounded-full transition-all cursor-pointer ${
-                                canGoDown
-                                  ? 'text-rose-600 dark:text-rose-400 hover:bg-rose-500/15 active:scale-90'
-                                  : 'text-rose-300/40 dark:text-rose-500/30 cursor-not-allowed opacity-35'
-                              }`}
-                              title={canGoDown ? 'Next distress signal (scroll down)' : 'Already at bottommost distress signal'}
-                              aria-label="Next distress signal"
-                            >
-                              <ArrowDown className="w-3.5 h-3.5" strokeWidth={2.2} />
-                            </button>
+                            {distressNav.total > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => handleJumpDirection('down')}
+                                disabled={!canGoDown}
+                                className={`flex items-center justify-center w-5 h-5 rounded-full transition-all cursor-pointer ${
+                                  canGoDown
+                                    ? 'text-rose-600 dark:text-rose-400 hover:bg-rose-500/15 active:scale-90'
+                                    : 'text-rose-300/40 dark:text-rose-500/30 cursor-not-allowed opacity-35'
+                                }`}
+                                title={canGoDown ? 'Next distress signal' : 'At bottommost distress signal'}
+                                aria-label="Next distress signal"
+                              >
+                                <ArrowDown className="w-3.5 h-3.5" strokeWidth={2.2} />
+                              </button>
+                            )}
                           </div>
                         </motion.div>
                       )}
