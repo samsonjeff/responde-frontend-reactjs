@@ -11,7 +11,7 @@ import PageLoader from "../components/PageLoader";
 import { StaggerContainer, StaggerItem } from "../components/Stagger";
 import { useBotConversations, type BotConversation as Conversation } from "../context/BotConversationsContext";
 import { TALISAY_BARANGAYS } from "../data/talisay-barangays";
-import { extractDisplayTime, formatPhilippineTimeOnly, formatPhilippineDateOnly, formatTimestampPHT } from "../utils/dateUtils";
+import { extractDisplayTime, formatPhilippineTimeOnly, formatPhilippineDateOnly } from "../utils/dateUtils";
 import { BASE_INCIDENT_TYPES, formatReportUrgency } from "../services/incidentService";
 import { useDebounce } from "../hooks/useDebounce";
 
@@ -200,20 +200,40 @@ function getLastMessage(convo: Conversation): string {
   return userMsg ? userMsg.text : convo.messages[convo.messages.length - 1].text;
 }
 
-function formatConvoDateTime(timeStr?: string, createdAt?: string): string {
-  if (createdAt) {
-    const formatted = formatTimestampPHT(createdAt);
-    if (formatted) return formatted;
+function getConvoTimeAndDate(timeStr?: string, createdAt?: string): { timeText: string; dateText: string } {
+  const source = createdAt || timeStr;
+  if (!source) return { timeText: '', dateText: '' };
+
+  const d = new Date(source);
+  if (!isNaN(d.getTime())) {
+    return {
+      timeText: formatPhilippineTimeOnly(d),
+      dateText: formatPhilippineDateOnly(d),
+    };
   }
-  if (timeStr) {
-    if (timeStr.includes('/') || timeStr.includes(',')) {
-      return timeStr;
-    }
-    const formatted = formatTimestampPHT(timeStr);
-    if (formatted) return formatted;
-    return timeStr;
+
+  const m = source.match(/^(\d{1,2})\/(\d{1,2})\s+(.+)$/);
+  if (m) {
+    const year = new Date().getFullYear();
+    const parsed = new Date(year, parseInt(m[1], 10) - 1, parseInt(m[2], 10));
+    const dateFormatted = !isNaN(parsed.getTime()) ? formatPhilippineDateOnly(parsed) : `${m[1]}/${m[2]}`;
+    return {
+      timeText: m[3].trim(),
+      dateText: dateFormatted,
+    };
   }
-  return '';
+
+  const timeMatch = source.match(/(\d{1,2}:\d{2}(?::\d{2})?\s*[AP]M)$/i);
+  if (timeMatch) {
+    const timeText = timeMatch[1];
+    const datePart = source.replace(timeText, '').trim();
+    return {
+      timeText,
+      dateText: datePart || formatPhilippineDateOnly(new Date()),
+    };
+  }
+
+  return { timeText: source, dateText: '' };
 }
 
 function formatMsgDate(timestamp?: string, convoTime?: string): string {
@@ -1363,32 +1383,44 @@ export default function MessengerBotLogs() {
                             </div>
 
                             {/* Timestamp & Right Chevron with Incomplete Dot */}
-                            <div className="flex flex-col items-end justify-between self-stretch shrink-0 py-0.5 pl-1">
-                              <div className="flex items-center gap-1">
-                                <span
-                                  className={`text-[10px] sm:text-[11px] tabular-nums whitespace-nowrap transition-colors duration-200 ${
-                                    !isSeen
-                                      ? "font-semibold text-blue-600 dark:text-blue-400"
-                                      : "font-normal text-slate-400 dark:text-slate-500"
-                                  }`}
-                                >
-                                  {formatConvoDateTime(convo.time, convo.createdAt)}
-                                </span>
-                                <AnimatePresence>
-                                  {isIncomplete && (
-                                    <motion.span
-                                      initial={{ scale: 0, opacity: 0 }}
-                                      animate={{ scale: 1, opacity: 1 }}
-                                      exit={{ scale: 0, opacity: 0 }}
-                                      transition={APPLE_SPRING}
-                                      className="w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.45)] shrink-0"
-                                      title="Incomplete conversation"
-                                    />
-                                  )}
-                                </AnimatePresence>
-                              </div>
-                              <ChevronRight className="w-3.5 h-3.5 text-slate-300 dark:text-slate-600 group-hover:text-[#0071E3] dark:group-hover:text-sky-400 group-hover:translate-x-0.5 transition-all duration-150" />
-                            </div>
+                            {(() => {
+                              const { timeText, dateText } = getConvoTimeAndDate(convo.time, convo.createdAt);
+                              return (
+                                <div className="flex flex-col items-end justify-between self-stretch shrink-0 py-0.5 pl-1">
+                                  <div className="flex flex-col items-end">
+                                    <div className="flex items-center gap-1">
+                                      <span
+                                        className={`text-[10px] sm:text-[11px] tabular-nums transition-colors duration-200 ${
+                                          !isSeen
+                                            ? "font-semibold text-blue-600 dark:text-blue-400"
+                                            : "font-normal text-slate-400 dark:text-slate-500"
+                                        }`}
+                                      >
+                                        {timeText}
+                                      </span>
+                                      <AnimatePresence>
+                                        {isIncomplete && (
+                                          <motion.span
+                                            initial={{ scale: 0, opacity: 0 }}
+                                            animate={{ scale: 1, opacity: 1 }}
+                                            exit={{ scale: 0, opacity: 0 }}
+                                            transition={APPLE_SPRING}
+                                            className="w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.45)] shrink-0"
+                                            title="Incomplete conversation"
+                                          />
+                                        )}
+                                      </AnimatePresence>
+                                    </div>
+                                    {dateText && (
+                                      <span className="text-[9px] sm:text-[10px] text-slate-400 dark:text-slate-500 font-medium tabular-nums mt-0.5 whitespace-nowrap">
+                                        {dateText}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <ChevronRight className="w-3.5 h-3.5 text-slate-300 dark:text-slate-600 group-hover:text-slate-500 dark:group-hover:text-slate-400 group-hover:translate-x-0.5 transition-all duration-150 mt-auto" />
+                                </div>
+                              );
+                            })()}
                           </button>
                         </div>
                       );
