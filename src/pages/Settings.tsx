@@ -32,7 +32,6 @@ import {
   Copy,
   Loader2,
   ChevronDown,
-  Filter,
   Wifi,
   Bot,
 } from 'lucide-react';
@@ -1625,11 +1624,7 @@ export default function Settings() {
                   </div>
 
                   <div className="relative flex items-center gap-2.5" ref={auditFilterRef}>
-                    <div className="inline-flex items-center gap-1 sm:gap-1.5 p-1 bg-slate-100/70 dark:bg-white/[0.05] backdrop-blur-xl rounded-2xl border border-slate-200/70 dark:border-white/10 shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]">
-                      <div className="flex items-center gap-1 px-2.5 py-1 text-[#0071E3] dark:text-sky-400 cursor-default select-none shrink-0">
-                        <Filter className="w-3.5 h-3.5 transition-transform duration-300 group-hover/filters:scale-110 text-[#0071E3] dark:text-sky-400" strokeWidth={1.8} />
-                        <span className="text-[10px] font-bold uppercase tracking-wider">Filters</span>
-                      </div>
+                    <div className="inline-flex items-center p-1 bg-slate-100/70 dark:bg-white/[0.05] backdrop-blur-xl rounded-2xl border border-slate-200/70 dark:border-white/10 shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]">
                       <button
                         type="button"
                         onClick={() => setAuditFilterOpen((prev) => !prev)}
