@@ -14,7 +14,7 @@ import { apiRequest } from "../services/apiClient";
 import { useDebounce } from "../hooks/useDebounce";
 import PageLoader from "../components/PageLoader";
 import { TALISAY_BARANGAYS } from "../data/talisay-barangays";
-import { formatTimestampPHT } from "../utils/dateUtils";
+import { formatTimestampPHT, formatPhilippineTimeOnly, formatPhilippineDateOnly } from "../utils/dateUtils";
 
 interface ScrapedPost {
   id: string;
@@ -192,6 +192,42 @@ function inferIsIncident(incidentType: string, text: string, confidence: number)
 // ── Format Supabase timestamp → Philippine Standard Time "M/D h:mm A" ──
 function formatTimestamp(ts: string | null): string {
   return formatTimestampPHT(ts);
+}
+
+function getPostTimeAndDate(timeStr?: string, createdAt?: string): { timeText: string; dateText: string } {
+  const source = createdAt || timeStr;
+  if (!source) return { timeText: '', dateText: '' };
+
+  const d = new Date(source);
+  if (!isNaN(d.getTime())) {
+    return {
+      timeText: formatPhilippineTimeOnly(d),
+      dateText: formatPhilippineDateOnly(d),
+    };
+  }
+
+  const m = source.match(/^(\d{1,2})\/(\d{1,2})\s+(.+)$/);
+  if (m) {
+    const year = new Date().getFullYear();
+    const parsed = new Date(year, parseInt(m[1], 10) - 1, parseInt(m[2], 10));
+    const dateFormatted = !isNaN(parsed.getTime()) ? formatPhilippineDateOnly(parsed) : `${m[1]}/${m[2]}`;
+    return {
+      timeText: m[3].trim(),
+      dateText: dateFormatted,
+    };
+  }
+
+  const timeMatch = source.match(/(\d{1,2}:\d{2}(?::\d{2})?\s*[AP]M)$/i);
+  if (timeMatch) {
+    const timeText = timeMatch[1];
+    const datePart = source.replace(timeText, '').trim();
+    return {
+      timeText,
+      dateText: datePart || formatPhilippineDateOnly(new Date()),
+    };
+  }
+
+  return { timeText: source, dateText: '' };
 }
 
 const SCRAPER_FEED_CACHE_KEY = 'responde_cached_scraper_feed_posts';
@@ -1044,8 +1080,8 @@ export default function ScraperFeed() {
                                 {post.avatar || (post.author ? post.author.charAt(0).toUpperCase() : "U")}
                               </div>
                               <div className="flex-1 min-w-0">
-                                <div className="flex items-center justify-between mb-0.5">
-                                  <div className="flex items-center gap-1.5 min-w-0">
+                                <div className="flex items-start justify-between mb-0.5">
+                                  <div className="flex items-center gap-1.5 min-w-0 pt-0.5">
                                     {!isSeen && (
                                       <span
                                         className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0 shadow-[0_0_8px_rgba(59,130,246,0.6)] animate-pulse"
@@ -1062,9 +1098,23 @@ export default function ScraperFeed() {
                                       {post.author}
                                     </span>
                                   </div>
-                                  <span className="text-[10px] sm:text-[11px] font-medium text-slate-400 dark:text-slate-500 tabular-nums whitespace-nowrap ml-2">
-                                    {post.timestamp}
-                                  </span>
+                                  {(() => {
+                                    const { timeText, dateText } = getPostTimeAndDate(post.timestamp, post.createdAt);
+                                    return (
+                                      <div className="flex flex-col items-end shrink-0 ml-2">
+                                        <div className="flex items-center gap-1">
+                                          <span className="text-[10px] sm:text-[11px] tabular-nums transition-colors duration-200 font-normal text-slate-400 dark:text-slate-500">
+                                            {timeText}
+                                          </span>
+                                        </div>
+                                        {dateText && (
+                                          <span className="text-[9px] sm:text-[10px] text-slate-400 dark:text-slate-500 font-medium tabular-nums mt-0.5 whitespace-nowrap">
+                                            {dateText}
+                                          </span>
+                                        )}
+                                      </div>
+                                    );
+                                  })()}
                                 </div>
                                 <div className="flex items-center gap-1.5 mb-1 text-[11px] text-slate-400 dark:text-slate-500 font-medium">
                                   <span className="inline-flex items-center gap-1 truncate max-w-[120px] sm:max-w-none">
@@ -1183,7 +1233,12 @@ export default function ScraperFeed() {
                             <span className="text-slate-300 dark:text-slate-600">•</span>
                             <span className="flex items-center gap-1 shrink-0">
                               <Clock className="w-3 h-3 text-slate-400" strokeWidth={1.75} />
-                              <span className="tabular-nums">{selectedPost.timestamp}</span>
+                              <span className="tabular-nums">
+                                {(() => {
+                                  const { timeText, dateText } = getPostTimeAndDate(selectedPost.timestamp, selectedPost.createdAt);
+                                  return dateText ? `${dateText} • ${timeText}` : timeText;
+                                })()}
+                              </span>
                             </span>
                           </div>
                         </div>
