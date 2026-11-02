@@ -8,10 +8,12 @@ import {
   TrendingUp,
   MapPin,
   AlertTriangle,
-  Siren,
-  HeartPulse,
-  Droplets,
-  HardHat,
+  Activity,
+  Flame,
+  Waves,
+  Shield,
+  Mountain,
+  Wind,
   BarChart3,
   Lightbulb,
   CheckCircle2,
@@ -66,6 +68,18 @@ export type AnalyticsReport = {
 // ── Design Tokens & Config ───────────────────────────────────────────────────
 const ACCENT_BLUE = '#2563EB';
 
+export const CANONICAL_INCIDENT_TYPES = [
+  'Earthquake',
+  'Fire',
+  'Flood',
+  'General',
+  'Landslide',
+  'Typhoon',
+  'Volcanic Eruption',
+] as const;
+
+export type CanonicalIncidentType = typeof CANONICAL_INCIDENT_TYPES[number];
+
 const TYPE_CONFIG: Record<
   string,
   {
@@ -81,22 +95,22 @@ const TYPE_CONFIG: Record<
     activeShadow: string;
   }
 > = {
-  'Search & Rescue': {
-    icon: Siren,
+  Earthquake: {
+    icon: Activity,
     iconClass: 'text-amber-500',
-    color: '#f59e0b',
-    bg: 'rgba(245,158,11,0.1)',
-    glowShadow: 'hover:shadow-[0_8px_24px_rgba(245,158,11,0.25)]',
+    color: '#EAB308',
+    bg: 'rgba(234,179,8,0.1)',
+    glowShadow: 'hover:shadow-[0_8px_24px_rgba(234,179,8,0.25)]',
     glowBorder: 'hover:border-amber-400/80 dark:hover:border-amber-500/70',
     hoverBg: 'hover:bg-amber-50/60 dark:hover:bg-amber-950/25',
     activeBorder: 'border-amber-500/60 dark:border-amber-400/60',
     activeBg: 'bg-amber-500/15 dark:bg-amber-500/20',
-    activeShadow: 'shadow-[0_0_20px_rgba(245,158,11,0.28)]',
+    activeShadow: 'shadow-[0_0_20px_rgba(234,179,8,0.28)]',
   },
-  Medical: {
-    icon: HeartPulse,
+  Fire: {
+    icon: Flame,
     iconClass: 'text-rose-500',
-    color: '#ef4444',
+    color: '#EF4444',
     bg: 'rgba(239,68,68,0.1)',
     glowShadow: 'hover:shadow-[0_8px_24px_rgba(239,68,68,0.25)]',
     glowBorder: 'hover:border-rose-400/80 dark:hover:border-rose-500/70',
@@ -105,50 +119,97 @@ const TYPE_CONFIG: Record<
     activeBg: 'bg-rose-500/15 dark:bg-rose-500/20',
     activeShadow: 'shadow-[0_0_20px_rgba(239,68,68,0.28)]',
   },
-  'Food & Water': {
-    icon: Droplets,
-    iconClass: 'text-emerald-500',
-    color: '#10b981',
-    bg: 'rgba(16,185,129,0.1)',
-    glowShadow: 'hover:shadow-[0_8px_24px_rgba(16,185,129,0.30)]',
-    glowBorder: 'hover:border-emerald-400/80 dark:hover:border-emerald-500/70',
-    hoverBg: 'hover:bg-emerald-50/60 dark:hover:bg-emerald-950/25',
-    activeBorder: 'border-emerald-500/60 dark:border-emerald-400/60',
-    activeBg: 'bg-emerald-500/15 dark:bg-emerald-500/20',
-    activeShadow: 'shadow-[0_0_20px_rgba(16,185,129,0.32)]',
+  Flood: {
+    icon: Waves,
+    iconClass: 'text-sky-500',
+    color: '#0EA5E9',
+    bg: 'rgba(14,165,233,0.1)',
+    glowShadow: 'hover:shadow-[0_8px_24px_rgba(14,165,233,0.25)]',
+    glowBorder: 'hover:border-sky-400/80 dark:hover:border-sky-500/70',
+    hoverBg: 'hover:bg-sky-50/60 dark:hover:bg-sky-950/25',
+    activeBorder: 'border-sky-500/60 dark:border-sky-400/60',
+    activeBg: 'bg-sky-500/15 dark:bg-sky-500/20',
+    activeShadow: 'shadow-[0_0_20px_rgba(14,165,233,0.28)]',
   },
-  Infrastructure: {
-    icon: HardHat,
+  General: {
+    icon: Shield,
     iconClass: 'text-indigo-500',
-    color: '#6366f1',
+    color: '#6366F1',
     bg: 'rgba(99,102,241,0.1)',
-    glowShadow: 'hover:shadow-[0_8px_24px_rgba(99,102,241,0.30)]',
+    glowShadow: 'hover:shadow-[0_8px_24px_rgba(99,102,241,0.25)]',
     glowBorder: 'hover:border-indigo-400/80 dark:hover:border-indigo-500/70',
     hoverBg: 'hover:bg-indigo-50/60 dark:hover:bg-indigo-950/25',
     activeBorder: 'border-indigo-500/60 dark:border-indigo-400/60',
     activeBg: 'bg-indigo-500/15 dark:bg-indigo-500/20',
-    activeShadow: 'shadow-[0_0_20px_rgba(99,102,241,0.32)]',
+    activeShadow: 'shadow-[0_0_20px_rgba(99,102,241,0.28)]',
+  },
+  Landslide: {
+    icon: Mountain,
+    iconClass: 'text-amber-700',
+    color: '#D97706',
+    bg: 'rgba(217,119,6,0.1)',
+    glowShadow: 'hover:shadow-[0_8px_24px_rgba(217,119,6,0.25)]',
+    glowBorder: 'hover:border-amber-600/80 dark:hover:border-amber-600/70',
+    hoverBg: 'hover:bg-amber-50/60 dark:hover:bg-amber-950/25',
+    activeBorder: 'border-amber-600/60 dark:border-amber-500/60',
+    activeBg: 'bg-amber-600/15 dark:bg-amber-600/20',
+    activeShadow: 'shadow-[0_0_20px_rgba(217,119,6,0.28)]',
+  },
+  Typhoon: {
+    icon: Wind,
+    iconClass: 'text-teal-500',
+    color: '#06B6D4',
+    bg: 'rgba(6,182,212,0.1)',
+    glowShadow: 'hover:shadow-[0_8px_24px_rgba(6,182,212,0.25)]',
+    glowBorder: 'hover:border-teal-400/80 dark:hover:border-teal-500/70',
+    hoverBg: 'hover:bg-teal-50/60 dark:hover:bg-teal-950/25',
+    activeBorder: 'border-teal-500/60 dark:border-teal-400/60',
+    activeBg: 'bg-teal-500/15 dark:bg-teal-500/20',
+    activeShadow: 'shadow-[0_0_20px_rgba(6,182,212,0.28)]',
+  },
+  'Volcanic Eruption': {
+    icon: Flame,
+    iconClass: 'text-orange-500',
+    color: '#F97316',
+    bg: 'rgba(249,115,22,0.1)',
+    glowShadow: 'hover:shadow-[0_8px_24px_rgba(249,115,22,0.25)]',
+    glowBorder: 'hover:border-orange-400/80 dark:hover:border-orange-500/70',
+    hoverBg: 'hover:bg-orange-50/60 dark:hover:bg-orange-950/25',
+    activeBorder: 'border-orange-500/60 dark:border-orange-400/60',
+    activeBg: 'bg-orange-500/15 dark:bg-orange-500/20',
+    activeShadow: 'shadow-[0_0_20px_rgba(249,115,22,0.28)]',
   },
 };
 
-const URGENCY_WEIGHT: Record<string, number> = { High: 3, Moderate: 2, Low: 1 };
+const URGENCY_WEIGHT: Record<string, number> = { Critical: 4, High: 3, Moderate: 2, Low: 1 };
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 export function normalizeIncidentType(type?: string | null): string {
   const norm = (type || '').trim().toLowerCase();
-  if (norm.includes('search') || norm.includes('rescue') || norm.includes('evacuat') || norm.includes('stranded')) {
-    return 'Search & Rescue';
+  if (norm.includes('earthquake') || norm.includes('lindol')) {
+    return 'Earthquake';
   }
-  if (norm.includes('medic') || norm.includes('casualty') || norm.includes('sugat') || norm.includes('hospital')) {
-    return 'Medical';
+  if (norm.includes('fire') || norm.includes('sunog')) {
+    return 'Fire';
   }
-  if (norm.includes('food') || norm.includes('water') || norm.includes('tubig') || norm.includes('relief')) {
-    return 'Food & Water';
+  if (norm.includes('flood') || norm.includes('baha')) {
+    return 'Flood';
   }
-  if (norm.includes('infra') || norm.includes('poste') || norm.includes('kuryente') || norm.includes('fire') || norm.includes('flood') || norm.includes('landslide') || norm.includes('earthquake')) {
-    return 'Infrastructure';
+  if (norm.includes('landslide') || norm.includes('guho')) {
+    return 'Landslide';
   }
-  return 'Infrastructure';
+  if (norm.includes('typhoon') || norm.includes('bagyo') || norm.includes('storm') || norm.includes('wind')) {
+    return 'Typhoon';
+  }
+  if (norm.includes('volcan') || norm.includes('ash') || norm.includes('taal') || norm.includes('erupt')) {
+    return 'Volcanic Eruption';
+  }
+  if (norm.includes('general')) {
+    return 'General';
+  }
+  const matched = CANONICAL_INCIDENT_TYPES.find((t) => t.toLowerCase() === norm);
+  if (matched) return matched;
+  return 'General';
 }
 
 function parseReportTime(value: string) {
@@ -283,39 +344,45 @@ function PieTooltip({ active, payload }: CTP) {
 // ── Main Component ────────────────────────────────────────────────────────────
 function getDominantNeedMeta(type: string) {
   const norm = (type || '').toLowerCase();
-  if (norm.includes('fire')) {
+  if (norm.includes('fire') || norm.includes('sunog')) {
     return {
       label: 'Fire',
-      pill: 'bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/25',
-    };
-  }
-  if (norm.includes('search') || norm.includes('rescue')) {
-    return {
-      label: 'Rescue',
-      pill: 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/25',
-    };
-  }
-  if (norm.includes('medic') || norm.includes('casualty') || norm.includes('sugat')) {
-    return {
-      label: 'Medical',
       pill: 'bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/25',
     };
   }
-  if (norm.includes('food') || norm.includes('water') || norm.includes('relief')) {
+  if (norm.includes('flood') || norm.includes('baha')) {
     return {
-      label: 'Relief',
-      pill: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/25',
+      label: 'Flood',
+      pill: 'bg-sky-500/10 text-sky-700 dark:text-sky-400 border-sky-500/25',
     };
   }
-  if (norm.includes('infra') || norm.includes('poste') || norm.includes('road') || norm.includes('kuryente')) {
+  if (norm.includes('earthquake') || norm.includes('lindol')) {
     return {
-      label: 'Infra',
-      pill: 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border-indigo-500/25',
+      label: 'Earthquake',
+      pill: 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/25',
+    };
+  }
+  if (norm.includes('landslide') || norm.includes('guho')) {
+    return {
+      label: 'Landslide',
+      pill: 'bg-yellow-600/10 text-yellow-700 dark:text-yellow-400 border-yellow-600/25',
+    };
+  }
+  if (norm.includes('typhoon') || norm.includes('bagyo')) {
+    return {
+      label: 'Typhoon',
+      pill: 'bg-teal-500/10 text-teal-700 dark:text-teal-400 border-teal-500/25',
+    };
+  }
+  if (norm.includes('volcan') || norm.includes('ash') || norm.includes('taal')) {
+    return {
+      label: 'Volcano',
+      pill: 'bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/25',
     };
   }
   return {
     label: 'General',
-    pill: 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200/80 dark:border-white/10',
+    pill: 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border-indigo-500/25',
   };
 }
 
@@ -357,7 +424,7 @@ export default function Analytics() {
   }, [data]);
 
   const allTypes = useMemo(() => {
-    return ['All Types', 'Search & Rescue', 'Medical', 'Food & Water', 'Infrastructure'];
+    return ['All Types', ...CANONICAL_INCIDENT_TYPES];
   }, []);
 
   const allSources = useMemo(() => ['All Sources', 'Bot', 'Scraper'], []);
@@ -444,41 +511,49 @@ export default function Analytics() {
     const today = new Date();
     const todayStr = `${today.getMonth() + 1}/${today.getDate()}`;
     const responseTimes = filtered.map(responseMinutes).filter((v): v is number => v !== null);
+    const criticalCount = filtered.filter(
+      (r) => (r.urgency || '').trim().toLowerCase() === 'critical'
+    ).length;
+    const highCount = filtered.filter(
+      (r) => (r.urgency || '').trim().toLowerCase() === 'high'
+    ).length;
+    const totalHighUrgency = criticalCount + highCount;
+
     return {
       total: filtered.length,
-      high: filtered.filter(r => r.urgency === 'High').length,
-      verified: filtered.filter(r => r.status === 'verified').length,
-      resolvedToday: filtered.filter(r => {
+      high: totalHighUrgency,
+      critical: criticalCount,
+      verified: filtered.filter((r) => r.status === 'verified').length,
+      resolvedToday: filtered.filter((r) => {
         const p = parseReportTime(r.time);
         return p && `${p.month}/${p.day}` === todayStr && r.status === 'verified';
       }).length,
-      incomplete: 0,
-      bot: filtered.filter(r => r.source?.toLowerCase().includes('bot')).length,
-      scraper: filtered.filter(r => r.source?.toLowerCase().includes('scraper')).length,
+      incomplete: (reports as any[]).filter(
+        (r) => r.status === 'under_review' || r.status === 'incomplete'
+      ).length,
+      bot: filtered.filter((r) => r.source?.toLowerCase().includes('bot')).length,
+      scraper: filtered.filter((r) => r.source?.toLowerCase().includes('scraper')).length,
       avgResponse: responseTimes.length
         ? Math.round(responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length)
         : 0,
     };
-  }, [filtered]);
+  }, [filtered, reports]);
 
   // ── Donut & Bar chart data for Incident Types ──
   const typeChartData = useMemo(() => {
-    const counts: Record<string, number> = {
-      'Search & Rescue': 0,
-      'Medical': 0,
-      'Food & Water': 0,
-      'Infrastructure': 0,
-    };
-    reportsForTypeChart.forEach(r => {
+    const counts: Record<string, number> = {};
+    CANONICAL_INCIDENT_TYPES.forEach((t) => {
+      counts[t] = 0;
+    });
+    reportsForTypeChart.forEach((r) => {
       const canonical = normalizeIncidentType(r.type);
       counts[canonical] = (counts[canonical] || 0) + 1;
     });
-    return ['Search & Rescue', 'Medical', 'Food & Water', 'Infrastructure']
-      .map(type => ({
-        name: type,
-        value: counts[type] || 0,
-        color: TYPE_CONFIG[type]?.color ?? '#64748b',
-      }));
+    return CANONICAL_INCIDENT_TYPES.map((type) => ({
+      name: type,
+      value: counts[type] || 0,
+      color: TYPE_CONFIG[type]?.color ?? '#64748b',
+    }));
   }, [reportsForTypeChart]);
 
   // ── Volume line chart ────────────────────────────────────────────────────
@@ -508,34 +583,71 @@ export default function Analytics() {
 
   // ── Risk table ───────────────────────────────────────────────────────────
   const riskData = useMemo(() => {
-    const grouped: Record<string, { incidents: number; score: number; high: number; types: Record<string, number> }> = {};
-    data.forEach(r => {
+    const grouped: Record<
+      string,
+      { incidents: number; score: number; high: number; critical: number; types: Record<string, number> }
+    > = {};
+    data.forEach((r) => {
       const n = r.barangay || 'Unknown';
-      if (!grouped[n]) grouped[n] = { incidents: 0, score: 0, high: 0, types: {} };
+      if (!grouped[n]) grouped[n] = { incidents: 0, score: 0, high: 0, critical: 0, types: {} };
       grouped[n].incidents++;
-      grouped[n].score += URGENCY_WEIGHT[r.urgency] || 1;
-      if (r.urgency === 'High') grouped[n].high++;
-      grouped[n].types[r.type] = (grouped[n].types[r.type] || 0) + 1;
+      const urgRaw = (r.urgency || 'Low').trim().toLowerCase();
+      const urgCanonical =
+        urgRaw === 'critical'
+          ? 'Critical'
+          : urgRaw === 'high'
+          ? 'High'
+          : urgRaw === 'moderate' || urgRaw === 'mod'
+          ? 'Moderate'
+          : 'Low';
+      grouped[n].score += URGENCY_WEIGHT[urgCanonical] || 1;
+      if (urgCanonical === 'Critical') {
+        grouped[n].critical++;
+        grouped[n].high++;
+      } else if (urgCanonical === 'High') {
+        grouped[n].high++;
+      }
+      const canonicalType = normalizeIncidentType(r.type);
+      grouped[n].types[canonicalType] = (grouped[n].types[canonicalType] || 0) + 1;
     });
     return Object.entries(grouped)
       .map(([barangay, v]) => {
-        const dominantType = Object.entries(v.types).sort((a, b) => b[1] - a[1])[0]?.[0] || 'General';
+        const dominantType =
+          Object.entries(v.types).sort((a, b) => b[1] - a[1])[0]?.[0] || 'General';
+        const priority =
+          v.critical > 0
+            ? 'Critical'
+            : v.high > 0
+            ? 'High'
+            : v.score >= 4
+            ? 'Moderate'
+            : 'Low';
         return {
           barangay,
           ...v,
           dominantType,
-          priority: v.high > 0 ? 'High' : v.score >= 4 ? 'Moderate' : 'Low',
+          priority,
         };
       })
       .sort((a, b) => b.score - a.score || b.incidents - a.incidents)
       .slice(0, 6);
   }, [data]);
 
-  const recommendations = useMemo(() => riskData.slice(0, 3).map(item => {
-    const resource = item.dominantType === 'Medical' ? 'medical response teams and ambulance support'
-      : item.dominantType === 'Search & Rescue' ? 'search and rescue units with extraction equipment'
-        : item.dominantType === 'Food & Water' ? 'relief food packs and potable water containers'
-          : 'road-clearing crews and structural assessment engineers';
+  const recommendations = useMemo(() => riskData.slice(0, 3).map((item) => {
+    const resource =
+      item.dominantType === 'Fire'
+        ? 'fire response units and water tankers'
+        : item.dominantType === 'Flood'
+        ? 'rescue boats, evacuation units, and life vests'
+        : item.dominantType === 'Earthquake'
+        ? 'structural assessment engineers and search and rescue teams'
+        : item.dominantType === 'Landslide'
+        ? 'heavy earth-moving equipment and extraction teams'
+        : item.dominantType === 'Typhoon'
+        ? 'storm shelters, clearing crews, and emergency relief supplies'
+        : item.dominantType === 'Volcanic Eruption'
+        ? 'N95 masks, evacuation transport, and ashfall response teams'
+        : 'emergency medical response teams and relief resources';
     return {
       ...item,
       text: `Pre-position ${resource} in ${item.barangay} based on ${item.incidents} recorded incident${item.incidents === 1 ? '' : 's'} and elevated urgency pattern.`,
@@ -910,12 +1022,10 @@ export default function Analytics() {
                               angle={-15}
                               textAnchor="end"
                               tickFormatter={(val) =>
-                                val === 'Search & Rescue'
-                                  ? 'S&R'
-                                  : val === 'Food & Water'
-                                  ? 'F&W'
-                                  : val === 'Infrastructure'
-                                  ? 'Infra'
+                                val === 'Volcanic Eruption'
+                                  ? 'Volcano'
+                                  : val === 'Earthquake'
+                                  ? 'Quake'
                                   : val
                               }
                             />
@@ -1042,7 +1152,7 @@ export default function Analytics() {
 
                   {/* Legend with interactive buttons */}
                   <div className="sm:col-span-7 space-y-2.5">
-                    {['Search & Rescue', 'Medical', 'Food & Water', 'Infrastructure'].map(type => {
+                    {CANONICAL_INCIDENT_TYPES.map(type => {
                       const c = TYPE_CONFIG[type];
                       const Icon = c.icon;
                       const count = typeChartData.find(d => d.name === type)?.value ?? 0;
@@ -1286,7 +1396,7 @@ export default function Analytics() {
             </div>
           </motion.div>
 
-          {/* ── 6. HIGH-RISK BARANGAYS RANKING (Presentable Priority Analytics Table) ── */}
+          {/* ── 6. HIGH-RISK BARANGAYS RANKING (Calm, Non-Glaring Priority Table) ── */}
           <motion.div variants={itemVariants} className="relative z-10">
             <SoftCard className="p-5 sm:p-6 h-full flex flex-col">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
@@ -1296,144 +1406,92 @@ export default function Analytics() {
                   description="Priority ranking determined by cumulative volume & urgency score"
                   iconColor="#EF4444"
                 />
-                <div className="flex items-center gap-2 self-start sm:self-auto">
-                  <span className="text-xs font-semibold px-3 py-1 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 shadow-2xs">
-                    Top {riskData.length} Critical Zones
-                  </span>
-                </div>
               </div>
 
-              {(() => {
-                const maxRiskIncidents = Math.max(...riskData.map((r) => r.incidents), 1);
+              <div className="overflow-x-auto rounded-2xl border border-slate-200/80 dark:border-white/10 bg-white/70 dark:bg-white/[0.02] backdrop-blur-md shadow-xs">
+                <table className="w-full min-w-[500px] text-xs sm:text-sm text-left border-collapse">
+                  <thead className="bg-slate-50/80 dark:bg-white/[0.04] border-b border-slate-200/70 dark:border-white/5">
+                    <tr>
+                      <th className="py-3 px-4 sm:px-5 text-[11px] uppercase tracking-wider font-bold text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                        Barangay
+                      </th>
+                      <th className="py-3 px-3 sm:px-4 text-center text-[11px] uppercase tracking-wider font-bold text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                        Reports
+                      </th>
+                      <th className="py-3 px-3 sm:px-4 text-center text-[11px] uppercase tracking-wider font-bold text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                        High Urgency
+                      </th>
+                      <th className="py-3 px-3 sm:px-4 text-center text-[11px] uppercase tracking-wider font-bold text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                        Priority
+                      </th>
+                      <th className="py-3 px-4 sm:px-5 text-[11px] uppercase tracking-wider font-bold text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                        Dominant Need
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100/80 dark:divide-white/5">
+                    {riskData.length > 0 ? (
+                      riskData.map((item) => {
+                        const isCritical = item.priority === 'Critical';
+                        const isHigh = item.priority === 'High';
+                        const isModerate = item.priority === 'Moderate';
 
-                return (
-                  <div className="overflow-x-auto rounded-2xl border border-slate-200/80 dark:border-white/10 bg-white/70 dark:bg-white/[0.02] backdrop-blur-md shadow-xs">
-                    <table className="w-full min-w-[700px] text-xs sm:text-sm text-left border-collapse">
-                      <thead className="bg-slate-50/80 dark:bg-white/[0.04] border-b border-slate-200/70 dark:border-white/5">
-                        <tr>
-                          <th className="py-3 px-4 sm:px-5 text-[11px] uppercase tracking-wider font-bold text-slate-500 dark:text-slate-400 whitespace-nowrap">
-                            Barangay &amp; Sector
-                          </th>
-                          <th className="py-3 px-4 text-[11px] uppercase tracking-wider font-bold text-slate-500 dark:text-slate-400 whitespace-nowrap">
-                            Incident Density
-                          </th>
-                          <th className="py-3 px-4 text-[11px] uppercase tracking-wider font-bold text-slate-500 dark:text-slate-400 whitespace-nowrap">
-                            Urgency Breakdown
-                          </th>
-                          <th className="py-3 px-4 text-[11px] uppercase tracking-wider font-bold text-slate-500 dark:text-slate-400 whitespace-nowrap">
-                            Risk Priority
-                          </th>
-                          <th className="py-3 px-4 sm:px-5 text-[11px] uppercase tracking-wider font-bold text-slate-500 dark:text-slate-400 whitespace-nowrap">
-                            Dominant Need
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100/80 dark:divide-white/5">
-                        {riskData.length > 0 ? (
-                          riskData.map((item, index) => {
-                            const need = getDominantNeedMeta(item.dominantType);
-
-                            return (
-                              <tr
-                                key={item.barangay}
-                                className="border-b border-slate-100/80 dark:border-white/5 last:border-b-0 hover:bg-slate-50/70 dark:hover:bg-white/[0.025] transition-colors duration-150 group"
+                        return (
+                          <tr
+                            key={item.barangay}
+                            className="border-b border-slate-100/80 dark:border-white/5 last:border-b-0 hover:bg-slate-50/70 dark:hover:bg-white/[0.025] transition-colors duration-150"
+                          >
+                            <td className="py-3.5 px-4 sm:px-5 font-semibold text-slate-800 dark:text-slate-200 whitespace-nowrap">
+                              {item.barangay}
+                            </td>
+                            <td className="py-3.5 px-3 sm:px-4 text-center text-slate-600 dark:text-slate-300 font-mono tabular-nums whitespace-nowrap">
+                              {item.incidents}
+                            </td>
+                            <td className="py-3.5 px-3 sm:px-4 text-center font-bold text-rose-600 dark:text-rose-400 font-mono tabular-nums whitespace-nowrap">
+                              {item.high}
+                            </td>
+                            <td className="py-3.5 px-3 sm:px-4 text-center whitespace-nowrap">
+                              <span
+                                className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border shadow-2xs ${
+                                  isCritical
+                                    ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/25'
+                                    : isHigh
+                                    ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/25'
+                                    : isModerate
+                                    ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/25'
+                                    : 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/25'
+                                }`}
                               >
-                                <td className="py-3.5 px-4 sm:px-5 whitespace-nowrap">
-                                  <div className="flex items-center gap-3">
-                                    <span className={`w-6 h-6 rounded-lg flex items-center justify-center font-bold text-[11px] tabular-nums shrink-0 shadow-2xs border ${
-                                      index === 0
-                                        ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/40 ring-1 ring-amber-500/20'
-                                        : index === 1
-                                        ? 'bg-slate-200/90 dark:bg-slate-700 text-slate-800 dark:text-slate-200 border-slate-300/60 dark:border-white/10'
-                                        : index === 2
-                                        ? 'bg-amber-700/15 text-amber-800 dark:text-amber-300 border-amber-700/30'
-                                        : 'bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-slate-400 border-slate-200/60 dark:border-white/5'
-                                    }`}>
-                                      {index + 1}
-                                    </span>
-                                    <div className="flex items-center gap-1.5 min-w-0">
-                                      <MapPin className="w-3.5 h-3.5 text-[#0071E3] shrink-0" />
-                                      <span className="font-semibold text-slate-900 dark:text-white truncate">
-                                        {item.barangay}
-                                      </span>
-                                    </div>
-                                  </div>
-                                </td>
-
-                                <td className="py-3.5 px-4 whitespace-nowrap">
-                                  <div className="space-y-1.5 min-w-[140px] max-w-[190px]">
-                                    <div className="flex items-center justify-between text-xs">
-                                      <span className="font-bold text-slate-800 dark:text-slate-200 tabular-nums">
-                                        {item.incidents} {item.incidents === 1 ? 'report' : 'reports'}
-                                      </span>
-                                      <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 tabular-nums">
-                                        {Math.round((item.incidents / maxRiskIncidents) * 100)}%
-                                      </span>
-                                    </div>
-                                    <div className="h-1.5 w-full bg-slate-100 dark:bg-white/10 rounded-full overflow-hidden">
-                                      <div
-                                        className="h-full rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 transition-all duration-500"
-                                        style={{ width: `${Math.max(12, Math.round((item.incidents / maxRiskIncidents) * 100))}%` }}
-                                      />
-                                    </div>
-                                  </div>
-                                </td>
-
-                                <td className="py-3.5 px-4 whitespace-nowrap">
-                                  {item.high > 0 ? (
-                                    <span className="inline-flex items-center justify-center gap-1.5 w-32 sm:w-34 py-1 rounded-full text-xs font-semibold bg-rose-500/10 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/25 shadow-2xs tabular-nums text-center">
-                                      <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shadow-[0_0_6px_rgba(244,63,94,0.7)] animate-pulse shrink-0" />
-                                      <span>{item.high} High-Urgency</span>
-                                    </span>
-                                  ) : (
-                                    <span className="inline-flex items-center justify-center gap-1.5 w-32 sm:w-34 py-1 rounded-full text-xs font-semibold bg-slate-100/80 dark:bg-white/[0.05] text-slate-500 dark:text-slate-400 border border-slate-200/60 dark:border-white/10 shadow-2xs tabular-nums text-center">
-                                      <span className="w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-slate-600 shrink-0" />
-                                      <span>0 High-Urgency</span>
-                                    </span>
-                                  )}
-                                </td>
-
-                                <td className="py-3.5 px-4 whitespace-nowrap">
-                                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border shadow-2xs ${
-                                    item.priority === 'High'
-                                      ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/25'
-                                      : item.priority === 'Moderate'
-                                      ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/25'
-                                      : 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/25'
-                                  }`}>
-                                    <span
-                                      className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                                        item.priority === 'High'
-                                          ? 'bg-rose-500 shadow-[0_0_6px_rgba(244,63,94,0.8)]'
-                                          : item.priority === 'Moderate'
-                                          ? 'bg-amber-500 shadow-[0_0_6px_rgba(245,158,11,0.8)]'
-                                          : 'bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.8)]'
-                                      }`}
-                                    />
-                                    <span>{item.priority}</span>
-                                  </span>
-                                </td>
-
-                                <td className="py-3.5 px-4 sm:px-5 whitespace-nowrap">
-                                  <span className={`inline-flex items-center justify-center w-24 py-1 rounded-full text-xs font-semibold border shadow-2xs text-center ${need.pill}`}>
-                                    <span>{need.label}</span>
-                                  </span>
-                                </td>
-                              </tr>
-                            );
-                          })
-                        ) : (
-                          <tr>
-                            <td colSpan={5} className="py-8 text-center text-xs text-slate-400 dark:text-slate-500">
-                              No verified geospatial risk data recorded yet.
+                                <span
+                                  className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                                    isCritical
+                                      ? 'bg-purple-500 shadow-[0_0_6px_rgba(168,85,247,0.8)]'
+                                      : isHigh
+                                      ? 'bg-rose-500 shadow-[0_0_6px_rgba(244,63,94,0.8)]'
+                                      : isModerate
+                                      ? 'bg-amber-500 shadow-[0_0_6px_rgba(245,158,11,0.8)]'
+                                      : 'bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.8)]'
+                                  }`}
+                                />
+                                <span>{item.priority}</span>
+                              </span>
+                            </td>
+                            <td className="py-3.5 px-4 sm:px-5 text-slate-600 dark:text-slate-400 font-medium whitespace-nowrap">
+                              {item.dominantType}
                             </td>
                           </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                );
-              })()}
+                        );
+                      })
+                    ) : (
+                      <tr>
+                        <td colSpan={5} className="py-8 text-center text-xs text-slate-400 dark:text-slate-500">
+                          No verified geospatial risk data recorded yet.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </SoftCard>
           </motion.div>
 
@@ -1464,7 +1522,18 @@ export default function Analytics() {
                   const isHigh = item.priority === 'High';
                   const isModerate = item.priority === 'Moderate';
 
-                  const cardTheme = isHigh
+                  const isCritical = item.priority === 'Critical';
+                  const cardTheme = isCritical
+                    ? {
+                        bg: 'bg-white dark:bg-slate-900/90',
+                        border: 'border-purple-500/30 dark:border-purple-500/30',
+                        pinBg: 'bg-purple-500/10 dark:bg-purple-500/20 border-purple-500/20 text-purple-600 dark:text-purple-400',
+                        hover: 'hover:border-purple-500/50 dark:hover:border-purple-500/50 hover:shadow-[0_8px_24px_rgba(139,92,246,0.15)]',
+                        topBar: 'from-purple-500 via-rose-500 to-amber-500',
+                        badge: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20 shadow-2xs',
+                        pulse: 'bg-purple-500',
+                      }
+                    : isHigh
                     ? {
                         bg: 'bg-white dark:bg-slate-900/90',
                         border: 'border-slate-200/80 dark:border-white/10',
@@ -1517,8 +1586,8 @@ export default function Analytics() {
                           </div>
                           <span className={`shrink-0 inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-[11px] font-bold ${cardTheme.badge}`}>
                             <span className="relative flex h-2 w-2 items-center justify-center">
-                              {isHigh && (
-                                <span className="absolute inline-flex h-full w-full rounded-full bg-rose-500 opacity-60 animate-ping" />
+                              {(isCritical || isHigh) && (
+                                <span className={`absolute inline-flex h-full w-full rounded-full opacity-60 animate-ping ${isCritical ? 'bg-purple-500' : 'bg-rose-500'}`} />
                               )}
                               <span className={`relative inline-flex h-1.5 w-1.5 rounded-full shrink-0 ${cardTheme.pulse}`} />
                             </span>
@@ -1531,8 +1600,11 @@ export default function Analytics() {
                       </div>
 
                       <div className="mt-4 pt-3 border-t border-slate-200/60 dark:border-white/10 flex items-center justify-between text-[11px]">
-                        <span className={`w-20 inline-flex items-center justify-center py-0.5 rounded-full border text-[11px] font-semibold shadow-2xs ${need.pill}`}>
-                          <span>{need.label}</span>
+                        <span className="font-medium text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                          <span>Dominant:</span>
+                          <span className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full border text-[10.5px] font-semibold shadow-2xs ${need.pill}`}>
+                            {need.label}
+                          </span>
                         </span>
                         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg font-mono font-bold text-xs bg-white/80 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-white/10 shadow-2xs tabular-nums group-hover:border-[#0071E3]/30 transition-colors">
                           {item.incidents} {item.incidents === 1 ? 'event' : 'events'}

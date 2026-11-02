@@ -23,12 +23,16 @@ export type AnalyticsReport = {
 };
 
 const ACCENT_BLUE = '#0071E3';
+const PURPLE = '#8B5CF6';
 const RED = '#EF4444';
+const AMBER = '#F59E0B';
+const GREEN = '#10B981';
 
 const URGENCY_BAR_COLOR: Record<string, string> = {
+  Critical: PURPLE,
   High: RED,
-  Moderate: '#F59E0B',
-  Low: '#10B981',
+  Moderate: AMBER,
+  Low: GREEN,
 };
 
 function useIsMobile(breakpoint = 640) {
@@ -302,14 +306,27 @@ export function BarangayBarChart({
       const n = r.barangay || 'Unknown';
       if (!grouped[n]) grouped[n] = { count: 0, urgencyCounts: {} };
       grouped[n].count++;
-      const urg = r.urgency || 'Low';
+      const urgRaw = (r.urgency || 'Low').trim().toLowerCase();
+      const urg =
+        urgRaw === 'critical'
+          ? 'Critical'
+          : urgRaw === 'high'
+          ? 'High'
+          : urgRaw === 'moderate' || urgRaw === 'mod'
+          ? 'Moderate'
+          : 'Low';
       grouped[n].urgencyCounts[urg] = (grouped[n].urgencyCounts[urg] || 0) + 1;
     });
     return Object.entries(grouped)
       .sort((a, b) => b[1].count - a[1].count)
       .slice(0, 8)
       .map(([name, v]) => {
-        const dominantUrgency = Object.entries(v.urgencyCounts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? 'Low';
+        const dominantUrgency =
+          Object.entries(v.urgencyCounts).sort((a, b) => {
+            if (b[1] !== a[1]) return b[1] - a[1];
+            const weight: Record<string, number> = { Critical: 4, High: 3, Moderate: 2, Low: 1 };
+            return (weight[b[0]] || 0) - (weight[a[0]] || 0);
+          })[0]?.[0] ?? 'Low';
         return { name, count: v.count, dominantUrgency };
       });
   }, [rawReports]);
