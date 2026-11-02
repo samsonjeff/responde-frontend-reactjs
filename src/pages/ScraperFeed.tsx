@@ -24,7 +24,7 @@ interface ScrapedPost {
   rawText: string;
   barangay: string;
   type: "Search & Rescue" | "Medical" | "Food & Water" | "Infrastructure";
-  urgency: "High" | "Moderate" | "Low";
+  urgency: "Critical" | "High" | "Moderate" | "Low";
   status: "New" | "Verified" | "Flagged" | "Resolved";
   timestamp: string;
   createdAt?: string;
@@ -129,9 +129,11 @@ function inferUrgency(incidentType: string, text: string): ScrapedPost["urgency"
   const t = (incidentType || "").toLowerCase();
   const txt = (text || "").toLowerCase();
 
+  const criticalKeywords = ["critical", "trapped", "dying", "saklolo", "tulong", "buhay", "delikado", "lubog", "nasusunog", "evacuate now"];
   const highKeywords = ["emergency", "casualty", "fire", "now", "asap", "urgent", "naipit", "natabunan", "patay", "matanda", "bata", "nawawala"];
   const moderateKeywords = ["flood", "evacuation", "landslide", "earthquake", "baha", "gumuhong", "tumumba", "putol"];
 
+  if (criticalKeywords.some(k => t.includes(k) || txt.includes(k))) return "Critical";
   if (highKeywords.some(k => t.includes(k) || txt.includes(k))) return "High";
   if (moderateKeywords.some(k => t.includes(k) || txt.includes(k))) return "Moderate";
   return "Low";
@@ -347,7 +349,7 @@ export default function ScraperFeed() {
         : (row.urgency_confidence ? Math.round(row.urgency_confidence * 100) : (row.incident_type_confidence ? Math.round(row.incident_type_confidence * 100) : 0));
 
       const rawUrgency = row.urgency ? String(row.urgency).trim().toLowerCase() : '';
-      const resolvedUrgency: ScrapedPost["urgency"] = (rawUrgency === 'high' || rawUrgency === 'moderate' || rawUrgency === 'low')
+      const resolvedUrgency: ScrapedPost["urgency"] = (rawUrgency === 'critical' || rawUrgency === 'high' || rawUrgency === 'moderate' || rawUrgency === 'low')
         ? (rawUrgency.charAt(0).toUpperCase() + rawUrgency.slice(1)) as ScrapedPost["urgency"]
         : inferUrgency(row.incident_type || row.type, text);
 
@@ -589,6 +591,13 @@ export default function ScraperFeed() {
   // ── Semantic Micro-Dot Status System (No Glaring Neon Blocks) ──
   const renderUrgencyBadge = (urgency: string) => {
     switch (urgency) {
+      case "Critical":
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border border-purple-200/80 dark:border-purple-800/40 tabular-nums shadow-xs">
+            <span className="w-1.5 h-1.5 rounded-full bg-purple-600 animate-pulse shrink-0" />
+            Critical
+          </span>
+        );
       case "High":
         return (
           <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 tabular-nums">
@@ -605,8 +614,8 @@ export default function ScraperFeed() {
         );
       case "Low":
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-green-500/15 text-green-700 dark:text-green-300 border border-green-500/30 tabular-nums">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#22c55e] shrink-0" />
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-slate-100/90 dark:bg-white/[0.06] text-slate-600 dark:text-slate-400 border border-slate-200/60 dark:border-white/[0.06] tabular-nums">
+            <span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" />
             Low
           </span>
         );
@@ -675,7 +684,7 @@ export default function ScraperFeed() {
   // Early return error state if initial load failed and no cached posts
   if (!loading && error && posts.length === 0) {
     return (
-      <div className="scraper-soft flex flex-col flex-1 min-h-0 space-y-3 sm:space-y-3.5 w-full h-full relative">
+      <div className="scraper-soft flex flex-col flex-1 w-full lg:h-full lg:min-h-0 space-y-3 sm:space-y-3.5 relative">
         <div className="flex-1 flex items-center justify-center p-4">
           {error.includes("Too many requests") || error.includes("429") || error.includes("503") || error.toLowerCase().includes("unavailable") || error.toLowerCase().includes("timeout") ? (
             <div className="flex flex-col items-center gap-3 text-amber-600 dark:text-amber-400 bg-amber-500/[0.06] dark:bg-amber-500/[0.10] border border-amber-500/20 rounded-2xl p-6 sm:p-8 max-w-md text-center shadow-sm">
@@ -733,7 +742,7 @@ export default function ScraperFeed() {
         </AnimatePresence>
       </div>
 
-      <StaggerContainer className="flex flex-col flex-1 min-h-0 space-y-3 sm:space-y-3.5 w-full h-full">
+      <StaggerContainer className="flex flex-col flex-1 space-y-3 sm:space-y-3.5 w-full lg:h-full lg:min-h-0">
         {/* Stage 1: Top Page Header */}
         <StaggerItem>
       {/* ── Top Page Header (Unified Soft UI Design) ── */}
@@ -815,7 +824,7 @@ export default function ScraperFeed() {
                 <div className="col-span-1 md:col-span-auto min-w-0 md:min-w-[120px] w-full md:w-auto">
                   <FilterDropdown
                     value={filterUrgency}
-                    options={["All Urgency", "High", "Moderate", "Low"]}
+                    options={["All Urgency", "Critical", "High", "Moderate", "Low"]}
                     onChange={(val) => { setFilterUrgency(val); setSelectedId(""); }}
                   />
                 </div>
@@ -862,15 +871,15 @@ export default function ScraperFeed() {
         </StaggerItem>
 
         {/* Stage 3: Two Column Layout / Responsive Split-Pane */}
-        <StaggerItem className="flex-1 min-h-0 flex flex-col">
+        <StaggerItem className="flex-1 lg:min-h-0 flex flex-col">
           {/* Two Column Layout / Responsive Split-Pane */}
-          <div className="flex-1 flex flex-col md:grid md:grid-cols-12 gap-3 md:gap-4 lg:gap-6 min-h-0 h-full">
+          <div className="flex-1 flex flex-col md:grid md:grid-cols-12 gap-3 md:gap-4 lg:gap-6 lg:min-h-0 lg:h-full">
             {/* LEFT: Post List — Soft Feed Sidebar */}
             <div
               className={`
                 ${mobileView === 'detail' ? 'hidden md:flex' : 'flex'}
                 md:col-span-5 lg:col-span-5 bg-white/85 dark:bg-[#111827]/85 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_1px_3px_rgba(15,23,42,0.04),0_8px_24px_rgba(15,23,42,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.3)] flex-col overflow-hidden
-                min-h-[460px] md:min-h-0 h-full
+                min-h-[460px] md:min-h-0 h-[calc(100vh-10rem)] md:h-full
               `}
             >
               {/* Apple Segmented Switcher Header */}
@@ -976,7 +985,7 @@ export default function ScraperFeed() {
 
               {/* Scrollable Post Cards List */}
               <div
-                className="flex-1 overflow-y-auto min-h-0 p-2 sm:p-2.5 pb-8 space-y-1.5 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800"
+                className="flex-1 overflow-y-auto min-h-0 p-2 sm:p-2.5 pb-3 md:pb-4 space-y-1.5 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800"
                 style={{
                   maskImage: 'linear-gradient(to bottom, black calc(100% - 48px), transparent 100%)',
                   WebkitMaskImage: 'linear-gradient(to bottom, black calc(100% - 48px), transparent 100%)',
@@ -1132,7 +1141,7 @@ export default function ScraperFeed() {
               className={`
                 ${mobileView === 'list' ? 'hidden md:flex' : 'flex'}
                 md:col-span-7 lg:col-span-7 bg-white/90 dark:bg-[#111827]/90 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_1px_3px_rgba(15,23,42,0.04),0_8px_24px_rgba(15,23,42,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.3)] flex-col overflow-hidden
-                min-h-[480px] md:min-h-0 h-full
+                min-h-[480px] md:min-h-0 h-[calc(100vh-10rem)] md:h-full
               `}
             >
               <AnimatePresence mode="wait">
@@ -1370,13 +1379,13 @@ export default function ScraperFeed() {
                     </div>
 
                     {/* Action Bar */}
-                    <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-200/60 dark:border-white/5 bg-slate-50/40 dark:bg-white/[0.02] shrink-0 flex items-center justify-between gap-2">
+                    <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-200/60 dark:border-white/5 bg-slate-50/40 dark:bg-white/[0.02] shrink-0 flex flex-wrap sm:flex-nowrap items-center justify-between gap-2">
                       <div className="flex items-center gap-2">
                         {viewMode === "structured" && (
                           <button
                             type="button"
                             onClick={() => togglePostIncidentOverride(selectedPost.id)}
-                            className="px-3 py-2 bg-slate-100 hover:bg-slate-200/90 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold rounded-xl hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.97] transition-all duration-200 ease-out cursor-pointer border border-slate-200/70 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20 shadow-2xs select-none"
+                            className="px-3 py-2 min-h-[38px] sm:min-h-[40px] bg-slate-100 hover:bg-slate-200/90 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold rounded-xl hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.97] transition-all duration-200 ease-out cursor-pointer border border-slate-200/70 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20 shadow-2xs select-none"
                           >
                             Demote to Noise
                           </button>
@@ -1388,7 +1397,7 @@ export default function ScraperFeed() {
                           <button
                             type="button"
                             onClick={() => handleUpdateStatus(selectedPost.id, "Verified")}
-                            className="group px-3.5 sm:px-4 py-2 sm:py-2.5 bg-[#0071E3] hover:bg-[#0077ED] text-white text-xs font-semibold rounded-xl flex items-center gap-2 shadow-xs hover:shadow-[0_4px_14px_rgba(0,113,227,0.35)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.97] transition-all duration-200 ease-out cursor-pointer select-none"
+                            className="group px-3.5 sm:px-4 py-2 sm:py-2.5 min-h-[38px] sm:min-h-[40px] bg-[#0071E3] hover:bg-[#0077ED] text-white text-xs font-semibold rounded-xl flex items-center gap-2 shadow-xs hover:shadow-[0_4px_14px_rgba(0,113,227,0.35)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.97] transition-all duration-200 ease-out cursor-pointer select-none"
                           >
                             <CheckCircle2 className="w-3.5 h-3.5 transition-transform duration-200 ease-out group-hover:scale-110" strokeWidth={2} />
                             <span>Verify Incident</span>
@@ -1398,7 +1407,7 @@ export default function ScraperFeed() {
                         <button
                           type="button"
                           onClick={() => handleUpdateStatus(selectedPost.id, "Resolved")}
-                          className="group px-3.5 sm:px-4 py-2 sm:py-2.5 bg-white hover:bg-rose-50/90 dark:bg-slate-900/80 dark:hover:bg-rose-950/30 text-slate-700 dark:text-slate-300 hover:text-rose-600 dark:hover:text-rose-400 border border-slate-200/80 dark:border-white/10 hover:border-rose-300/80 dark:hover:border-rose-700/50 hover:shadow-[0_4px_14px_rgba(244,63,94,0.18)] dark:hover:shadow-[0_4px_14px_rgba(244,63,94,0.25)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.97] text-xs font-semibold rounded-xl flex items-center gap-2 transition-all duration-200 ease-out cursor-pointer shadow-2xs select-none"
+                          className="group px-3.5 sm:px-4 py-2 sm:py-2.5 min-h-[38px] sm:min-h-[40px] bg-white hover:bg-rose-50/90 dark:bg-slate-900/80 dark:hover:bg-rose-950/30 text-slate-700 dark:text-slate-300 hover:text-rose-600 dark:hover:text-rose-400 border border-slate-200/80 dark:border-white/10 hover:border-rose-300/80 dark:hover:border-rose-700/50 hover:shadow-[0_4px_14px_rgba(244,63,94,0.18)] dark:hover:shadow-[0_4px_14px_rgba(244,63,94,0.25)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.97] text-xs font-semibold rounded-xl flex items-center gap-2 transition-all duration-200 ease-out cursor-pointer shadow-2xs select-none"
                         >
                           <XCircle className="w-3.5 h-3.5 transition-transform duration-200 ease-out group-hover:scale-110 group-hover:-rotate-12 text-slate-500 group-hover:text-rose-600 dark:text-slate-400 dark:group-hover:text-rose-400" strokeWidth={1.75} />
                           <span>Dismiss / Resolve</span>
