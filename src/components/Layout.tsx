@@ -6,7 +6,7 @@ import {
   LayoutDashboard, FileText, MessageSquare, Globe, Map,
   BarChart3, Settings, Search, Bell, LogOut, Menu, X,
   Globe2, MessageCircle, CheckCheck, Trash2, BellOff, ArrowRight, ArrowDown,
-  Sun, Moon, Copy, Check, Siren, ShieldAlert, MapPin, Inbox,
+  Sun, Moon, Copy, Check, Siren, ShieldAlert, MapPin, Inbox, User,
 } from 'lucide-react';
 import SignOutModal from './SignOutModal';
 import GlobalSearch from './GlobalSearch';
@@ -821,7 +821,7 @@ export default function Layout() {
                             <button
                               type="button"
                               onClick={() => setConfirmDeleteTarget('all')}
-                              className="p-1.5 rounded-xl text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-950/40 border border-red-200/70 dark:border-red-800/50 hover:bg-red-100 dark:hover:bg-red-900/60 hover:text-red-600 dark:hover:text-red-300 shadow-2xs transition-all active:scale-90 cursor-pointer"
+                              className="p-1.5 rounded-xl text-slate-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-slate-100 dark:hover:bg-white/10 transition-all active:scale-90 cursor-pointer"
                               title="Clear all notifications"
                               aria-label="Clear all notifications"
                             >
@@ -1335,6 +1335,24 @@ function NotificationRow({
   const isMessenger = n.type === 'messenger';
   const timeAgo = formatTimeAgo(n.timestamp);
 
+  const cleanTitle = useMemo(() => {
+    let t = n.title || '';
+    t = t.replace(/^[🚨📍⚠️\s]*/g, '').replace(/^PRIORITY ALERT:\s*/i, '').trim();
+    if (!t) return isPriority ? 'High-Urgency Incident' : 'Incident Notification';
+    return t;
+  }, [n.title, isPriority]);
+
+  const hasValidBarangay = Boolean(
+    n.barangay &&
+    n.barangay.trim() &&
+    n.barangay.trim().toLowerCase() !== 'none'
+  );
+  const hasValidSender = Boolean(
+    n.sender &&
+    n.sender.trim() &&
+    n.sender.trim().toLowerCase() !== 'none'
+  );
+
   return (
     <motion.div
       data-notif-id={n.id}
@@ -1344,7 +1362,7 @@ function NotificationRow({
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.15, ease: APPLE_DECEL_EASE }}
-      className={`group relative flex items-start gap-3 px-4 py-3.5 cursor-pointer transition-colors duration-150 active:scale-[0.99] select-none ${
+      className={`group relative flex items-start gap-3 px-4 py-3 cursor-pointer transition-colors duration-150 active:scale-[0.99] select-none ${
         !n.read
           ? isPriority
             ? 'bg-red-500/[0.04] dark:bg-red-500/[0.08] hover:bg-red-500/[0.08] dark:hover:bg-red-500/[0.12]'
@@ -1357,14 +1375,14 @@ function NotificationRow({
     >
       {/* Icon squircle with micro-lift */}
       <div
-        className={`shrink-0 mt-0.5 w-9 h-9 rounded-2xl flex items-center justify-center transition-all duration-200 group-hover:scale-105 group-hover:-translate-y-0.5 ${
+        className={`shrink-0 mt-0.5 w-8.5 h-8.5 rounded-xl flex items-center justify-center transition-all duration-200 group-hover:scale-105 ${
           !n.read
             ? isPriority
-              ? 'bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-300 ring-1 ring-red-500/20 shadow-xs'
+              ? 'bg-red-500/10 dark:bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/20'
               : isMessenger
-              ? 'bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-300 ring-1 ring-purple-500/20 shadow-xs'
-              : 'bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300 ring-1 ring-blue-500/20 shadow-xs'
-            : 'bg-slate-100/80 dark:bg-white/5 text-slate-400 dark:text-slate-500'
+              ? 'bg-purple-500/10 dark:bg-purple-500/20 text-purple-600 dark:text-purple-400 border border-purple-500/20'
+              : 'bg-blue-500/10 dark:bg-blue-500/20 text-[#0071E3] dark:text-sky-400 border border-blue-500/20'
+            : 'bg-slate-100 dark:bg-white/5 text-slate-400 dark:text-slate-500 border border-slate-200/40 dark:border-white/5'
         }`}
       >
         {isPriority ? (
@@ -1377,112 +1395,116 @@ function NotificationRow({
       </div>
 
       {/* Content */}
-      <div className="flex-1 min-w-0 pr-8">
-        <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-          <p
-            className={`text-xs truncate tracking-tight transition-colors ${
-              !n.read
-                ? isPriority
-                  ? 'font-bold text-red-950 dark:text-red-100'
-                  : 'font-bold text-slate-900 dark:text-white'
-                : 'font-medium text-slate-500 dark:text-slate-400'
-            }`}
-          >
-            {n.title}
-          </p>
+      <div className="flex-1 min-w-0">
+        {/* Top line: Unread dot + Title + Priority tag + Time / Dismiss */}
+        <div className="flex items-center justify-between gap-2 mb-1">
+          <div className="flex items-center gap-1.5 min-w-0">
+            {!n.read && (
+              <span
+                className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                  isPriority
+                    ? 'bg-red-500 ring-2 ring-red-500/25'
+                    : 'bg-[#0071E3] ring-2 ring-blue-500/25'
+                }`}
+              />
+            )}
+            <p
+              className={`text-xs truncate tracking-tight transition-colors ${
+                !n.read
+                  ? 'font-semibold text-slate-900 dark:text-white'
+                  : 'font-medium text-slate-600 dark:text-slate-400'
+              }`}
+            >
+              {cleanTitle}
+            </p>
 
-          {!n.read && (
-            <span
-              className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                isPriority
-                  ? 'bg-red-600 ring-2 ring-red-500/30 shadow-[0_0_6px_rgba(239,68,68,0.6)]'
-                  : 'bg-[#0071E3] ring-2 ring-blue-500/30 shadow-[0_0_6px_rgba(0,113,227,0.6)]'
-              }`}
-            />
-          )}
+            {isPriority ? (
+              <span
+                className={`shrink-0 text-[10px] px-2 py-0.5 rounded-full font-medium transition-colors ${
+                  !n.read
+                    ? 'bg-red-500/10 dark:bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/20'
+                    : 'bg-slate-100 dark:bg-white/5 text-slate-400 dark:text-slate-500 border border-slate-200/40 dark:border-white/5'
+                }`}
+              >
+                Priority
+              </span>
+            ) : isMessenger ? (
+              <span
+                className={`shrink-0 text-[10px] px-2 py-0.5 rounded-full font-medium transition-colors ${
+                  !n.read
+                    ? 'bg-purple-500/10 dark:bg-purple-500/20 text-purple-600 dark:text-purple-400 border border-purple-500/20'
+                    : 'bg-slate-100 dark:bg-white/5 text-slate-400 dark:text-slate-500 border border-slate-200/40 dark:border-white/5'
+                }`}
+              >
+                Messenger
+              </span>
+            ) : (
+              <span
+                className={`shrink-0 text-[10px] px-2 py-0.5 rounded-full font-medium transition-colors ${
+                  !n.read
+                    ? 'bg-blue-500/10 dark:bg-blue-500/20 text-[#0071E3] dark:text-sky-400 border border-blue-500/20'
+                    : 'bg-slate-100 dark:bg-white/5 text-slate-400 dark:text-slate-500 border border-slate-200/40 dark:border-white/5'
+                }`}
+              >
+                Scraper
+              </span>
+            )}
+          </div>
 
-          {isPriority ? (
-            <span
-              className={`shrink-0 text-[10px] px-1.5 py-0.5 rounded-full transition-colors flex items-center gap-1 font-semibold ${
-                !n.read
-                  ? 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 border border-red-500/20'
-                  : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 font-normal border border-slate-200/50 dark:border-slate-700/50'
-              }`}
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-red-600 shrink-0" />
-              Priority
+          {/* Time & Subtle Dismiss Action */}
+          <div className="flex items-center gap-1.5 shrink-0">
+            <span className="text-[10px] text-slate-400 dark:text-slate-500 tabular-nums">
+              {timeAgo}
             </span>
-          ) : isMessenger ? (
-            <span
-              className={`shrink-0 text-[10px] px-1.5 py-0.5 rounded-full transition-colors font-semibold ${
-                !n.read
-                  ? 'bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 border border-purple-500/20'
-                  : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 font-normal border border-slate-200/50 dark:border-slate-700/50'
-              }`}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete();
+              }}
+              className="opacity-0 group-hover:opacity-100 focus:opacity-100 p-1 rounded-md text-slate-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-slate-100 dark:hover:bg-white/10 active:scale-90 transition-all cursor-pointer"
+              title="Delete notification"
+              aria-label="Delete notification"
             >
-              Messenger
-            </span>
-          ) : (
-            <span
-              className={`shrink-0 text-[10px] px-1.5 py-0.5 rounded-full transition-colors font-semibold ${
-                !n.read
-                  ? 'bg-blue-100 dark:bg-blue-900/40 text-[#0071E3] dark:text-blue-300 border border-blue-500/20'
-                  : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 font-normal border border-slate-200/50 dark:border-slate-700/50'
-              }`}
-            >
-              Scraper
-            </span>
-          )}
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
 
-        {/* Barangay / Sender meta */}
-        {(n.barangay || n.sender) && (
-          <p
-            className={`text-[11px] mb-1 transition-colors ${
+        {/* Barangay / Sender metadata */}
+        {(hasValidBarangay || hasValidSender) && (
+          <div
+            className={`flex items-center gap-1 text-[11px] mb-1 transition-colors ${
               !n.read
-                ? 'font-medium text-slate-700 dark:text-slate-300'
-                : 'font-normal text-slate-400 dark:text-slate-500'
+                ? 'font-medium text-slate-600 dark:text-slate-300'
+                : 'text-slate-400 dark:text-slate-500'
             }`}
           >
-            {n.barangay ? `📍 ${n.barangay}` : `👤 ${n.sender}`}
-          </p>
+            {hasValidBarangay ? (
+              <>
+                <MapPin className="w-3 h-3 text-slate-400 shrink-0" strokeWidth={1.75} />
+                <span className="truncate">{n.barangay}</span>
+              </>
+            ) : (
+              <>
+                <User className="w-3 h-3 text-slate-400 shrink-0" strokeWidth={1.75} />
+                <span className="truncate">{n.sender}</span>
+              </>
+            )}
+          </div>
         )}
 
         {/* Message snippet */}
         <p
           className={`text-xs line-clamp-2 leading-relaxed transition-colors ${
             !n.read
-              ? 'font-medium text-slate-800 dark:text-slate-200'
-              : 'font-normal text-slate-400 dark:text-slate-500'
+              ? 'text-slate-700 dark:text-slate-200'
+              : 'text-slate-500 dark:text-slate-400'
           }`}
         >
           {n.message}
         </p>
-
-        <p
-          className={`text-[10px] mt-1.5 transition-colors tabular-nums ${
-            !n.read
-              ? 'font-semibold text-[#0071E3] dark:text-blue-400'
-              : 'font-normal text-slate-400/70 dark:text-slate-500'
-          }`}
-        >
-          {timeAgo}
-        </p>
       </div>
-
-      {/* Dismiss / Delete button - Minimalist iOS hover style */}
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          onDelete();
-        }}
-        className="absolute top-3 right-3 p-1.5 rounded-xl text-red-500 dark:text-red-400 bg-red-50/90 dark:bg-red-950/40 border border-red-200/70 dark:border-red-800/50 hover:bg-red-100 dark:hover:bg-red-900/60 hover:text-red-600 dark:hover:text-red-300 shadow-2xs transition-all cursor-pointer active:scale-90"
-        title="Delete notification"
-        aria-label="Delete notification"
-      >
-        <Trash2 className="w-3.5 h-3.5" />
-      </button>
     </motion.div>
   );
 }
@@ -1509,7 +1531,7 @@ function GlobalToast({
 
   const cleanTitle = useMemo(() => {
     let t = toast.title || '';
-    t = t.replace(/^[🚨\s]*/g, '').replace(/^PRIORITY ALERT:\s*/i, '').trim();
+    t = t.replace(/^[🚨📍⚠️\s]*/g, '').replace(/^PRIORITY ALERT:\s*/i, '').trim();
     if (!t || t.toLowerCase() === 'high-urgency incident') {
       return toast.incidentType
         ? `${toast.incidentType} Emergency Alert`
@@ -1544,13 +1566,12 @@ function GlobalToast({
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5 flex-wrap">
               {/* Priority Pill */}
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-red-600 text-white shadow-xs">
-                <span className="w-1.5 h-1.5 rounded-full bg-white shrink-0" />
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-red-600 text-white shadow-xs">
                 Priority Alert
               </span>
 
               {/* Barangay Pill */}
-              {toast.barangay && (
+              {toast.barangay && toast.barangay.toLowerCase() !== 'none' && (
                 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-950/60 border border-red-200/80 dark:border-red-900/60">
                   <MapPin className="w-2.5 h-2.5 text-red-500" />
                   {toast.barangay}

@@ -145,8 +145,8 @@ function evaluatePriorityIncident(rawUrgency?: string, rawType?: string, rawText
   const isPriority = isHigh || isRescue;
 
   const priorityTitle = isRescue
-    ? '🚨 PRIORITY ALERT: Search & Rescue'
-    : '🚨 PRIORITY ALERT: High-Urgency Incident';
+    ? 'Search & Rescue'
+    : 'High-Urgency Incident';
 
   return {
     isPriority,
@@ -351,8 +351,8 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       const title =
         data.title ||
         (isSearchAndRescue
-          ? '🚨 PRIORITY ALERT: Search & Rescue'
-          : '🚨 PRIORITY ALERT: High-Urgency Incident');
+          ? 'Search & Rescue'
+          : 'High-Urgency Incident');
       const targetPath = data.targetPath || '/incident-reports';
 
       addNotification('priority', title, data.message, targetPath, {

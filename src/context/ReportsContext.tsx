@@ -70,8 +70,8 @@ export function ReportsProvider({ children }: { children: ReactNode }) {
                         triggerPriorityAlert({
                             id: `priority-report-${r.id}`,
                             title: isSearchAndRescue
-                                ? '🚨 PRIORITY ALERT: Search & Rescue'
-                                : '🚨 PRIORITY ALERT: High-Urgency Incident',
+                                ? 'Search & Rescue'
+                                : 'High-Urgency Incident',
                             message:
                                 r.description ||
                                 r.originalText ||
