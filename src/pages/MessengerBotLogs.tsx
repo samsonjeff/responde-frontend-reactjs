@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { motion, AnimatePresence, type Variants } from "framer-motion";
 import {
-  Filter, AlertCircle, X, Minus, CheckCircle2, RefreshCw, MessageSquare,
+  Filter, AlertCircle, X, CheckCircle2, RefreshCw, MessageSquare,
   ChevronRight, ChevronLeft, Bot, RotateCcw,
   Layers, AlertTriangle, TriangleAlert, ArrowUp, ArrowDown
 } from "lucide-react";
@@ -1628,17 +1628,8 @@ export default function MessengerBotLogs() {
                           </div>
                         </div>
 
-                        {/* Minimize / Close Conversation Buttons */}
-                        <div className="flex items-center gap-1 shrink-0 ml-1 sm:ml-2 pl-1 sm:pl-2 border-l border-slate-200/60 dark:border-white/10">
-                          <button
-                            type="button"
-                            onClick={handleCloseConversation}
-                            className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl text-slate-400 hover:text-slate-700 dark:text-slate-500 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-150 flex items-center justify-center active:scale-95 cursor-pointer"
-                            title="Minimize conversation (Esc)"
-                            aria-label="Minimize conversation"
-                          >
-                            <Minus className="w-3.5 h-3.5 sm:w-4 sm:h-4" strokeWidth={2} />
-                          </button>
+                        {/* Close Conversation Button */}
+                        <div className="flex items-center shrink-0 ml-1 sm:ml-2 pl-1 sm:pl-2 border-l border-slate-200/60 dark:border-white/10">
                           <button
                             type="button"
                             onClick={handleCloseConversation}
