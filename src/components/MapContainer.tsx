@@ -228,8 +228,8 @@ function buildPinGeoJSON(reports: Report[]) {
 function buildChoroplethPaint(theme: 'light' | 'dark'): maplibregl.FillLayerSpecification['paint'] {
     const colors =
         theme === 'light'
-            ? ['#e2e8f0', '#22c55e', '#eab308', '#dc2626']
-            : ['#334155', '#4ade80', '#facc15', '#f87171'];
+            ? ['#e2e8f0', '#22c55e', '#eab308', '#dc2626', '#9333ea']
+            : ['#334155', '#4ade80', '#facc15', '#f87171', '#c084fc'];
 
     return {
         'fill-color': [
@@ -239,6 +239,7 @@ function buildChoroplethPaint(theme: 'light' | 'dark'): maplibregl.FillLayerSpec
             1, colors[1], // 1 — Low urgency (green)
             2, colors[2], // 2 — Moderate urgency (yellow)
             3, colors[3], // 3 — High urgency (red)
+            4, colors[4], // 4 — Critical urgency (purple)
         ],
         'fill-opacity': theme === 'light' ? 0.55 : 0.6,
     };
@@ -650,6 +651,7 @@ export default function MapContainer({
                         'circle-color': [
                             'match',
                             ['get', 'urgency'],
+                            'Critical', '#9333ea',
                             'High', '#ef4444',
                             'Moderate', '#eab308',
                             'Low', '#22c55e',

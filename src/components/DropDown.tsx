@@ -78,9 +78,12 @@ export default function FilterDropdown({ value, options, onChange, className }: 
   };
 
   const isCustomValue = useMemo(() => {
-    const lowerVal = (value || '').toLowerCase().trim();
-    return !lowerVal.startsWith('all ') && lowerVal !== 'all';
-  }, [value]);
+    if (!value) return false;
+    const lowerVal = value.toLowerCase().trim();
+    if (lowerVal.startsWith('all ') || lowerVal === 'all') return false;
+    if (options && options.length > 0 && options[0].toLowerCase().trim() === lowerVal) return false;
+    return true;
+  }, [value, options]);
 
   return (
     <div className={`relative ${isOpen ? 'z-50' : 'z-10'}`}>

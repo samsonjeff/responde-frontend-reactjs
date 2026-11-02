@@ -305,20 +305,20 @@ function BarangayDetailCard({ name, reports, onClose, onViewList }: {
           </div>
         )}
 
-        {/* Urgency 3-Column Bento Grid */}
+        {/* Urgency 4-Column Bento Grid */}
         <div>
           <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">Urgency Breakdown</p>
-          <div className="grid grid-cols-3 gap-2">
-            {(['High', 'Moderate', 'Low'] as const).map((level) => {
+          <div className="grid grid-cols-4 gap-1.5 sm:gap-2">
+            {(['Critical', 'High', 'Moderate', 'Low'] as const).map((level) => {
               const b = URGENCY_BADGES[level];
               const count = urgencyCounts[level] || 0;
               return (
-                <div key={level} className="p-2.5 rounded-xl bg-slate-50/80 dark:bg-slate-800/50 border border-slate-200/50 dark:border-white/5 text-center">
+                <div key={level} className="p-2 sm:p-2.5 rounded-xl bg-slate-50/80 dark:bg-slate-800/50 border border-slate-200/50 dark:border-white/5 text-center">
                   <div className="flex items-center justify-center gap-1 text-[10px] font-semibold mb-1 text-slate-500 dark:text-slate-400">
                     <span className={`w-1.5 h-1.5 rounded-full ${b.dot}`} />
-                    <span>{level}</span>
+                    <span className="truncate">{level === 'Moderate' ? 'Mod' : level}</span>
                   </div>
-                  <span className="font-bold text-sm text-slate-900 dark:text-white tabular-nums">{count}</span>
+                  <span className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white tabular-nums">{count}</span>
                 </div>
               );
             })}
@@ -918,8 +918,12 @@ function IncidentSidebarContent({
               <span>Mod</span>
             </span>
             <span className="flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
+              <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
               <span>High</span>
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-purple-600 shadow-[0_0_8px_rgba(147,51,234,0.45)]" />
+              <span>Critical</span>
             </span>
             {isFiltered && (
               <button
@@ -1327,7 +1331,15 @@ export default function GeospatialMap() {
 
   const matchUrgency = useCallback((itemUrgency?: string) => {
     if (!filterUrgency || filterUrgency === 'All Urgency' || filterUrgency === 'All') return true;
-    return itemUrgency?.trim().toLowerCase() === filterUrgency.trim().toLowerCase();
+    const normFilter = filterUrgency.trim().toLowerCase();
+    const repUrgency = (itemUrgency || '').trim().toLowerCase();
+    if (normFilter === 'critical') {
+      return repUrgency === 'critical';
+    }
+    if (normFilter === 'moderate' || normFilter === 'mod') {
+      return repUrgency === 'moderate' || repUrgency === 'medium' || repUrgency === 'mod';
+    }
+    return repUrgency === normFilter;
   }, [filterUrgency]);
 
   const matchType = useCallback((itemType?: string) => {
@@ -1435,7 +1447,7 @@ export default function GeospatialMap() {
   // Drawer list: synchronized exactly with the visible pins on the map
   const drawerReports = useMemo(() => {
     return [...pinReports].sort((a, b) => {
-      const u = { High: 3, Moderate: 2, Low: 1 };
+      const u = { Critical: 4, High: 3, Moderate: 2, Low: 1 };
       return (u[b.urgency as keyof typeof u] || 0) - (u[a.urgency as keyof typeof u] || 0);
     });
   }, [pinReports]);
