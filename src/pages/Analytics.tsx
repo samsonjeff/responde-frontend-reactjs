@@ -1470,7 +1470,7 @@ export default function Analytics() {
                           <th className="py-3 px-4 text-center text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400 whitespace-nowrap">
                             Risk Priority
                           </th>
-                          <th className="py-3 px-4 sm:px-5 text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                          <th className="py-3 px-4 sm:px-5 text-center text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400 whitespace-nowrap">
                             Dominant Need
                           </th>
                         </tr>
@@ -1537,12 +1537,12 @@ export default function Analytics() {
                                 {/* 3. High Urgency Count Pill */}
                                 <td className="py-3.5 px-4 text-center whitespace-nowrap">
                                   {item.high > 0 ? (
-                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 shadow-2xs tabular-nums">
+                                    <span className="inline-flex items-center justify-center gap-1.5 w-[84px] py-0.5 rounded-full text-xs font-semibold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 shadow-2xs tabular-nums">
                                       <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shadow-[0_0_6px_rgba(244,63,94,0.7)] animate-pulse shrink-0" />
                                       <span>{item.high} Urgent</span>
                                     </span>
                                   ) : (
-                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100/70 dark:bg-white/[0.04] text-slate-400 dark:text-slate-500 border border-slate-200/50 dark:border-white/5 tabular-nums">
+                                    <span className="inline-flex items-center justify-center gap-1.5 w-[84px] py-0.5 rounded-full text-xs font-medium bg-slate-100/70 dark:bg-white/[0.04] text-slate-400 dark:text-slate-500 border border-slate-200/50 dark:border-white/5 tabular-nums">
                                       <span className="w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-slate-600 shrink-0" />
                                       <span>0 Urgent</span>
                                     </span>
@@ -1552,7 +1552,7 @@ export default function Analytics() {
                                 {/* 4. Risk Priority Apple Pill */}
                                 <td className="py-3.5 px-4 text-center whitespace-nowrap">
                                   <span
-                                    className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border shadow-2xs ${
+                                    className={`inline-flex items-center justify-center gap-1.5 w-[86px] py-0.5 rounded-full text-xs font-medium border shadow-2xs ${
                                       isCritical
                                         ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/25'
                                         : isHigh
@@ -1578,8 +1578,8 @@ export default function Analytics() {
                                 </td>
 
                                 {/* 5. Dominant Need Pill */}
-                                <td className="py-3.5 px-4 sm:px-5 whitespace-nowrap">
-                                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border shadow-2xs ${need.pill}`}>
+                                <td className="py-3.5 px-4 sm:px-5 text-center whitespace-nowrap">
+                                  <span className={`inline-flex items-center justify-center w-[92px] py-0.5 rounded-full text-xs font-semibold border shadow-2xs ${need.pill}`}>
                                     <span>{need.label}</span>
                                   </span>
                                 </td>
@@ -1690,7 +1690,7 @@ export default function Analytics() {
                               {item.barangay}
                             </span>
                           </div>
-                          <span className={`shrink-0 inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-[11px] font-bold ${cardTheme.badge}`}>
+                          <span className={`shrink-0 inline-flex items-center justify-center gap-1.5 w-[124px] py-0.5 rounded-full border text-[11px] font-bold ${cardTheme.badge}`}>
                             <span className="relative flex h-2 w-2 items-center justify-center">
                               {(isCritical || isHigh) && (
                                 <span className={`absolute inline-flex h-full w-full rounded-full opacity-60 animate-ping ${isCritical ? 'bg-purple-500' : 'bg-rose-500'}`} />
