@@ -597,9 +597,9 @@ export default function Dashboard() {
               )}
             </div>
 
-            {/* Segmented Urgency Filter: [All] [High] [Mod] [Low] */}
+            {/* Segmented Urgency Filter: [All] [Critical] [High] [Mod] [Low] */}
             <div className="inline-flex items-center p-1 bg-slate-100 dark:bg-slate-800/90 rounded-xl border border-slate-200/60 dark:border-white/5 gap-1 shadow-inner">
-              {(['All', 'High', 'Mod', 'Low'] as const).map((opt) => (
+              {(['All', 'Critical', 'High', 'Mod', 'Low'] as const).map((opt) => (
                 <button
                   key={opt}
                   type="button"

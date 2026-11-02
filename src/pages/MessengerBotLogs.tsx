@@ -525,8 +525,13 @@ export default function MessengerBotLogs() {
         const matches = cType === query || nlpType === query || cType.includes(query) || nlpType.includes(query);
         if (!matches) return false;
       }
-      if (debouncedUrgency !== "All Urgency" && c.nlp?.urgency?.toLowerCase() !== debouncedUrgency.toLowerCase()) {
-        return false;
+      if (debouncedUrgency !== "All Urgency") {
+        const u = (c.nlp?.urgency || "").toLowerCase();
+        const du = debouncedUrgency.toLowerCase();
+        if (du === "critical" && u !== "critical") return false;
+        if (du === "high" && u !== "high") return false;
+        if (du === "moderate" && u !== "moderate" && u !== "mod") return false;
+        if (du === "low" && u !== "low") return false;
       }
       if (debouncedStatus !== "All Status" && c.status?.toLowerCase() !== debouncedStatus.toLowerCase()) {
         return false;
@@ -1010,7 +1015,7 @@ export default function MessengerBotLogs() {
                 <div className="col-span-1 md:col-span-auto min-w-0 md:min-w-[120px] w-full md:w-auto">
                   <FilterDropdown
                     value={filterUrgency}
-                    options={["All Urgency", "High", "Moderate", "Low"]}
+                    options={["All Urgency", "Critical", "High", "Moderate", "Low"]}
                     onChange={(val) => { setFilterUrgency(val); setSelectedId(""); }}
                   />
                 </div>

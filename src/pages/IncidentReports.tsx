@@ -432,6 +432,9 @@ export default function IncidentReports() {
     setFromDate('');
     setToDate('');
     setCurrentPage(1);
+    if (location.search) {
+      navigate('/incident-reports', { replace: true });
+    }
   };
 
   const hasActiveFilters =
