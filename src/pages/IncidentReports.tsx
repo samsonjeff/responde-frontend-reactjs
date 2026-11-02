@@ -539,16 +539,32 @@ export default function IncidentReports() {
     setSelectedIds([]);
   }, [activeTab, filterSource, filterBarangay, filterType, filterUrgency, fromDate, toDate]);
 
+  const availableBarangayOptions = useMemo(() => {
+    const extra = reports
+      .map(r => r.barangay)
+      .filter((b): b is string => Boolean(b && typeof b === 'string' && !['none', 'unknown', 'unspecified', 'n/a', 'null', 'all barangays'].includes(b.toLowerCase().trim())));
+    const sorted = Array.from(new Set([...TALISAY_BARANGAYS, ...extra])).sort();
+    return ['All Barangays', 'None', 'Unknown', ...sorted];
+  }, [reports]);
+
+  const availableFilterTypes = useMemo(() => {
+    const fromReports = reports.map(r => r.type).filter(Boolean);
+    const sorted = Array.from(new Set([...BASE_INCIDENT_TYPES, ...fromReports]))
+      .filter((t): t is string => Boolean(t && t.toLowerCase() !== 'all types' && t.toLowerCase() !== 'unclassified' && t.toLowerCase() !== 'none'))
+      .sort();
+    return ['All Types', 'None', ...sorted];
+  }, [reports]);
+
   const availableIncidentTypes = useMemo(() => {
-    const set = new Set<string>(BASE_INCIDENT_TYPES);
+    const set = new Set<string>(['None', ...BASE_INCIDENT_TYPES]);
     reports.forEach(r => {
       const norm = (r.type || '').trim().toLowerCase();
-      if (r.type && norm && r.type !== 'All Types' && norm !== 'unclassified') {
+      if (r.type && norm && r.type !== 'All Types' && norm !== 'unclassified' && norm !== 'none') {
         set.add(r.type);
       }
     });
     const editNorm = (editForm.type || '').trim().toLowerCase();
-    if (editForm.type && editNorm && editForm.type !== 'All Types' && editNorm !== 'unclassified') {
+    if (editForm.type && editNorm && editForm.type !== 'All Types' && editNorm !== 'unclassified' && editNorm !== 'none') {
       set.add(editForm.type);
     }
     return Array.from(set).filter(t => t.toLowerCase() !== 'unclassified').sort((a, b) => {
@@ -864,7 +880,17 @@ export default function IncidentReports() {
         if (filterSource === 'bot' && rSource !== 'bot') return false;
         if (filterSource === 'scraper' && rSource !== 'scraper') return false;
       }
-      if (filterBarangay !== 'All Barangays' && r.barangay?.toLowerCase() !== filterBarangay.toLowerCase()) return false;
+      if (filterBarangay !== 'All Barangays') {
+        const normFilter = filterBarangay.toLowerCase().trim();
+        const rBrgy = (r.barangay || '').toLowerCase().trim();
+        if (normFilter === 'none' || normFilter === 'unknown') {
+          if (rBrgy && rBrgy !== 'none' && rBrgy !== 'unknown' && rBrgy !== 'unspecified' && rBrgy !== 'n/a' && rBrgy !== 'null') {
+            return false;
+          }
+        } else if (rBrgy !== normFilter) {
+          return false;
+        }
+      }
       if (filterType !== 'All Types') {
         const normFilter = filterType.toLowerCase();
         const repType = (r.type || 'none').toLowerCase();
@@ -1137,8 +1163,8 @@ export default function IncidentReports() {
           {/* Filter Controls */}
           <div className={`${mobileFiltersOpen ? 'grid' : 'hidden'} md:flex md:flex-wrap grid-cols-2 gap-2 sm:gap-2.5 md:gap-3 md:items-center pt-2.5 md:pt-0`}>
             {/* Left Filter Scope Container */}
-            <div className="col-span-2 md:col-span-auto grid grid-cols-2 sm:grid-cols-4 md:inline-flex md:items-center gap-2 sm:gap-2.5 md:gap-1.5 md:p-1 md:bg-slate-100/70 md:dark:bg-white/[0.05] md:backdrop-blur-xl md:rounded-2xl md:border md:border-slate-200/70 md:dark:border-white/10 md:shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] w-full md:w-auto">
-              <div className="hidden md:flex items-center gap-1 px-2.5 py-1 text-[#0071E3] dark:text-sky-400 cursor-default select-none shrink-0">
+            <div className="col-span-2 md:col-span-auto grid grid-cols-2 sm:grid-cols-4 md:inline-flex md:items-center gap-2.5 sm:gap-3 md:gap-2.5 md:p-1.5 md:px-2 md:bg-slate-100/70 md:dark:bg-white/[0.05] md:backdrop-blur-xl md:rounded-2xl md:border md:border-slate-200/70 md:dark:border-white/10 md:shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] w-full md:w-auto">
+              <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 text-[#0071E3] dark:text-sky-400 cursor-default select-none shrink-0">
                 <Filter className="w-3.5 h-3.5 transition-transform duration-300 group-hover/filters:scale-110 text-[#0071E3] dark:text-sky-400" strokeWidth={1.8} />
                 <span className="text-[10px] font-bold uppercase tracking-wider">Filters</span>
               </div>
@@ -1180,28 +1206,23 @@ export default function IncidentReports() {
                 </button>
               </div>
 
-              <div className="col-span-1 md:col-span-auto min-w-0 md:min-w-[130px] w-full md:w-auto">
+              <div className="col-span-1 md:col-span-auto min-w-0 md:min-w-[135px] w-full md:w-auto">
                 <FilterDropdown
                   value={filterBarangay}
-                  options={['All Barangays', ...Array.from(new Set([...TALISAY_BARANGAYS, ...reports.map(r => r.barangay)])).sort()]}
+                  options={availableBarangayOptions}
                   onChange={setFilterBarangay}
                 />
               </div>
 
-              <div className="col-span-1 md:col-span-auto min-w-0 md:min-w-[120px] w-full md:w-auto">
+              <div className="col-span-1 md:col-span-auto min-w-0 md:min-w-[125px] w-full md:w-auto">
                 <FilterDropdown
                   value={filterType}
-                  options={[
-                    'All Types',
-                    ...Array.from(new Set([...BASE_INCIDENT_TYPES, ...reports.map(r => r.type)]))
-                      .filter(t => Boolean(t) && t.toLowerCase() !== 'unclassified' && t.toLowerCase() !== 'none')
-                      .sort()
-                  ]}
+                  options={availableFilterTypes}
                   onChange={setFilterType}
                 />
               </div>
 
-              <div className="col-span-2 sm:col-span-1 md:col-span-auto min-w-0 md:min-w-[120px] w-full md:w-auto">
+              <div className="col-span-2 sm:col-span-1 md:col-span-auto min-w-0 md:min-w-[125px] w-full md:w-auto">
                 <FilterDropdown
                   value={filterUrgency}
                   options={['All Urgency', 'Critical', 'High', 'Moderate', 'Low']}
@@ -1213,14 +1234,14 @@ export default function IncidentReports() {
 
             {/* Right Date Scope Container + Preserved Reset Option */}
             <div className="col-span-2 md:col-span-auto flex flex-wrap sm:flex-nowrap items-center gap-2.5 sm:gap-3 md:ml-auto w-full md:w-auto">
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:inline-flex md:items-center gap-2 sm:gap-2.5 md:gap-1.5 md:p-1 md:bg-slate-100/70 md:dark:bg-white/[0.05] md:backdrop-blur-xl md:rounded-2xl md:border md:border-slate-200/70 md:dark:border-white/10 md:shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] md:px-2.5 w-full md:w-auto">
-                <div className="flex items-center gap-1.5 flex-1 sm:flex-initial min-w-0 sm:min-w-[125px] w-full sm:w-auto">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:inline-flex md:items-center gap-2 sm:gap-2.5 md:gap-2.5 md:p-1.5 md:bg-slate-100/70 md:dark:bg-white/[0.05] md:backdrop-blur-xl md:rounded-2xl md:border md:border-slate-200/70 md:dark:border-white/10 md:shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] md:px-3 w-full md:w-auto">
+                <div className="flex items-center gap-1.5 flex-1 sm:flex-initial min-w-0 sm:min-w-[130px] w-full sm:w-auto">
                   <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 whitespace-nowrap pl-0.5">
                     From:
                   </span>
                   <DatePicker value={fromDate} onChange={setFromDate} placeholder="Select Date" />
                 </div>
-                <div className="flex items-center gap-1.5 flex-1 sm:flex-initial min-w-0 sm:min-w-[125px] w-full sm:w-auto">
+                <div className="flex items-center gap-1.5 flex-1 sm:flex-initial min-w-0 sm:min-w-[130px] w-full sm:w-auto">
                   <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 whitespace-nowrap">
                     To:
                   </span>

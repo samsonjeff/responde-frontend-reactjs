@@ -1318,7 +1318,7 @@ export default function GeospatialMap() {
         set.add(r.type);
       }
     });
-    return ['All Types', ...Array.from(set).sort()];
+    return ['All Types', 'None', ...Array.from(set).sort()];
   }, [reports]);
 
   const matchStatus = useCallback((itemStatus?: string) => {
@@ -1340,7 +1340,12 @@ export default function GeospatialMap() {
 
   const matchType = useCallback((itemType?: string) => {
     if (!filterType || filterType === 'All Types' || filterType === 'All') return true;
-    return itemType?.trim().toLowerCase() === filterType.trim().toLowerCase();
+    const normFilter = filterType.trim().toLowerCase();
+    const repType = (itemType || 'none').trim().toLowerCase();
+    if (normFilter === 'none' || normFilter === 'unknown') {
+      return !repType || repType === 'none' || repType === 'unclassified' || repType === 'unknown';
+    }
+    return repType === normFilter;
   }, [filterType]);
 
   // Partition matching reports into complete (plottable) and incomplete
@@ -1595,14 +1600,14 @@ export default function GeospatialMap() {
 
               {/* Left Side: Segmented Filter Control — collapsible on mobile (< md), always visible on tablet/desktop (>= md) */}
               <div className={`${mobileFiltersOpen ? 'flex' : 'hidden'} md:flex flex-wrap items-center gap-2 sm:gap-2.5 w-full xl:w-auto pt-2 md:pt-0 border-t md:border-t-0 border-slate-200/60 dark:border-white/5`}>
-                <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-1 sm:gap-1.5 p-1 bg-slate-100/70 dark:bg-white/[0.05] backdrop-blur-xl rounded-2xl border border-slate-200/70 dark:border-white/10 shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] dark:shadow-[inset_0_1px_2px_rgba(0,0,0,0.4)] w-full xl:w-auto">
-                  <div className="col-span-2 sm:col-span-auto flex items-center gap-1 px-2.5 py-1 text-[#0071E3] dark:text-sky-400 cursor-default select-none shrink-0">
+                <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 sm:gap-2.5 p-1.5 px-2 bg-slate-100/70 dark:bg-white/[0.05] backdrop-blur-xl rounded-2xl border border-slate-200/70 dark:border-white/10 shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] dark:shadow-[inset_0_1px_2px_rgba(0,0,0,0.4)] w-full xl:w-auto">
+                  <div className="col-span-2 sm:col-span-auto flex items-center gap-1.5 px-3 py-1.5 text-[#0071E3] dark:text-sky-400 cursor-default select-none shrink-0">
                     <Filter className="w-3.5 h-3.5 transition-transform duration-300 group-hover/filters:scale-110 text-[#0071E3] dark:text-sky-400" strokeWidth={1.8} />
                     <span className="text-[10px] font-bold uppercase tracking-wider">Filters</span>
                   </div>
 
                   {/* Filter Pills */}
-                  <div className="col-span-1 sm:col-span-auto flex-1 sm:flex-initial min-w-0 sm:min-w-[130px]">
+                  <div className="col-span-1 sm:col-span-auto flex-1 sm:flex-initial min-w-0 sm:min-w-[135px]">
                     <FilterDropdown
                       value={filterStatus}
                       options={['Verified Only', 'All Reports', 'Under Review', 'Resolved']}
@@ -1610,7 +1615,7 @@ export default function GeospatialMap() {
                     />
                   </div>
 
-                  <div className="col-span-1 sm:col-span-auto flex-1 sm:flex-initial min-w-0 sm:min-w-[120px]">
+                  <div className="col-span-1 sm:col-span-auto flex-1 sm:flex-initial min-w-0 sm:min-w-[125px]">
                     <FilterDropdown
                       value={filterUrgency}
                       options={['All Urgency', 'Critical', 'High', 'Moderate', 'Low']}
@@ -1618,7 +1623,7 @@ export default function GeospatialMap() {
                     />
                   </div>
 
-                  <div className="col-span-2 sm:col-span-auto flex-1 sm:flex-initial min-w-0 sm:min-w-[130px]">
+                  <div className="col-span-2 sm:col-span-auto flex-1 sm:flex-initial min-w-0 sm:min-w-[135px]">
                     <FilterDropdown
                       value={filterType}
                       options={availableIncidentTypes}

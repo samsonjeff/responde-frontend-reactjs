@@ -459,12 +459,24 @@ export default function MessengerBotLogs() {
   const hasActiveFilters = activeFilterCount > 0;
 
   const availableBarangays = useMemo(() => {
-    const fromConversations = conversations.map((c) => c.barangay).filter(Boolean);
-    return Array.from(new Set([...TALISAY_BARANGAYS, ...fromConversations])).sort();
+    const fromConversations = conversations
+      .map((c) => c.barangay)
+      .filter((b): b is string => Boolean(b && !['all barangays', 'none', 'unknown', 'general', 'unspecified', 'n/a', 'null'].includes(b.toLowerCase().trim())));
+    const sorted = Array.from(new Set([...TALISAY_BARANGAYS, ...fromConversations])).sort();
+    return ["None", "Unknown", ...sorted];
   }, [conversations]);
 
   const availableTypes = useMemo(() => {
-    return [...INCIDENT_TYPE_CHOICES];
+    return [
+      "None",
+      "Earthquake",
+      "Fire",
+      "Flood",
+      "General",
+      "Landslide",
+      "Typhoon",
+      "Volcanic Eruption",
+    ];
   }, []);
 
   const resetFilters = () => {
@@ -515,15 +527,28 @@ export default function MessengerBotLogs() {
   const filteredConversations = useMemo(() => {
     return analyzedConversations.filter((c) => {
       if (viewMode === "structured" && !c.nlp.isIncident) return false;
-      if (debouncedBarangay !== "All Barangays" && c.barangay?.toLowerCase() !== debouncedBarangay.toLowerCase()) {
-        return false;
+      if (debouncedBarangay !== "All Barangays") {
+        const normFilter = debouncedBarangay.toLowerCase().trim();
+        const cBarangay = (c.barangay || "").toLowerCase().trim();
+        if (normFilter === "none" || normFilter === "unknown") {
+          if (cBarangay && cBarangay !== "none" && cBarangay !== "unknown" && cBarangay !== "general" && cBarangay !== "unspecified" && cBarangay !== "n/a" && cBarangay !== "null") {
+            return false;
+          }
+        } else if (cBarangay !== normFilter) {
+          return false;
+        }
       }
       if (debouncedType !== "All Types") {
-        const query = debouncedType.toLowerCase();
-        const cType = (c.type || "").toLowerCase();
-        const nlpType = (c.nlp?.incidentType || "").toLowerCase();
-        const matches = cType === query || nlpType === query || cType.includes(query) || nlpType.includes(query);
-        if (!matches) return false;
+        const query = debouncedType.toLowerCase().trim();
+        const cType = (c.type || "").toLowerCase().trim();
+        const nlpType = (c.nlp?.incidentType || "").toLowerCase().trim();
+        if (query === "none") {
+          const isNone = (!cType || cType === "none" || cType === "unclassified" || cType === "null") && (!nlpType || nlpType === "none" || nlpType === "unclassified" || nlpType === "null");
+          if (!isNone) return false;
+        } else {
+          const matches = cType === query || nlpType === query || cType.includes(query) || nlpType.includes(query);
+          if (!matches) return false;
+        }
       }
       if (debouncedUrgency !== "All Urgency") {
         const u = (c.nlp?.urgency || "").toLowerCase();
@@ -993,33 +1018,33 @@ export default function MessengerBotLogs() {
             {/* Filter Controls Row */}
             <div className={`${mobileFiltersOpen ? 'flex' : 'hidden'} md:flex flex-col md:flex-row md:flex-wrap items-stretch md:items-center justify-between gap-2.5 sm:gap-3 pt-2 md:pt-0 border-t md:border-t-0 border-slate-200/60 dark:border-white/5`}>
               {/* Left Filter Scope Container */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 md:inline-flex md:items-center gap-2.5 sm:gap-3 md:gap-1.5 md:p-1 md:bg-slate-100/70 md:dark:bg-white/[0.05] md:backdrop-blur-xl md:rounded-2xl md:border md:border-slate-200/70 md:dark:border-white/10 md:shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] w-full md:w-auto relative z-20">
-                <div className="hidden md:flex items-center gap-1 px-2.5 py-1 text-[#0071E3] dark:text-sky-400 cursor-default select-none shrink-0">
+              <div className="grid grid-cols-2 sm:grid-cols-4 md:inline-flex md:items-center gap-2.5 sm:gap-3 md:gap-2.5 md:p-1.5 md:px-2 md:bg-slate-100/70 md:dark:bg-white/[0.05] md:backdrop-blur-xl md:rounded-2xl md:border md:border-slate-200/70 md:dark:border-white/10 md:shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] w-full md:w-auto relative z-20">
+                <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 text-[#0071E3] dark:text-sky-400 cursor-default select-none shrink-0">
                   <Filter className="w-3.5 h-3.5 transition-transform duration-300 group-hover/filters:scale-110 text-[#0071E3] dark:text-sky-400" strokeWidth={1.8} />
                   <span className="text-[10px] font-bold uppercase tracking-wider">Filters</span>
                 </div>
-                <div className="col-span-1 md:col-span-auto min-w-0 md:min-w-[130px] w-full md:w-auto">
+                <div className="col-span-1 md:col-span-auto min-w-0 md:min-w-[135px] w-full md:w-auto">
                   <FilterDropdown
                     value={filterBarangay}
                     options={["All Barangays", ...availableBarangays]}
                     onChange={(val) => { setFilterBarangay(val); setSelectedId(""); }}
                   />
                 </div>
-                <div className="col-span-1 md:col-span-auto min-w-0 md:min-w-[120px] w-full md:w-auto">
+                <div className="col-span-1 md:col-span-auto min-w-0 md:min-w-[125px] w-full md:w-auto">
                   <FilterDropdown
                     value={filterType}
                     options={["All Types", ...availableTypes]}
                     onChange={(val) => { setFilterType(val); setSelectedId(""); }}
                   />
                 </div>
-                <div className="col-span-1 md:col-span-auto min-w-0 md:min-w-[120px] w-full md:w-auto">
+                <div className="col-span-1 md:col-span-auto min-w-0 md:min-w-[125px] w-full md:w-auto">
                   <FilterDropdown
                     value={filterUrgency}
                     options={["All Urgency", "Critical", "High", "Moderate", "Low"]}
                     onChange={(val) => { setFilterUrgency(val); setSelectedId(""); }}
                   />
                 </div>
-                <div className="col-span-1 md:col-span-auto min-w-0 md:min-w-[120px] w-full md:w-auto">
+                <div className="col-span-1 md:col-span-auto min-w-0 md:min-w-[125px] w-full md:w-auto">
                   <FilterDropdown
                     value={filterStatus}
                     options={["All Status", "Incomplete", "Complete"]}
@@ -1030,7 +1055,7 @@ export default function MessengerBotLogs() {
 
               {/* Right Date Scope Container + Preserved Reset Option */}
               <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 sm:gap-3 md:ml-auto w-full md:w-auto relative z-10">
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:inline-flex md:items-center gap-2 sm:gap-2.5 md:gap-1.5 md:p-1 md:bg-slate-100/70 md:dark:bg-white/[0.05] md:backdrop-blur-xl md:rounded-2xl md:border md:border-slate-200/70 md:dark:border-white/10 md:shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] md:px-2.5 w-full md:w-auto">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:inline-flex md:items-center gap-2 sm:gap-2.5 md:gap-2.5 md:p-1.5 md:bg-slate-100/70 md:dark:bg-white/[0.05] md:backdrop-blur-xl md:rounded-2xl md:border md:border-slate-200/70 md:dark:border-white/10 md:shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] md:px-3 w-full md:w-auto">
                   <div className="flex items-center gap-1.5 flex-1 sm:flex-initial min-w-0 sm:min-w-[130px] w-full sm:w-auto">
                     <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 whitespace-nowrap pl-0.5">From:</span>
                     <div className="flex-1 sm:w-36">

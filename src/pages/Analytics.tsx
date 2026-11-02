@@ -419,12 +419,16 @@ export default function Analytics() {
   const [typeViewMode, setTypeViewMode] = useState<'donut' | 'bar'>('donut');
 
   const allBarangays = useMemo(() => {
-    const unique = Array.from(new Set(data.map(r => r.barangay).filter(Boolean))).sort();
-    return ['All Barangays', ...unique];
+    const unique = Array.from(new Set(
+      data
+        .map(r => r.barangay)
+        .filter((b) => Boolean(b && !['all barangays', 'none', 'unknown', 'unspecified', 'n/a', 'null'].includes(b.toLowerCase().trim())))
+    )).sort();
+    return ['All Barangays', 'None', 'Unknown', ...unique];
   }, [data]);
 
   const allTypes = useMemo(() => {
-    return ['All Types', ...CANONICAL_INCIDENT_TYPES];
+    return ['All Types', 'None', ...CANONICAL_INCIDENT_TYPES];
   }, []);
 
   const allSources = useMemo(() => ['All Sources', 'Bot', 'Scraper'], []);
@@ -432,6 +436,26 @@ export default function Analytics() {
   // Effective filters (header dropdowns override chart clicks)
   const effectiveBarangay = barangayFilter !== 'All Barangays' ? barangayFilter : activeBarangay;
   const effectiveType = typeFilter !== 'All Types' ? typeFilter : activeType;
+
+  const isBarangayMatch = (reportBarangay?: string, target?: string | null): boolean => {
+    if (!target || target === 'All Barangays') return true;
+    const normTarget = target.toLowerCase().trim();
+    const repBarangay = (reportBarangay || '').toLowerCase().trim();
+    if (normTarget === 'none' || normTarget === 'unknown') {
+      return !repBarangay || repBarangay === 'none' || repBarangay === 'unknown' || repBarangay === 'unspecified' || repBarangay === 'n/a' || repBarangay === 'null';
+    }
+    return repBarangay === normTarget;
+  };
+
+  const isTypeMatch = (reportType?: string, target?: string | null): boolean => {
+    if (!target || target === 'All Types') return true;
+    const normTarget = target.toLowerCase().trim();
+    const repType = (reportType || 'none').toLowerCase().trim();
+    if (normTarget === 'none' || normTarget === 'unknown') {
+      return !repType || repType === 'none' || repType === 'unclassified' || repType === 'unknown';
+    }
+    return normalizeIncidentType(reportType) === normalizeIncidentType(target);
+  };
 
   const getAnalyticsReportDate = (r: AnalyticsReport): string | null => {
     if (r.createdAt) {
@@ -453,10 +477,8 @@ export default function Analytics() {
   // ── Filtered data (used across KPI cards, volume chart, high-risk table, recommendations) ──
   const filtered = useMemo(() => {
     return data.filter(r => {
-      if (effectiveBarangay && r.barangay?.toLowerCase() !== effectiveBarangay.toLowerCase()) return false;
-      if (effectiveType && effectiveType !== 'All Types') {
-        if (normalizeIncidentType(r.type) !== normalizeIncidentType(effectiveType)) return false;
-      }
+      if (!isBarangayMatch(r.barangay, effectiveBarangay)) return false;
+      if (!isTypeMatch(r.type, effectiveType)) return false;
       if (sourceFilter !== 'All Sources' && !r.source?.toLowerCase().includes(sourceFilter.toLowerCase())) return false;
       if (fromDate) {
         const dStr = getAnalyticsReportDate(r);
@@ -473,9 +495,7 @@ export default function Analytics() {
   // Reports for Barangay Bar Chart: filtered by date, source, and incident type, but not self-filtered by effectiveBarangay
   const reportsForBarangayChart = useMemo(() => {
     return data.filter(r => {
-      if (effectiveType && effectiveType !== 'All Types') {
-        if (normalizeIncidentType(r.type) !== normalizeIncidentType(effectiveType)) return false;
-      }
+      if (!isTypeMatch(r.type, effectiveType)) return false;
       if (sourceFilter !== 'All Sources' && !r.source?.toLowerCase().includes(sourceFilter.toLowerCase())) return false;
       if (fromDate) {
         const dStr = getAnalyticsReportDate(r);
@@ -492,7 +512,7 @@ export default function Analytics() {
   // Reports for Incident Type Breakdown: filtered by date, source, and barangay, but not self-filtered by effectiveType
   const reportsForTypeChart = useMemo(() => {
     return data.filter(r => {
-      if (effectiveBarangay && r.barangay?.toLowerCase() !== effectiveBarangay.toLowerCase()) return false;
+      if (!isBarangayMatch(r.barangay, effectiveBarangay)) return false;
       if (sourceFilter !== 'All Sources' && !r.source?.toLowerCase().includes(sourceFilter.toLowerCase())) return false;
       if (fromDate) {
         const dStr = getAnalyticsReportDate(r);
@@ -749,14 +769,14 @@ export default function Analytics() {
               {/* Filter Bar with DatePicker and FilterDropdown */}
               <div className="pt-3.5 border-t border-slate-200/60 dark:border-white/5 flex flex-col md:flex-row md:flex-wrap lg:flex-nowrap items-stretch md:items-center justify-between gap-2.5 sm:gap-3 relative z-50">
                 {/* Left Filter Scope Container */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 md:inline-flex md:items-center gap-2 sm:gap-1.5 p-1 bg-slate-100/70 dark:bg-white/[0.05] backdrop-blur-xl rounded-2xl border border-slate-200/70 dark:border-white/10 shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] w-full md:w-auto relative z-50">
-                  <div className="hidden md:flex items-center gap-1 px-2.5 py-1 text-[#0071E3] dark:text-sky-400 cursor-default select-none shrink-0">
+                <div className="grid grid-cols-1 sm:grid-cols-3 md:inline-flex md:items-center gap-2.5 sm:gap-3 md:gap-2.5 md:p-1.5 md:px-2 bg-slate-100/70 dark:bg-white/[0.05] backdrop-blur-xl rounded-2xl border border-slate-200/70 dark:border-white/10 shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] w-full md:w-auto relative z-50">
+                  <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 text-[#0071E3] dark:text-sky-400 cursor-default select-none shrink-0">
                     <Filter className="w-3.5 h-3.5 transition-transform duration-300 group-hover/filters:scale-110 text-[#0071E3] dark:text-sky-400" strokeWidth={1.8} />
                     <span className="text-[10px] font-bold uppercase tracking-wider">Filters</span>
                   </div>
 
                   {/* Barangay DropDown */}
-                  <div className="w-full md:w-auto min-w-0 md:min-w-[130px]">
+                  <div className="w-full md:w-auto min-w-0 md:min-w-[135px]">
                     <FilterDropdown
                       value={barangayFilter}
                       options={allBarangays}
@@ -768,7 +788,7 @@ export default function Analytics() {
                   </div>
 
                   {/* Type DropDown */}
-                  <div className="w-full md:w-auto min-w-0 md:min-w-[120px]">
+                  <div className="w-full md:w-auto min-w-0 md:min-w-[125px]">
                     <FilterDropdown
                       value={typeFilter}
                       options={allTypes}
@@ -780,7 +800,7 @@ export default function Analytics() {
                   </div>
 
                   {/* Source DropDown */}
-                  <div className="w-full md:w-auto min-w-0 md:min-w-[120px]">
+                  <div className="w-full md:w-auto min-w-0 md:min-w-[125px]">
                     <FilterDropdown
                       value={sourceFilter}
                       options={allSources}
@@ -791,7 +811,7 @@ export default function Analytics() {
 
                 {/* Right Date Scope Container + Preserved Reset Option */}
                 <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 sm:gap-3 md:ml-auto w-full md:w-auto relative z-40">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:inline-flex md:items-center gap-2 sm:gap-2.5 p-1 bg-slate-100/70 dark:bg-white/[0.05] backdrop-blur-xl rounded-2xl border border-slate-200/70 dark:border-white/10 shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] px-2.5 w-full md:w-auto">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:inline-flex md:items-center gap-2 sm:gap-2.5 md:gap-2.5 md:p-1.5 md:bg-slate-100/70 md:dark:bg-white/[0.05] md:backdrop-blur-xl md:rounded-2xl md:border md:border-slate-200/70 md:dark:border-white/10 md:shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] md:px-3 w-full md:w-auto">
                     <div className="flex items-center gap-1.5 min-w-0 sm:min-w-[130px] w-full sm:w-auto">
                       <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 whitespace-nowrap pl-0.5">
                         From:

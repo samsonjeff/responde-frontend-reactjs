@@ -484,14 +484,20 @@ export default function ScraperFeed() {
   };
 
   const availableBarangays = useMemo(() => {
-    const fromPosts = posts.map((p) => p.barangay).filter(Boolean);
-    return ["All Barangays", ...Array.from(new Set([...TALISAY_BARANGAYS, ...fromPosts])).sort()];
+    const fromPosts = posts
+      .map((p) => p.barangay)
+      .filter((b): b is string => Boolean(b && !['all barangays', 'none', 'unknown', 'unspecified', 'n/a', 'null'].includes(b.toLowerCase().trim())));
+    const sorted = Array.from(new Set([...TALISAY_BARANGAYS, ...fromPosts])).sort();
+    return ["All Barangays", "None", "Unknown", ...sorted];
   }, [posts]);
 
   const availableTypes = useMemo(() => {
     const base = ["Search & Rescue", "Medical", "Food & Water", "Infrastructure"];
-    const fromPosts = posts.map((p) => p.type).filter(Boolean);
-    return ["All Types", ...Array.from(new Set([...base, ...fromPosts])).sort()];
+    const fromPosts = posts
+      .map((p) => p.type)
+      .filter((t) => Boolean(t && !['all types', 'none', 'unclassified', 'unknown', 'n/a', 'null'].includes(t.toLowerCase().trim())));
+    const sorted = Array.from(new Set([...base, ...fromPosts])).sort();
+    return ["All Types", "None", ...sorted];
   }, [posts]);
 
   const getPostDateString = (p: ScrapedPost): string | null => {
@@ -521,8 +527,26 @@ export default function ScraperFeed() {
     return posts.filter((p) => {
       // In structured mode, only show verified incident reports
       if (viewMode === "structured" && !p.isIncident) return false;
-      if (filterBarangay !== "All Barangays" && p.barangay?.toLowerCase() !== filterBarangay.toLowerCase()) return false;
-      if (filterType !== "All Types" && p.type?.toLowerCase() !== filterType.toLowerCase()) return false;
+      if (filterBarangay !== "All Barangays") {
+        const normFilter = filterBarangay.toLowerCase().trim();
+        const pBrgy = (p.barangay || "").toLowerCase().trim();
+        if (normFilter === "none" || normFilter === "unknown") {
+          if (pBrgy && pBrgy !== "none" && pBrgy !== "unknown" && pBrgy !== "unspecified" && pBrgy !== "n/a" && pBrgy !== "null") {
+            return false;
+          }
+        } else if (pBrgy !== normFilter) {
+          return false;
+        }
+      }
+      if (filterType !== "All Types") {
+        const normFilter = filterType.toLowerCase().trim();
+        const pType = (p.type || "none").toLowerCase().trim();
+        if (normFilter === "none" || normFilter === "unknown") {
+          if (pType !== "none" && pType !== "unclassified" && pType !== "unknown") return false;
+        } else if (pType !== normFilter) {
+          return false;
+        }
+      }
       if (filterUrgency !== "All Urgency" && p.urgency?.toLowerCase() !== filterUrgency.toLowerCase()) return false;
       if (filterStatus !== "All Status" && p.status?.toLowerCase() !== filterStatus.toLowerCase()) return false;
       if (fromDate) {
@@ -799,13 +823,13 @@ export default function ScraperFeed() {
             {/* Filter Controls Row — collapsible on mobile, always visible on tablet & desktop */}
             <div className={`${mobileFiltersOpen ? 'flex' : 'hidden'} md:flex flex-col md:flex-row md:flex-wrap items-stretch md:items-center justify-between gap-3 pt-2 md:pt-0 border-t md:border-t-0 border-slate-200/60 dark:border-white/5`}>
               {/* Left Filter Scope Container */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 md:inline-flex md:items-center gap-2.5 sm:gap-3 md:gap-1.5 md:p-1 md:bg-slate-100/70 md:dark:bg-white/[0.05] md:backdrop-blur-xl md:rounded-2xl md:border md:border-slate-200/70 md:dark:border-white/10 md:shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] w-full md:w-auto relative z-20">
-                <div className="hidden md:flex items-center gap-1 px-2.5 py-1 text-[#0071E3] dark:text-sky-400 cursor-default select-none shrink-0">
+              <div className="grid grid-cols-2 sm:grid-cols-4 md:inline-flex md:items-center gap-2.5 sm:gap-3 md:gap-2.5 md:p-1.5 md:px-2 md:bg-slate-100/70 md:dark:bg-white/[0.05] md:backdrop-blur-xl md:rounded-2xl md:border md:border-slate-200/70 md:dark:border-white/10 md:shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] w-full md:w-auto relative z-20">
+                <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 text-[#0071E3] dark:text-sky-400 cursor-default select-none shrink-0">
                   <Filter className="w-3.5 h-3.5 transition-transform duration-300 group-hover/filters:scale-110 text-[#0071E3] dark:text-sky-400" strokeWidth={1.8} />
                   <span className="text-[10px] font-bold uppercase tracking-wider">Filters</span>
                 </div>
 
-                <div className="col-span-1 md:col-span-auto min-w-0 md:min-w-[130px] w-full md:w-auto">
+                <div className="col-span-1 md:col-span-auto min-w-0 md:min-w-[135px] w-full md:w-auto">
                   <FilterDropdown
                     value={filterBarangay}
                     options={availableBarangays}
@@ -813,7 +837,7 @@ export default function ScraperFeed() {
                   />
                 </div>
 
-                <div className="col-span-1 md:col-span-auto min-w-0 md:min-w-[120px] w-full md:w-auto">
+                <div className="col-span-1 md:col-span-auto min-w-0 md:min-w-[125px] w-full md:w-auto">
                   <FilterDropdown
                     value={filterType}
                     options={availableTypes}
@@ -821,7 +845,7 @@ export default function ScraperFeed() {
                   />
                 </div>
 
-                <div className="col-span-1 md:col-span-auto min-w-0 md:min-w-[120px] w-full md:w-auto">
+                <div className="col-span-1 md:col-span-auto min-w-0 md:min-w-[125px] w-full md:w-auto">
                   <FilterDropdown
                     value={filterUrgency}
                     options={["All Urgency", "Critical", "High", "Moderate", "Low"]}
@@ -829,7 +853,7 @@ export default function ScraperFeed() {
                   />
                 </div>
 
-                <div className="col-span-1 md:col-span-auto min-w-0 md:min-w-[120px] w-full md:w-auto">
+                <div className="col-span-1 md:col-span-auto min-w-0 md:min-w-[125px] w-full md:w-auto">
                   <FilterDropdown
                     value={filterStatus}
                     options={["All Status", "New", "Verified", "Flagged", "Resolved"]}
@@ -840,7 +864,7 @@ export default function ScraperFeed() {
 
               {/* Right Date Scope Container + Preserved Reset Option */}
               <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 sm:gap-3 md:ml-auto w-full md:w-auto relative z-10">
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:inline-flex md:items-center gap-2 sm:gap-2.5 md:gap-1.5 md:p-1 md:bg-slate-100/70 md:dark:bg-white/[0.05] md:backdrop-blur-xl md:rounded-2xl md:border md:border-slate-200/70 md:dark:border-white/10 md:shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] md:px-2.5 w-full md:w-auto">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:inline-flex md:items-center gap-2 sm:gap-2.5 md:gap-2.5 md:p-1.5 md:bg-slate-100/70 md:dark:bg-white/[0.05] md:backdrop-blur-xl md:rounded-2xl md:border md:border-slate-200/70 md:dark:border-white/10 md:shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] md:px-3 w-full md:w-auto">
                   <div className="flex items-center gap-1.5 flex-1 sm:flex-initial min-w-0 sm:min-w-[130px] w-full sm:w-auto">
                     <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 whitespace-nowrap pl-0.5">From:</span>
                     <div className="flex-1 sm:w-36">
