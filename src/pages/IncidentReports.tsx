@@ -1250,6 +1250,7 @@ export default function IncidentReports() {
 
               <div className="col-span-1 md:col-span-auto min-w-0 md:min-w-[135px] w-full md:w-auto">
                 <FilterDropdown
+                  labelPrefix="Barangay"
                   value={filterBarangay}
                   options={availableBarangayOptions}
                   onChange={setFilterBarangay}
@@ -1258,6 +1259,7 @@ export default function IncidentReports() {
 
               <div className="col-span-1 md:col-span-auto min-w-0 md:min-w-[125px] w-full md:w-auto">
                 <FilterDropdown
+                  labelPrefix="Type"
                   value={filterType}
                   options={availableFilterTypes}
                   onChange={setFilterType}
@@ -1266,6 +1268,7 @@ export default function IncidentReports() {
 
               <div className="col-span-2 sm:col-span-1 md:col-span-auto min-w-0 md:min-w-[125px] w-full md:w-auto">
                 <FilterDropdown
+                  labelPrefix="Urgency"
                   value={filterUrgency}
                   options={['All Urgency', 'Critical', 'High', 'Moderate', 'Low']}
                   onChange={setFilterUrgency}

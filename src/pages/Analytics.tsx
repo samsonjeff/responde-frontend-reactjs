@@ -783,6 +783,7 @@ export default function Analytics() {
                   {/* Barangay DropDown */}
                   <div className="w-full md:w-auto min-w-0 md:min-w-[135px]">
                     <FilterDropdown
+                      labelPrefix="Barangay"
                       value={barangayFilter}
                       options={allBarangays}
                       onChange={(val) => {
@@ -795,6 +796,7 @@ export default function Analytics() {
                   {/* Type DropDown */}
                   <div className="w-full md:w-auto min-w-0 md:min-w-[125px]">
                     <FilterDropdown
+                      labelPrefix="Type"
                       value={typeFilter}
                       options={allTypes}
                       onChange={(val) => {
@@ -807,6 +809,7 @@ export default function Analytics() {
                   {/* Source DropDown */}
                   <div className="w-full md:w-auto min-w-0 md:min-w-[125px]">
                     <FilterDropdown
+                      labelPrefix="Source"
                       value={sourceFilter}
                       options={allSources}
                       onChange={setSourceFilter}

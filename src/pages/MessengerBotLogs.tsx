@@ -1053,6 +1053,7 @@ export default function MessengerBotLogs() {
                 </div>
                 <div className="col-span-1 md:col-span-auto min-w-0 md:min-w-[135px] w-full md:w-auto">
                   <FilterDropdown
+                    labelPrefix="Barangay"
                     value={filterBarangay}
                     options={availableBarangays}
                     onChange={(val) => { setFilterBarangay(val); setSelectedId(""); }}
@@ -1060,6 +1061,7 @@ export default function MessengerBotLogs() {
                 </div>
                 <div className="col-span-1 md:col-span-auto min-w-0 md:min-w-[125px] w-full md:w-auto">
                   <FilterDropdown
+                    labelPrefix="Type"
                     value={filterType}
                     options={availableTypes}
                     onChange={(val) => { setFilterType(val); setSelectedId(""); }}
@@ -1067,6 +1069,7 @@ export default function MessengerBotLogs() {
                 </div>
                 <div className="col-span-1 md:col-span-auto min-w-0 md:min-w-[125px] w-full md:w-auto">
                   <FilterDropdown
+                    labelPrefix="Urgency"
                     value={filterUrgency}
                     options={["All Urgency", "Critical", "High", "Moderate", "Low"]}
                     onChange={(val) => { setFilterUrgency(val); setSelectedId(""); }}
@@ -1074,6 +1077,7 @@ export default function MessengerBotLogs() {
                 </div>
                 <div className="col-span-1 md:col-span-auto min-w-0 md:min-w-[125px] w-full md:w-auto">
                   <FilterDropdown
+                    labelPrefix="Status"
                     value={filterStatus}
                     options={["All Status", "Incomplete", "Complete"]}
                     onChange={(val) => { setFilterStatus(val); setSelectedId(""); }}

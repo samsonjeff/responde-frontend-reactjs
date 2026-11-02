@@ -1570,6 +1570,7 @@ export default function GeospatialMap() {
                   {/* Filter Pills */}
                   <div className="col-span-1 sm:col-span-auto flex-1 sm:flex-initial min-w-0 sm:min-w-[135px]">
                     <FilterDropdown
+                      labelPrefix="Status"
                       value={filterStatus}
                       options={['Verified Only', 'All Reports', 'Under Review', 'Resolved']}
                       onChange={setFilterStatus}
@@ -1578,6 +1579,7 @@ export default function GeospatialMap() {
 
                   <div className="col-span-1 sm:col-span-auto flex-1 sm:flex-initial min-w-0 sm:min-w-[125px]">
                     <FilterDropdown
+                      labelPrefix="Urgency"
                       value={filterUrgency}
                       options={['All Urgency', 'Critical', 'High', 'Moderate', 'Low']}
                       onChange={setFilterUrgency}
@@ -1586,6 +1588,7 @@ export default function GeospatialMap() {
 
                   <div className="col-span-2 sm:col-span-auto flex-1 sm:flex-initial min-w-0 sm:min-w-[135px]">
                     <FilterDropdown
+                      labelPrefix="Type"
                       value={filterType}
                       options={availableIncidentTypes}
                       onChange={setFilterType}
