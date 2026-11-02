@@ -1469,7 +1469,7 @@ export default function IncidentReports() {
                       {(!report.barangay || report.barangay.trim().toLowerCase() === 'unknown' || report.barangay.trim().toLowerCase() === 'none') ? (
                         <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
                           <AlertTriangle className="w-3 h-3 text-rose-500 shrink-0" strokeWidth={1.75} />
-                          <span>Unknown Barangay</span>
+                          <span>Unknown</span>
                         </span>
                       ) : (
                         <span>{report.barangay}</span>
