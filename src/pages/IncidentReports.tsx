@@ -1379,7 +1379,7 @@ export default function IncidentReports() {
                         }`}
                       >
                         <ShieldCheck className="w-3.5 h-3.5" strokeWidth={1.75} />
-                        <span>{isReportIncomplete(report) ? 'Complete' : 'Review'}</span>
+                        <span>{activeTab === 'incomplete' ? 'Complete' : 'Review'}</span>
                       </button>
                     )}
 

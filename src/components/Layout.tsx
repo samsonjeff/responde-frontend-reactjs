@@ -444,7 +444,7 @@ export default function Layout() {
   const isSettingsPage = location.pathname.startsWith('/settings');
 
   const navItems = [
-    { path: '/dashboard', label: 'Dashboard', shortLabel: 'Dashboard', icon: LayoutDashboard },
+    { path: '/dashboard', label: 'Overview', shortLabel: 'Overview', icon: LayoutDashboard },
     { path: '/incident-reports', label: 'Incident Reports', shortLabel: 'Reports', icon: FileText },
     { path: '/messenger-bot-logs', label: 'Messenger Logs', shortLabel: 'Messenger', icon: MessageSquare },
     { path: '/scraper-feed', label: 'Scraper Feed', shortLabel: 'Scraper', icon: Globe },

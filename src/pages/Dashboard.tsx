@@ -14,7 +14,7 @@ import {
 import {
   LayoutDashboard, AlertTriangle, Brain,
   ArrowRight, X,
-  MapPin, Clock, BarChart3, ListFilter, CheckCircle2, ShieldCheck, Filter
+  MapPin, Clock, BarChart3, ListFilter, CheckCircle2, ShieldCheck
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useReports } from '../context/ReportsContext';
@@ -394,8 +394,8 @@ export default function Dashboard() {
       case 'low':
       default:
         return (
-          <span className="inline-flex items-center justify-center gap-1.5 w-[82px] py-0.5 rounded-full text-xs font-semibold bg-green-500/15 text-green-700 dark:text-green-300 border border-green-500/30">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#22c55e] shrink-0" />
+          <span className="inline-flex items-center justify-center gap-1.5 w-[82px] py-0.5 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />
             <span>Low</span>
           </span>
         );
@@ -598,33 +598,84 @@ export default function Dashboard() {
             </div>
 
             {/* Segmented Urgency Filter: [All] [High] [Mod] [Low] */}
-            <div className="inline-flex items-center gap-1 sm:gap-1.5 p-1 bg-slate-100/70 dark:bg-white/[0.05] backdrop-blur-xl rounded-2xl border border-slate-200/70 dark:border-white/10 shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]">
-              <div className="flex items-center gap-1 px-2.5 py-1 text-[#0071E3] dark:text-sky-400 cursor-default select-none shrink-0">
-                <Filter className="w-3.5 h-3.5 transition-transform duration-300 group-hover/filters:scale-110 text-[#0071E3] dark:text-sky-400" strokeWidth={1.8} />
-                <span className="text-[10px] font-bold uppercase tracking-wider">Filters</span>
-              </div>
-              <div className="inline-flex items-center gap-1">
-                {(['All', 'Critical', 'High', 'Mod', 'Low'] as const).map((opt) => (
-                  <button
-                    key={opt}
-                    type="button"
-                    onClick={() => setFilterUrgency(opt)}
-                    className={`px-3 py-1 rounded-xl text-xs font-semibold transition-all duration-150 cursor-pointer select-none active:scale-[0.96] ${
-                      filterUrgency === opt
-                        ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-xs font-bold border border-slate-200/60 dark:border-white/10'
-                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-700/40'
-                    }`}
-                  >
-                    {opt}
-                  </button>
-                ))}
-              </div>
+            <div className="inline-flex items-center p-1 bg-slate-100 dark:bg-slate-800/90 rounded-xl border border-slate-200/60 dark:border-white/5 gap-1 shadow-inner">
+              {(['All', 'High', 'Mod', 'Low'] as const).map((opt) => (
+                <button
+                  key={opt}
+                  type="button"
+                  onClick={() => setFilterUrgency(opt)}
+                  className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                    filterUrgency === opt
+                      ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs font-bold'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  {opt}
+                </button>
+              ))}
             </div>
           </div>
 
-          {/* Table Container */}
+          {/* Mobile Card List (< sm) */}
+          <div className="sm:hidden divide-y divide-slate-100 dark:divide-white/5 overflow-y-auto flex-1 min-h-0">
+            {displayReports.length === 0 ? (
+              <div className="p-6 text-center text-slate-400 dark:text-slate-500 text-xs">
+                No reports found for the selected filter.
+              </div>
+            ) : (
+              displayReports.map((report) => {
+                const isTypeMatch = selectedType && report.type?.toLowerCase() === selectedType.toLowerCase();
+                return (
+                  <div
+                    key={report.id}
+                    onClick={() => {
+                      const rType = report.type || 'General';
+                      setSelectedType((prev) => (prev === rType ? null : rType));
+                    }}
+                    className={`p-3.5 space-y-2.5 transition-colors cursor-pointer ${
+                      isTypeMatch ? 'bg-blue-50/50 dark:bg-blue-900/15' : 'active:bg-slate-50 dark:active:bg-slate-800/40'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="font-mono text-[11px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200/50 dark:border-white/5 truncate">
+                          {formatReportCode(report.id, report.source)}
+                        </span>
+                        <span className="font-medium text-slate-900 dark:text-slate-100 text-xs truncate">
+                          {report.barangay || 'Unknown'}
+                        </span>
+                      </div>
+                      <span className="text-[11px] text-slate-400 dark:text-slate-500 font-mono tabular-nums shrink-0">
+                        {formatDashboardTime(report.time, report.createdAt)}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {getUrgencyBadge(report.urgency)}
+                        {getStatusBadge(report.status)}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/incident-reports?focus=${report.id}`);
+                        }}
+                        className="px-2.5 py-1 text-xs font-semibold text-[#0071E3] dark:text-sky-400 bg-blue-500/10 hover:bg-blue-500/15 border border-blue-500/20 rounded-lg transition-all active:scale-[0.96] shadow-2xs cursor-pointer inline-flex items-center gap-1 shrink-0"
+                      >
+                        <ShieldCheck className="w-3.5 h-3.5" />
+                        <span>Review</span>
+                      </button>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          {/* Desktop Table View (>= sm) */}
           <div
-            className="overflow-x-auto overflow-y-auto w-full flex-1 min-h-0 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700"
+            className="hidden sm:block overflow-x-auto overflow-y-auto w-full flex-1 min-h-0 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700"
             style={{
               maskImage: 'linear-gradient(to bottom, black calc(100% - 36px), transparent 100%)',
               WebkitMaskImage: 'linear-gradient(to bottom, black calc(100% - 36px), transparent 100%)',
