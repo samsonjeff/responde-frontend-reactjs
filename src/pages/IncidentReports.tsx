@@ -906,14 +906,11 @@ export default function IncidentReports() {
           return false;
         }
       }
-      const isFilteringNoneBarangay = filterBarangay.toLowerCase().trim() === 'none' || filterBarangay.toLowerCase().trim() === 'unknown';
-      const isFilteringNoneType = filterType.toLowerCase().trim() === 'none' || filterType.toLowerCase().trim() === 'unknown';
-      const isFilteringNone = isFilteringNoneBarangay || isFilteringNoneType;
-
       if (activeTab === 'under_review') {
         const isUnderReviewOrPending = r.status === 'under_review' || r.status === 'pending';
         if (!isUnderReviewOrPending) return false;
-        if (!isFilteringNone && isReportIncomplete(r)) return false;
+        // Incomplete reports (Unknown barangay / None type) always belong in the Incomplete tab
+        if (isReportIncomplete(r)) return false;
       } else if (activeTab === 'incomplete') {
         const isUnderReviewOrPending = r.status === 'under_review' || r.status === 'pending';
         if (!isUnderReviewOrPending || !isReportIncomplete(r)) return false;
