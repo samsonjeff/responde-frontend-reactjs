@@ -178,27 +178,56 @@ export function formatReportCode(id?: string | null, source?: string | null): st
  * Backend aggregates Messenger bot conversations, Facebook comments, and persisted officer triages.
  */
 export async function fetchReports(): Promise<Report[]> {
-  // 1. Concurrently fetch aggregated reports from backend and underlying Supabase source-of-truth records
-  const [backendResult, supabaseIncResult, supabaseConvResult, supabaseFbResult] = await Promise.allSettled([
+  // 1. Concurrently fetch aggregated reports from backend, live triage overrides, and source records
+  // Concurrently queries both direct Supabase and authenticated backend APIs so that data is resilient against RLS restrictions.
+  const [
+    backendResult,
+    supabaseIncResult,
+    supabaseConvResult,
+    supabaseFbResult,
+    apiConvResult,
+    apiFbResult,
+  ] = await Promise.allSettled([
     apiRequest<{ data?: Report[] }>('/api/auth/data/incident-reports', {
       cacheTtlMs: 8000,
     }),
     supabase.from('incident_reports').select('*'),
-    supabase.from('conversations').select('id, incident_type, barangay, urgency, status'),
-    supabase.from('fb_comments').select('id, incident_type, barangay, urgency, status'),
+    supabase.from('conversations').select('id, sender_name, sender_psid, conversation_id, incident_type, barangay, urgency, status'),
+    supabase.from('fb_comments').select('id, post_id, incident_type, barangay, urgency, status'),
+    apiRequest<{ data?: any[] }>('/api/auth/data/conversations?limit=500', {
+      cacheTtlMs: 8000,
+    }),
+    apiRequest<{ data?: any[] }>('/api/auth/data/fb-comments?limit=500', {
+      cacheTtlMs: 8000,
+    }),
   ]);
 
   const rawReports: Report[] = (backendResult.status === 'fulfilled' ? backendResult.value?.data : []) ?? [];
   const triagedRows: any[] = (supabaseIncResult.status === 'fulfilled' ? supabaseIncResult.value?.data : []) ?? [];
-  const convRows: any[] = (supabaseConvResult.status === 'fulfilled' ? supabaseConvResult.value?.data : []) ?? [];
-  const fbRows: any[] = (supabaseFbResult.status === 'fulfilled' ? supabaseFbResult.value?.data : []) ?? [];
+
+  // Use direct Supabase rows if available; otherwise use authenticated backend fallback
+  const convRows: any[] = (supabaseConvResult.status === 'fulfilled' && Array.isArray(supabaseConvResult.value?.data) && supabaseConvResult.value.data.length > 0)
+    ? supabaseConvResult.value.data
+    : (apiConvResult.status === 'fulfilled' && Array.isArray(apiConvResult.value?.data))
+    ? apiConvResult.value.data
+    : [];
+
+  const fbRows: any[] = (supabaseFbResult.status === 'fulfilled' && Array.isArray(supabaseFbResult.value?.data) && supabaseFbResult.value.data.length > 0)
+    ? supabaseFbResult.value.data
+    : (apiFbResult.status === 'fulfilled' && Array.isArray(apiFbResult.value?.data))
+    ? apiFbResult.value.data
+    : [];
 
   // 2. Build quick lookup maps for triaged reports, conversations, and fb_comments
   const triagedMap = new Map<string, any>();
   if (Array.isArray(triagedRows)) {
     for (const row of triagedRows) {
       if (row.id) {
-        triagedMap.set(String(row.id).trim(), row);
+        const idStr = String(row.id).trim();
+        triagedMap.set(idStr, row);
+        triagedMap.set(idStr.toLowerCase(), row);
+        const rawNum = idStr.replace(/^[a-z]+[-_]/i, '');
+        triagedMap.set(rawNum, row);
       }
     }
   }
@@ -207,7 +236,29 @@ export async function fetchReports(): Promise<Report[]> {
   if (Array.isArray(convRows)) {
     for (const c of convRows) {
       if (c.id !== undefined && c.id !== null) {
-        convMap.set(`conv-${c.id}`, c);
+        const idStr = String(c.id).trim();
+        convMap.set(idStr, c);
+        convMap.set(`conv-${idStr}`, c);
+        convMap.set(`bot-${idStr}`, c);
+        const padded4 = idStr.padStart(4, '0');
+        convMap.set(padded4, c);
+        convMap.set(`conv-${padded4}`, c);
+        convMap.set(`bot-${padded4}`, c);
+      }
+      if (c.conversation_id) {
+        convMap.set(String(c.conversation_id).trim(), c);
+      }
+      if (c.conversationId) {
+        convMap.set(String(c.conversationId).trim(), c);
+      }
+      if (c.sender_psid) {
+        const psidKey = `psid-${String(c.sender_psid).trim()}`;
+        const existing = convMap.get(psidKey);
+        const cUrg = String(c.urgency || '').toLowerCase();
+        const exUrg = existing ? String(existing.urgency || '').toLowerCase() : '';
+        if (!existing || cUrg === 'critical' || (cUrg === 'high' && exUrg !== 'critical')) {
+          convMap.set(psidKey, c);
+        }
       }
     }
   }
@@ -216,8 +267,19 @@ export async function fetchReports(): Promise<Report[]> {
   if (Array.isArray(fbRows)) {
     for (const f of fbRows) {
       if (f.id !== undefined && f.id !== null) {
-        fbMap.set(`fb-${f.id}`, f);
-        fbMap.set(String(f.id).trim(), f);
+        const idStr = String(f.id).trim();
+        const rawNum = idStr.replace(/^fb[-_]/i, '');
+        fbMap.set(idStr, f);
+        fbMap.set(rawNum, f);
+        fbMap.set(`fb-${rawNum}`, f);
+        fbMap.set(`fb_${rawNum}`, f);
+        const segments = rawNum.split('_');
+        if (segments.length > 1) {
+          fbMap.set(segments[segments.length - 1], f);
+        }
+      }
+      if (f.post_id) {
+        fbMap.set(String(f.post_id).trim(), f);
       }
     }
   }
@@ -272,10 +334,34 @@ export async function fetchReports(): Promise<Report[]> {
       }
 
       // B. For un-triaged records, check Supabase conversations or fb_comments to restore actual classification & urgency
-      const conv = convMap.get(report.id);
-      const fb = fbMap.get(report.id) || fbMap.get(String(report.id).replace(/^fb[-_]/i, ''));
-      const rawSupabaseType = conv ? conv.incident_type : (fb ? fb.incident_type : null);
+      const cleanId = String(report.id || '').trim();
+      const rawDigits = cleanId.replace(/^[a-z]+[-_]/i, '');
+      const segments = rawDigits.split('_');
+      const lastSegment = segments[segments.length - 1] || rawDigits;
+
+      const conv =
+        convMap.get(cleanId) ||
+        convMap.get(rawDigits) ||
+        (report.conversationId ? convMap.get(report.conversationId) : null) ||
+        (report.senderPsid ? convMap.get(`psid-${report.senderPsid}`) : null);
+
+      const fb =
+        fbMap.get(cleanId) ||
+        fbMap.get(rawDigits) ||
+        fbMap.get(`fb-${rawDigits}`) ||
+        fbMap.get(lastSegment);
+
+      const rawSupabaseType = conv ? (conv.incident_type || conv.type) : (fb ? (fb.incident_type || fb.type) : null);
       const rawSupabaseUrgency = conv ? conv.urgency : (fb ? fb.urgency : null);
+      const rawSupabaseBarangay = conv ? conv.barangay : (fb ? fb.barangay : null);
+
+      if (rawSupabaseBarangay !== undefined && rawSupabaseBarangay !== null && String(rawSupabaseBarangay).trim() !== '') {
+        const bTrim = String(rawSupabaseBarangay).trim();
+        const bLower = bTrim.toLowerCase();
+        if (bLower !== 'none' && bLower !== 'null' && bLower !== 'unknown' && bLower !== 'undefined') {
+          report.barangay = bTrim;
+        }
+      }
 
       if (rawSupabaseType !== undefined && rawSupabaseType !== null) {
         report.type = formatReportType(rawSupabaseType);

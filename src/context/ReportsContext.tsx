@@ -61,24 +61,27 @@ export function ReportsProvider({ children }: { children: ReactNode }) {
             const known = knownReportIdsRef.current;
             liveData.forEach((r) => {
                 if (!known.has(r.id)) {
-                    const isHigh = (r.urgency || '').toLowerCase() === 'high';
+                    const uLower = (r.urgency || '').toLowerCase();
+                    const isPriorityUrgency = uLower === 'high' || uLower === 'critical';
                     const isSearchAndRescue =
                         (r.type || '').toLowerCase().includes('rescue') ||
                         (r.type || '').toLowerCase().includes('search');
 
-                    if (isHigh || isSearchAndRescue) {
+                    if (isPriorityUrgency || isSearchAndRescue) {
                         triggerPriorityAlert({
                             id: `priority-report-${r.id}`,
                             title: isSearchAndRescue
                                 ? 'Search & Rescue'
+                                : uLower === 'critical'
+                                ? 'Critical Emergency Incident'
                                 : 'High-Urgency Incident',
                             message:
                                 r.description ||
                                 r.originalText ||
-                                'High-urgency Search and Rescue report received.',
+                                'Critical or high-urgency emergency report received.',
                             barangay: r.barangay || 'Talisay',
                             type: isSearchAndRescue ? 'Search & Rescue' : r.type,
-                            urgency: r.urgency || 'High',
+                            urgency: r.urgency || 'Critical',
                             targetPath: '/incident-reports',
                             reportId: r.id,
                         });
