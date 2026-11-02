@@ -16,7 +16,7 @@ import { useDebounce } from "../hooks/useDebounce";
 import PageLoader from "../components/PageLoader";
 import { TALISAY_BARANGAYS } from "../data/talisay-barangays";
 import { BASE_INCIDENT_TYPES, formatReportType, formatReportUrgency } from "../services/incidentService";
-import { formatTimestampPHT } from "../utils/dateUtils";
+import { formatTimestampPHT, formatPhilippineTimeOnly, formatPhilippineDateOnly } from "../utils/dateUtils";
 import { isIncidentIntent, isGeneralLogIntent, normalizeIntent } from "../utils/intentUtils";
 
 interface ScrapedPost {
@@ -118,6 +118,114 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: number)
 // ── Format Supabase timestamp → Philippine Standard Time "M/D h:mm A" ──
 function formatTimestamp(ts: string | null): string {
   return formatTimestampPHT(ts);
+}
+
+function getPostTimeAndDate(timeStr?: string, createdAt?: string): { timeText: string; dateText: string } {
+  const source = createdAt || timeStr;
+  if (!source) return { timeText: '', dateText: '' };
+
+  const d = new Date(source);
+  if (!isNaN(d.getTime())) {
+    return {
+      timeText: formatPhilippineTimeOnly(d),
+      dateText: formatPhilippineDateOnly(d),
+    };
+  }
+
+  const m = source.match(/^(\d{1,2})\/(\d{1,2})\s+(.+)$/);
+  if (m) {
+    const year = new Date().getFullYear();
+    const parsed = new Date(year, parseInt(m[1], 10) - 1, parseInt(m[2], 10));
+    const dateFormatted = !isNaN(parsed.getTime()) ? formatPhilippineDateOnly(parsed) : `${m[1]}/${m[2]}`;
+    return {
+      timeText: m[3].trim(),
+      dateText: dateFormatted,
+    };
+  }
+
+  const timeMatch = source.match(/(\d{1,2}:\d{2}(?::\d{2})?\s*[AP]M)$/i);
+  if (timeMatch) {
+    const timeText = timeMatch[1];
+    const datePart = source.replace(timeText, '').trim();
+    return {
+      timeText,
+      dateText: datePart || formatPhilippineDateOnly(new Date()),
+    };
+  }
+
+  return { timeText: source, dateText: '' };
+}
+
+function getIntentBadgeStyle(intent?: string): string {
+  if (!intent) {
+    return "bg-slate-100/90 dark:bg-white/[0.06] text-slate-600 dark:text-slate-400 border border-slate-200/60 dark:border-white/10";
+  }
+  const clean = intent.toLowerCase().trim();
+  if (clean.includes("emergency")) {
+    return "bg-rose-500/10 text-rose-700 dark:text-rose-300 border border-rose-500/25";
+  }
+  if (clean.includes("resource") || clean.includes("request")) {
+    return "bg-orange-500/10 text-orange-700 dark:text-orange-300 border border-orange-500/25";
+  }
+  if (clean.includes("status") || clean.includes("inquiry")) {
+    return "bg-sky-500/10 text-sky-700 dark:text-sky-300 border border-sky-500/25";
+  }
+  if (clean.includes("casual") || clean.includes("greeting") || clean.includes("chatter")) {
+    return "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/25";
+  }
+  if (clean.includes("feedback") || clean.includes("thanks")) {
+    return "bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/25";
+  }
+  return "bg-slate-100/90 dark:bg-white/[0.06] text-slate-600 dark:text-slate-400 border border-slate-200/60 dark:border-white/10";
+}
+
+function getIntentDotColor(intent?: string): string {
+  if (!intent) return "bg-slate-400";
+  const clean = intent.toLowerCase().trim();
+  if (clean.includes("emergency")) return "bg-rose-500";
+  if (clean.includes("resource") || clean.includes("request")) return "bg-orange-500";
+  if (clean.includes("status") || clean.includes("inquiry")) return "bg-sky-500";
+  if (clean.includes("casual") || clean.includes("greeting") || clean.includes("chatter")) return "bg-emerald-500";
+  if (clean.includes("feedback") || clean.includes("thanks")) return "bg-purple-500";
+  return "bg-slate-400";
+}
+
+function getIntentCardIconStyle(intent?: string): { container: string; icon: string } {
+  const clean = (intent || "").toLowerCase().trim();
+  if (clean.includes("emergency")) {
+    return {
+      container: "bg-rose-500/10 border-rose-500/20",
+      icon: "text-rose-600 dark:text-rose-400",
+    };
+  }
+  if (clean.includes("resource") || clean.includes("request")) {
+    return {
+      container: "bg-orange-500/10 border-orange-500/20",
+      icon: "text-orange-600 dark:text-orange-400",
+    };
+  }
+  if (clean.includes("status") || clean.includes("inquiry")) {
+    return {
+      container: "bg-sky-500/10 border-sky-500/20",
+      icon: "text-sky-600 dark:text-sky-400",
+    };
+  }
+  if (clean.includes("casual") || clean.includes("greeting") || clean.includes("chatter")) {
+    return {
+      container: "bg-emerald-500/10 border-emerald-500/20",
+      icon: "text-emerald-600 dark:text-emerald-400",
+    };
+  }
+  if (clean.includes("feedback") || clean.includes("thanks")) {
+    return {
+      container: "bg-purple-500/10 border-purple-500/20",
+      icon: "text-purple-600 dark:text-purple-400",
+    };
+  }
+  return {
+    container: "bg-slate-100 dark:bg-white/[0.06] border-slate-200/60 dark:border-white/10",
+    icon: "text-slate-600 dark:text-slate-400",
+  };
 }
 
 const SCRAPER_FEED_CACHE_KEY = 'responde_cached_scraper_feed_posts';
@@ -989,8 +1097,8 @@ export default function ScraperFeed() {
                                 {post.avatar || (post.author ? post.author.charAt(0).toUpperCase() : "U")}
                               </div>
                               <div className="flex-1 min-w-0">
-                                <div className="flex items-center justify-between mb-0.5">
-                                  <div className="flex items-center gap-1.5 min-w-0">
+                                <div className="flex items-start justify-between mb-0.5">
+                                  <div className="flex items-center gap-1.5 min-w-0 pt-0.5">
                                     {!isSeen && (
                                       <span
                                         className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0 shadow-[0_0_8px_rgba(59,130,246,0.6)] animate-pulse"
@@ -1007,11 +1115,23 @@ export default function ScraperFeed() {
                                       {post.author}
                                     </span>
                                   </div>
-                                  <span className="text-[10px] sm:text-[11px] font-medium text-slate-400 dark:text-slate-500 tabular-nums whitespace-nowrap ml-2">
-                                    {post.timestamp}
-                                  </span>
+                                  {(() => {
+                                    const { timeText, dateText } = getPostTimeAndDate(post.timestamp, post.createdAt);
+                                    return (
+                                      <div className="flex flex-col items-end shrink-0 ml-2">
+                                        <span className="text-[10px] sm:text-[11px] tabular-nums transition-colors duration-200 font-normal text-slate-400 dark:text-slate-500">
+                                          {timeText}
+                                        </span>
+                                        {dateText && (
+                                          <span className="text-[9px] sm:text-[10px] text-slate-400 dark:text-slate-500 font-medium tabular-nums mt-0.5 whitespace-nowrap">
+                                            {dateText}
+                                          </span>
+                                        )}
+                                      </div>
+                                    );
+                                  })()}
                                 </div>
-                                <div className="flex items-center gap-1.5 mb-1">
+                                <div className="flex items-center gap-1.5 mb-1.5 text-[11px] text-slate-400 dark:text-slate-500 font-medium">
                                   <span className="inline-flex items-center gap-1 text-[10px] font-medium text-slate-500 dark:text-slate-400 bg-slate-100/90 dark:bg-white/[0.06] px-1.5 sm:px-2 py-0.5 rounded-md border border-slate-200/50 dark:border-white/[0.06] truncate max-w-[120px] sm:max-w-none">
                                     {getSourceIcon(post.source)}
                                     {post.source}
@@ -1020,18 +1140,6 @@ export default function ScraperFeed() {
                                   <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium truncate">
                                     {post.barangay}
                                   </span>
-                                  {post.intent && (
-                                    <>
-                                      <span className="text-slate-300 dark:text-slate-600 text-[10px]">•</span>
-                                      <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
-                                        isIncidentIntent(post.intent)
-                                          ? 'text-purple-600 dark:text-purple-400 bg-purple-500/10'
-                                          : 'text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800'
-                                      }`}>
-                                        {post.intent}
-                                      </span>
-                                    </>
-                                  )}
                                 </div>
                                 <p
                                   className={`text-xs line-clamp-2 mb-2 leading-relaxed transition-colors ${
@@ -1042,9 +1150,25 @@ export default function ScraperFeed() {
                                 >
                                   {post.rawText}
                                 </p>
-                                <div className="flex items-center gap-1.5 flex-wrap">
-                                  {renderUrgencyBadge(post.urgency)}
-                                  {renderStatusBadge(post.status)}
+                                <div className="flex items-center justify-between gap-1.5 flex-wrap pt-0.5">
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    {renderUrgencyBadge(post.urgency)}
+                                    {renderStatusBadge(post.status)}
+                                  </div>
+                                  {post.intent && (
+                                    <span
+                                      className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold tabular-nums shrink-0 ${getIntentBadgeStyle(
+                                        post.intent
+                                      )}`}
+                                    >
+                                      <span
+                                        className={`w-1.5 h-1.5 rounded-full shrink-0 ${getIntentDotColor(
+                                          post.intent
+                                        )}`}
+                                      />
+                                      <span>{post.intent}</span>
+                                    </span>
+                                  )}
                                 </div>
                               </div>
                             </div>
@@ -1140,7 +1264,12 @@ export default function ScraperFeed() {
                             <span className="text-slate-300 dark:text-slate-600">•</span>
                             <span className="flex items-center gap-1 shrink-0">
                               <Clock className="w-3 h-3 text-slate-400" strokeWidth={1.75} />
-                              <span className="tabular-nums">{selectedPost.timestamp}</span>
+                              <span className="tabular-nums">
+                                {(() => {
+                                  const { timeText, dateText } = getPostTimeAndDate(selectedPost.timestamp, selectedPost.createdAt);
+                                  return dateText ? `${dateText} • ${timeText}` : timeText;
+                                })()}
+                              </span>
                             </span>
                           </div>
                         </div>
@@ -1191,17 +1320,33 @@ export default function ScraperFeed() {
                                     </p>
                                   </div>
 
-                                  <div className="bg-white/90 dark:bg-[#111827]/90 rounded-2xl p-3.5 sm:p-4 border border-slate-200/80 dark:border-white/10 shadow-[0_1px_3px_rgba(15,23,42,0.03)]">
-                                    <div className="flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
-                                      <div className="w-6 h-6 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center border border-purple-500/20">
-                                        <Sparkles className="w-3.5 h-3.5" strokeWidth={1.75} />
+                                  {(() => {
+                                    const intentStyle = getIntentCardIconStyle(selectedPost.intent);
+                                    return (
+                                      <div className="bg-white/90 dark:bg-[#111827]/90 rounded-2xl p-3.5 sm:p-4 border border-slate-200/80 dark:border-white/10 shadow-[0_1px_3px_rgba(15,23,42,0.03)]">
+                                        <div className="flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">
+                                          <div className={`w-6 h-6 rounded-lg ${intentStyle.container} ${intentStyle.icon} flex items-center justify-center border`}>
+                                            <Sparkles className="w-3.5 h-3.5" strokeWidth={1.75} />
+                                          </div>
+                                          <span>Detected Intent</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                          <span
+                                            className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold tabular-nums ${getIntentBadgeStyle(
+                                              selectedPost.intent
+                                            )}`}
+                                          >
+                                            <span
+                                              className={`w-1.5 h-1.5 rounded-full shrink-0 ${getIntentDotColor(
+                                                selectedPost.intent
+                                              )}`}
+                                            />
+                                            <span>{selectedPost.intent || 'Other'}</span>
+                                          </span>
+                                        </div>
                                       </div>
-                                      <span>Detected Intent</span>
-                                    </div>
-                                    <p className="text-sm font-bold text-slate-900 dark:text-white break-words mt-1">
-                                      {selectedPost.intent || 'Other'}
-                                    </p>
-                                  </div>
+                                    );
+                                  })()}
 
                                   {selectedPost.extractedEntities.contact && (
                                     <div className="bg-white/90 dark:bg-[#111827]/90 rounded-2xl p-3.5 sm:p-4 border border-slate-200/80 dark:border-white/10 shadow-[0_1px_3px_rgba(15,23,42,0.03)]">
