@@ -964,7 +964,7 @@ export default function ScraperFeed() {
                     className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold tracking-tight transition-colors duration-150 select-none cursor-pointer active:scale-[0.98] ${
                       viewMode === "structured"
                         ? "text-[#0071E3] dark:text-sky-300"
-                        : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
+                        : "text-slate-500 hover:text-[#0071E3] dark:text-slate-400 dark:hover:text-sky-300 hover:bg-blue-50/50 dark:hover:bg-blue-950/30"
                     }`}
                   >
                     {viewMode === "structured" && (
@@ -995,7 +995,7 @@ export default function ScraperFeed() {
                     className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold tracking-tight transition-colors duration-150 select-none cursor-pointer active:scale-[0.98] ${
                       viewMode === "unstructured"
                         ? "text-slate-900 dark:text-white"
-                        : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
+                        : "text-slate-500 hover:text-[#0071E3] dark:text-slate-400 dark:hover:text-sky-300 hover:bg-blue-50/50 dark:hover:bg-blue-950/30"
                     }`}
                   >
                     {viewMode === "unstructured" && (
@@ -1024,7 +1024,7 @@ export default function ScraperFeed() {
                     <button
                       type="button"
                       onClick={markAllSeen}
-                      className="text-[11px] font-medium text-[#0071E3] dark:text-sky-400 hover:underline cursor-pointer"
+                      className="text-[11px] font-semibold text-[#0071E3] dark:text-sky-400 hover:underline hover:text-blue-700 dark:hover:text-sky-300 transition-colors cursor-pointer"
                     >
                       Mark all read
                     </button>
@@ -1069,19 +1069,19 @@ export default function ScraperFeed() {
                           <button
                             type="button"
                             onClick={() => handleSelectPost(post.id)}
-                            className={`w-full text-left p-2.5 sm:p-3 rounded-xl transition-all duration-150 relative group active:scale-[0.985] cursor-pointer ${
+                            className={`w-full text-left p-2.5 sm:p-3 rounded-xl transition-all duration-200 relative group active:scale-[0.985] cursor-pointer ${
                               isSelected
-                                ? "bg-blue-500/[0.08] dark:bg-blue-500/[0.14] shadow-xs border border-blue-500/30 text-slate-900 dark:text-white"
+                                ? "bg-blue-500/[0.12] dark:bg-blue-500/[0.22] shadow-[0_2px_12px_rgba(0,113,227,0.14)] border border-blue-500/40 dark:border-blue-400/50 text-slate-900 dark:text-white"
                                 : !isSeen
-                                ? "bg-blue-50/50 dark:bg-blue-950/20 hover:bg-blue-50/80 dark:hover:bg-blue-950/30 border border-blue-200/60 dark:border-blue-900/40 text-slate-900 dark:text-white"
-                                : "hover:bg-slate-100/70 dark:hover:bg-white/[0.04] border border-transparent hover:border-slate-200/50 dark:hover:border-white/[0.05] text-slate-600 dark:text-slate-400 opacity-90"
+                                ? "bg-blue-50/50 dark:bg-blue-950/25 border border-blue-200/70 dark:border-blue-900/50 hover:bg-blue-50/90 dark:hover:bg-blue-950/45 hover:border-blue-400/60 dark:hover:border-blue-400/50 hover:shadow-[0_4px_16px_rgba(0,113,227,0.12)] hover:-translate-y-0.5 text-slate-900 dark:text-white"
+                                : "hover:bg-blue-50/40 dark:hover:bg-blue-950/30 border border-transparent hover:border-blue-300/40 dark:hover:border-blue-500/30 hover:shadow-[0_2px_10px_rgba(0,113,227,0.08)] hover:-translate-y-0.5 text-slate-600 dark:text-slate-400 opacity-90"
                             }`}
                           >
                             {/* Sliding active indicator bar */}
                             {isSelected && (
                               <motion.div
                                 layoutId="activePostIndicator"
-                                className="absolute left-1 top-2.5 bottom-2.5 w-1 bg-[#0071E3] rounded-full"
+                                className="absolute left-1 top-2.5 bottom-2.5 w-1 bg-[#0071E3] dark:bg-sky-400 shadow-[0_0_8px_rgba(0,113,227,0.6)] rounded-full"
                                 transition={APPLE_SPRING}
                               />
                             )}
@@ -1090,7 +1090,7 @@ export default function ScraperFeed() {
                               <div
                                 className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full ${getAvatarColor(
                                   post.author
-                                )} flex items-center justify-center font-bold text-xs text-white shrink-0 shadow-xs ring-1 ${
+                                )} flex items-center justify-center font-bold text-xs text-white shrink-0 shadow-xs ring-1 group-hover:scale-105 group-hover:ring-2 group-hover:ring-blue-400/70 dark:group-hover:ring-blue-400/70 transition-all duration-200 ${
                                   !isSeen ? "ring-blue-400/80 dark:ring-blue-500/80" : "ring-black/5 dark:ring-white/10 opacity-80"
                                 }`}
                               >
@@ -1296,9 +1296,9 @@ export default function ScraperFeed() {
                                   <span>Extracted Incident Details</span>
                                 </h4>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                  <div className="bg-white/90 dark:bg-[#111827]/90 rounded-2xl p-3.5 sm:p-4 border border-slate-200/80 dark:border-white/10 shadow-[0_1px_3px_rgba(15,23,42,0.03)]">
+                                  <div className="bg-white/90 dark:bg-[#111827]/90 rounded-2xl p-3.5 sm:p-4 border border-slate-200/80 dark:border-white/10 hover:border-blue-400/60 dark:hover:border-blue-500/50 hover:bg-blue-50/20 dark:hover:bg-blue-950/20 hover:shadow-[0_4px_16px_rgba(0,113,227,0.12)] hover:-translate-y-0.5 transition-all duration-200 group/loc">
                                     <div className="flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
-                                      <div className="w-6 h-6 rounded-lg bg-blue-500/10 text-[#0071E3] dark:text-sky-400 flex items-center justify-center border border-blue-500/20">
+                                      <div className="w-6 h-6 rounded-lg bg-blue-500/10 text-[#0071E3] dark:text-sky-400 flex items-center justify-center border border-blue-500/20 group-hover/loc:scale-105 transition-transform">
                                         <MapPin className="w-3.5 h-3.5" strokeWidth={1.75} />
                                       </div>
                                       <span>Extracted Location</span>
@@ -1308,9 +1308,9 @@ export default function ScraperFeed() {
                                     </p>
                                   </div>
 
-                                  <div className="bg-white/90 dark:bg-[#111827]/90 rounded-2xl p-3.5 sm:p-4 border border-slate-200/80 dark:border-white/10 shadow-[0_1px_3px_rgba(15,23,42,0.03)]">
+                                  <div className="bg-white/90 dark:bg-[#111827]/90 rounded-2xl p-3.5 sm:p-4 border border-slate-200/80 dark:border-white/10 hover:border-amber-400/60 dark:hover:border-amber-500/50 hover:bg-amber-50/20 dark:hover:bg-amber-950/20 hover:shadow-[0_4px_16px_rgba(245,158,11,0.12)] hover:-translate-y-0.5 transition-all duration-200 group/cat">
                                     <div className="flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
-                                      <div className="w-6 h-6 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center border border-amber-500/20">
+                                      <div className="w-6 h-6 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center border border-amber-500/20 group-hover/cat:scale-105 transition-transform">
                                         <AlertTriangle className="w-3.5 h-3.5" strokeWidth={1.75} />
                                       </div>
                                       <span>Incident Category</span>
@@ -1323,9 +1323,9 @@ export default function ScraperFeed() {
                                   {(() => {
                                     const intentStyle = getIntentCardIconStyle(selectedPost.intent);
                                     return (
-                                      <div className="bg-white/90 dark:bg-[#111827]/90 rounded-2xl p-3.5 sm:p-4 border border-slate-200/80 dark:border-white/10 shadow-[0_1px_3px_rgba(15,23,42,0.03)]">
+                                      <div className="bg-white/90 dark:bg-[#111827]/90 rounded-2xl p-3.5 sm:p-4 border border-slate-200/80 dark:border-white/10 hover:border-purple-400/60 dark:hover:border-purple-500/50 hover:bg-purple-50/20 dark:hover:bg-purple-950/20 hover:shadow-[0_4px_16px_rgba(168,85,247,0.12)] hover:-translate-y-0.5 transition-all duration-200 group/intent">
                                         <div className="flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">
-                                          <div className={`w-6 h-6 rounded-lg ${intentStyle.container} ${intentStyle.icon} flex items-center justify-center border`}>
+                                          <div className={`w-6 h-6 rounded-lg ${intentStyle.container} ${intentStyle.icon} flex items-center justify-center border group-hover/intent:scale-105 transition-transform`}>
                                             <Sparkles className="w-3.5 h-3.5" strokeWidth={1.75} />
                                           </div>
                                           <span>Detected Intent</span>
@@ -1349,9 +1349,9 @@ export default function ScraperFeed() {
                                   })()}
 
                                   {selectedPost.extractedEntities.contact && (
-                                    <div className="bg-white/90 dark:bg-[#111827]/90 rounded-2xl p-3.5 sm:p-4 border border-slate-200/80 dark:border-white/10 shadow-[0_1px_3px_rgba(15,23,42,0.03)]">
+                                    <div className="bg-white/90 dark:bg-[#111827]/90 rounded-2xl p-3.5 sm:p-4 border border-slate-200/80 dark:border-white/10 hover:border-emerald-400/60 dark:hover:border-emerald-500/50 hover:bg-emerald-50/20 dark:hover:bg-emerald-950/20 hover:shadow-[0_4px_16px_rgba(16,185,129,0.12)] hover:-translate-y-0.5 transition-all duration-200 group/contact">
                                       <div className="flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
-                                        <div className="w-6 h-6 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-500/20">
+                                        <div className="w-6 h-6 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-500/20 group-hover/contact:scale-105 transition-transform">
                                           <Users className="w-3.5 h-3.5" strokeWidth={1.75} />
                                         </div>
                                         <span>Emergency Contact</span>
@@ -1363,9 +1363,9 @@ export default function ScraperFeed() {
                                   )}
 
                                   {selectedPost.extractedEntities.peopleAffected ? (
-                                    <div className="bg-white/90 dark:bg-[#111827]/90 rounded-2xl p-3.5 sm:p-4 border border-slate-200/80 dark:border-white/10 shadow-[0_1px_3px_rgba(15,23,42,0.03)]">
+                                    <div className="bg-white/90 dark:bg-[#111827]/90 rounded-2xl p-3.5 sm:p-4 border border-slate-200/80 dark:border-white/10 hover:border-rose-400/60 dark:hover:border-rose-500/50 hover:bg-rose-50/20 dark:hover:bg-rose-950/20 hover:shadow-[0_4px_16px_rgba(244,63,94,0.12)] hover:-translate-y-0.5 transition-all duration-200 group/victims">
                                       <div className="flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
-                                        <div className="w-6 h-6 rounded-lg bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center border border-rose-500/20">
+                                        <div className="w-6 h-6 rounded-lg bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center border border-rose-500/20 group-hover/victims:scale-105 transition-transform">
                                           <Users className="w-3.5 h-3.5" strokeWidth={1.75} />
                                         </div>
                                         <span>Estimated Victims / Affected</span>
@@ -1407,7 +1407,7 @@ export default function ScraperFeed() {
                                 <h4 className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">
                                   Raw Post Source Reference
                                 </h4>
-                                <div className="bg-white/90 dark:bg-[#111827]/90 rounded-2xl p-4 sm:p-5 border border-slate-200/80 dark:border-white/10 shadow-[0_1px_3px_rgba(15,23,42,0.03)]">
+                                <div className="bg-white/90 dark:bg-[#111827]/90 rounded-2xl p-4 sm:p-5 border border-slate-200/80 dark:border-white/10 hover:border-blue-300/50 dark:hover:border-blue-500/40 hover:bg-blue-50/15 dark:hover:bg-blue-950/15 hover:shadow-xs transition-all duration-200">
                                   <p className="text-xs sm:text-sm text-slate-800 dark:text-slate-200 leading-relaxed italic break-words">
                                     &ldquo;{selectedPost.rawText}&rdquo;
                                   </p>
@@ -1424,7 +1424,7 @@ export default function ScraperFeed() {
                                 <h4 className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">
                                   Raw Unstructured Scraped Text
                                 </h4>
-                                <div className="bg-white/90 dark:bg-[#111827]/90 rounded-2xl p-4 sm:p-5 border border-slate-200/80 dark:border-white/10 shadow-[0_1px_3px_rgba(15,23,42,0.03)]">
+                                <div className="bg-white/90 dark:bg-[#111827]/90 rounded-2xl p-4 sm:p-5 border border-slate-200/80 dark:border-white/10 hover:border-blue-300/50 dark:hover:border-blue-500/40 hover:bg-blue-50/15 dark:hover:bg-blue-950/15 hover:shadow-xs transition-all duration-200">
                                   <p className="text-xs sm:text-sm text-slate-800 dark:text-slate-200 leading-relaxed font-sans break-words">
                                     {selectedPost.rawText}
                                   </p>
@@ -1474,7 +1474,7 @@ export default function ScraperFeed() {
                           <button
                             type="button"
                             onClick={() => togglePostIncidentOverride(selectedPost.id)}
-                            className="px-3 py-2 min-h-[38px] sm:min-h-[40px] bg-slate-100 hover:bg-slate-200/80 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-semibold rounded-xl active:scale-[0.97] transition-all cursor-pointer border border-slate-200/60 dark:border-white/5"
+                            className="px-3 py-2 min-h-[38px] sm:min-h-[40px] bg-slate-100 hover:bg-slate-200/90 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold rounded-xl hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.97] transition-all duration-200 ease-out cursor-pointer border border-slate-200/70 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20 shadow-2xs select-none"
                           >
                             Demote to Noise
                           </button>
@@ -1486,9 +1486,9 @@ export default function ScraperFeed() {
                           <button
                             type="button"
                             onClick={() => handleUpdateStatus(selectedPost.id, "Verified")}
-                            className="px-3.5 sm:px-4 py-2 sm:py-2.5 min-h-[38px] sm:min-h-[40px] bg-[#0071E3] hover:bg-[#0077ED] text-white text-xs font-semibold rounded-xl flex items-center gap-2 shadow-xs active:scale-[0.97] transition-all cursor-pointer"
+                            className="group px-3.5 sm:px-4 py-2 sm:py-2.5 min-h-[38px] sm:min-h-[40px] bg-[#0071E3] hover:bg-[#0077ED] text-white text-xs font-semibold rounded-xl flex items-center gap-2 shadow-xs hover:shadow-[0_4px_14px_rgba(0,113,227,0.35)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.97] transition-all duration-200 ease-out cursor-pointer select-none"
                           >
-                            <CheckCircle2 className="w-3.5 h-3.5" strokeWidth={1.75} />
+                            <CheckCircle2 className="w-3.5 h-3.5 transition-transform duration-200 ease-out group-hover:scale-110" strokeWidth={2} />
                             <span>Verify Incident</span>
                           </button>
                         )}
@@ -1496,9 +1496,9 @@ export default function ScraperFeed() {
                         <button
                           type="button"
                           onClick={() => handleUpdateStatus(selectedPost.id, "Resolved")}
-                          className="px-3.5 sm:px-4 py-2 sm:py-2.5 min-h-[38px] sm:min-h-[40px] bg-slate-100 hover:bg-slate-200/80 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200/60 dark:border-white/10 text-xs font-semibold rounded-xl flex items-center gap-2 active:scale-[0.97] transition-all cursor-pointer"
+                          className="group px-3.5 sm:px-4 py-2 sm:py-2.5 min-h-[38px] sm:min-h-[40px] bg-slate-100 hover:bg-rose-50/90 dark:bg-slate-800 dark:hover:bg-rose-950/30 text-slate-700 dark:text-slate-300 hover:text-rose-600 dark:hover:text-rose-400 border border-slate-200/60 dark:border-white/10 hover:border-rose-300/80 dark:hover:border-rose-700/50 hover:shadow-[0_4px_14px_rgba(244,63,94,0.18)] dark:hover:shadow-[0_4px_14px_rgba(244,63,94,0.25)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.97] text-xs font-semibold rounded-xl flex items-center gap-2 transition-all duration-200 ease-out cursor-pointer shadow-2xs select-none"
                         >
-                          <XCircle className="w-3.5 h-3.5" strokeWidth={1.75} />
+                          <XCircle className="w-3.5 h-3.5 transition-transform duration-200 ease-out group-hover:scale-110 group-hover:-rotate-12 text-slate-500 group-hover:text-rose-600 dark:text-slate-400 dark:group-hover:text-rose-400" strokeWidth={1.75} />
                           <span>Dismiss / Resolve</span>
                         </button>
                       </div>
