@@ -598,7 +598,7 @@ export default function MessengerBotLogs() {
       .map((c) => c.barangay)
       .filter((b): b is string => Boolean(b && !['all barangays', 'none', 'unknown', 'general', 'unspecified', 'n/a', 'null'].includes(b.toLowerCase().trim())));
     const sorted = Array.from(new Set([...TALISAY_BARANGAYS, ...fromConversations])).sort();
-    return ["All Barangays", "None", ...sorted];
+    return ["All Barangays", "Unknown", ...sorted];
   }, [conversations]);
 
   const availableTypes = useMemo(() => {
@@ -1423,7 +1423,7 @@ export default function MessengerBotLogs() {
                                     return t;
                                   })()}</span>
                                   <span className="text-slate-300 dark:text-slate-600">•</span>
-                                  <span className={convo.barangay === "Unknown" || convo.barangay === "None" ? "italic text-slate-400" : ""}>{convo.barangay || "None"}</span>
+                                  <span className={convo.barangay === "Unknown" || convo.barangay === "None" ? "italic text-slate-400" : ""}>{convo.barangay && convo.barangay !== "None" ? convo.barangay : "Unknown"}</span>
                                 </span>
                               </div>
 
@@ -1573,7 +1573,7 @@ export default function MessengerBotLogs() {
                             {selectedConversation.name}
                           </h3>
                           <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 sm:gap-1.5 mt-0.5 truncate">
-                            <span className="truncate">{selectedConversation.barangay || "None"}</span>
+                            <span className="truncate">{selectedConversation.barangay && selectedConversation.barangay !== "None" ? selectedConversation.barangay : "Unknown"}</span>
                             <span className="text-slate-300 dark:text-slate-600 shrink-0">•</span>
                             <span className="truncate">{(() => {
                               const t = (selectedConversation.type && selectedConversation.type.toLowerCase() !== "none" && selectedConversation.type.toLowerCase() !== "unclassified")

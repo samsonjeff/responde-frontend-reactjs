@@ -289,6 +289,11 @@ export async function fetchReports(): Promise<Report[]> {
         report.urgency = formatReportUrgency(report.urgency);
       }
 
+      const bLower = (report.barangay || '').trim().toLowerCase();
+      if (!bLower || bLower === 'none' || bLower === 'unknown' || bLower === 'unspecified' || bLower === 'n/a' || bLower === 'null') {
+        report.barangay = 'Unknown';
+      }
+
       return report;
     })
     .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());

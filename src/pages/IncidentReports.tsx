@@ -603,7 +603,7 @@ export default function IncidentReports() {
       .map(r => r.barangay)
       .filter((b): b is string => Boolean(b && typeof b === 'string' && !['none', 'unknown', 'unspecified', 'n/a', 'null', 'all barangays'].includes(b.toLowerCase().trim())));
     const sorted = Array.from(new Set([...TALISAY_BARANGAYS, ...extra])).sort();
-    return ['All Barangays', 'None', ...sorted];
+    return ['All Barangays', 'Unknown', ...sorted];
   }, [reports]);
 
   const availableFilterTypes = useMemo(() => {
@@ -730,8 +730,8 @@ export default function IncidentReports() {
     if (!reviewingReport) return;
     const targetId = reviewingReport.id;
     const newBarangay = (incompleteReasonChoice === 'barangay' || incompleteReasonChoice === 'both')
-      ? 'None'
-      : (editForm.barangay || reviewingReport.barangay || 'None');
+      ? 'Unknown'
+      : (editForm.barangay || reviewingReport.barangay || 'Unknown');
     const newType = (incompleteReasonChoice === 'type' || incompleteReasonChoice === 'both')
       ? 'None'
       : (editForm.type || reviewingReport.type || 'None');

@@ -523,7 +523,7 @@ export default function ScraperFeed() {
       .map((p) => p.barangay)
       .filter((b): b is string => Boolean(b && !['all barangays', 'none', 'unknown', 'unspecified', 'n/a', 'null'].includes(b.toLowerCase().trim())));
     const sorted = Array.from(new Set([...TALISAY_BARANGAYS, ...fromPosts])).sort();
-    return ["All Barangays", "None", ...sorted];
+    return ["All Barangays", "Unknown", ...sorted];
   }, [posts]);
 
   const availableTypes = useMemo(() => {
