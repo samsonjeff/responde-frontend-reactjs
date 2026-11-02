@@ -507,6 +507,14 @@ export default function IncidentReports() {
 
   // Edit form state inside modal
   const [editForm, setEditForm] = useState<Partial<Report>>({});
+  const [checklist, setChecklist] = useState({
+    barangayCorrect: false,
+    typeAccurate: false,
+    locationReal: false,
+    notDuplicate: false,
+    urgencyAppropriate: false,
+  });
+  const allChecklistChecked = Object.values(checklist).every(Boolean);
   const [showRejectPanel, setShowRejectPanel] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
   const [showIncompletePanel, setShowIncompletePanel] = useState(false);
@@ -536,6 +544,7 @@ export default function IncidentReports() {
   // ── Bot conversation thread for the review modal ──
   const { conversations: botConversations } = useBotConversations();
   const isBotReport = reviewingReport?.source === 'Bot';
+  const isScraperReport = reviewingReport?.source === 'Scraper';
   const botThread = useMemo<BotMessage[]>(() => {
     if (!reviewingReport || reviewingReport.source !== 'Bot') return [];
     if (reviewingReport.threadMessages && reviewingReport.threadMessages.length > 0) {
@@ -621,12 +630,25 @@ export default function IncidentReports() {
     setReviewingReport(report);
 
     const initialType = (!report.type || report.type.toLowerCase() === 'unclassified') ? 'None' : report.type;
+    const rawAction = report.action || '';
+    const cleanAction = rawAction.trim().toLowerCase() === 'draft saved' ? '' : rawAction;
+    const rawActionTaken = report.actionTaken || '';
+    const cleanActionTaken = rawActionTaken.trim().toLowerCase() === 'draft saved' ? '' : rawActionTaken;
 
     setEditForm({
       ...report,
       type: initialType,
       coordinates: report.coordinates || '',
       contact: report.contact === '—' ? '' : (report.contact || ''),
+      action: cleanAction,
+      actionTaken: cleanActionTaken,
+    });
+    setChecklist({
+      barangayCorrect: false,
+      typeAccurate: false,
+      locationReal: false,
+      notDuplicate: false,
+      urgencyAppropriate: false,
     });
     setShowRejectPanel(false);
     setRejectReason('');
@@ -1766,7 +1788,7 @@ export default function IncidentReports() {
                       </div>
                     )}
 
-                    {reviewingReport.action && (
+                    {reviewingReport.action && reviewingReport.action.trim().toLowerCase() !== 'draft saved' && (
                       <div className="bg-blue-500/10 rounded-xl p-3 border border-blue-500/20">
                         <p className="text-xs text-[#0071E3] dark:text-sky-400 font-semibold flex items-center gap-1.5">
                           <Send className="w-3.5 h-3.5" strokeWidth={1.75} />
@@ -1930,6 +1952,69 @@ export default function IncidentReports() {
                     </div>
                   </div>
                 </div>
+
+                {/* Verification Checklist */}
+                {(reviewingReport.status === 'pending' || reviewingReport.status === 'under_review') && (
+                  <div>
+                    <div className="flex items-center justify-between mb-2.5">
+                      <h4 className="text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-[#0071E3]" />
+                        <span>Verification Checklist</span>
+                      </h4>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const allChecked = Object.values(checklist).every(Boolean);
+                          setChecklist({
+                            barangayCorrect: !allChecked,
+                            typeAccurate: !allChecked,
+                            locationReal: !allChecked,
+                            notDuplicate: !allChecked,
+                            urgencyAppropriate: !allChecked,
+                          });
+                        }}
+                        className="text-xs font-semibold text-[#0071E3] hover:underline cursor-pointer"
+                      >
+                        {Object.values(checklist).every(Boolean) ? 'Uncheck All' : 'Check All'}
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {[
+                        {
+                          key: 'barangayCorrect',
+                          label: isBotReport
+                            ? 'Barangay & phone number verified'
+                            : isScraperReport
+                              ? 'Barangay & location verified'
+                              : 'Barangay & coordinates verified',
+                        },
+                        { key: 'typeAccurate', label: 'Incident type is accurate' },
+                        { key: 'locationReal', label: 'Location / landmark is real' },
+                        { key: 'notDuplicate', label: 'Not a duplicate report' },
+                        { key: 'urgencyAppropriate', label: 'Urgency level is appropriate' },
+                      ].map((item) => (
+                        <label
+                          key={item.key}
+                          className={`p-3 rounded-xl border transition-all flex items-center gap-3 cursor-pointer select-none active:scale-[0.98] ${
+                            checklist[item.key as keyof typeof checklist]
+                              ? 'bg-blue-50/80 dark:bg-blue-900/25 border-blue-200 dark:border-blue-800/80 text-blue-950 dark:text-blue-200'
+                              : 'bg-white/80 dark:bg-slate-800/40 border-slate-200/70 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checklist[item.key as keyof typeof checklist]}
+                            onChange={(e) => setChecklist(prev => ({ ...prev, [item.key]: e.target.checked }))}
+                            className="rounded-md border-slate-300 dark:border-slate-600 text-[#0071E3] focus:ring-0 w-4 h-4 cursor-pointer"
+                          />
+                          <span className="text-xs font-medium leading-snug">
+                            {item.label}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {/* Rejection Panel */}
                 <AnimatePresence>
@@ -2133,11 +2218,13 @@ export default function IncidentReports() {
                     <button
                       type="button"
                       onClick={handleVerify}
-                      disabled={isModalReportIncomplete}
+                      disabled={!allChecklistChecked || isModalReportIncomplete}
                       title={
                         isModalReportIncomplete
                           ? `Cannot verify: ${modalIncompleteReasons.join(', ')}`
-                          : 'Verify and plot on map'
+                          : !allChecklistChecked
+                            ? 'Complete the checklist first'
+                            : 'Verify and plot on map'
                       }
                       className="flex-1 sm:flex-none justify-center px-5 py-2.5 min-h-[42px] text-xs font-semibold text-white bg-[#0071E3] hover:bg-[#0077ED] disabled:opacity-40 disabled:cursor-not-allowed rounded-xl transition-all shadow-[0_2px_8px_rgba(0,113,227,0.25)] flex items-center gap-1.5 active:scale-[0.97] cursor-pointer"
                     >
