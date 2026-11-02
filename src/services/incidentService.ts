@@ -90,12 +90,14 @@ export function formatReportType(t?: string | null): string {
   return clean.charAt(0).toUpperCase() + clean.slice(1);
 }
 
-/** Check if report is incomplete (missing a valid barangay) */
+/** Check if report is incomplete (missing a valid barangay or incident type) */
 export function isReportIncomplete(report?: { barangay?: string | null; type?: string | null } | null): boolean {
   if (!report) return true;
   const b = (report.barangay || '').trim().toLowerCase();
   const isUnknownBarangay = !b || b === 'unknown' || b === 'none' || b === 'unspecified' || b === 'n/a' || b === 'null';
-  return isUnknownBarangay;
+  const t = (report.type || '').trim().toLowerCase();
+  const isUnknownType = !t || t === 'none' || t === 'unclassified' || t === 'unknown' || t === 'unspecified' || t === 'n/a' || t === 'null' || t === 'undefined';
+  return isUnknownBarangay || isUnknownType;
 }
 
 /** Returns list of human-readable missing/incomplete reasons */
@@ -106,7 +108,11 @@ export function getIncompleteReasons(report?: { barangay?: string | null; type?:
   if (!b || b === 'unknown' || b === 'none' || b === 'unspecified' || b === 'n/a' || b === 'null') {
     reasons.push('Missing Barangay');
   }
-  return reasons.length > 0 ? reasons : ['Missing Barangay'];
+  const t = (report.type || '').trim().toLowerCase();
+  if (!t || t === 'none' || t === 'unclassified' || t === 'unknown' || t === 'unspecified' || t === 'n/a' || t === 'null' || t === 'undefined') {
+    reasons.push('Missing Incident Type');
+  }
+  return reasons.length > 0 ? reasons : ['Incomplete Details'];
 }
 
 /**

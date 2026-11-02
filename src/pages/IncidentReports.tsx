@@ -955,10 +955,13 @@ export default function IncidentReports() {
         }
       }
       const isFilteringNoneBarangay = filterBarangay.toLowerCase().trim() === 'none' || filterBarangay.toLowerCase().trim() === 'unknown';
+      const isFilteringNoneType = filterType.toLowerCase().trim() === 'none' || filterType.toLowerCase().trim() === 'unknown';
+      const isFilteringNone = isFilteringNoneBarangay || isFilteringNoneType;
+
       if (activeTab === 'under_review') {
         const isUnderReviewOrPending = r.status === 'under_review' || r.status === 'pending';
         if (!isUnderReviewOrPending) return false;
-        if (!isFilteringNoneBarangay && isReportIncomplete(r)) return false;
+        if (!isFilteringNone && isReportIncomplete(r)) return false;
       } else if (activeTab === 'incomplete') {
         const isUnderReviewOrPending = r.status === 'under_review' || r.status === 'pending';
         if (!isUnderReviewOrPending || !isReportIncomplete(r)) return false;
@@ -984,7 +987,7 @@ export default function IncidentReports() {
         const normFilter = filterType.toLowerCase().trim();
         const repType = (r.type || '').trim().toLowerCase();
         const isNoneType = !repType || repType === 'none' || repType === 'unclassified' || repType === 'unknown' || repType === 'null' || repType === 'undefined' || repType === 'n/a' || repType === 'unspecified';
-        if (normFilter === 'none') {
+        if (normFilter === 'none' || normFilter === 'unknown') {
           if (!isNoneType) return false;
         } else if (repType !== normFilter) {
           return false;
@@ -1253,10 +1256,10 @@ export default function IncidentReports() {
           </div>
 
           {/* Filter Controls */}
-          <div className={`${mobileFiltersOpen ? 'grid' : 'hidden'} md:flex md:flex-wrap grid-cols-2 gap-2 sm:gap-2.5 md:gap-3 md:items-center pt-2.5 md:pt-0`}>
+          <div className={`${mobileFiltersOpen ? 'grid' : 'hidden'} md:flex md:flex-nowrap grid-cols-2 gap-2 sm:gap-2.5 md:gap-2.5 md:items-center pt-2.5 md:pt-0 overflow-x-auto scrollbar-none pb-1 md:pb-0`}>
             {/* Left Filter Scope Container */}
-            <div className="col-span-2 md:col-span-auto grid grid-cols-2 sm:grid-cols-4 md:inline-flex md:items-center gap-2.5 sm:gap-3 md:gap-2.5 md:p-1.5 md:px-2 md:bg-slate-100/70 md:dark:bg-white/[0.05] md:backdrop-blur-xl md:rounded-2xl md:border md:border-slate-200/70 md:dark:border-white/10 md:shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] w-full md:w-auto">
-              <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 text-[#0071E3] dark:text-sky-400 cursor-default select-none shrink-0">
+            <div className="col-span-2 md:col-span-auto grid grid-cols-2 sm:grid-cols-4 md:inline-flex md:items-center gap-2 sm:gap-2.5 md:gap-2 md:p-1.5 md:px-2 md:bg-slate-100/70 md:dark:bg-white/[0.05] md:backdrop-blur-xl md:rounded-2xl md:border md:border-slate-200/70 md:dark:border-white/10 md:shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] w-full md:w-auto shrink-0">
+              <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 text-[#0071E3] dark:text-sky-400 cursor-default select-none shrink-0">
                 <Filter className="w-3.5 h-3.5 transition-transform duration-300 group-hover/filters:scale-110 text-[#0071E3] dark:text-sky-400" strokeWidth={1.8} />
                 <span className="text-[10px] font-bold uppercase tracking-wider">Filters</span>
               </div>
@@ -1298,7 +1301,7 @@ export default function IncidentReports() {
                 </button>
               </div>
 
-              <div className="col-span-1 md:col-span-auto min-w-0 md:min-w-[135px] w-full md:w-auto">
+              <div className="col-span-1 md:col-span-auto min-w-0 md:min-w-[110px] w-full md:w-auto">
                 <FilterDropdown
                   labelPrefix="Barangay"
                   value={filterBarangay}
@@ -1307,7 +1310,7 @@ export default function IncidentReports() {
                 />
               </div>
 
-              <div className="col-span-1 md:col-span-auto min-w-0 md:min-w-[125px] w-full md:w-auto">
+              <div className="col-span-1 md:col-span-auto min-w-0 md:min-w-[110px] w-full md:w-auto">
                 <FilterDropdown
                   labelPrefix="Type"
                   value={filterType}
@@ -1316,7 +1319,7 @@ export default function IncidentReports() {
                 />
               </div>
 
-              <div className="col-span-2 sm:col-span-1 md:col-span-auto min-w-0 md:min-w-[125px] w-full md:w-auto">
+              <div className="col-span-2 sm:col-span-1 md:col-span-auto min-w-0 md:min-w-[110px] w-full md:w-auto">
                 <FilterDropdown
                   labelPrefix="Urgency"
                   value={filterUrgency}
@@ -1328,15 +1331,15 @@ export default function IncidentReports() {
             </div>
 
             {/* Right Date Scope Container + Preserved Reset Option */}
-            <div className="col-span-2 md:col-span-auto flex flex-wrap sm:flex-nowrap items-center gap-2.5 sm:gap-3 md:ml-auto w-full md:w-auto">
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:inline-flex md:items-center gap-2 sm:gap-2.5 md:gap-2.5 md:p-1.5 md:bg-slate-100/70 md:dark:bg-white/[0.05] md:backdrop-blur-xl md:rounded-2xl md:border md:border-slate-200/70 md:dark:border-white/10 md:shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] md:px-3 w-full md:w-auto">
-                <div className="flex items-center gap-1.5 flex-1 sm:flex-initial min-w-0 sm:min-w-[130px] w-full sm:w-auto">
+            <div className="col-span-2 md:col-span-auto flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-2.5 md:ml-auto w-full md:w-auto shrink-0">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:inline-flex md:items-center gap-1.5 sm:gap-2 md:gap-2 md:p-1.5 md:bg-slate-100/70 md:dark:bg-white/[0.05] md:backdrop-blur-xl md:rounded-2xl md:border md:border-slate-200/70 md:dark:border-white/10 md:shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] md:px-2.5 w-full md:w-auto shrink-0">
+                <div className="flex items-center gap-1.5 flex-1 sm:flex-initial min-w-0 sm:min-w-[110px] w-full sm:w-auto">
                   <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 whitespace-nowrap pl-0.5">
                     From:
                   </span>
                   <DatePicker value={fromDate} onChange={setFromDate} placeholder="Select Date" />
                 </div>
-                <div className="flex items-center gap-1.5 flex-1 sm:flex-initial min-w-0 sm:min-w-[130px] w-full sm:w-auto">
+                <div className="flex items-center gap-1.5 flex-1 sm:flex-initial min-w-0 sm:min-w-[110px] w-full sm:w-auto">
                   <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 whitespace-nowrap">
                     To:
                   </span>
