@@ -1173,7 +1173,7 @@ export default function IncidentReports() {
         {/* ── Filter Bar & Bulk Actions ── */}
         <StaggerItem>
           <div className="relative z-30 flex flex-col gap-2.5 shrink-0">
-        <div className="backdrop-blur-xl bg-white/80 dark:bg-[#111827]/80 rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_1px_3px_rgba(15,23,42,0.04)] p-3 sm:px-4 sm:py-3.5 md:px-4.5 shrink-0">
+        <div className="relative z-20 backdrop-blur-xl bg-white/80 dark:bg-[#111827]/80 rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_1px_3px_rgba(15,23,42,0.04)] p-3 sm:px-4 sm:py-3.5 md:px-4.5 shrink-0">
           {/* Mobile Filter Header Toggle (< md) */}
           <div className="flex md:hidden items-center justify-between w-full">
             <button
@@ -1320,7 +1320,7 @@ export default function IncidentReports() {
               animate="visible"
               exit="exit"
               transition={APPLE_SPRING}
-              className="relative z-20 flex flex-wrap items-center justify-between gap-2.5 bg-blue-50/90 dark:bg-blue-950/40 backdrop-blur-md border border-blue-200/80 dark:border-blue-800/60 rounded-2xl px-4 sm:px-5 py-2.5 shrink-0 shadow-sm"
+              className="relative z-10 flex flex-wrap items-center justify-between gap-2.5 bg-blue-50/90 dark:bg-blue-950/40 backdrop-blur-md border border-blue-200/80 dark:border-blue-800/60 rounded-2xl px-4 sm:px-5 py-2.5 shrink-0 shadow-sm"
             >
               <span className="text-xs font-semibold text-blue-800 dark:text-blue-300">
                 {selectedIds.length} report{selectedIds.length > 1 ? 's' : ''} selected
