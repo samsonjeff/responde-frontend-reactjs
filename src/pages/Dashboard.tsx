@@ -19,6 +19,8 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { useReports } from '../context/ReportsContext';
 import { formatReportCode, getTypeHexColor, formatReportUrgency } from '../services/incidentService';
+import type { Report } from '../services/incidentService';
+import ReportReviewModal from '../components/ReportReviewModal';
 import PageLoader from '../components/PageLoader';
 import AnimatedNumber from '../components/AnimatedNumber';
 import { StaggerContainer, StaggerItem } from '../components/Stagger';
@@ -195,9 +197,18 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const location = useLocation();
-  const { reports, loading: reportsLoading, error: reportsError, refreshReports } = useReports();
+  const { reports, loading: reportsLoading, error: reportsError, refreshReports, contextUpdateReport } = useReports();
   const [filterUrgency, setFilterUrgency] = useState<'All' | 'Critical' | 'High' | 'Mod' | 'Low'>('All');
   const [selectedType, setSelectedType] = useState<string | null>(null);
+  const [reviewingReport, setReviewingReport] = useState<Report | null>(null);
+
+  // Opens the shared review modal and stays on the dashboard tab (no navigation).
+  const openDashboardReview = (target: Report) => {
+    if (target.status === 'pending') {
+      contextUpdateReport(target.id, { status: 'under_review' });
+    }
+    setReviewingReport(target);
+  };
   const [viewMode, setViewMode] = useState<'chart' | 'bars'>('chart');
 
   const userGreeting = useMemo(() => {
@@ -675,7 +686,7 @@ export default function Dashboard() {
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
-                          navigate(`/incident-reports?focus=${report.id}`);
+                          openDashboardReview(report);
                         }}
                         className="px-2.5 py-1 text-xs font-semibold text-[#0071E3] dark:text-sky-400 bg-blue-500/10 hover:bg-blue-500/15 border border-blue-500/20 rounded-lg transition-all active:scale-[0.96] shadow-2xs cursor-pointer inline-flex items-center gap-1 shrink-0"
                       >
@@ -750,7 +761,7 @@ export default function Dashboard() {
                         <td className="px-3.5 py-3.5 w-28 min-w-[110px] text-left whitespace-nowrap sticky right-0 z-10 bg-white dark:bg-[#111827] group-hover:bg-slate-50 dark:group-hover:bg-slate-800 transition-colors border-b border-slate-100 dark:border-white/5 shadow-[-8px_0_12px_-4px_rgba(0,0,0,0.07)] dark:shadow-[-8px_0_12px_-4px_rgba(0,0,0,0.35)]" onClick={(e) => e.stopPropagation()}>
                           <button
                             type="button"
-                            onClick={() => navigate(`/incident-reports?focus=${report.id}`)}
+                            onClick={() => openDashboardReview(report)}
                             className="group/btn px-3.5 py-1.5 text-xs font-bold text-[#0071E3] dark:text-sky-300 bg-[#0071E3]/18 hover:bg-[#0071E3]/28 active:bg-[#0071E3]/38 dark:bg-[#0071E3]/25 dark:hover:bg-[#0071E3]/38 border border-[#0071E3]/45 hover:border-[#0071E3]/75 dark:border-sky-400/40 rounded-xl transition-all duration-200 inline-flex items-center justify-center gap-1.5 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.96] shadow-[0_2px_10px_rgba(0,113,227,0.22)] hover:shadow-[0_4px_16px_rgba(0,113,227,0.35)] backdrop-blur-sm cursor-pointer"
                           >
                             <ShieldCheck className="w-3.5 h-3.5 transition-transform duration-200 group-hover/btn:scale-110" strokeWidth={1.75} />
@@ -1038,6 +1049,13 @@ export default function Dashboard() {
       </div>
         </StaggerItem>
       </StaggerContainer>
+      {reviewingReport && (
+        <ReportReviewModal
+          key={reviewingReport.id}
+          report={reviewingReport}
+          onClose={() => setReviewingReport(null)}
+        />
+      )}
     </div>
   );
 }

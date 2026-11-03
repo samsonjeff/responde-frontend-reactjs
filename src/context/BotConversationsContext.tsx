@@ -372,6 +372,33 @@ export function BotConversationsProvider({ children }: { children: ReactNode }) 
     };
   }, [fetchConversations]);
 
+  // Realtime sync: refresh shortly after inserts/updates (new messages, NLP
+  // completions, reply deliveries). The 60s poll above stays as fallback.
+  useEffect(() => {
+    const controller = new AbortController();
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+    const scheduleRefresh = () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        fetchConversations(false, controller.signal, true);
+      }, 1500);
+    };
+    const channel = supabase
+      .channel('rt:bot-conversations-list')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'conversations' }, scheduleRefresh)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'conversations' }, scheduleRefresh)
+      .subscribe((status) => {
+        if (status !== 'SUBSCRIBED' && import.meta.env.DEV) {
+          console.warn('[BotConversationsContext] Realtime rt:bot-conversations-list: ' + status + '. Polling fallback active.');
+        }
+      });
+    return () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      controller.abort();
+      supabase.removeChannel(channel);
+    };
+  }, [fetchConversations]);
+
   const incompleteCount = conversations.filter((c) => c.status === 'Incomplete').length;
 
   return (

@@ -483,7 +483,7 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: number)
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: -10, scale: 0.95 }}
       transition={APPLE_SPRING}
-      className="flex items-center gap-3 px-4 py-3 rounded-2xl backdrop-blur-2xl bg-white/95 dark:bg-[#111827]/95 border border-slate-200/80 dark:border-white/10 shadow-[0_12px_40px_rgba(0,0,0,0.12)] min-w-[300px] max-w-[400px]"
+      className="flex items-center gap-3 px-4 py-3 rounded-2xl backdrop-blur-2xl bg-white/95 dark:bg-[#111827]/95 border border-slate-200/80 dark:border-white/10 shadow-[0_12px_40px_rgba(0,0,0,0.12)] min-w-[260px] sm:min-w-[300px] max-w-[calc(100vw-2rem)]"
     >
       <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${badgeBg}`}>
         {icon}
@@ -493,7 +493,7 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: number)
       </span>
       <button
         onClick={() => onDismiss(toast.id)}
-        className="w-6 h-6 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-[0.92] transition-all cursor-pointer"
+        className="relative w-6 h-6 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-[0.92] transition-all cursor-pointer after:absolute after:-inset-2.5 after:content-['']"
       >
         <X className="w-3.5 h-3.5" />
       </button>
@@ -1321,7 +1321,7 @@ export default function MessengerBotLogs() {
                   <button
                     type="button"
                     onClick={resetFilters}
-                    className="inline-flex items-center justify-center w-[34px] h-[34px] sm:w-[36px] sm:h-[36px] text-[#0071E3] hover:text-blue-700 dark:text-sky-400 bg-blue-500/10 hover:bg-blue-500/15 rounded-xl transition-all duration-150 active:scale-[0.95] cursor-pointer shrink-0 border border-blue-500/20"
+                    className="relative inline-flex items-center justify-center w-[34px] h-[34px] sm:w-[36px] sm:h-[36px] text-[#0071E3] hover:text-blue-700 dark:text-sky-400 bg-blue-500/10 hover:bg-blue-500/15 rounded-xl transition-all duration-150 active:scale-[0.95] cursor-pointer shrink-0 border border-blue-500/20 after:absolute after:-inset-1.5 after:content-['']"
                     title="Reset all filters"
                     aria-label="Reset all filters"
                   >
@@ -1616,7 +1616,7 @@ export default function MessengerBotLogs() {
                       type="button"
                       disabled={safeCurrentPage <= 1}
                       onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                      className="p-1.5 rounded-lg border border-blue-500/25 dark:border-blue-400/25 bg-blue-500/10 dark:bg-blue-500/20 text-[#0071E3] dark:text-sky-400 disabled:opacity-30 disabled:pointer-events-none hover:bg-[#0071E3] hover:text-white dark:hover:bg-[#0071E3] dark:hover:text-white active:scale-95 transition-all cursor-pointer shadow-2xs"
+                      className="relative p-1.5 rounded-lg border border-blue-500/25 dark:border-blue-400/25 bg-blue-500/10 dark:bg-blue-500/20 text-[#0071E3] dark:text-sky-400 disabled:opacity-30 disabled:pointer-events-none hover:bg-[#0071E3] hover:text-white dark:hover:bg-[#0071E3] dark:hover:text-white active:scale-95 transition-all cursor-pointer shadow-2xs after:absolute after:-inset-2.5 after:absolute after:content-['']"
                       title="Previous Page"
                     >
                       <ChevronLeft className="w-3.5 h-3.5" strokeWidth={1.75} />
@@ -1628,7 +1628,7 @@ export default function MessengerBotLogs() {
                       type="button"
                       disabled={safeCurrentPage >= totalPages}
                       onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                      className="p-1.5 rounded-lg border border-blue-500/25 dark:border-blue-400/25 bg-blue-500/10 dark:bg-blue-500/20 text-[#0071E3] dark:text-sky-400 disabled:opacity-30 disabled:pointer-events-none hover:bg-[#0071E3] hover:text-white dark:hover:bg-[#0071E3] dark:hover:text-white active:scale-95 transition-all cursor-pointer shadow-2xs"
+                      className="relative p-1.5 rounded-lg border border-blue-500/25 dark:border-blue-400/25 bg-blue-500/10 dark:bg-blue-500/20 text-[#0071E3] dark:text-sky-400 disabled:opacity-30 disabled:pointer-events-none hover:bg-[#0071E3] hover:text-white dark:hover:bg-[#0071E3] dark:hover:text-white active:scale-95 transition-all cursor-pointer shadow-2xs after:absolute after:-inset-2.5 after:absolute after:content-['']"
                       title="Next Page"
                     >
                       <ChevronRight className="w-3.5 h-3.5" strokeWidth={1.75} />
@@ -1668,7 +1668,7 @@ export default function MessengerBotLogs() {
                         <button
                           type="button"
                           onClick={handleCloseConversation}
-                          className="md:hidden inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold text-[#0071E3] dark:text-sky-400 bg-blue-500/10 hover:bg-blue-500/15 active:scale-95 transition-all shrink-0 cursor-pointer"
+                          className="relative md:hidden inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold text-[#0071E3] dark:text-sky-400 bg-blue-500/10 hover:bg-blue-500/15 active:scale-95 transition-all shrink-0 cursor-pointer after:absolute after:inset-x-0 after:-inset-y-2 after:content-['']"
                           aria-label="Back to conversations list"
                         >
                           <ChevronLeft className="w-4 h-4 -ml-1" strokeWidth={1.75} />
@@ -1769,7 +1769,7 @@ export default function MessengerBotLogs() {
                           <button
                             type="button"
                             onClick={handleCloseConversation}
-                            className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl text-slate-400 hover:text-rose-600 dark:text-slate-500 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-all duration-150 flex items-center justify-center active:scale-95 cursor-pointer"
+                            className="relative w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl text-slate-400 hover:text-rose-600 dark:text-slate-500 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-all duration-150 flex items-center justify-center active:scale-95 cursor-pointer after:absolute after:-inset-2 after:content-['']"
                             title="Close conversation (Esc)"
                             aria-label="Close conversation"
                           >

@@ -1,5 +1,5 @@
-import { useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import LegalModal, { type LegalDoc } from './LegalModal';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { MapPin, Phone, Mail } from 'lucide-react';
@@ -11,6 +11,7 @@ const formatBarangayName = (name: string) => name.replace('Poblacion Barangay ',
 
 export default function Footer() {
   const footerRef = useRef<HTMLElement>(null);
+  const [legalDoc, setLegalDoc] = useState<LegalDoc | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -235,24 +236,25 @@ export default function Footer() {
           </p>
 
           <div className="flex items-center gap-3 flex-wrap justify-center font-normal">
-            <Link
-              to="/privacy"
-              className="text-[#A1A1A6] hover:text-[#F5F5F7] transition-colors duration-150"
+            <button type="button"
+              onClick={() => setLegalDoc('privacy')}
+              className="text-[#A1A1A6] hover:text-[#F5F5F7] transition-colors duration-150 cursor-pointer"
             >
               Privacy Policy
-            </Link>
+            </button>
             <span className="text-white/15" aria-hidden="true">
               •
             </span>
-            <Link
-              to="/terms"
-              className="text-[#A1A1A6] hover:text-[#F5F5F7] transition-colors duration-150"
+            <button type="button"
+              onClick={() => setLegalDoc('terms')}
+              className="text-[#A1A1A6] hover:text-[#F5F5F7] transition-colors duration-150 cursor-pointer"
             >
               Terms of Use
-            </Link>
+            </button>
           </div>
         </div>
       </div>
+      <LegalModal doc={legalDoc} onClose={() => setLegalDoc(null)} />
     </footer>
   );
 }

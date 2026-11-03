@@ -20,6 +20,7 @@ interface ReportsContextValue {
     error: string | null;
     refreshReports: (showLoader?: boolean) => Promise<void>;
     updateReport: (id: string, updates: Partial<Report>) => Promise<boolean>;
+    contextUpdateReport: (id: string, updates: Partial<Report>) => Promise<boolean>;
     bulkUpdateReports: (ids: string[], status: ReportStatus, action?: string) => Promise<boolean>;
     getVerifiedReports: () => Report[];
     getReportsByBarangay: () => Record<string, Report[]>;
@@ -178,6 +179,9 @@ export function ReportsProvider({ children }: { children: ReactNode }) {
         }
     }, [refreshReports]);
 
+    // Alias kept for the review modal / restore hook / dashboard, which patch by id.
+    const contextUpdateReport = updateReport;
+
     const bulkUpdateReports = useCallback(async (ids: string[], status: ReportStatus, action?: string): Promise<boolean> => {
         // 1. Optimistic update
         setReports((prev) =>
@@ -227,6 +231,7 @@ export function ReportsProvider({ children }: { children: ReactNode }) {
                 error,
                 refreshReports,
                 updateReport,
+                contextUpdateReport,
                 bulkUpdateReports,
                 getVerifiedReports,
                 getReportsByBarangay,

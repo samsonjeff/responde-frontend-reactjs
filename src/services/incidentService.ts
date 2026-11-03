@@ -15,6 +15,7 @@ export interface Report {
   createdAt?: string;
   senderPsid?: string;
   conversationId?: string;
+  sessionId?: string;
   threadMessages?: Array<{ sender: 'user' | 'bot'; text: string; timestamp?: string }>;
   status: ReportStatus;
   description: string;

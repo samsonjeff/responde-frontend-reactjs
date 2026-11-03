@@ -128,7 +128,7 @@ export default function DatePicker({ value, onChange, placeholder = 'Select date
           key={day}
           type="button"
           onClick={() => handleDateClick(day)}
-          className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full text-xs sm:text-sm flex items-center justify-center transition-colors
+          className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full text-xs sm:text-sm flex items-center justify-center transition-colors
             ${isSelected
               ? 'bg-blue-600 dark:bg-blue-500 text-white font-medium shadow-sm'
               : isToday
@@ -197,7 +197,7 @@ export default function DatePicker({ value, onChange, placeholder = 'Select date
                 type="button"
                 onClick={handlePrevMonth}
                 aria-label="Previous month"
-                className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200 rounded-lg transition-colors cursor-pointer"
+                className="relative p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200 rounded-lg transition-colors cursor-pointer after:absolute after:-inset-2.5 after:absolute after:content-['']"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
@@ -208,7 +208,7 @@ export default function DatePicker({ value, onChange, placeholder = 'Select date
                 type="button"
                 onClick={handleNextMonth}
                 aria-label="Next month"
-                className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200 rounded-lg transition-colors cursor-pointer"
+                className="relative p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200 rounded-lg transition-colors cursor-pointer after:absolute after:-inset-2.5 after:absolute after:content-['']"
               >
                 <ChevronRight className="w-4 h-4" />
               </button>

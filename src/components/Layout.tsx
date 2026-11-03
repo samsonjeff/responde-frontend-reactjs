@@ -1595,7 +1595,7 @@ function GlobalToast({
           {/* Frosted Circular Close Button */}
           <button
             onClick={() => onDismiss(toast.id)}
-            className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10 active:scale-90 transition-all cursor-pointer"
+            className="relative shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10 active:scale-90 transition-all cursor-pointer after:absolute after:-inset-2 after:content-['']"
             title="Dismiss alert"
             aria-label="Dismiss alert"
           >
@@ -1625,7 +1625,7 @@ function GlobalToast({
 
           <button
             onClick={() => onDismiss(toast.id)}
-            className="px-3.5 py-2.5 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/10 active:scale-[0.97] transition-all cursor-pointer"
+            className="relative px-3.5 py-2.5 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/10 active:scale-[0.97] transition-all cursor-pointer after:absolute after:-inset-1 after:content-['']"
           >
             Dismiss
           </button>
@@ -1650,7 +1650,7 @@ function GlobalToast({
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: 10, scale: 0.96 }}
       transition={{ duration: 0.32, ease: APPLE_DECEL_EASE }}
-      className="pointer-events-auto relative flex items-start gap-3 pl-4 pr-3 pt-3.5 pb-5 rounded-2xl border shadow-xl min-w-[310px] max-w-97.5 bg-white/95 dark:bg-[#111827]/95 backdrop-blur-2xl border-slate-200/80 dark:border-white/10 shadow-[0_12px_40px_rgba(0,0,0,0.12)] overflow-hidden"
+      className="pointer-events-auto relative flex items-start gap-3 pl-4 pr-3 pt-3.5 pb-5 rounded-2xl border shadow-xl min-w-[260px] sm:min-w-[310px] max-w-[calc(100vw-2.5rem)] bg-white/95 dark:bg-[#111827]/95 backdrop-blur-2xl border-slate-200/80 dark:border-white/10 shadow-[0_12px_40px_rgba(0,0,0,0.12)] overflow-hidden"
     >
       {/* Icon */}
       <div

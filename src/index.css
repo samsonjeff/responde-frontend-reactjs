@@ -1101,3 +1101,24 @@ button:not(:disabled),
     rgba(255, 255, 255, 0) 100%
   );
 }
+
+/* -- Geospatial map: keep zoom controls clear of the mobile bottom sheet --
+   (locate button occupies top-left; legend occupies top-right) */
+.geospatial-soft .maplibregl-ctrl-group button {
+  position: relative;
+  width: 32px;
+  height: 32px;
+}
+.geospatial-soft .maplibregl-ctrl-group button::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+}
+@media (max-width: 639px) {
+  .geospatial-soft .maplibregl-ctrl-bottom-right {
+    top: 64px;
+    bottom: auto;
+    right: auto;
+    left: 12px;
+  }
+}

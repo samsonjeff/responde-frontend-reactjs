@@ -30,19 +30,10 @@ function BulletList({ items }: { items: string[] }) {
   );
 }
 
-export default function TermsOfUse() {
+export function TermsOfUseContent() {
   return (
-    <div className="min-h-screen bg-white">
-      <div className="mx-auto max-w-3xl px-6 py-10 sm:px-8 sm:py-14">
-        <Link
-          to="/"
-          className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#0071E3] hover:text-[#0060c9] transition-colors"
-        >
-          <ArrowLeft className="h-4 w-4" strokeWidth={2} />
-          Back to Home
-        </Link>
-
-        <div className="mt-8 border-b border-slate-200 pb-8">
+    <>
+        <div className="border-b border-slate-200 pb-8">
           <div className="flex items-center gap-2 text-[13px] font-semibold uppercase tracking-[0.12em] text-[#0071E3]">
             <FileText className="h-4 w-4" strokeWidth={2} />
             <span>Responde &middot; MDRRMO Talisay, Batangas</span>
@@ -135,6 +126,24 @@ export default function TermsOfUse() {
             </a>
             .
           </Body>
+        </div>
+        </>
+  );
+}
+
+export default function TermsOfUse() {
+  return (
+    <div className="min-h-screen bg-white">
+      <div className="mx-auto max-w-3xl px-6 py-10 sm:px-8 sm:py-14">
+        <Link
+          to="/"
+          className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#0071E3] hover:text-[#0060c9] transition-colors"
+        >
+          <ArrowLeft className="h-4 w-4" strokeWidth={2} />
+          Back to Home
+        </Link>
+        <div className="mt-8">
+          <TermsOfUseContent />
         </div>
       </div>
     </div>
