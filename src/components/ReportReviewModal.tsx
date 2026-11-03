@@ -352,6 +352,24 @@ export default function ReportReviewModal({ report, onClose }: ReportReviewModal
   const [rejectReason, setRejectReason] = useState('');
   const [showIncompletePanel, setShowIncompletePanel] = useState(false);
   const [incompleteReasonChoice, setIncompleteReasonChoice] = useState<'barangay' | 'type' | 'both'>('both');
+  const rejectPanelRef = useRef<HTMLDivElement>(null);
+  const incompletePanelRef = useRef<HTMLDivElement>(null);
+  const rejectReasonSelectRef = useRef<HTMLSelectElement>(null);
+
+  // The action panels render inside the scrollable modal body, below the fold.
+  // Bring the opened panel into view so the footer buttons visibly do something.
+  useEffect(() => {
+    if (showRejectPanel) {
+      rejectPanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      window.setTimeout(() => rejectReasonSelectRef.current?.focus({ preventScroll: true }), 300);
+    }
+  }, [showRejectPanel]);
+
+  useEffect(() => {
+    if (showIncompletePanel) {
+      incompletePanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }, [showIncompletePanel]);
 
   // ── Validation State ──
   const [coordError, setCoordError] = useState(false);
@@ -468,10 +486,11 @@ export default function ReportReviewModal({ report, onClose }: ReportReviewModal
       actionTaken: actionDesc,
     };
 
-    requestClose();
-
     try {
       const ok = await contextUpdateReport(targetId, updated);
+      if (ok) {
+        requestClose();
+      }
       showToast(
         ok ? `Report #${targetId} moved to Incomplete tab (${reasonText})` : `Failed to move report #${targetId} to Incomplete. Please try again.`,
         ok ? 'info' : 'error'
@@ -575,13 +594,14 @@ export default function ReportReviewModal({ report, onClose }: ReportReviewModal
       action: actionDesc,
       actionTaken: actionDesc,
     };
-    requestClose();
-
     try {
       const ok = await contextUpdateReport(targetId, updated);
+      if (ok) {
+        requestClose();
+      }
       showToast(
         ok ? `Report #${targetId} rejected: ${reasonLabel}` : `Failed to reject report #${targetId}. Please try again.`,
-        'error'
+        ok ? 'success' : 'error'
       );
     } catch (err) {
       console.error('Failed to persist rejection:', err);
@@ -1038,12 +1058,14 @@ export default function ReportReviewModal({ report, onClose }: ReportReviewModal
                       exit={{ opacity: 0, scaleY: 0.95 }}
                       transition={{ duration: 0.2, ease: EASE_OUT }}
                       style={{ originY: 0 }}
+                      ref={rejectPanelRef}
                       className="bg-rose-500/10 rounded-2xl p-4 sm:p-4.5 border border-rose-500/20 space-y-3"
                     >
                       <label className="block text-xs font-semibold uppercase tracking-wider text-rose-700 dark:text-rose-400">
                         Rejection Reason
                       </label>
                       <select
+                        ref={rejectReasonSelectRef}
                         value={rejectReason}
                         onChange={e => setRejectReason(e.target.value)}
                         className="w-full px-3.5 py-2.5 text-sm bg-white dark:bg-slate-800 border border-rose-200 dark:border-rose-700 rounded-xl text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-rose-500 outline-none"
@@ -1085,6 +1107,7 @@ export default function ReportReviewModal({ report, onClose }: ReportReviewModal
                       exit={{ opacity: 0, scaleY: 0.95 }}
                       transition={{ duration: 0.2, ease: EASE_OUT }}
                       style={{ originY: 0 }}
+                      ref={incompletePanelRef}
                       className="bg-amber-500/10 rounded-2xl p-4 sm:p-4.5 border border-amber-500/20 space-y-3"
                     >
                       <div className="flex items-center gap-2">

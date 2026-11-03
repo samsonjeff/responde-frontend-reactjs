@@ -358,6 +358,10 @@ export default function Dashboard() {
       return tB - tA;
     });
 
+    // Triage queue: only reports awaiting officer review belong here.
+    // Verified / resolved / rejected reports live on their own pages and tabs.
+    list = list.filter((r) => r.status === 'under_review' || r.status === 'pending');
+
     if (filterUrgency === 'Critical') {
       list = list.filter((r) => formatReportUrgency(r.urgency) === 'Critical');
     } else if (filterUrgency === 'High') {
@@ -613,6 +617,9 @@ export default function Dashboard() {
               <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white tracking-tight">
                 Latest reports
               </h2>
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-xs font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                Under review only
+              </span>
               {selectedType && (
                 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-xs font-semibold bg-[#0071E3]/10 text-[#0071E3] dark:text-sky-400 border border-[#0071E3]/20">
                   <span>Type: {selectedType}</span>
@@ -784,7 +791,7 @@ export default function Dashboard() {
           {/* Footer with View All Link */}
           <div className="p-3.5 sm:p-4 border-t border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-slate-900/40 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 shrink-0">
             <span>
-              Showing {displayReports.length} of {reports.length} reports
+              Showing {displayReports.length} of {underReviewCount} under review
             </span>
             <button
               type="button"

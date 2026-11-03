@@ -107,30 +107,8 @@ function realBarangayOrNull(v?: string | null): string | null {
   return clean;
 }
 
-/** Check if report is incomplete (missing a valid barangay or incident type) */
-export function isReportIncomplete(report?: { barangay?: string | null; type?: string | null } | null): boolean {
-  if (!report) return true;
-  const b = (report.barangay || '').trim().toLowerCase();
-  const isUnknownBarangay = !b || b === 'unknown' || b === 'none' || b === 'unspecified' || b === 'n/a' || b === 'null';
-  // Only a missing barangay makes a report incomplete. Reports with type "Unknown"
-  // stay in Under Review (matches the original working behavior).
-  return isUnknownBarangay;
-}
-
-/** Returns list of human-readable missing/incomplete reasons */
-export function getIncompleteReasons(report?: { barangay?: string | null; type?: string | null } | null): string[] {
-  if (!report) return ['Missing Barangay'];
-  const reasons: string[] = [];
-  const b = (report.barangay || '').trim().toLowerCase();
-  if (!b || b === 'unknown' || b === 'none' || b === 'unspecified' || b === 'n/a' || b === 'null') {
-    reasons.push('Missing Barangay');
-  }
-  const t = (report.type || '').trim().toLowerCase();
-  if (!t || t === 'none' || t === 'unclassified' || t === 'unknown' || t === 'unspecified' || t === 'n/a' || t === 'null' || t === 'undefined') {
-    reasons.push('Missing Incident Type');
-  }
-  return reasons.length > 0 ? reasons : ['Incomplete Details'];
-}
+/** Incomplete-queue rule lives in ./reportTriage (dependency-free, unit-tested). */
+export { isReportIncomplete, getIncompleteReasons } from './reportTriage';
 
 /**
  * Maps disaster/incident types to their canonical brand hex colors.
@@ -315,8 +293,9 @@ export async function fetchReports(): Promise<Report[]> {
       // A. If saved in Supabase incident_reports, officer triage is the authoritative source of truth
       const triaged = triagedMap.get(report.id);
 
-      // Raw-source barangay lookup, shared so a triaged placeholder ('Unknown'/
-      // 'None') falls back to the real recorded value instead of hiding it.
+      // Raw-source barangay lookup, used only when the triaged row carries no
+      // explicit value. An officer-saved 'Unknown' is intentional (marked
+      // incomplete) and must be preserved — never restore the raw value over it.
       const resolveRawBarangay = (): string | null => {
         const cleanId = String(report.id || '').trim();
         const rawDigits = cleanId.replace(/^[a-z]+[-_]/i, '');
@@ -339,8 +318,10 @@ export async function fetchReports(): Promise<Report[]> {
         if (triaged.type !== undefined && triaged.type !== null) {
           report.type = formatReportType(triaged.type);
         }
-        if (triaged.barangay !== undefined && triaged.barangay !== null) {
-          report.barangay = realBarangayOrNull(triaged.barangay) ?? resolveRawBarangay() ?? realBarangayOrNull(report.barangay) ?? 'Unknown';
+        if (triaged.barangay !== undefined && triaged.barangay !== null && String(triaged.barangay).trim() !== '') {
+          report.barangay = String(triaged.barangay).trim();
+        } else {
+          report.barangay = resolveRawBarangay() ?? realBarangayOrNull(report.barangay) ?? 'Unknown';
         }
         if (triaged.urgency !== undefined && triaged.urgency !== null) {
           report.urgency = formatReportUrgency(triaged.urgency);

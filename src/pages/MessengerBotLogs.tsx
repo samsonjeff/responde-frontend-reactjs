@@ -692,7 +692,7 @@ export default function MessengerBotLogs() {
       .map((c) => c.barangay)
       .filter((b): b is string => Boolean(b && !['all barangays', 'none', 'unknown', 'general', 'unspecified', 'n/a', 'null'].includes(b.toLowerCase().trim())));
     const sorted = Array.from(new Set([...TALISAY_BARANGAYS, ...fromConversations])).sort();
-    return ["All Barangays", "Unknown", ...sorted];
+    return ["All Barangays", "None", ...sorted];
   }, [conversations]);
 
   const availableTypes = useMemo(() => {
@@ -701,7 +701,7 @@ export default function MessengerBotLogs() {
     const sorted = Array.from(new Set([...BASE_INCIDENT_TYPES, ...fromConversations, ...fromNLP]))
       .filter((t): t is string => Boolean(t && t.toLowerCase() !== 'all types' && t.toLowerCase() !== 'unclassified' && t.toLowerCase() !== 'none' && t.toLowerCase() !== 'unknown'))
       .sort();
-    return ["All Types", "Unknown", ...sorted];
+    return ["All Types", "None", ...sorted];
   }, [conversations, analyzedConversations]);
 
   const resetFilters = () => {

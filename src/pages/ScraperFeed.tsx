@@ -585,7 +585,7 @@ export default function ScraperFeed() {
     const sorted = Array.from(new Set([...BASE_INCIDENT_TYPES, ...fromPosts]))
       .filter((t): t is string => Boolean(t && t.toLowerCase() !== 'all types' && t.toLowerCase() !== 'unclassified' && t.toLowerCase() !== 'none' && t.toLowerCase() !== 'unknown'))
       .sort();
-    return ["All Types", "Unknown", ...sorted];
+    return ["All Types", "None", ...sorted];
   }, [posts]);
 
   const getPostDateString = (p: ScrapedPost): string | null => {

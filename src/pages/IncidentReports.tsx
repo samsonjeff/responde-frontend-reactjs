@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Filter, Eye, ChevronLeft, ChevronRight,
+  Filter, Eye, ChevronLeft, ChevronRight, Clock,
   AlertTriangle, RotateCcw,
   ShieldCheck, FileText, MapPinned, Bot, Globe,
 } from 'lucide-react';
@@ -23,6 +23,8 @@ import { useRestoreReport } from '../hooks/useRestoreReport';
 import { TALISAY_BARANGAYS } from '../data/talisay-barangays';
 
 export type TabKey = 'under_review' | 'incomplete' | 'verified' | 'resolved' | 'rejected';
+
+export type TableSortMode = 'latest' | 'authorized';
 
 export const BASE_INCIDENT_TYPES = [
   'Earthquake',
@@ -77,7 +79,7 @@ const EASE_OUT = [0.23, 1, 0.32, 1] as const;
 
 
 // ── Pagination Component (Apple Pager Style) ──
-function Pagination({ currentPage, totalPages, onPageChange }: { currentPage: number; totalPages: number; onPageChange: (page: number) => void }) {
+function Pagination({ currentPage, totalPages, onPageChange, sortMode, onSortChange }: { currentPage: number; totalPages: number; onPageChange: (page: number) => void; sortMode: TableSortMode; onSortChange: (mode: TableSortMode) => void }) {
   const safeTotal = Math.max(totalPages, 1);
   const getPages = () => {
     const pages: (number | string)[] = [];
@@ -99,14 +101,41 @@ function Pagination({ currentPage, totalPages, onPageChange }: { currentPage: nu
     <div className="flex items-center justify-between sm:justify-end gap-2 shrink-0 w-full sm:w-auto">
       <button
         type="button"
-        onClick={() => onPageChange(currentPage - 1)}
-        disabled={currentPage === 1}
-        className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-[#0071E3] dark:text-sky-400 bg-blue-500/10 dark:bg-blue-500/20 border border-blue-500/25 dark:border-blue-400/25 rounded-xl hover:bg-[#0071E3] hover:text-white dark:hover:bg-[#0071E3] dark:hover:text-white disabled:opacity-40 disabled:pointer-events-none disabled:cursor-not-allowed transition-all backdrop-blur-md active:scale-[0.96] shadow-2xs cursor-pointer"
+        onClick={() => onSortChange('authorized')}
+        aria-pressed={sortMode === 'authorized'}
+        title="Newly accepted reports first"
+        className={`flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-xl transition-all backdrop-blur-md active:scale-[0.96] shadow-2xs cursor-pointer border ${sortMode === 'authorized'
+          ? 'bg-[#0071E3] dark:bg-[#0071E3] text-white dark:text-white border-[#0071E3] dark:border-[#0071E3] hover:bg-[#0071E3] dark:hover:bg-[#0071E3]'
+          : 'text-[#0071E3] dark:text-sky-400 bg-blue-500/10 dark:bg-blue-500/20 border-blue-500/25 dark:border-blue-400/25 hover:bg-[#0071E3] hover:text-white dark:hover:bg-[#0071E3] dark:hover:text-white'
+          }`}
       >
-        <ChevronLeft className="w-3.5 h-3.5" strokeWidth={1.75} /> <span className="hidden sm:inline">Previous</span><span className="sm:hidden">Prev</span>
+        <ShieldCheck className="w-3.5 h-3.5" strokeWidth={1.75} /> <span>Authorized</span>
+      </button>
+      <button
+        type="button"
+        onClick={() => onSortChange('latest')}
+        aria-pressed={sortMode === 'latest'}
+        title="Most recent reports first"
+        className={`flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-xl transition-all backdrop-blur-md active:scale-[0.96] shadow-2xs cursor-pointer border ${sortMode === 'latest'
+          ? 'bg-[#0071E3] dark:bg-[#0071E3] text-white dark:text-white border-[#0071E3] dark:border-[#0071E3] hover:bg-[#0071E3] dark:hover:bg-[#0071E3]'
+          : 'text-[#0071E3] dark:text-sky-400 bg-blue-500/10 dark:bg-blue-500/20 border-blue-500/25 dark:border-blue-400/25 hover:bg-[#0071E3] hover:text-white dark:hover:bg-[#0071E3] dark:hover:text-white'
+          }`}
+      >
+        <Clock className="w-3.5 h-3.5" strokeWidth={1.75} /> <span>Latest</span>
       </button>
 
       <div className="hidden sm:flex items-center gap-1 bg-slate-100/80 dark:bg-slate-800/80 p-1 rounded-xl border border-slate-200/60 dark:border-white/5 backdrop-blur-md">
+        {currentPage > 1 && (
+          <button
+            type="button"
+            onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+            aria-label="Previous page"
+            title="Previous page"
+            className="w-7 h-7 flex items-center justify-center rounded-lg text-xs font-semibold transition-all active:scale-[0.94] cursor-pointer text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+          >
+            <ChevronLeft className="w-3.5 h-3.5" strokeWidth={2} />
+          </button>
+        )}
         {getPages().map((page, i) =>
           page === '...' ? (
             <span key={`dots-${i}`} className="w-7 h-7 flex items-center justify-center text-xs text-slate-400 dark:text-slate-500">...</span>
@@ -124,20 +153,20 @@ function Pagination({ currentPage, totalPages, onPageChange }: { currentPage: nu
             </button>
           )
         )}
+        <button
+          type="button"
+          onClick={() => onPageChange(Math.min(safeTotal, currentPage + 1))}
+          aria-label="Next page"
+          title="Next page"
+          className="w-7 h-7 flex items-center justify-center rounded-lg text-xs font-semibold transition-all active:scale-[0.94] cursor-pointer text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+        >
+          <ChevronRight className="w-3.5 h-3.5" strokeWidth={2} />
+        </button>
       </div>
 
       <span className="sm:hidden px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white/80 dark:bg-[#111827]/80 backdrop-blur-md border border-slate-200/80 dark:border-white/10 rounded-xl tabular-nums shadow-2xs">
         Page {currentPage} of {safeTotal}
       </span>
-
-      <button
-        type="button"
-        onClick={() => onPageChange(currentPage + 1)}
-        disabled={currentPage >= safeTotal}
-        className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-[#0071E3] dark:text-sky-400 bg-blue-500/10 dark:bg-blue-500/20 border border-blue-500/25 dark:border-blue-400/25 rounded-xl hover:bg-[#0071E3] hover:text-white dark:hover:bg-[#0071E3] dark:hover:text-white disabled:opacity-40 disabled:pointer-events-none disabled:cursor-not-allowed transition-all backdrop-blur-md active:scale-[0.96] shadow-2xs cursor-pointer"
-      >
-        <span className="hidden sm:inline">Next</span><span className="sm:hidden">Next</span> <ChevronRight className="w-3.5 h-3.5" strokeWidth={1.75} />
-      </button>
     </div>
   );
 }
@@ -159,6 +188,7 @@ export default function IncidentReports() {
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [sortMode, setSortMode] = useState<TableSortMode>('latest');
   const loadError = reportsError;
 
   // ── Toast State ──
@@ -340,7 +370,7 @@ export default function IncidentReports() {
       .map(r => r.barangay)
       .filter((b): b is string => Boolean(b && typeof b === 'string' && !['none', 'unknown', 'unspecified', 'n/a', 'null', 'all barangays'].includes(b.toLowerCase().trim())));
     const sorted = Array.from(new Set([...TALISAY_BARANGAYS, ...extra])).sort();
-    return ['All Barangays', 'Unknown', ...sorted];
+    return ['All Barangays', 'None', ...sorted];
   }, [reports]);
 
   const availableFilterTypes = useMemo(() => {
@@ -348,7 +378,7 @@ export default function IncidentReports() {
     const sorted = Array.from(new Set([...BASE_INCIDENT_TYPES, ...fromReports]))
       .filter((t): t is string => Boolean(t && t.toLowerCase() !== 'all types' && t.toLowerCase() !== 'unclassified' && t.toLowerCase() !== 'none' && t.toLowerCase() !== 'unknown'))
       .sort();
-    return ['All Types', 'Unknown', ...sorted];
+    return ['All Types', 'None', ...sorted];
   }, [reports]);
 
 
@@ -462,13 +492,43 @@ export default function IncidentReports() {
     });
   }, [reports, activeTab, filterSource, filterBarangay, filterType, filterUrgency, fromDate, toDate, searchQuery]);
 
-  const totalPages = Math.ceil(filteredReports.length / itemsPerPage);
+  const getCreatedTimestamp = (r: Report): number => {
+    if (r.createdAt) {
+      const t = new Date(r.createdAt).getTime();
+      if (!isNaN(t)) return t;
+    }
+    return 0;
+  };
+
+  const getAcceptedTimestamp = (r: Report): number => {
+    for (const v of [r.verifiedAt, r.resolvedAt]) {
+      if (v) {
+        const t = new Date(v).getTime();
+        if (!isNaN(t)) return t;
+      }
+    }
+    return 0;
+  };
+
+  // Master table ordering: Latest = most recently created first,
+  // Authorized = most recently accepted (verified / resolved) first.
+  const orderedReports = useMemo(() => {
+    const list = [...filteredReports];
+    if (sortMode === 'authorized') {
+      list.sort((a, b) => getAcceptedTimestamp(b) - getAcceptedTimestamp(a));
+    } else {
+      list.sort((a, b) => getCreatedTimestamp(b) - getCreatedTimestamp(a));
+    }
+    return list;
+  }, [filteredReports, sortMode]);
+
+  const totalPages = Math.ceil(orderedReports.length / itemsPerPage);
 
   // Clamp page when tab switches, searches, or triage updates shrink the result set
   useEffect(() => {
     if (totalPages > 0 && currentPage > totalPages) setCurrentPage(totalPages);
   }, [currentPage, totalPages]);
-  const paginatedReports = filteredReports.slice(
+  const paginatedReports = orderedReports.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
@@ -1098,6 +1158,8 @@ export default function IncidentReports() {
             currentPage={currentPage}
             totalPages={totalPages}
             onPageChange={setCurrentPage}
+            sortMode={sortMode}
+            onSortChange={(mode) => { setSortMode(mode); setCurrentPage(1); }}
           />
         </div>
       </div>
