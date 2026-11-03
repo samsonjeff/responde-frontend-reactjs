@@ -5,6 +5,8 @@ import { NotificationProvider } from './context/NotificationContext';
 import { BotConversationsProvider } from './context/BotConversationsContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Landing from './website/Landing-Page';
+import PrivacyPolicy from './website/PrivacyPolicy';
+import TermsOfUse from './website/TermsOfUse';
 import Login from './pages/Login';
 import AuthCallback from './pages/AuthCallback';
 import Register from './pages/Register';
@@ -51,6 +53,8 @@ function App() {
           <Route path="/login" element={<LoginRoute />} />
           <Route path="/register" element={<Register />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/terms" element={<TermsOfUse />} />
 
           {/* Protected admin routes — require valid session cookie */}
           <Route element={<ProtectedRoute />}>

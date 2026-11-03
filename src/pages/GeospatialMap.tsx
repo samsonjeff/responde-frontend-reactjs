@@ -1306,7 +1306,7 @@ export default function GeospatialMap() {
       return s === 'verified';
     }
     if (filterStatus === 'All Reports' || filterStatus === 'All') {
-      return s !== 'rejected';
+      return true;
     }
     const target = filterStatus.trim().toLowerCase().replace(/\s+/g, '_');
     return s === target;
@@ -1477,6 +1477,21 @@ export default function GeospatialMap() {
       setSearchParams({}, { replace: true });
     }
   }, [searchParams, pinReports, reports, filterStatus, setSearchParams]);
+
+  // Handle URL ?barangay= param (e.g. from GlobalSearch): fly to and select the barangay
+  useEffect(() => {
+    const barangayParam = searchParams.get('barangay');
+    if (!barangayParam) return undefined;
+    const meta = getBarangayMeta(barangayParam);
+    const timer = setTimeout(() => {
+      setSearchParams({}, { replace: true });
+      if (!meta) return;
+      setDrawerOpen(true);
+      window.dispatchEvent(new CustomEvent('map-fly-to', { detail: { center: meta.centroid, zoom: 14 } }));
+      setSelected({ type: 'barangay', id: meta.id, name: meta.name });
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchParams, setSearchParams]);
 
   // Selected data
   const selectedReport = selected?.type === 'incident'

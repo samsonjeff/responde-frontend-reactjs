@@ -972,7 +972,7 @@ export default function Settings() {
       return false;
     }
 
-    const q = searchQuery.toLowerCase();
+    const q = searchQuery.trim().toLowerCase();
     return (
       (u.full_name || '').toLowerCase().includes(q) ||
       (u.email || '').toLowerCase().includes(q) ||

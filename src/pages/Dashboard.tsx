@@ -42,6 +42,12 @@ function formatDashboardTime(timeStr?: string, createdAt?: string): string {
 }
 
 
+function normalizeTypeLabel(t?: string | null): string {
+  const raw = (t || 'Unknown').trim();
+  const lower = raw.toLowerCase();
+  return !raw || lower === 'none' || lower === 'unclassified' || lower === 'unknown' ? 'Unknown' : raw;
+}
+
 const risenChartKeys = new Set<string>();
 
 function MinimalWaveBar(props: any) {
@@ -638,7 +644,7 @@ export default function Dashboard() {
               </div>
             ) : (
               displayReports.map((report) => {
-                const isTypeMatch = selectedType && report.type?.toLowerCase() === selectedType.toLowerCase();
+                const isTypeMatch = selectedType && normalizeTypeLabel(report.type).toLowerCase() === selectedType.toLowerCase();
                 return (
                   <div
                     key={report.id}
@@ -711,7 +717,7 @@ export default function Dashboard() {
                   </tr>
                 ) : (
                   displayReports.map((report) => {
-                    const isTypeMatch = selectedType && report.type?.toLowerCase() === selectedType.toLowerCase();
+                    const isTypeMatch = selectedType && normalizeTypeLabel(report.type).toLowerCase() === selectedType.toLowerCase();
                     return (
                       <tr
                         key={report.id}

@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { MapPin, Phone, Mail } from 'lucide-react';
@@ -234,30 +235,21 @@ export default function Footer() {
           </p>
 
           <div className="flex items-center gap-3 flex-wrap justify-center font-normal">
-            <a
-              href="#privacy"
+            <Link
+              to="/privacy"
               className="text-[#A1A1A6] hover:text-[#F5F5F7] transition-colors duration-150"
             >
               Privacy Policy
-            </a>
+            </Link>
             <span className="text-white/15" aria-hidden="true">
               •
             </span>
-            <a
-              href="#terms"
+            <Link
+              to="/terms"
               className="text-[#A1A1A6] hover:text-[#F5F5F7] transition-colors duration-150"
             >
               Terms of Use
-            </a>
-            <span className="text-white/15" aria-hidden="true">
-              •
-            </span>
-            <a
-              href="#contact"
-              className="text-[#A1A1A6] hover:text-[#F5F5F7] transition-colors duration-150"
-            >
-              Contact
-            </a>
+            </Link>
           </div>
         </div>
       </div>

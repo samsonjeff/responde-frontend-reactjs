@@ -250,7 +250,7 @@ export default function GlobalSearch() {
         badge: c.type || c.status,
         badgeColor: 'bg-sky-100 text-sky-700 dark:bg-sky-950/60 dark:text-sky-300',
         icon: <MessageSquare className="w-4 h-4 text-sky-500" strokeWidth={1.75} />,
-        action: () => navigate('/messenger-bot-logs'),
+        action: () => navigate(`/messenger-bot-logs?focus=${c.id}`),
       });
     });
 

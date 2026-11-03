@@ -591,7 +591,7 @@ export default function IncidentReports() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [activeTab, filterSource, filterBarangay, filterType, filterUrgency, fromDate, toDate]);
+  }, [activeTab, filterSource, filterBarangay, filterType, filterUrgency, fromDate, toDate, searchQuery]);
 
   const availableBarangayOptions = useMemo(() => {
     const extra = reports
@@ -974,7 +974,7 @@ export default function IncidentReports() {
         const fu = filterUrgency.toLowerCase();
         if (fu === 'critical' && u !== 'critical') return false;
         if (fu === 'high' && u !== 'high') return false;
-        if (fu === 'moderate' && u !== 'moderate' && u !== 'mod') return false;
+        if (fu === 'moderate' && u !== 'moderate' && u !== 'mod' && u !== 'medium') return false;
         if (fu === 'low' && u !== 'low') return false;
       }
       if (fromDate) {
@@ -990,6 +990,11 @@ export default function IncidentReports() {
   }, [reports, activeTab, filterSource, filterBarangay, filterType, filterUrgency, fromDate, toDate, searchQuery]);
 
   const totalPages = Math.ceil(filteredReports.length / itemsPerPage);
+
+  // Clamp page when tab switches, searches, or triage updates shrink the result set
+  useEffect(() => {
+    if (totalPages > 0 && currentPage > totalPages) setCurrentPage(totalPages);
+  }, [currentPage, totalPages]);
   const paginatedReports = filteredReports.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage

@@ -9,6 +9,7 @@ import DatePicker from "../components/DatePicker";
 import FilterDropdown from "../components/DropDown";
 import PageLoader from "../components/PageLoader";
 import { StaggerContainer, StaggerItem } from "../components/Stagger";
+import { useSearchParams } from "react-router-dom";
 import { useBotConversations, type BotConversation as Conversation } from "../context/BotConversationsContext";
 import { TALISAY_BARANGAYS } from "../data/talisay-barangays";
 import { extractDisplayTime, formatPhilippineTimeOnly, formatPhilippineDateOnly } from "../utils/dateUtils";
@@ -549,7 +550,7 @@ export default function MessengerBotLogs() {
   // Reset to first page when any debounced filter changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [debouncedBarangay, debouncedType, debouncedUrgency, debouncedStatus, debouncedFromDate, debouncedToDate]);
+  }, [debouncedBarangay, debouncedType, debouncedUrgency, debouncedStatus, debouncedFromDate, debouncedToDate, viewMode]);
   const chatScrollRef = useRef<HTMLDivElement>(null);
   const [highlightedDistressIdx, setHighlightedDistressIdx] = useState<number | null>(null);
   const preferredDirectionRef = useRef<'up' | 'down'>('up');
@@ -797,7 +798,7 @@ export default function MessengerBotLogs() {
         const du = debouncedUrgency.toLowerCase();
         if (du === "critical" && u !== "critical") return false;
         if (du === "high" && u !== "high") return false;
-        if (du === "moderate" && u !== "moderate" && u !== "mod") return false;
+        if (du === "moderate" && u !== "moderate" && u !== "mod" && u !== "medium") return false;
         if (du === "low" && u !== "low") return false;
       }
 
@@ -820,15 +821,32 @@ export default function MessengerBotLogs() {
   }, [analyzedConversations, viewMode, debouncedBarangay, debouncedType, debouncedUrgency, debouncedStatus, debouncedFromDate, debouncedToDate]);
 
   const totalPages = Math.max(1, Math.ceil(filteredConversations.length / PAGE_SIZE));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
 
   const paginatedConversations = useMemo(() => {
-    const start = (currentPage - 1) * PAGE_SIZE;
+    const start = (safeCurrentPage - 1) * PAGE_SIZE;
     return filteredConversations.slice(start, start + PAGE_SIZE);
-  }, [filteredConversations, currentPage]);
+  }, [filteredConversations, safeCurrentPage]);
+
+  // (stale pages are prevented by safeCurrentPage above)
 
   const selectedConversation = selectedId
     ? filteredConversations.find((c) => c.id === selectedId) || null
     : null;
+
+  // Deep-link ?focus= (e.g. from GlobalSearch): select the conversation once loaded
+  const [searchParams, setSearchParams] = useSearchParams();
+  useEffect(() => {
+    const focusId = searchParams.get('focus');
+    if (!focusId) return undefined;
+    const timer = setTimeout(() => {
+      const target = conversations.find((c) => c.id === focusId);
+      if (!target) return; // keep param; retry when conversations arrive
+      setSearchParams({}, { replace: true });
+      handleSelectConversation(target.id);
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [searchParams, conversations, setSearchParams]);
 
   // Sync selectedId when active filter excludes previous selection
   useEffect(() => {
@@ -1591,12 +1609,12 @@ export default function MessengerBotLogs() {
               {filteredConversations.length > PAGE_SIZE && (
                 <div className="px-3.5 py-2.5 border-t border-slate-200/60 dark:border-white/5 bg-slate-50/40 dark:bg-white/[0.02] flex items-center justify-between shrink-0">
                   <span className="text-[11px] text-slate-500 dark:text-slate-400 tabular-nums">
-                    Showing {(currentPage - 1) * PAGE_SIZE + 1}–{Math.min(currentPage * PAGE_SIZE, filteredConversations.length)} of {filteredConversations.length}
+                    Showing {(safeCurrentPage - 1) * PAGE_SIZE + 1}–{Math.min(safeCurrentPage * PAGE_SIZE, filteredConversations.length)} of {filteredConversations.length}
                   </span>
                   <div className="flex items-center gap-1.5">
                     <button
                       type="button"
-                      disabled={currentPage <= 1}
+                      disabled={safeCurrentPage <= 1}
                       onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                       className="p-1.5 rounded-lg border border-blue-500/25 dark:border-blue-400/25 bg-blue-500/10 dark:bg-blue-500/20 text-[#0071E3] dark:text-sky-400 disabled:opacity-30 disabled:pointer-events-none hover:bg-[#0071E3] hover:text-white dark:hover:bg-[#0071E3] dark:hover:text-white active:scale-95 transition-all cursor-pointer shadow-2xs"
                       title="Previous Page"
@@ -1604,11 +1622,11 @@ export default function MessengerBotLogs() {
                       <ChevronLeft className="w-3.5 h-3.5" strokeWidth={1.75} />
                     </button>
                     <span className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 px-1.5 tabular-nums">
-                      {currentPage} / {totalPages}
+                      {safeCurrentPage} / {totalPages}
                     </span>
                     <button
                       type="button"
-                      disabled={currentPage >= totalPages}
+                      disabled={safeCurrentPage >= totalPages}
                       onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                       className="p-1.5 rounded-lg border border-blue-500/25 dark:border-blue-400/25 bg-blue-500/10 dark:bg-blue-500/20 text-[#0071E3] dark:text-sky-400 disabled:opacity-30 disabled:pointer-events-none hover:bg-[#0071E3] hover:text-white dark:hover:bg-[#0071E3] dark:hover:text-white active:scale-95 transition-all cursor-pointer shadow-2xs"
                       title="Next Page"

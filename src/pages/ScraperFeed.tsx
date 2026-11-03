@@ -314,7 +314,7 @@ export default function ScraperFeed() {
   // Reset to first page when any debounced filter changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [debouncedBarangay, debouncedType, debouncedUrgency, debouncedStatus, debouncedFromDate, debouncedToDate]);
+  }, [debouncedBarangay, debouncedType, debouncedUrgency, debouncedStatus, debouncedFromDate, debouncedToDate, viewMode]);
 
   // -- Toast State --
   const [toasts, setToasts] = useState<Toast[]>([]);
@@ -631,6 +631,11 @@ export default function ScraperFeed() {
     const start = (currentPage - 1) * PAGE_SIZE;
     return filteredPosts.slice(start, start + PAGE_SIZE);
   }, [filteredPosts, currentPage]);
+
+  // Clamp page when filters shrink the result set (prevents stale empty pages)
+  useEffect(() => {
+    if (currentPage > totalPages) setCurrentPage(totalPages);
+  }, [currentPage, totalPages]);
 
   const selectedPost = filteredPosts.find((p) => p.id === selectedId) || paginatedPosts[0] || null;
 

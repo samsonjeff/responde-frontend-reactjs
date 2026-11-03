@@ -554,8 +554,8 @@ export default function Analytics() {
         const p = parseReportTime(r.time);
         return p && `${p.month}/${p.day}` === todayStr && r.status === 'verified';
       }).length,
-      incomplete: (reports as any[]).filter(
-        (r) => r.status === 'under_review' || r.status === 'incomplete'
+      incomplete: reports.filter(
+        (r) => r.status === 'under_review' || r.status === 'pending'
       ).length,
       bot: filtered.filter((r) => r.source?.toLowerCase().includes('bot')).length,
       scraper: filtered.filter((r) => r.source?.toLowerCase().includes('scraper')).length,
