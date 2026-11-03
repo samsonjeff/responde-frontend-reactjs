@@ -503,7 +503,7 @@ export const authService = {
     password: string;
     username?: string;
     full_name: string;
-  }): Promise<AuthUser> {
+  }): Promise<{ success: boolean; message: string; role: string }> {
     const res = await apiFetch('/api/auth/register', {
       method: 'POST',
       body: JSON.stringify(payload),
@@ -514,7 +514,7 @@ export const authService = {
         reason: data.reason ?? 'registration_error',
       });
     }
-    return (data.user ?? data) as AuthUser;
+    return data;
   },
 
   /**
@@ -523,7 +523,7 @@ export const authService = {
    */
   async generateInvite(
     target_role: 'admin' | 'staff' | 'super_admin'
-  ): Promise<{ token: string; invite_url: string; target_role: string; expires_in: string }> {
+  ): Promise<{ success: boolean; invite_url: string; target_role: string; expires_in: string }> {
     const res = await apiFetch('/api/auth/invite', {
       method: 'POST',
       body: JSON.stringify({ target_role }),

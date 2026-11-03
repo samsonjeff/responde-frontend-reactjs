@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabaseClient';
 import { TALISAY_BARANGAYS } from '../data/talisay-barangays';
 import { formatTimestampPHT } from '../utils/dateUtils';
 import { apiRequest } from '../services/apiClient';
-import { isIncidentIntent, normalizeIntent } from '../utils/intentUtils';
+import { isIncidentIntent, isEmergencyReportIntent, normalizeIntent } from '../utils/intentUtils';
 import { formatReportType, formatReportUrgency } from '../services/incidentService';
 
 // ── Types ──
@@ -21,6 +21,7 @@ export interface BotConversation {
   type: string;
   urgency?: string;
   intent?: string;
+  hasEmergencyReport: boolean;
   status: 'Incomplete' | 'Complete';
   time: string;
   createdAt?: string;
@@ -54,8 +55,8 @@ function normalizeBarangayName(name: string): string {
 export const initialBotConversations: BotConversation[] = [];
 
 const STORAGE_KEY = 'responde_bot_status_overrides_v2';
-const BOT_CONVERSATIONS_CACHE_KEY = 'responde_cached_bot_conversations';
-const INACTIVITY_GAP_MS = 60 * 60 * 1000;
+const BOT_CONVERSATIONS_CACHE_KEY = 'responde_cached_bot_conversations_v2';
+const INACTIVITY_GAP_MS = 30 * 60 * 1000;
 const POLL_INTERVAL_MS = 60_000; // 60s standard poll interval to reduce server pressure
 const BACKOFF_INTERVAL_MS = 120_000; // 2 min backoff when rate-limited
 
@@ -183,6 +184,7 @@ export function BotConversationsProvider({ children }: { children: ReactNode }) 
       urgency: string;
       intent: string;
       hasIncidentIntent: boolean;
+      hasEmergencyReport: boolean;
       needsReview: boolean;
       messages: BotMessage[];
     };
@@ -222,6 +224,7 @@ export function BotConversationsProvider({ children }: { children: ReactNode }) 
         : '';
       const rowIntent = row.intent && String(row.intent).trim() ? String(row.intent).trim() : 'OTHER';
       const isRowIncident = isIncidentIntent(rowIntent);
+      const isRowEmergency = isEmergencyReportIntent(rowIntent);
       const rowUrgency = row.urgency && String(row.urgency).trim() ? String(row.urgency).trim() : 'Low';
 
       const rowNeedsReview = Boolean(
@@ -242,6 +245,7 @@ export function BotConversationsProvider({ children }: { children: ReactNode }) 
           urgency: rowUrgency,
           intent: rowIntent,
           hasIncidentIntent: isRowIncident,
+          hasEmergencyReport: isRowEmergency,
           needsReview: rowNeedsReview,
           messages: [],
         };
@@ -255,6 +259,7 @@ export function BotConversationsProvider({ children }: { children: ReactNode }) 
         }
         if (isRowIncident) {
           session.hasIncidentIntent = true;
+          if (isRowEmergency) session.hasEmergencyReport = true;
           session.intent = rowIntent;
           if (rowUrgency) session.urgency = rowUrgency;
         } else if (!session.hasIncidentIntent && rowIntent) {
@@ -305,6 +310,7 @@ export function BotConversationsProvider({ children }: { children: ReactNode }) 
             type: isRealType(session.type) ? formatReportType(session.type) : 'Unknown',
             urgency: session.urgency ? formatReportUrgency(session.urgency) : 'Low',
             intent: normalizeIntent(session.intent),
+            hasEmergencyReport: session.hasEmergencyReport,
             status: override || calculatedStatus,
             time: timeFormatted,
             createdAt: new Date(session.lastTime).toISOString(),

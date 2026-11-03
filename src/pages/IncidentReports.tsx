@@ -2182,7 +2182,7 @@ export default function IncidentReports() {
                         }}
                         className="flex-1 sm:flex-none justify-center px-4 py-2.5 min-h-[42px] text-xs font-semibold text-amber-700 dark:text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 rounded-xl transition-all flex items-center gap-1.5 active:scale-[0.97] cursor-pointer"
                       >
-                        <AlertTriangle className="w-3.5 h-3.5" strokeWidth={1.75} /> Mark Incomplete
+                        <AlertTriangle className="w-3.5 h-3.5" strokeWidth={1.75} /> Incomplete
                       </button>
                       <button
                         type="button"

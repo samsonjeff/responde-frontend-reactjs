@@ -243,10 +243,10 @@ export default function Dashboard() {
     const counts: Record<string, { count: number; critical: number; high: number; mod: number; low: number; brgys: Record<string, number> }> = {};
 
     reports.forEach((r) => {
-      const raw = (r.type || 'None').trim();
+      const raw = (r.type || 'Unknown').trim();
       const norm =
-        !raw || raw.toLowerCase() === 'none' || raw.toLowerCase() === 'unclassified'
-          ? 'None'
+        !raw || raw.toLowerCase() === 'none' || raw.toLowerCase() === 'unclassified' || raw.toLowerCase() === 'unknown'
+          ? 'Unknown'
           : raw;
 
       if (!counts[norm]) {
@@ -288,8 +288,8 @@ export default function Dashboard() {
   const selectedTypeDetails = useMemo(() => {
     if (!selectedType) return null;
     const matching = reports.filter((r) => {
-      const raw = (r.type || 'None').trim();
-      const norm = !raw || raw.toLowerCase() === 'none' || raw.toLowerCase() === 'unclassified' ? 'None' : raw;
+      const raw = (r.type || 'Unknown').trim();
+      const norm = !raw || raw.toLowerCase() === 'none' || raw.toLowerCase() === 'unclassified' || raw.toLowerCase() === 'unknown' ? 'Unknown' : raw;
       return norm.toLowerCase() === selectedType.toLowerCase();
     });
 
@@ -353,8 +353,8 @@ export default function Dashboard() {
 
     if (selectedType) {
       list = list.filter((r) => {
-        const raw = (r.type || 'None').trim();
-        const norm = !raw || raw.toLowerCase() === 'none' || raw.toLowerCase() === 'unclassified' ? 'None' : raw;
+        const raw = (r.type || 'Unknown').trim();
+        const norm = !raw || raw.toLowerCase() === 'none' || raw.toLowerCase() === 'unclassified' || raw.toLowerCase() === 'unknown' ? 'Unknown' : raw;
         return norm.toLowerCase() === selectedType.toLowerCase();
       });
     }

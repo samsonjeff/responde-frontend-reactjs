@@ -92,6 +92,20 @@ export function formatReportType(t?: string | null): string {
   return clean.charAt(0).toUpperCase() + clean.slice(1);
 }
 
+/**
+ * Returns the barangay only when it names a real place.
+ * Placeholders ('Unknown', 'None', 'n/a', ...) and blanks resolve to null
+ * so callers can fall back to the raw recorded value.
+ */
+function realBarangayOrNull(v?: string | null): string | null {
+  if (v === undefined || v === null) return null;
+  const clean = String(v).trim();
+  if (!clean) return null;
+  const lower = clean.toLowerCase();
+  if (lower === 'unknown' || lower === 'none' || lower === 'unspecified' || lower === 'n/a' || lower === 'null' || lower === 'undefined') return null;
+  return clean;
+}
+
 /** Check if report is incomplete (missing a valid barangay or incident type) */
 export function isReportIncomplete(report?: { barangay?: string | null; type?: string | null } | null): boolean {
   if (!report) return true;
@@ -299,12 +313,33 @@ export async function fetchReports(): Promise<Report[]> {
 
       // A. If saved in Supabase incident_reports, officer triage is the authoritative source of truth
       const triaged = triagedMap.get(report.id);
+
+      // Raw-source barangay lookup, shared so a triaged placeholder ('Unknown'/
+      // 'None') falls back to the real recorded value instead of hiding it.
+      const resolveRawBarangay = (): string | null => {
+        const cleanId = String(report.id || '').trim();
+        const rawDigits = cleanId.replace(/^[a-z]+[-_]/i, '');
+        const segments = rawDigits.split('_');
+        const lastSegment = segments[segments.length - 1] || rawDigits;
+        const conv =
+          convMap.get(cleanId) ||
+          convMap.get(rawDigits) ||
+          (report.conversationId ? convMap.get(report.conversationId) : null) ||
+          (report.senderPsid ? convMap.get(`psid-${report.senderPsid}`) : null);
+        const fb =
+          fbMap.get(cleanId) ||
+          fbMap.get(rawDigits) ||
+          fbMap.get(`fb-${rawDigits}`) ||
+          fbMap.get(lastSegment);
+        const raw = conv ? conv.barangay : (fb ? fb.barangay : null);
+        return realBarangayOrNull(raw);
+      };
       if (triaged) {
         if (triaged.type !== undefined && triaged.type !== null) {
           report.type = formatReportType(triaged.type);
         }
         if (triaged.barangay !== undefined && triaged.barangay !== null) {
-          report.barangay = triaged.barangay;
+          report.barangay = realBarangayOrNull(triaged.barangay) ?? resolveRawBarangay() ?? realBarangayOrNull(report.barangay) ?? 'Unknown';
         }
         if (triaged.urgency !== undefined && triaged.urgency !== null) {
           report.urgency = formatReportUrgency(triaged.urgency);

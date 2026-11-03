@@ -46,6 +46,16 @@ export function isIncidentIntent(intent?: string | null): boolean {
 }
 
 /**
+ * Returns true only for the Emergency Report intent (raw 'EMERGENCY_REPORT').
+ * Used to split Incidents vs All Logs tabs strictly by stored intent.
+ */
+export function isEmergencyReportIntent(intent?: string | null): boolean {
+  if (!intent) return false;
+  const clean = String(intent).trim().toUpperCase().replace(/[\s\/-]+/g, '_');
+  return clean === 'EMERGENCY_REPORT';
+}
+
+/**
  * Returns true if the intent belongs in the All Logs / All Posts feed:
  * - Casual or Greeting
  * - Other

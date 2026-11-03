@@ -271,9 +271,9 @@ export function analyzeConvoNLP(convo: Conversation): ConvoNLPAnalysis {
     }
   }
 
-  let incidentType = "None";
+  let incidentType = "Unknown";
   if (!isIncident) {
-    incidentType = "None";
+    incidentType = "Unknown";
   } else if (isExplicitIncidentType) {
     const matched = INCIDENT_TYPE_CHOICES.find((c) => c.toLowerCase() === convo.type.toLowerCase());
     incidentType = matched || convo.type;
@@ -621,12 +621,12 @@ export default function MessengerBotLogs() {
     });
   }, [conversations]);
 
-  const incidentCount = useMemo(() => analyzedConversations.filter(c => c.nlp.isIncident).length, [analyzedConversations]);
-  const rawCount = analyzedConversations.length;
+  const incidentCount = useMemo(() => analyzedConversations.filter(c => c.hasEmergencyReport).length, [analyzedConversations]);
+  const rawCount = useMemo(() => analyzedConversations.filter(c => !c.hasEmergencyReport).length, [analyzedConversations]);
 
   const unseenCount = useMemo(() => {
     return analyzedConversations.filter((c) => {
-      if (viewMode === "structured" && !c.nlp.isIncident) return false;
+      if (viewMode === "structured" && !c.hasEmergencyReport) return false;
       return !seenConvoIds.has(c.id);
     }).length;
   }, [analyzedConversations, viewMode, seenConvoIds]);
@@ -698,9 +698,9 @@ export default function MessengerBotLogs() {
     const fromConversations = conversations.map((c) => c.type).filter(Boolean);
     const fromNLP = analyzedConversations.map((c) => c.nlp?.incidentType).filter(Boolean);
     const sorted = Array.from(new Set([...BASE_INCIDENT_TYPES, ...fromConversations, ...fromNLP]))
-      .filter((t): t is string => Boolean(t && t.toLowerCase() !== 'all types' && t.toLowerCase() !== 'unclassified' && t.toLowerCase() !== 'none'))
+      .filter((t): t is string => Boolean(t && t.toLowerCase() !== 'all types' && t.toLowerCase() !== 'unclassified' && t.toLowerCase() !== 'none' && t.toLowerCase() !== 'unknown'))
       .sort();
-    return ["All Types", "None", ...sorted];
+    return ["All Types", "Unknown", ...sorted];
   }, [conversations, analyzedConversations]);
 
   const resetFilters = () => {
@@ -756,8 +756,9 @@ export default function MessengerBotLogs() {
     const isFilteringNone = isFilteringNoneBarangay || isFilteringNoneType;
 
     return analyzedConversations.filter((c) => {
-      // In structured mode, only show incidents unless actively filtering for unclassified/None
-      if (viewMode === "structured" && !isFilteringNone && !c.nlp.isIncident) return false;
+      // In structured mode, only show incidents unless actively filtering for unclassified/Unknown
+      if (viewMode === "structured" && !isFilteringNone && !c.hasEmergencyReport) return false;
+      if (viewMode === "unstructured" && c.hasEmergencyReport) return false;
 
       // 1. Barangay filter
       if (debouncedBarangay !== "All Barangays") {
@@ -776,9 +777,9 @@ export default function MessengerBotLogs() {
         const nlpType = (c.nlp?.incidentType || "").toLowerCase().trim();
         const resolvedType = (cType && cType !== "none" && cType !== "unclassified" && cType !== "null" && cType !== "unknown")
           ? cType
-          : (nlpType && nlpType !== "none" && nlpType !== "unclassified" && nlpType !== "null" && nlpType !== "unknown" ? nlpType : "none");
+          : (nlpType && nlpType !== "none" && nlpType !== "unclassified" && nlpType !== "null" && nlpType !== "unknown" ? nlpType : "unknown");
 
-        const isNoneType = resolvedType === "none";
+        const isNoneType = resolvedType === "unknown";
 
         if (isFilteringNoneType) {
           if (!isNoneType) return false;
@@ -1510,9 +1511,9 @@ export default function MessengerBotLogs() {
                               <div className="flex items-center gap-1.5 mb-1 text-[11px] text-slate-400 dark:text-slate-500 font-medium">
                                 <span className="truncate max-w-[140px] sm:max-w-none flex items-center gap-1">
                                   <span>{(() => {
-                                    const t = (convo.type && convo.type.toLowerCase() !== "none" && convo.type.toLowerCase() !== "unclassified")
+                                    const t = (convo.type && convo.type.toLowerCase() !== "none" && convo.type.toLowerCase() !== "unknown" && convo.type.toLowerCase() !== "unclassified")
                                       ? convo.type
-                                      : (convo.nlp?.incidentType && convo.nlp.incidentType.toLowerCase() !== "none" ? convo.nlp.incidentType : "None");
+                                      : (convo.nlp?.incidentType && convo.nlp.incidentType.toLowerCase() !== "none" && convo.nlp.incidentType.toLowerCase() !== "unknown" ? convo.nlp.incidentType : "Unknown");
                                     return t;
                                   })()}</span>
                                   <span className="text-slate-300 dark:text-slate-600">•</span>
@@ -1669,9 +1670,9 @@ export default function MessengerBotLogs() {
                             <span className="truncate">{selectedConversation.barangay && selectedConversation.barangay !== "None" ? selectedConversation.barangay : "Unknown"}</span>
                             <span className="text-slate-300 dark:text-slate-600 shrink-0">•</span>
                             <span className="truncate">{(() => {
-                              const t = (selectedConversation.type && selectedConversation.type.toLowerCase() !== "none" && selectedConversation.type.toLowerCase() !== "unclassified")
+                              const t = (selectedConversation.type && selectedConversation.type.toLowerCase() !== "none" && selectedConversation.type.toLowerCase() !== "unknown" && selectedConversation.type.toLowerCase() !== "unclassified")
                                 ? selectedConversation.type
-                                : (selectedConversation.nlp?.incidentType && selectedConversation.nlp.incidentType.toLowerCase() !== "none" ? selectedConversation.nlp.incidentType : "None");
+                                : (selectedConversation.nlp?.incidentType && selectedConversation.nlp.incidentType.toLowerCase() !== "none" && selectedConversation.nlp.incidentType.toLowerCase() !== "unknown" ? selectedConversation.nlp.incidentType : "Unknown");
                               return t;
                             })()}</span>
 
