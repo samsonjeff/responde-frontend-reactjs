@@ -1252,7 +1252,7 @@ export default function GeospatialMap() {
   const loading = reportsLoading || !minDelayDone;
 
   // 3D Perspective View State & Pitch Listener
-  const [is3DMode, setIs3DMode] = useState(false);
+  const [is3DMode, setIs3DMode] = useState(true);
 
   const handleToggle3D = useCallback(() => {
     const nextState = !is3DMode;

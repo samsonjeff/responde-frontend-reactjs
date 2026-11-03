@@ -10,7 +10,7 @@ import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&ur
 
 maplibregl.setWorkerUrl(maplibreWorkerUrl);
 
-import { buildRasterStyle, DEFAULT_CENTER, DEFAULT_ZOOM, MAX_BOUNDS } from '../lib/map-styles';
+import { buildRasterStyle, DEFAULT_ZOOM, DEFAULT_BEARING, DEFAULT_PITCH, DEFAULT_3D_CENTER, DEFAULT_3D_BEARING, DEFAULT_3D_PITCH, MAX_BOUNDS } from '../lib/map-styles';
 import type { BarangayFeatureCollection, MapLayerState, SelectedFeature } from '../types/geospatial';
 import type { Report } from '../data/sample-reports';
 
@@ -414,8 +414,10 @@ export default function MapContainer({
             const map = new maplibregl.Map({
                 container: mapContainerRef.current,
                 style: buildRasterStyle('https://tile.openstreetmap.org/{z}/{x}/{y}.png'),
-                center: DEFAULT_CENTER,
+                center: DEFAULT_3D_CENTER,
                 zoom: DEFAULT_ZOOM,
+                bearing: DEFAULT_3D_BEARING,
+                pitch: DEFAULT_3D_PITCH,
                 maxBounds: MAX_BOUNDS,
                 attributionControl: false,
             });
@@ -566,6 +568,10 @@ export default function MapContainer({
                         visibility: isArcsVisible ? 'visible' : 'none',
                     },
                 });
+
+                // Map opens in 3D, so seed ground-shadow opacity for the initial pitch
+                // (same formula the 'pitch' handler applies on later tilts)
+                map.setPaintProperty(DISPATCH_SHADOWS_LAYER_ID, 'line-opacity', Math.sin((DEFAULT_3D_PITCH * Math.PI) / 180) * 0.25);
 
                 // Layer 1: Destination Target Rings
                 map.addLayer({
@@ -795,9 +801,9 @@ export default function MapContainer({
             const handleToggle3D = (e: any) => {
                 const is3D = !!e.detail?.is3D;
                 if (is3D) {
-                    map.easeTo({ pitch: 65, bearing: -25, center: [121.02, 14.075], duration: 1200 });
+                    map.easeTo({ pitch: DEFAULT_3D_PITCH, bearing: DEFAULT_3D_BEARING, center: DEFAULT_3D_CENTER, duration: 1200 });
                 } else {
-                    map.easeTo({ pitch: 0, bearing: 0, duration: 1000 });
+                    map.easeTo({ pitch: DEFAULT_PITCH, bearing: DEFAULT_BEARING, duration: 1000 });
                 }
             };
             window.addEventListener('map-toggle-3d', handleToggle3D);

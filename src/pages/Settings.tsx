@@ -1118,19 +1118,19 @@ export default function Settings() {
                 <div className="pt-6 flex flex-col md:flex-row items-stretch gap-5 lg:gap-6">
                   {/* Left Column: Profile Card (40% width with Glass iOS UI) */}
                   <div className="w-full md:w-[38%] lg:w-[36%] xl:w-[35%] shrink-0">
-                    <div className="h-full rounded-2xl sm:rounded-3xl bg-white/75 hover:bg-white/90 dark:bg-slate-900/60 dark:hover:bg-slate-900/80 backdrop-blur-xl border border-slate-200/80 hover:border-slate-300/90 dark:border-white/15 dark:hover:border-white/25 p-5 sm:p-6 flex flex-col items-center justify-center text-center transition-all duration-200 shadow-[0_4px_20px_rgba(0,0,0,0.03),0_1px_2px_rgba(0,0,0,0.02),inset_0_1px_1px_rgba(255,255,255,0.95)] hover:shadow-[0_8px_28px_rgba(0,113,227,0.08),inset_0_1px_1px_rgba(255,255,255,1)]">
+                    <div className="h-full rounded-2xl sm:rounded-3xl bg-white/75 hover:bg-white/90 dark:bg-slate-900/60 dark:hover:bg-slate-900/80 backdrop-blur-xl border border-slate-200/80 hover:border-slate-300/90 dark:border-white/15 dark:hover:border-white/25 p-5 sm:p-6 grid grid-cols-[auto_minmax(0,1fr)] content-start gap-x-4 gap-y-4 text-left transition-all duration-200 shadow-[0_4px_20px_rgba(0,0,0,0.03),0_1px_2px_rgba(0,0,0,0.02),inset_0_1px_1px_rgba(255,255,255,0.95)] hover:shadow-[0_8px_28px_rgba(0,113,227,0.08),inset_0_1px_1px_rgba(255,255,255,1)]">
                       {/* Avatar */}
-                      <div className="relative mb-3.5">
+                      <div className="relative self-start">
                         {currentUser?.avatar_url && !userAvatarError ? (
                           <img
                             src={currentUser.avatar_url}
                             alt={profile.fullName || 'User'}
                             referrerPolicy="no-referrer"
                             onError={() => setUserAvatarError(true)}
-                            className="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl object-cover ring-4 ring-white dark:ring-slate-800 shadow-[0_8px_20px_rgba(0,0,0,0.08)]"
+                            className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl object-cover ring-4 ring-white dark:ring-slate-800 shadow-[0_8px_20px_rgba(0,0,0,0.08)]"
                           />
                         ) : (
-                          <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white font-bold text-2xl sm:text-3xl flex items-center justify-center ring-4 ring-white dark:ring-slate-800 shadow-[0_8px_18px_rgba(37,99,235,0.25)] select-none">
+                          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white font-bold text-xl sm:text-2xl flex items-center justify-center ring-4 ring-white dark:ring-slate-800 shadow-[0_8px_18px_rgba(37,99,235,0.25)] select-none">
                             {(profile.fullName || currentUser?.email || 'U')[0].toUpperCase()}
                           </div>
                         )}
@@ -1140,7 +1140,8 @@ export default function Settings() {
                         />
                       </div>
 
-                      {/* Name & Username */}
+                      {/* Identity */}
+                      <div className="min-w-0 self-center">
                       <h3 className="text-sm sm:text-base font-bold tracking-tight text-slate-900 dark:text-white truncate max-w-full">
                         {profile.fullName || 'Command Center User'}
                       </h3>
@@ -1148,8 +1149,11 @@ export default function Settings() {
                         @{usernameDisplay}
                       </p>
 
-                      {/* Meta Badges */}
-                      <div className="mt-3.5 flex flex-wrap items-center justify-center gap-2">
+                      </div>
+
+                      {/* Meta badges */}
+                      <div className="col-span-2 flex flex-wrap items-center gap-2">
+
                         <UserRoleBadge role={userRole} />
 
                         <button
