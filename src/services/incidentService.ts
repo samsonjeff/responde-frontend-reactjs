@@ -28,6 +28,8 @@ export interface Report {
   verifiedBy: string | null;
   verifiedAt: string | null;
   rejectionReason: string | null;
+  resolvedBy: string | null;
+  resolvedAt: string | null;
   possibleDuplicateOf: string | null;
 }
 
@@ -40,7 +42,7 @@ export const BASE_INCIDENT_TYPES = [
   'Landslide',
   'Typhoon',
   'Volcanic Eruption',
-  'None',
+  'Unknown',
 ] as const;
 
 /** Canonical urgency levels recognized across Responde */
@@ -63,10 +65,10 @@ export function formatReportUrgency(u?: string | null): string {
 
 /**
  * Standardize incident type strings to match canonical categories.
- * Maps 'none', 'null', 'unclassified' to 'None', and normalizes known disasters.
+ * Maps missing/placeholder values ('none', 'null', 'unclassified', 'unknown') to 'Unknown'.
  */
 export function formatReportType(t?: string | null): string {
-  if (!t) return 'None';
+  if (!t) return 'Unknown';
   const clean = String(t).trim();
   const lower = clean.toLowerCase();
   if (
@@ -78,7 +80,7 @@ export function formatReportType(t?: string | null): string {
     lower === 'unspecified' ||
     lower === 'undefined'
   ) {
-    return 'None';
+    return 'Unknown';
   }
   if (lower === 'earthquake') return 'Earthquake';
   if (lower === 'fire') return 'Fire';
@@ -95,7 +97,7 @@ export function isReportIncomplete(report?: { barangay?: string | null; type?: s
   if (!report) return true;
   const b = (report.barangay || '').trim().toLowerCase();
   const isUnknownBarangay = !b || b === 'unknown' || b === 'none' || b === 'unspecified' || b === 'n/a' || b === 'null';
-  // Only a missing barangay makes a report incomplete. Reports with type "None"
+  // Only a missing barangay makes a report incomplete. Reports with type "Unknown"
   // stay in Under Review (matches the original working behavior).
   return isUnknownBarangay;
 }
@@ -121,7 +123,7 @@ export function getIncompleteReasons(report?: { barangay?: string | null; type?:
  */
 export function getTypeHexColor(type: string): string {
   const norm = (type || '').toLowerCase().trim();
-  if (!norm || norm === 'general' || norm === 'none' || norm === 'unclassified') return '#64748B';
+  if (!norm || norm === 'general' || norm === 'none' || norm === 'unknown' || norm === 'unclassified') return '#64748B';
   if (norm.includes('flood')) return '#3B82F6';
   if (norm.includes('typhoon') || norm.includes('storm')) return '#6366F1';
   if (norm.includes('volcan')) return '#F97316';
@@ -191,9 +193,9 @@ export async function fetchReports(): Promise<Report[]> {
     apiRequest<{ data?: Report[] }>('/api/auth/data/incident-reports', {
       cacheTtlMs: 8000,
     }),
-    supabase.from('incident_reports').select('*'),
-    supabase.from('conversations').select('id, sender_name, sender_psid, conversation_id, incident_type, barangay, urgency, status'),
-    supabase.from('fb_comments').select('id, post_id, incident_type, barangay, urgency, status'),
+    supabase.from('incident_reports').select('id, source, reporter, contact, barangay, type, urgency, description, landmark, coordinates, status, action, action_taken, verified_by, verified_at, resolved_by, resolved_at, rejection_reason, possible_duplicate_of, created_at').order('created_at', { ascending: false }).limit(2000),
+    supabase.from('conversations').select('id, sender_name, sender_psid, conversation_id, incident_type, barangay, urgency, status').order('timestamp', { ascending: false }).limit(500),
+    supabase.from('fb_comments').select('id, post_id, incident_type, barangay, urgency, status').order('created_at', { ascending: false }).limit(500),
     apiRequest<{ data?: any[] }>('/api/auth/data/conversations?limit=500', {
       cacheTtlMs: 8000,
     }),
@@ -291,6 +293,8 @@ export async function fetchReports(): Promise<Report[]> {
         ...r,
         time: (r.createdAt ? formatTimestampPHT(r.createdAt) : null) || (r.time ? formatTimestampPHT(r.time) : '') || r.time,
         verifiedAt: r.verifiedAt ? (formatTimestampPHT(r.verifiedAt) || r.verifiedAt) : null,
+        resolvedBy: r.resolvedBy ?? null,
+        resolvedAt: r.resolvedAt ? (formatTimestampPHT(r.resolvedAt) || r.resolvedAt) : null,
       };
 
       // A. If saved in Supabase incident_reports, officer triage is the authoritative source of truth
@@ -320,6 +324,12 @@ export async function fetchReports(): Promise<Report[]> {
         }
         if (triaged.rejection_reason !== undefined) {
           report.rejectionReason = triaged.rejection_reason;
+        }
+        if (triaged.resolved_by !== undefined) {
+          report.resolvedBy = triaged.resolved_by;
+        }
+        if (triaged.resolved_at !== undefined) {
+          report.resolvedAt = triaged.resolved_at ? formatTimestampPHT(triaged.resolved_at) : null;
         }
         if (triaged.possible_duplicate_of !== undefined) {
           report.possibleDuplicateOf = triaged.possible_duplicate_of;
@@ -385,17 +395,31 @@ export async function fetchReports(): Promise<Report[]> {
     .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
 }
 
+/**
+ * Build the PATCH body for an incident report, mapping camelCase Report fields
+ * to the snake_case columns the backend persists.
+ * Attribution (verified_by/at) is intentionally omitted: the backend stamps it
+ * from the authenticated session, which is authoritative.
+ */
+export function buildIncidentPatchBody(
+  payload: Partial<Report> & { action?: string; actionTaken?: string }
+): Record<string, unknown> {
+  const actionText = payload.action || payload.actionTaken || '';
+  return {
+    ...payload,
+    action: actionText,
+    action_taken: actionText,
+    ...(payload.rejectionReason !== undefined ? { rejection_reason: payload.rejectionReason } : {}),
+    ...(payload.possibleDuplicateOf !== undefined ? { possible_duplicate_of: payload.possibleDuplicateOf } : {}),
+  };
+}
+
 /** Update an incident report action, triage status, notes, and coordinates via backend API. */
 export async function updateIncidentReport(
   id: string,
   payload: Partial<Report> & { action?: string; actionTaken?: string }
 ): Promise<boolean> {
-  const actionText = payload.action || payload.actionTaken || '';
-  const body = {
-    ...payload,
-    action: actionText,
-    action_taken: actionText,
-  };
+  const body = buildIncidentPatchBody(payload);
 
   const res = await apiFetch(`/api/auth/data/incident-reports/${encodeURIComponent(id)}`, {
     method: 'PATCH',
@@ -438,7 +462,11 @@ export function subscribeToReports(onChange: () => void): () => void {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'conversations' }, onChange)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'fb_comments' }, onChange)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'incident_reports' }, onChange)
-    .subscribe();
+    .subscribe((status) => {
+      if (status !== 'SUBSCRIBED' && import.meta.env.DEV) {
+        console.warn(`[incidentService] Realtime incident-reports-changes: ${status}`);
+      }
+    });
 
   return () => {
     supabase.removeChannel(channel);

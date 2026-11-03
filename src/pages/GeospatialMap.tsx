@@ -1186,7 +1186,7 @@ function MdrrmoDetailCard({
 export default function GeospatialMap() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { reports, updateReport } = useReports();
+  const { reports, updateReport, loading: reportsLoading, error: reportsError, refreshReports } = useReports();
   const { theme } = useTheme();
 
   // Floating feedback notification toast
@@ -1202,24 +1202,34 @@ export default function GeospatialMap() {
   const handleResolveReport = useCallback(async (report: Report) => {
     setSelected(null);
     const code = formatReportCode(report.id, report.source);
-    showToast(`Incident ${code} marked as Resolved. Vanished from active map (viewable under Resolved filter).`, 'success');
-    await updateReport(report.id, {
+    const ok = await updateReport(report.id, {
       status: 'resolved',
       action: 'Resolved on Geospatial Map',
       actionTaken: 'Resolved on Geospatial Map',
     });
+    showToast(
+      ok
+        ? `Incident ${code} marked as Resolved. Vanished from active map (viewable under Resolved filter).`
+        : `Failed to resolve incident ${code}. Please try again.`,
+      ok ? 'success' : 'error'
+    );
   }, [updateReport, showToast]);
 
   const handleRemoveReport = useCallback(async (report: Report) => {
     setSelected(null);
     const code = formatReportCode(report.id, report.source);
-    showToast(`Incident ${code} removed from map and moved to Rejected queue.`, 'error');
-    await updateReport(report.id, {
+    const ok = await updateReport(report.id, {
       status: 'rejected',
       rejectionReason: 'Removed by Dispatcher on Map',
       action: 'Removed from Map to Rejected queue',
       actionTaken: 'Removed from Map to Rejected queue',
     });
+    showToast(
+      ok
+        ? `Incident ${code} removed from map and moved to Rejected queue.`
+        : `Failed to remove incident ${code}. Please try again.`,
+      'error'
+    );
   }, [updateReport, showToast]);
 
   // Map theme follows the global app theme
@@ -1238,7 +1248,8 @@ export default function GeospatialMap() {
   const [filterStatus, setFilterStatus] = useState<string>('Verified Only');
   const [filterUrgency, setFilterUrgency] = useState<string>('All Urgency');
   const [filterType, setFilterType] = useState<string>('All Types');
-  const [loading, setLoading] = useState(true);
+  const [minDelayDone, setMinDelayDone] = useState(false);
+  const loading = reportsLoading || !minDelayDone;
 
   // 3D Perspective View State & Pitch Listener
   const [is3DMode, setIs3DMode] = useState(false);
@@ -1276,7 +1287,7 @@ export default function GeospatialMap() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      setLoading(false);
+      setMinDelayDone(true);
     }, 280);
     return () => clearTimeout(timer);
   }, []);
@@ -1284,9 +1295,9 @@ export default function GeospatialMap() {
   const availableIncidentTypes = useMemo(() => {
     const fromReports = reports.map((r) => r.type).filter(Boolean);
     const sorted = Array.from(new Set([...BASE_INCIDENT_TYPES, ...fromReports]))
-      .filter((t): t is string => Boolean(t && t.toLowerCase() !== 'all types' && t.toLowerCase() !== 'unclassified' && t.toLowerCase() !== 'none'))
+      .filter((t): t is string => Boolean(t && t.toLowerCase() !== 'all types' && t.toLowerCase() !== 'unclassified' && t.toLowerCase() !== 'none' && t.toLowerCase() !== 'unknown'))
       .sort();
-    return ['All Types', 'None', ...sorted];
+    return ['All Types', 'Unknown', ...sorted];
   }, [reports]);
 
   const matchStatus = useCallback((itemStatus?: string) => {
@@ -1317,7 +1328,7 @@ export default function GeospatialMap() {
   const matchType = useCallback((itemType?: string) => {
     if (!filterType || filterType === 'All Types' || filterType === 'All') return true;
     const normFilter = filterType.trim().toLowerCase();
-    const repType = (itemType || 'none').trim().toLowerCase();
+    const repType = (itemType || 'unknown').trim().toLowerCase();
     if (normFilter === 'none' || normFilter === 'unknown') {
       return !repType || repType === 'none' || repType === 'unclassified' || repType === 'unknown';
     }
@@ -1488,6 +1499,23 @@ export default function GeospatialMap() {
   }, [selected, pinReports]);
 
   if (loading) return <PageLoader variant="geospatial" />;
+  if (!loading && reportsError && reports.length === 0) {
+    return (
+      <div className="geospatial-soft flex flex-col flex-1 w-full items-center justify-center min-h-[50vh] p-4">
+        <div className="flex flex-col items-center gap-3 text-center bg-rose-500/[0.06] dark:bg-rose-500/[0.10] border border-rose-500/20 rounded-2xl p-6 sm:p-8 max-w-md shadow-sm">
+          <div className="w-11 h-11 rounded-2xl bg-rose-500/10 flex items-center justify-center text-rose-600 dark:text-rose-400 border border-rose-500/20">
+            <AlertCircle className="w-5 h-5" strokeWidth={1.75} />
+          </div>
+          <p className="font-semibold text-sm text-slate-900 dark:text-slate-100">Failed to load map reports</p>
+          <p className="text-xs text-rose-500 dark:text-rose-400 font-mono">{reportsError}</p>
+          <button type="button" onClick={() => refreshReports(true)} className="mt-2 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white active:scale-95 transition-all cursor-pointer shadow-xs">
+            <RotateCcw className="w-3.5 h-3.5" strokeWidth={1.75} />
+            <span>Retry Now</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="geospatial-soft flex flex-col flex-1 w-full lg:h-full lg:min-h-0 gap-3 sm:gap-4 relative">

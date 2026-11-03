@@ -389,7 +389,7 @@ function getDominantNeedMeta(type: string) {
 }
 
 export default function Analytics() {
-  const { reports } = useReports();
+  const { reports, loading: reportsLoading, error: reportsError, refreshReports } = useReports();
   const location = useLocation();
   // MANDATORY FLOW: Incident Report -> Geospatial -> Analytics
   // Analytics MUST ONLY compute from Geospatial verified data (verified by system users).
@@ -405,11 +405,12 @@ export default function Analytics() {
   const [typeFilter, setTypeFilter] = useState('All Types');
   const [sourceFilter, setSourceFilter] = useState('All Sources');
   const [volumeRange, setVolumeRange] = useState<'7d' | '30d' | '3m'>('7d');
-  const [loading, setLoading] = useState(true);
+  const [minDelayDone, setMinDelayDone] = useState(false);
+  const loading = reportsLoading || !minDelayDone;
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      setLoading(false);
+      setMinDelayDone(true);
     }, 280);
     return () => clearTimeout(timer);
   }, []);
@@ -431,9 +432,9 @@ export default function Analytics() {
   const allTypes = useMemo(() => {
     const fromReports = data.map(r => r.type).filter(Boolean);
     const sorted = Array.from(new Set([...BASE_INCIDENT_TYPES, ...CANONICAL_INCIDENT_TYPES, ...fromReports]))
-      .filter((t): t is string => Boolean(t && t.toLowerCase() !== 'all types' && t.toLowerCase() !== 'unclassified' && t.toLowerCase() !== 'none'))
+      .filter((t): t is string => Boolean(t && t.toLowerCase() !== 'all types' && t.toLowerCase() !== 'unclassified' && t.toLowerCase() !== 'none' && t.toLowerCase() !== 'unknown'))
       .sort();
-    return ['All Types', 'None', ...sorted];
+    return ['All Types', 'Unknown', ...sorted];
   }, [data]);
 
   const allSources = useMemo(() => ['All Sources', 'Bot', 'Scraper'], []);
@@ -455,7 +456,7 @@ export default function Analytics() {
   const isTypeMatch = (reportType?: string, target?: string | null): boolean => {
     if (!target || target === 'All Types') return true;
     const normTarget = target.toLowerCase().trim();
-    const repType = (reportType || 'none').toLowerCase().trim();
+    const repType = (reportType || 'unknown').toLowerCase().trim();
     if (normTarget === 'none' || normTarget === 'unknown') {
       return !repType || repType === 'none' || repType === 'unclassified' || repType === 'unknown';
     }
@@ -722,6 +723,23 @@ export default function Analytics() {
 
   // ── Render ────────────────────────────────────────────────────────────────
   if (loading) return <PageLoader variant="analytics" />;
+  if (!loading && reportsError && data.length === 0) {
+    return (
+      <div className="analytics-soft w-full flex items-center justify-center min-h-[50vh] p-4">
+        <div className="flex flex-col items-center gap-3 text-center bg-rose-500/[0.06] dark:bg-rose-500/[0.10] border border-rose-500/20 rounded-2xl p-6 sm:p-8 max-w-md shadow-sm">
+          <div className="w-11 h-11 rounded-2xl bg-rose-500/10 flex items-center justify-center text-rose-600 dark:text-rose-400 border border-rose-500/20">
+            <AlertTriangle className="w-5 h-5" strokeWidth={1.75} />
+          </div>
+          <p className="font-semibold text-sm text-slate-900 dark:text-slate-100">Failed to load analytics</p>
+          <p className="text-xs text-rose-500 dark:text-rose-400 font-mono">{reportsError}</p>
+          <button type="button" onClick={() => refreshReports(true)} className="mt-2 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white active:scale-95 transition-all cursor-pointer shadow-xs">
+            <RotateCcw className="w-3.5 h-3.5" strokeWidth={1.75} />
+            <span>Retry Now</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="analytics-soft w-full">

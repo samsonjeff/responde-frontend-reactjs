@@ -57,6 +57,7 @@ interface NotificationContextValue {
   notifications: AppNotification[];
   toasts: ToastNotification[];
   unreadCount: number;
+  realtimeStatus: 'connecting' | 'live' | 'degraded';
   priorityUnreadCount: number;
   markAllRead: () => void;
   markTypeRead: (type: NotificationType) => void;
@@ -190,6 +191,8 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   const readIdsRef = useRef<Set<string>>(loadStringSet(READ_IDS_STORAGE_KEY));
   const deletedIdsRef = useRef<Set<string>>(loadStringSet(DELETED_IDS_STORAGE_KEY));
   const toastedIdsRef = useRef<Set<string>>(loadStringSet(TOASTED_IDS_STORAGE_KEY));
+  const [realtimeStatus, setRealtimeStatus] = useState<'connecting' | 'live' | 'degraded'>('connecting');
+  const realtimeErrorsRef = useRef(0);
 
   // 1. Initialize from localStorage so notifications persist across refresh/logout/login
   const [notifications, setNotifications] = useState<AppNotification[]>(() => {
@@ -423,7 +426,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  // ── Fetch Recent Records on Mount & Poll Every 8s for Guaranteed Sync ───────
+  // ── Fetch Recent Records on Mount & Poll Every 30s for Guaranteed Sync ───────
   useEffect(() => {
     let cancelled = false;
     const RECENT_UNREAD_WINDOW_MS = 45 * 60 * 1000; // Items within last 45m stay unread until explicitly read
@@ -436,10 +439,10 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         try {
           const [cRes, mRes] = await Promise.all([
             apiRequest<{ data?: any[] }>('/api/auth/data/fb-comments?limit=25', {
-              cacheTtlMs: isInitial ? 4000 : 0,
+              cacheTtlMs: isInitial ? 4000 : 15000,
             }),
             apiRequest<{ data?: any[] }>('/api/auth/data/conversations?limit=25', {
-              cacheTtlMs: isInitial ? 4000 : 0,
+              cacheTtlMs: isInitial ? 4000 : 15000,
             }),
           ]);
           commentsData = cRes.data ?? [];
@@ -637,7 +640,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     loadRecentHistory(true);
     const pollInterval = setInterval(() => {
       loadRecentHistory(false);
-    }, 8000);
+    }, 30000);
 
     return () => {
       cancelled = true;
@@ -649,6 +652,17 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     // 1. incident_reports — Emergency Incident Reports table
+    const handleChannelStatus = (channel: string, status: string) => {
+      if (status === 'SUBSCRIBED') {
+        realtimeErrorsRef.current = 0;
+        setRealtimeStatus('live');
+      } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+        realtimeErrorsRef.current += 1;
+        setRealtimeStatus('degraded');
+        console.warn(`[NotificationContext] Realtime channel "${channel}" reported ${status}. Polling fallback active.`);
+      }
+    };
+
     const incidentChannel = supabase
       .channel('rt:incident_reports')
       .on(
@@ -682,7 +696,9 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        handleChannelStatus('rt:incident_reports', status);
+      });
 
     // 2. fb_comments — scraped Facebook comments
     const scraperChannel = supabase
@@ -732,7 +748,9 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        handleChannelStatus('rt:fb_comments', status);
+      });
 
     // 3. conversations — Messenger Bot messages
     const messengerChannel = supabase
@@ -787,7 +805,9 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        handleChannelStatus('rt:conversations', status);
+      });
 
     return () => {
       supabase.removeChannel(incidentChannel);
@@ -816,6 +836,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         clearAll,
         dismissToast,
         triggerPriorityAlert,
+        realtimeStatus,
       }}
     >
       {children}

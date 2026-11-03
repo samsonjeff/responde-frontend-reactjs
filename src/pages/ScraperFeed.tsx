@@ -352,9 +352,10 @@ export default function ScraperFeed() {
   };
 
   const processData = (data: any[] | null, tableName: string) => {
+    setError(null); // clear any prior fetch error on successful mapping
     const sorted = (data ?? []).sort((a, b) => {
-      const timeA = new Date(a.created_at || a.timestamp || 0).getTime();
-      const timeB = new Date(b.created_at || b.timestamp || 0).getTime();
+      const timeA = new Date(a.created_at || a.timestamp || (a.comment_date ? `${a.comment_date}T${a.comment_time || '00:00'}` : 0) || 0).getTime();
+      const timeB = new Date(b.created_at || b.timestamp || (b.comment_date ? `${b.comment_date}T${b.comment_time || '00:00'}` : 0) || 0).getTime();
       return timeB - timeA;
     });
 
@@ -401,8 +402,8 @@ export default function ScraperFeed() {
         urgency: resolvedUrgency,
         intent: normIntent,
         status: status as ScrapedPost["status"],
-        timestamp: formatTimestamp(row.created_at || row.timestamp),
-        createdAt: row.created_at || row.timestamp || "",
+        timestamp: formatTimestamp(row.created_at || row.timestamp || (row.comment_date ? `${row.comment_date}T${row.comment_time || '00:00'}` : null)),
+        createdAt: row.created_at || row.timestamp || (row.comment_date ? `${row.comment_date}T${row.comment_time || '00:00'}` : "") || "",
         confidence: nlpConfidence > 0 ? nlpConfidence : (isIncident ? 92 : 20),
         isIncident,
         nlpCategory,
@@ -445,10 +446,16 @@ export default function ScraperFeed() {
 
     try {
       // 1. Fetch directly from Supabase fb_comments table
-      const { data: supaRows, error: supaErr } = await supabase
+      const fbQuery = supabase
         .from('fb_comments')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .select('id, post_id, user_name, comment_text, comment_date, comment_time, barangay, incident_type, intent, urgency, intent_confidence, urgency_confidence, incident_type_confidence, ml_status, needs_review, status, created_at')
+        .order('created_at', { ascending: false })
+        .limit(500);
+      const { data: supaRows, error: supaErr } = await (signal ? fbQuery.abortSignal(signal) : fbQuery);
+
+      if (supaErr && import.meta.env.DEV) {
+        console.warn('[ScraperFeed] Direct Supabase fetch failed, using API fallback:', supaErr.message);
+      }
 
       if (!supaErr && Array.isArray(supaRows) && supaRows.length > 0) {
         processData(supaRows, 'fb_comments');
@@ -492,6 +499,7 @@ export default function ScraperFeed() {
   }, [fetchPosts]);
 
   const handleUpdateStatus = async (postId: string, newStatus: ScrapedPost["status"]) => {
+    const prevStatus = posts.find((p) => p.id === postId)?.status;
     // Optimistically update status locally
     setPosts((prev) =>
       prev.map((p) => (p.id === postId ? { ...p, status: newStatus } : p))
@@ -502,7 +510,12 @@ export default function ScraperFeed() {
       showToast(`Comment marked as ${newStatus.toLowerCase()}`, "success");
     } catch (err: any) {
       console.error("[ScraperFeed] Status update error:", err);
-      showToast(`Status updated locally (${newStatus.toLowerCase()})`, "success");
+      if (prevStatus) {
+        setPosts((prev) =>
+          prev.map((p) => (p.id === postId ? { ...p, status: prevStatus } : p))
+        );
+      }
+      showToast(err?.message || `Failed to update status to ${newStatus.toLowerCase()}`, "error");
     }
   };
 
@@ -543,9 +556,9 @@ export default function ScraperFeed() {
   const availableTypes = useMemo(() => {
     const fromPosts = posts.map((p) => p.type).filter(Boolean);
     const sorted = Array.from(new Set([...BASE_INCIDENT_TYPES, ...fromPosts]))
-      .filter((t): t is string => Boolean(t && t.toLowerCase() !== 'all types' && t.toLowerCase() !== 'unclassified' && t.toLowerCase() !== 'none'))
+      .filter((t): t is string => Boolean(t && t.toLowerCase() !== 'all types' && t.toLowerCase() !== 'unclassified' && t.toLowerCase() !== 'none' && t.toLowerCase() !== 'unknown'))
       .sort();
-    return ["All Types", "None", ...sorted];
+    return ["All Types", "Unknown", ...sorted];
   }, [posts]);
 
   const getPostDateString = (p: ScrapedPost): string | null => {
@@ -591,7 +604,7 @@ export default function ScraperFeed() {
       }
       if (filterType !== "All Types") {
         const normFilter = filterType.toLowerCase().trim();
-        const postType = (p.type || "none").toLowerCase().trim();
+        const postType = (p.type || "unknown").toLowerCase().trim();
         if (normFilter === "none" || normFilter === "unknown") {
           if (postType !== "none" && postType !== "unclassified" && postType !== "unknown") return false;
         } else if (postType !== normFilter) {

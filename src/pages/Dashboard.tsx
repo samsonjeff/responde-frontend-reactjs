@@ -12,7 +12,7 @@ import {
   CartesianGrid,
 } from 'recharts';
 import {
-  LayoutDashboard, AlertTriangle, Brain,
+  LayoutDashboard, AlertTriangle, Brain, RotateCcw,
   ArrowRight, X,
   MapPin, Clock, BarChart3, ListFilter, CheckCircle2, ShieldCheck
 } from 'lucide-react';
@@ -189,7 +189,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const location = useLocation();
-  const { reports, loading: reportsLoading } = useReports();
+  const { reports, loading: reportsLoading, error: reportsError, refreshReports } = useReports();
   const [filterUrgency, setFilterUrgency] = useState<'All' | 'Critical' | 'High' | 'Mod' | 'Low'>('All');
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'chart' | 'bars'>('chart');
@@ -438,6 +438,24 @@ export default function Dashboard() {
         );
     }
   };
+
+  if (reportsError && reports.length === 0 && !reportsLoading) {
+    return (
+      <div className="dashboard-soft flex flex-col flex-1 w-full items-center justify-center min-h-[50vh] p-4">
+        <div className="flex flex-col items-center gap-3 text-center bg-rose-500/[0.06] dark:bg-rose-500/[0.10] border border-rose-500/20 rounded-2xl p-6 sm:p-8 max-w-md shadow-sm">
+          <div className="w-11 h-11 rounded-2xl bg-rose-500/10 flex items-center justify-center text-rose-600 dark:text-rose-400 border border-rose-500/20">
+            <AlertTriangle className="w-5 h-5" strokeWidth={1.75} />
+          </div>
+          <p className="font-semibold text-sm text-slate-900 dark:text-slate-100">Failed to load dashboard</p>
+          <p className="text-xs text-rose-500 dark:text-rose-400 font-mono">{reportsError}</p>
+          <button type="button" onClick={() => refreshReports(true)} className="mt-2 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white active:scale-95 transition-all cursor-pointer shadow-xs">
+            <RotateCcw className="w-3.5 h-3.5" strokeWidth={1.75} />
+            <span>Retry Now</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (reportsLoading && reports.length === 0) {
     return <PageLoader variant="dashboard" />;

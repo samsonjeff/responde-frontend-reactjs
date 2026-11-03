@@ -17,6 +17,7 @@ interface ReportsContextValue {
     reports: Report[];
     setReports: React.Dispatch<React.SetStateAction<Report[]>>;
     loading: boolean;
+    error: string | null;
     refreshReports: (showLoader?: boolean) => Promise<void>;
     updateReport: (id: string, updates: Partial<Report>) => Promise<boolean>;
     bulkUpdateReports: (ids: string[], status: ReportStatus, action?: string) => Promise<boolean>;
@@ -49,6 +50,7 @@ export function ReportsProvider({ children }: { children: ReactNode }) {
         } catch {}
         return true;
     });
+    const [error, setError] = useState<string | null>(null);
     const { triggerPriorityAlert } = useNotifications();
     const knownReportIdsRef = useRef<Set<string>>(new Set());
     const isFirstLoadRef = useRef<boolean>(true);
@@ -97,6 +99,7 @@ export function ReportsProvider({ children }: { children: ReactNode }) {
             sessionStorage.setItem(REPORTS_CACHE_KEY, JSON.stringify(liveData));
         } catch {}
         setReports(liveData);
+        setError(null);
     }, [triggerPriorityAlert]);
 
     const refreshReports = useCallback(async (showLoader = false) => {
@@ -108,6 +111,7 @@ export function ReportsProvider({ children }: { children: ReactNode }) {
             }
         } catch (err) {
             console.warn('[ReportsContext] Could not load live reports:', err);
+            setError(err instanceof Error ? err.message : 'Failed to load reports');
         } finally {
             if (showLoader) setLoading(false);
         }
@@ -123,6 +127,7 @@ export function ReportsProvider({ children }: { children: ReactNode }) {
                 }
             } catch (err) {
                 console.warn('[ReportsContext] Initial load failed:', err);
+                if (mounted) setError(err instanceof Error ? err.message : 'Failed to load reports');
             } finally {
                 if (mounted) setLoading(false);
             }
@@ -157,14 +162,21 @@ export function ReportsProvider({ children }: { children: ReactNode }) {
             prev.map((r) => (r.id === id ? { ...r, ...updates } : r))
         );
 
-        // 2. Persist to database
+        // 2. Persist to database; on failure, re-fetch server truth to roll back
+        // the optimistic update so the UI never shows a triage that wasn't saved.
         try {
-            return await updateIncidentReport(id, updates);
+            const ok = await updateIncidentReport(id, updates);
+            if (!ok) {
+                console.error('[ReportsContext] Persist reported failure, reconciling from server');
+                await refreshReports(false);
+            }
+            return ok;
         } catch (err) {
             console.error('[ReportsContext] Failed to persist report update:', err);
+            await refreshReports(false);
             return false;
         }
-    }, []);
+    }, [refreshReports]);
 
     const bulkUpdateReports = useCallback(async (ids: string[], status: ReportStatus, action?: string): Promise<boolean> => {
         // 1. Optimistic update
@@ -176,14 +188,21 @@ export function ReportsProvider({ children }: { children: ReactNode }) {
             )
         );
 
-        // 2. Persist to database
+        // 2. Persist to database; on failure, re-fetch server truth to roll back
+        // the optimistic update so the UI never shows a triage that wasn't saved.
         try {
-            return await bulkUpdateIncidentReports(ids, status, action);
+            const ok = await bulkUpdateIncidentReports(ids, status, action);
+            if (!ok) {
+                console.error('[ReportsContext] Bulk persist reported failure, reconciling from server');
+                await refreshReports(false);
+            }
+            return ok;
         } catch (err) {
             console.error('[ReportsContext] Failed to bulk update reports:', err);
+            await refreshReports(false);
             return false;
         }
-    }, []);
+    }, [refreshReports]);
 
     const getVerifiedReports = useCallback(() => {
         return reports.filter((r) => r.status === 'verified');
@@ -205,6 +224,7 @@ export function ReportsProvider({ children }: { children: ReactNode }) {
                 reports,
                 setReports,
                 loading,
+                error,
                 refreshReports,
                 updateReport,
                 bulkUpdateReports,

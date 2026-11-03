@@ -135,7 +135,7 @@ export async function apiRequest<T = any>(
     ...((customHeaders as Record<string, string>) || {}),
   };
 
-  const cacheKey = `${method}:${url}`;
+  const cacheKey = `${method}:${url}:${token ? token.slice(-8) : 'anon'}`;
 
   // 1. Check in-memory cache for GET
   if (isGet && !forceRefresh && cacheTtlMs > 0) {
@@ -278,10 +278,10 @@ export async function apiRequest<T = any>(
 
     const onAbort = () => {
       currentEntry.subscribers.delete(sub);
-      console.log(`[apiClient:AbortTrace] Caller signal aborted for ${path}. Remaining subscribers: ${currentEntry.subscribers.size}`);
+      if (import.meta.env.DEV) console.log(`[apiClient:AbortTrace] Caller signal aborted for ${path}. Remaining subscribers: ${currentEntry.subscribers.size}`);
       // Cancel underlying fetch ONLY if all subscribers have aborted
       if (currentEntry.subscribers.size === 0) {
-        console.log(`[apiClient:AbortTrace] All subscribers aborted for ${path} - canceling underlying network fetch`);
+        if (import.meta.env.DEV) console.log(`[apiClient:AbortTrace] All subscribers aborted for ${path} - canceling underlying network fetch`);
         currentEntry.internalController.abort();
         inFlightRequests.delete(cacheKey);
       }

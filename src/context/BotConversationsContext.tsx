@@ -109,6 +109,11 @@ export function BotConversationsProvider({ children }: { children: ReactNode }) 
   const conversationsRef = useRef(conversations);
   conversationsRef.current = conversations;
 
+  // Local-only operator workflow state (persisted per-browser in localStorage).
+  // This is intentionally NOT the database triage status: BotConversation ids are
+  // session keys (`${psid}_${time}`), not backend `conv-{id}` rows, and the backend
+  // exposes no PATCH endpoint for conversations.status. Persisting across devices
+  // requires a new backend route (e.g. PATCH /api/auth/data/conversations/:id/status).
   const updateConversationStatus = useCallback((id: string, newStatus: 'Incomplete' | 'Complete') => {
     setStatusOverrides((prev) => {
       const updated = { ...prev, [id]: newStatus };
@@ -132,13 +137,19 @@ export function BotConversationsProvider({ children }: { children: ReactNode }) 
     let data: any[] | null = null;
     try {
       // 1. Fetch directly from Supabase conversations table
-      const { data: supaRows, error: supaErr } = await supabase
+      const convQuery = supabase
         .from('conversations')
-        .select('*')
-        .order('timestamp', { ascending: true });
+        .select('id, conversation_id, sender_psid, sender_name, user_message, ai_reply, reply_status, provider, timestamp, barangay, incident_type, intent, urgency, needs_review, location_status, status, ml_status')
+        .order('timestamp', { ascending: false })
+        .limit(500);
+      const { data: supaRows, error: supaErr } = await (signal ? convQuery.abortSignal(signal) : convQuery);
+
+      if (supaErr && import.meta.env.DEV) {
+        console.warn('[BotConversationsContext] Direct Supabase fetch failed, using API fallback:', supaErr.message);
+      }
 
       if (!supaErr && Array.isArray(supaRows) && supaRows.length > 0) {
-        data = supaRows;
+        data = [...supaRows].reverse();
         setError(null);
       } else {
         // Fallback to backend API
@@ -291,7 +302,7 @@ export function BotConversationsProvider({ children }: { children: ReactNode }) 
                 ? session.senderName
                 : `PSID: ${session.psid.slice(-6)}`,
             barangay: isRealBarangay(session.barangay) ? normalizeBarangayName(session.barangay) : 'Unknown',
-            type: isRealType(session.type) ? formatReportType(session.type) : 'None',
+            type: isRealType(session.type) ? formatReportType(session.type) : 'Unknown',
             urgency: session.urgency ? formatReportUrgency(session.urgency) : 'Low',
             intent: normalizeIntent(session.intent),
             status: override || calculatedStatus,

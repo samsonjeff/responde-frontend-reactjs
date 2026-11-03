@@ -6,7 +6,7 @@ import {
   Clock, User, Phone, MessageSquare,
   CheckCircle2, AlertTriangle, RotateCcw, Send,
   ShieldCheck, FileText, AlertOctagon, MapPinned, Bot, Globe,
-  Check, Search, MinusCircle,
+  Check, Search,
 } from 'lucide-react';
 import DatePicker from '../components/DatePicker';
 import FilterDropdown from '../components/DropDown';
@@ -35,7 +35,7 @@ export const BASE_INCIDENT_TYPES = [
   'Landslide',
   'Typhoon',
   'Volcanic Eruption',
-  'None',
+  'Unknown',
 ] as const;
 
 const formatBubbleTime = (iso?: string) => formatPhilippineTimeOnly(iso);
@@ -374,13 +374,15 @@ export default function IncidentReports() {
     reports,
     loading,
     updateReport: contextUpdateReport,
+    error: reportsError,
+    refreshReports,
   } = useReports();
   const [activeTab, setActiveTab] = useState<TabKey>('under_review');
   const [reviewingReport, setReviewingReport] = useState<Report | null>(null);
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [loadError] = useState('');
+  const loadError = reportsError;
 
   // ── Toast State ──
   const [toasts, setToasts] = useState<Toast[]>([]);
@@ -602,26 +604,26 @@ export default function IncidentReports() {
   const availableFilterTypes = useMemo(() => {
     const fromReports = reports.map(r => r.type).filter(Boolean);
     const sorted = Array.from(new Set([...BASE_INCIDENT_TYPES, ...fromReports]))
-      .filter((t): t is string => Boolean(t && t.toLowerCase() !== 'all types' && t.toLowerCase() !== 'unclassified' && t.toLowerCase() !== 'none'))
+      .filter((t): t is string => Boolean(t && t.toLowerCase() !== 'all types' && t.toLowerCase() !== 'unclassified' && t.toLowerCase() !== 'none' && t.toLowerCase() !== 'unknown'))
       .sort();
-    return ['All Types', 'None', ...sorted];
+    return ['All Types', 'Unknown', ...sorted];
   }, [reports]);
 
   const availableIncidentTypes = useMemo(() => {
-    const set = new Set<string>(['None', ...BASE_INCIDENT_TYPES]);
+    const set = new Set<string>(['Unknown', ...BASE_INCIDENT_TYPES]);
     reports.forEach(r => {
       const norm = (r.type || '').trim().toLowerCase();
-      if (r.type && norm && r.type !== 'All Types' && norm !== 'unclassified' && norm !== 'none') {
+      if (r.type && norm && r.type !== 'All Types' && norm !== 'unclassified' && norm !== 'none' && norm !== 'unknown') {
         set.add(r.type);
       }
     });
     const editNorm = (editForm.type || '').trim().toLowerCase();
-    if (editForm.type && editNorm && editForm.type !== 'All Types' && editNorm !== 'unclassified' && editNorm !== 'none') {
+    if (editForm.type && editNorm && editForm.type !== 'All Types' && editNorm !== 'unclassified' && editNorm !== 'none' && editNorm !== 'unknown') {
       set.add(editForm.type);
     }
     return Array.from(set).filter(t => t.toLowerCase() !== 'unclassified').sort((a, b) => {
-      if (a === 'None') return -1;
-      if (b === 'None') return 1;
+      if (a === 'Unknown') return -1;
+      if (b === 'Unknown') return 1;
       return a.localeCompare(b);
     });
   }, [reports, editForm.type]);
@@ -629,7 +631,7 @@ export default function IncidentReports() {
   const openReview = (report: Report) => {
     setReviewingReport(report);
 
-    const initialType = (!report.type || report.type.toLowerCase() === 'unclassified') ? 'None' : report.type;
+    const initialType = (!report.type || report.type.toLowerCase() === 'unclassified' || report.type.toLowerCase() === 'none') ? 'Unknown' : report.type;
     const rawAction = report.action || '';
     const cleanAction = rawAction.trim().toLowerCase() === 'draft saved' ? '' : rawAction;
     const rawActionTaken = report.actionTaken || '';
@@ -698,13 +700,17 @@ export default function IncidentReports() {
       action: actionDesc,
       actionTaken: actionDesc,
     } as Report;
-    showToast(`Report #${targetId} changes saved`, 'info');
     closeReview();
 
     try {
-      await contextUpdateReport(targetId, updated);
+      const ok = await contextUpdateReport(targetId, updated);
+      showToast(
+        ok ? `Report #${targetId} changes saved` : `Failed to save changes for report #${targetId}. Please try again.`,
+        ok ? 'info' : 'error'
+      );
     } catch (err) {
       console.error('Failed to save changes:', err);
+      showToast(`Failed to save changes for report #${targetId}. Please try again.`, 'error');
     }
   };
 
@@ -715,8 +721,8 @@ export default function IncidentReports() {
       ? 'Unknown'
       : (editForm.barangay || reviewingReport.barangay || 'Unknown');
     const newType = (incompleteReasonChoice === 'type' || incompleteReasonChoice === 'both')
-      ? 'None'
-      : (editForm.type || reviewingReport.type || 'None');
+      ? 'Unknown'
+      : (editForm.type || reviewingReport.type || 'Unknown');
     const reasonText = incompleteReasonChoice === 'barangay'
       ? 'Missing Barangay'
       : incompleteReasonChoice === 'type'
@@ -734,13 +740,17 @@ export default function IncidentReports() {
       actionTaken: actionDesc,
     };
 
-    showToast(`Report #${targetId} moved to Incomplete tab (${reasonText})`, 'info');
     closeReview();
 
     try {
-      await contextUpdateReport(targetId, updated);
+      const ok = await contextUpdateReport(targetId, updated);
+      showToast(
+        ok ? `Report #${targetId} moved to Incomplete tab (${reasonText})` : `Failed to move report #${targetId} to Incomplete. Please try again.`,
+        ok ? 'info' : 'error'
+      );
     } catch (err) {
       console.error('Failed to mark report incomplete:', err);
+      showToast(`Failed to move report #${targetId} to Incomplete. Please try again.`, 'error');
     }
   };
 
@@ -781,13 +791,19 @@ export default function IncidentReports() {
       actionTaken: actionDesc,
     };
 
-    showToast(`Report #${reviewingReport.id} verified and plotted on map`, 'success');
     closeReview();
 
     try {
-      await contextUpdateReport(reviewingReport.id, updated);
+      const ok = await contextUpdateReport(reviewingReport.id, updated);
+      showToast(
+        ok
+          ? `Report #${reviewingReport.id} verified and plotted on map`
+          : `Failed to save verification for report #${reviewingReport.id}. Please try again.`,
+        ok ? 'success' : 'error'
+      );
     } catch (err) {
       console.error('Failed to persist verification:', err);
+      showToast(`Failed to save verification for report #${reviewingReport.id}. Please try again.`, 'error');
     }
   };
 
@@ -802,13 +818,17 @@ export default function IncidentReports() {
       action: actionDesc,
       actionTaken: actionDesc,
     };
-    showToast(`Report #${targetId} marked as resolved`, 'success');
     closeReview();
 
     try {
-      await contextUpdateReport(targetId, updated);
+      const ok = await contextUpdateReport(targetId, updated);
+      showToast(
+        ok ? `Report #${targetId} marked as resolved` : `Failed to resolve report #${targetId}. Please try again.`,
+        ok ? 'success' : 'error'
+      );
     } catch (err) {
       console.error('Failed to persist resolve action:', err);
+      showToast(`Failed to resolve report #${targetId}. Please try again.`, 'error');
     }
   };
 
@@ -827,13 +847,17 @@ export default function IncidentReports() {
       action: actionDesc,
       actionTaken: actionDesc,
     };
-    showToast(`Report #${targetId} rejected: ${reasonLabel}`, 'error');
     closeReview();
 
     try {
-      await contextUpdateReport(targetId, updated);
+      const ok = await contextUpdateReport(targetId, updated);
+      showToast(
+        ok ? `Report #${targetId} rejected: ${reasonLabel}` : `Failed to reject report #${targetId}. Please try again.`,
+        'error'
+      );
     } catch (err) {
       console.error('Failed to persist rejection:', err);
+      showToast(`Failed to reject report #${targetId}. Please try again.`, 'error');
     }
   };
 
@@ -842,17 +866,20 @@ export default function IncidentReports() {
     const isIncomplete = target ? isReportIncomplete(target) : false;
     const destination = isIncomplete ? 'Incomplete' : 'Under Review';
     const code = formatReportCode(id, target?.source);
-    showToast(`Report ${code} restored to ${destination}`, 'info');
-
     try {
-      await contextUpdateReport(id, {
+      const ok = await contextUpdateReport(id, {
         status: 'under_review',
         rejectionReason: null,
         action: `Restored to ${destination}`,
         actionTaken: `Restored to ${destination}`,
       });
+      showToast(
+        ok ? `Report ${code} restored to ${destination}` : `Failed to restore report ${code}. Please try again.`,
+        ok ? 'info' : 'error'
+      );
     } catch (err) {
       console.error('Failed to persist restore:', err);
+      showToast(`Failed to restore report ${code}. Please try again.`, 'error');
     }
   };
 
@@ -909,7 +936,7 @@ export default function IncidentReports() {
       if (activeTab === 'under_review') {
         const isUnderReviewOrPending = r.status === 'under_review' || r.status === 'pending';
         if (!isUnderReviewOrPending) return false;
-        // Incomplete reports (Unknown barangay / None type) always belong in the Incomplete tab
+        // Incomplete reports (Unknown barangay) always belong in the Incomplete tab
         if (isReportIncomplete(r)) return false;
       } else if (activeTab === 'incomplete') {
         const isUnderReviewOrPending = r.status === 'under_review' || r.status === 'pending';
@@ -1049,9 +1076,9 @@ export default function IncidentReports() {
     const norm = (type || '').trim().toLowerCase();
     if (!norm || norm === 'none' || norm === 'unclassified' || norm === 'unknown' || norm === 'null' || norm === 'unspecified') {
       return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-500/10 dark:bg-slate-500/15 text-slate-600 dark:text-slate-400 border border-slate-500/20">
-          <MinusCircle className="w-3 h-3 text-slate-400 dark:text-slate-500 shrink-0" strokeWidth={1.75} />
-          <span>None</span>
+        <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 dark:text-slate-400">
+          <span className="w-1.5 h-1.5 rounded-full bg-current shrink-0" />
+          <span>Unknown</span>
         </span>
       );
     }
@@ -1098,6 +1125,9 @@ export default function IncidentReports() {
       {loadError && (
         <div role="alert" className="px-4 py-3 rounded-xl border border-rose-500/20 bg-rose-50/80 dark:bg-rose-950/20 text-xs font-medium text-rose-700 dark:text-rose-300">
           Could not load reports: {loadError}
+          <button type="button" onClick={() => refreshReports(true)} className="ml-3 inline-flex items-center gap-1 font-semibold underline underline-offset-2 hover:opacity-80 cursor-pointer">
+            Retry
+          </button>
         </div>
       )}
 
@@ -1841,13 +1871,13 @@ export default function IncidentReports() {
                         <div>
                           <label className="block text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400 mb-1">Type</label>
                           <select
-                            value={editForm.type || 'None'}
+                            value={editForm.type || 'Unknown'}
                             onChange={e => setEditForm(prev => ({ ...prev, type: e.target.value }))}
                             className="w-full px-3.5 py-2.5 text-sm bg-slate-50 dark:bg-slate-800/70 border border-slate-200/80 dark:border-white/10 rounded-xl text-slate-800 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-blue-500/20 focus:border-[#0071E3] outline-none transition-all cursor-pointer shadow-2xs"
                           >
                             {availableIncidentTypes.map(t => (
                               <option key={t} value={t}>
-                                {t === 'None' ? 'None (Incident Not Mentioned / Out of Scope)' : t}
+                                {t === 'Unknown' ? 'Unknown (Incident Not Mentioned / Out of Scope)' : t}
                               </option>
                             ))}
                           </select>
