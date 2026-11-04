@@ -1,16 +1,23 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { motion, AnimatePresence, type Variants } from "framer-motion";
 import {
   Filter, Globe, MessageCircle, AlertTriangle, MapPin, Clock,
   CheckCircle, XCircle, Brain, Users, ExternalLink,
-  Loader2, Radio, X, ChevronLeft, ChevronDown, RotateCcw,
+  Loader2, Radio, X, ChevronLeft, ChevronRight, ChevronDown, RotateCcw, RefreshCw,
+  Sparkles, CheckCircle2, Layers
 } from "lucide-react";
 import DatePicker from "../components/DatePicker";
 import FilterDropdown from "../components/DropDown";
 import { StaggerContainer, StaggerItem } from "../components/Stagger";
+import { supabase } from "../lib/supabaseClient";
 import { authService } from "../services/authService";
+import { apiRequest } from "../services/apiClient";
+import { useDebounce } from "../hooks/useDebounce";
 import PageLoader from "../components/PageLoader";
 import { TALISAY_BARANGAYS } from "../data/talisay-barangays";
+import { BASE_INCIDENT_TYPES, formatReportType, formatReportUrgency } from "../services/incidentService";
+import { formatTimestampPHT, formatPhilippineTimeOnly, formatPhilippineDateOnly } from "../utils/dateUtils";
+import { isIncidentIntent, isGeneralLogIntent, normalizeIntent } from "../utils/intentUtils";
 
 interface ScrapedPost {
   id: string;
@@ -19,12 +26,16 @@ interface ScrapedPost {
   avatar: string;
   rawText: string;
   barangay: string;
-  type: "Search & Rescue" | "Medical" | "Food & Water" | "Infrastructure";
-  urgency: "High" | "Moderate" | "Low";
+  type: string;
+  urgency: "Critical" | "High" | "Moderate" | "Low";
+  intent?: string;
   status: "New" | "Verified" | "Flagged" | "Resolved";
   timestamp: string;
   createdAt?: string;
   confidence: number;
+  isIncident: boolean;
+  nlpCategory?: "Incident" | "Non-Incident";
+  nlpReason?: string;
   extractedEntities: {
     location: string;
     contact?: string;
@@ -33,18 +44,18 @@ interface ScrapedPost {
   };
 }
 
-// -- Toast Type --
+// ── Toast Type ──
 interface Toast {
   id: number;
   message: string;
   type: "success" | "error" | "info";
 }
 
-// -- Apple Design Spring Physics & Motion --
+// ── Apple Design Spring Physics & Motion ──
 const APPLE_SPRING = { type: "spring", stiffness: 400, damping: 32 } as const;
 
 const contentVariants: Variants = {
-  hidden: { opacity: 0, x: 12, scale: 0.99 },
+  hidden: { opacity: 0, x: 10, scale: 0.99 },
   visible: {
     opacity: 1,
     x: 0,
@@ -61,7 +72,7 @@ const contentVariants: Variants = {
 
 export const INACTIVITY_GAP_MS = 60 * 60 * 1000;
 
-// -- Apple Notification Toast Component --
+// ── Apple Notification Toast Component ──
 function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: number) => void }) {
   useEffect(() => {
     const timer = setTimeout(() => onDismiss(toast.id), 3500);
@@ -71,22 +82,22 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: number)
   const icon = toast.type === "success"
     ? <CheckCircle className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />
     : toast.type === "error"
-      ? <AlertTriangle className="w-4 h-4 text-red-500 dark:text-red-400" />
-      : <Loader2 className="w-4 h-4 text-[#0071E3] dark:text-blue-400 animate-spin" />;
+      ? <AlertTriangle className="w-4 h-4 text-rose-500 dark:text-rose-400" />
+      : <Loader2 className="w-4 h-4 text-[#0071E3] dark:text-sky-400 animate-spin" />;
 
   const badgeBg = toast.type === "success"
-    ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 border border-emerald-500/20"
+    ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
     : toast.type === "error"
-      ? "bg-red-50 dark:bg-red-950/40 text-red-600 border border-red-500/20"
-      : "bg-blue-50 dark:bg-blue-950/40 text-[#0071E3] border border-blue-500/20";
+      ? "bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20"
+      : "bg-blue-500/10 text-[#0071E3] dark:text-sky-400 border border-blue-500/20";
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: -20, scale: 0.94 }}
+      initial={{ opacity: 0, y: -16, scale: 0.95 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: -16, scale: 0.94 }}
-      transition={{ type: "spring", stiffness: 420, damping: 30 }}
-      className="flex items-center gap-3 px-4 py-3 rounded-2xl backdrop-blur-2xl bg-white/90 dark:bg-[#1C2433]/90 border border-slate-200/80 dark:border-white/10 shadow-[0_12px_40px_rgba(0,0,0,0.12)] border-t border-t-white/80 dark:border-t-white/20 min-w-[300px] max-w-[400px]"
+      exit={{ opacity: 0, y: -10, scale: 0.95 }}
+      transition={APPLE_SPRING}
+      className="flex items-center gap-3 px-4 py-3 rounded-2xl backdrop-blur-2xl bg-white/95 dark:bg-[#111827]/95 border border-slate-200/80 dark:border-white/10 shadow-[0_12px_40px_rgba(0,0,0,0.12)] min-w-[260px] sm:min-w-[300px] max-w-[calc(100vw-2rem)]"
     >
       <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${badgeBg}`}>
         {icon}
@@ -96,7 +107,7 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: number)
       </span>
       <button
         onClick={() => onDismiss(toast.id)}
-        className="w-6 h-6 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-[0.92] transition-all"
+        className="relative w-6 h-6 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-[0.92] transition-all after:absolute after:-inset-2.5 after:content-['']"
       >
         <X className="w-3.5 h-3.5" />
       </button>
@@ -104,47 +115,177 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: number)
   );
 }
 
-// ── Heuristic: map DB incident_type + text to UI type ──
-function inferType(incidentType: string, text: string): ScrapedPost["type"] {
-  const t = (incidentType || "").toLowerCase();
-  const txt = (text || "").toLowerCase();
-
-  if (t === "casualty" || t === "medical" || txt.includes("sugat") || txt.includes("ospital") || txt.includes("ambulansya") || txt.includes("medic") || txt.includes("nabalian") || txt.includes("nasaktan")) return "Medical";
-  if (t === "evacuation" || txt.includes("evacuate") || txt.includes("stranded") || txt.includes("nakaipit") || txt.includes("natabunan") || txt.includes("rescue")) return "Search & Rescue";
-  if (t === "flood" || t === "landslide" || t === "earthquake" || t === "fire" || txt.includes("gumuhong") || txt.includes("bumagsak") || txt.includes("putol") || txt.includes("poste") || txt.includes("kuryente")) return "Infrastructure";
-  if (txt.includes("food") || txt.includes("tubig") || txt.includes("relief") || txt.includes("gatas") || txt.includes("gamot") || txt.includes("supply")) return "Food & Water";
-
-  return "Medical"; // default
-}
-
-// ── Heuristic: derive urgency from incident_type + text ──
-function inferUrgency(incidentType: string, text: string): ScrapedPost["urgency"] {
-  const t = (incidentType || "").toLowerCase();
-  const txt = (text || "").toLowerCase();
-
-  const highKeywords = ["emergency", "casualty", "fire", "now", "asap", "urgent", "naipit", "natabunan", "patay", "matanda", "bata", "nawawala"];
-  const moderateKeywords = ["flood", "evacuation", "landslide", "earthquake", "baha", "gumuhong", "tumumba", "putol"];
-
-  if (highKeywords.some(k => t.includes(k) || txt.includes(k))) return "High";
-  if (moderateKeywords.some(k => t.includes(k) || txt.includes(k))) return "Moderate";
-  return "Low";
-}
-
-// ── Format Supabase timestamp → "M/D HH:mm" ──
+// ── Format Supabase timestamp → Philippine Standard Time "M/D h:mm A" ──
 function formatTimestamp(ts: string | null): string {
-  if (!ts) return "";
-  const d = new Date(ts);
-  if (isNaN(d.getTime())) return String(ts);
-  return `${d.toLocaleDateString("en-US", { month: "numeric", day: "numeric" })} ${d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false })}`;
+  return formatTimestampPHT(ts);
+}
+
+function getPostTimeAndDate(timeStr?: string, createdAt?: string): { timeText: string; dateText: string } {
+  const source = createdAt || timeStr;
+  if (!source) return { timeText: '', dateText: '' };
+
+  const d = new Date(source);
+  if (!isNaN(d.getTime())) {
+    return {
+      timeText: formatPhilippineTimeOnly(d),
+      dateText: formatPhilippineDateOnly(d),
+    };
+  }
+
+  const m = source.match(/^(\d{1,2})\/(\d{1,2})\s+(.+)$/);
+  if (m) {
+    const year = new Date().getFullYear();
+    const parsed = new Date(year, parseInt(m[1], 10) - 1, parseInt(m[2], 10));
+    const dateFormatted = !isNaN(parsed.getTime()) ? formatPhilippineDateOnly(parsed) : `${m[1]}/${m[2]}`;
+    return {
+      timeText: m[3].trim(),
+      dateText: dateFormatted,
+    };
+  }
+
+  const timeMatch = source.match(/(\d{1,2}:\d{2}(?::\d{2})?\s*[AP]M)$/i);
+  if (timeMatch) {
+    const timeText = timeMatch[1];
+    const datePart = source.replace(timeText, '').trim();
+    return {
+      timeText,
+      dateText: datePart || formatPhilippineDateOnly(new Date()),
+    };
+  }
+
+  return { timeText: source, dateText: '' };
+}
+
+function getIntentBadgeStyle(intent?: string): string {
+  if (!intent) {
+    return "bg-slate-100/90 dark:bg-white/[0.06] text-slate-600 dark:text-slate-400 border border-slate-200/60 dark:border-white/10";
+  }
+  const clean = intent.toLowerCase().trim();
+  if (clean.includes("emergency")) {
+    return "bg-rose-500/10 text-rose-700 dark:text-rose-300 border border-rose-500/25";
+  }
+  if (clean.includes("resource") || clean.includes("request")) {
+    return "bg-orange-500/10 text-orange-700 dark:text-orange-300 border border-orange-500/25";
+  }
+  if (clean.includes("status") || clean.includes("inquiry")) {
+    return "bg-sky-500/10 text-sky-700 dark:text-sky-300 border border-sky-500/25";
+  }
+  if (clean.includes("casual") || clean.includes("greeting") || clean.includes("chatter")) {
+    return "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/25";
+  }
+  if (clean.includes("feedback") || clean.includes("thanks")) {
+    return "bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/25";
+  }
+  return "bg-slate-100/90 dark:bg-white/[0.06] text-slate-600 dark:text-slate-400 border border-slate-200/60 dark:border-white/10";
+}
+
+function getIntentDotColor(intent?: string): string {
+  if (!intent) return "bg-slate-400";
+  const clean = intent.toLowerCase().trim();
+  if (clean.includes("emergency")) return "bg-rose-500";
+  if (clean.includes("resource") || clean.includes("request")) return "bg-orange-500";
+  if (clean.includes("status") || clean.includes("inquiry")) return "bg-sky-500";
+  if (clean.includes("casual") || clean.includes("greeting") || clean.includes("chatter")) return "bg-emerald-500";
+  if (clean.includes("feedback") || clean.includes("thanks")) return "bg-purple-500";
+  return "bg-slate-400";
+}
+
+function getIntentCardIconStyle(intent?: string): { container: string; icon: string } {
+  const clean = (intent || "").toLowerCase().trim();
+  if (clean.includes("emergency")) {
+    return {
+      container: "bg-rose-500/10 border-rose-500/20",
+      icon: "text-rose-600 dark:text-rose-400",
+    };
+  }
+  if (clean.includes("resource") || clean.includes("request")) {
+    return {
+      container: "bg-orange-500/10 border-orange-500/20",
+      icon: "text-orange-600 dark:text-orange-400",
+    };
+  }
+  if (clean.includes("status") || clean.includes("inquiry")) {
+    return {
+      container: "bg-sky-500/10 border-sky-500/20",
+      icon: "text-sky-600 dark:text-sky-400",
+    };
+  }
+  if (clean.includes("casual") || clean.includes("greeting") || clean.includes("chatter")) {
+    return {
+      container: "bg-emerald-500/10 border-emerald-500/20",
+      icon: "text-emerald-600 dark:text-emerald-400",
+    };
+  }
+  if (clean.includes("feedback") || clean.includes("thanks")) {
+    return {
+      container: "bg-purple-500/10 border-purple-500/20",
+      icon: "text-purple-600 dark:text-purple-400",
+    };
+  }
+  return {
+    container: "bg-slate-100 dark:bg-white/[0.06] border-slate-200/60 dark:border-white/10",
+    icon: "text-slate-600 dark:text-slate-400",
+  };
+}
+
+const SCRAPER_FEED_CACHE_KEY = 'responde_cached_scraper_feed_posts';
+
+function getInitialCachedPosts(): ScrapedPost[] {
+  try {
+    const raw = sessionStorage.getItem(SCRAPER_FEED_CACHE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch {}
+  return [];
 }
 
 export default function ScraperFeed() {
-  const [posts, setPosts] = useState<ScrapedPost[]>([]);
-  const [loading, setLoading] = useState(true);
+  const initialCached = useMemo(() => getInitialCachedPosts(), []);
+  const [posts, setPosts] = useState<ScrapedPost[]>(initialCached);
+  const [loading, setLoading] = useState<boolean>(() => initialCached.length === 0);
   const [error, setError] = useState<string | null>(null);
-  const [selectedId, setSelectedId] = useState<string>("");
-  const [activeTable, setActiveTable] = useState<string>("fb_comments");
-  const [discoveredTables, setDiscoveredTables] = useState<string[]>([]);
+  const [selectedId, setSelectedId] = useState<string>(() => initialCached[0]?.id || "");
+
+  // Structured (NLP Incidents only) vs Unstructured (Raw Stream with Noise)
+  const [viewMode, setViewMode] = useState<"structured" | "unstructured">(() => {
+    try {
+      return (localStorage.getItem("responde_scraper_view_mode") as any) || "structured";
+    } catch {
+      return "structured";
+    }
+  });
+
+  const handleViewModeChange = (mode: "structured" | "unstructured") => {
+    setViewMode(mode);
+    try {
+      localStorage.setItem("responde_scraper_view_mode", mode);
+    } catch {}
+  };
+
+  // Track seen comments (persisted in localStorage)
+  const [seenPostIds, setSeenPostIds] = useState<Set<string>>(() => {
+    try {
+      const raw = localStorage.getItem('responde_seen_scraper_posts');
+      return raw ? new Set(JSON.parse(raw)) : new Set<string>();
+    } catch {
+      return new Set<string>();
+    }
+  });
+
+  const markPostSeen = (id: string) => {
+    if (!id) return;
+    setSeenPostIds((prev) => {
+      if (prev.has(id)) return prev;
+      const next = new Set(prev);
+      next.add(id);
+      try {
+        localStorage.setItem('responde_seen_scraper_posts', JSON.stringify(Array.from(next)));
+      } catch {}
+      return next;
+    });
+  };
 
   // Mobile navigation & filter states
   const [mobileView, setMobileView] = useState<'list' | 'detail'>('list');
@@ -157,6 +298,23 @@ export default function ScraperFeed() {
   const [filterStatus, setFilterStatus] = useState("All Status");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
+
+  // Pagination state (20 comments per page)
+  const PAGE_SIZE = 20;
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // 300ms debounce on filter inputs to eliminate rapid filter stutter
+  const debouncedBarangay = useDebounce(filterBarangay, 300);
+  const debouncedType = useDebounce(filterType, 300);
+  const debouncedUrgency = useDebounce(filterUrgency, 300);
+  const debouncedStatus = useDebounce(filterStatus, 300);
+  const debouncedFromDate = useDebounce(fromDate, 300);
+  const debouncedToDate = useDebounce(toDate, 300);
+
+  // Reset to first page when any debounced filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedBarangay, debouncedType, debouncedUrgency, debouncedStatus, debouncedFromDate, debouncedToDate, viewMode]);
 
   // -- Toast State --
   const [toasts, setToasts] = useState<Toast[]>([]);
@@ -173,10 +331,31 @@ export default function ScraperFeed() {
   // -- Ref to prevent Strict Mode duplicate toasts --
   const hasShownInitialToast = useRef(false);
 
+  // Operator manual override: promote/demote between incident and noise
+  const togglePostIncidentOverride = (postId: string) => {
+    setPosts((prev) =>
+      prev.map((p) => {
+        if (p.id !== postId) return p;
+        const nextVal = !p.isIncident;
+        return {
+          ...p,
+          isIncident: nextVal,
+          nlpCategory: nextVal ? "Incident" : "Non-Incident",
+          nlpReason: nextVal
+            ? "Manually marked by operator as an actionable emergency incident."
+            : "Manually reclassified by operator as non-incident chatter / general noise.",
+          confidence: nextVal ? Math.max(p.confidence, 90) : 15,
+        };
+      })
+    );
+    showToast("Classification updated", "success");
+  };
+
   const processData = (data: any[] | null, tableName: string) => {
+    setError(null); // clear any prior fetch error on successful mapping
     const sorted = (data ?? []).sort((a, b) => {
-      const timeA = new Date(a.created_at || a.timestamp || 0).getTime();
-      const timeB = new Date(b.created_at || b.timestamp || 0).getTime();
+      const timeA = new Date(a.created_at || a.timestamp || (a.comment_date ? `${a.comment_date}T${a.comment_time || '00:00'}` : 0) || 0).getTime();
+      const timeB = new Date(b.created_at || b.timestamp || (b.comment_date ? `${b.comment_date}T${b.comment_time || '00:00'}` : 0) || 0).getTime();
       return timeB - timeA;
     });
 
@@ -186,13 +365,31 @@ export default function ScraperFeed() {
       const barangay = row.barangay || row.location || "Unknown";
       const text = row.comment_text || row.commentText || row.text || row.raw_text || row.rawText || "";
       const source = row.source || (tableName.toLowerCase().includes("comment") ? "Facebook Comment" : "Facebook Page");
-      const confidence = typeof row.confidence === "number" ? row.confidence : 0;
       const status = row.status || "New";
 
       const extractedEntities = row.extracted_entities || row.extractedEntities || {
         location: barangay !== "Unknown" ? barangay : "Unknown",
         needs: row.needs ? (Array.isArray(row.needs) ? row.needs : [row.needs]) : []
       };
+
+      const rawIntent = row.intent ? String(row.intent).trim() : '';
+      const isIncident = isIncidentIntent(rawIntent);
+      const normIntent = normalizeIntent(rawIntent);
+
+      const nlpCategory: "Incident" | "Non-Incident" = isIncident ? "Incident" : "Non-Incident";
+      const nlpReason = isIncident
+        ? (normIntent === "Resource Request"
+            ? "Resource request intent detected requiring dispatch of supplies or assistance."
+            : "Emergency report intent detected from citizen social media post.")
+        : `Non-emergency citizen post (Intent: ${normIntent}).`;
+
+      // Prioritize ML classified urgency and confidence stored in Supabase
+      const nlpConfidence = typeof row.confidence === "number" && row.confidence > 0
+        ? row.confidence
+        : (row.urgency_confidence ? Math.round(row.urgency_confidence * 100) : (row.incident_type_confidence ? Math.round(row.incident_type_confidence * 100) : 0));
+
+      const rawUrgency = row.urgency ? String(row.urgency).trim() : '';
+      const resolvedUrgency = formatReportUrgency(rawUrgency) as ScrapedPost["urgency"];
 
       return {
         id: String(idVal),
@@ -201,12 +398,16 @@ export default function ScraperFeed() {
         avatar: userName.charAt(0).toUpperCase(),
         rawText: text,
         barangay,
-        type: inferType(row.incident_type || row.type, text),
-        urgency: inferUrgency(row.incident_type || row.type, text),
+        type: formatReportType(row.incident_type || row.type),
+        urgency: resolvedUrgency,
+        intent: normIntent,
         status: status as ScrapedPost["status"],
-        timestamp: formatTimestamp(row.created_at || row.timestamp),
-        createdAt: row.created_at || row.timestamp || "",
-        confidence,
+        timestamp: formatTimestamp(row.created_at || row.timestamp || (row.comment_date ? `${row.comment_date}T${row.comment_time || '00:00'}` : null)),
+        createdAt: row.created_at || row.timestamp || (row.comment_date ? `${row.comment_date}T${row.comment_time || '00:00'}` : "") || "",
+        confidence: nlpConfidence > 0 ? nlpConfidence : (isIncident ? 92 : 20),
+        isIncident,
+        nlpCategory,
+        nlpReason,
         extractedEntities: {
           location: extractedEntities.location || (barangay !== "Unknown" ? barangay : "Unknown"),
           contact: row.contact || row.contact_number || extractedEntities.contact,
@@ -216,8 +417,15 @@ export default function ScraperFeed() {
       };
     });
 
+    try {
+      sessionStorage.setItem(SCRAPER_FEED_CACHE_KEY, JSON.stringify(mapped));
+    } catch {}
+
     setPosts(mapped);
-    if (mapped.length > 0) setSelectedId(mapped[0].id);
+    if (mapped.length > 0) {
+      setSelectedId((prev) => prev || mapped[0].id);
+      markPostSeen(mapped[0].id);
+    }
     setLoading(false);
 
     if (!hasShownInitialToast.current) {
@@ -226,49 +434,99 @@ export default function ScraperFeed() {
     }
   };
 
-  // -- Fetch from backend API (authenticated) --
-  useEffect(() => {
-    const fetchPosts = async () => {
+  const postsCountRef = useRef(posts.length);
+  postsCountRef.current = posts.length;
+
+  // -- Fetch directly from Supabase with resilient API fallback --
+  const fetchPosts = useCallback(async (isFirst = false, signal?: AbortSignal, forceRefresh = false) => {
+    if (isFirst && postsCountRef.current === 0) {
       setLoading(true);
-      setError(null);
+    }
+    setError(null);
 
-      try {
-        const API_BASE = import.meta.env.DEV ? '' : (import.meta.env.VITE_API_URL ?? '');
-        const storedToken = (() => { try { return localStorage.getItem('responde_session_token'); } catch { return null; } })();
-        const hdrs: Record<string, string> = { 'Content-Type': 'application/json' };
-        if (storedToken) hdrs['Authorization'] = `Bearer ${storedToken}`;
+    try {
+      // 1. Fetch directly from Supabase fb_comments table
+      const fbQuery = supabase
+        .from('fb_comments')
+        .select('id, post_id, user_name, comment_text, comment_date, comment_time, barangay, incident_type, intent, urgency, intent_confidence, urgency_confidence, incident_type_confidence, ml_status, needs_review, status, created_at')
+        .order('created_at', { ascending: false })
+        .limit(500);
+      const { data: supaRows, error: supaErr } = await (signal ? fbQuery.abortSignal(signal) : fbQuery);
 
-        const res = await fetch(`${API_BASE}/api/auth/data/fb-comments?limit=100`, {
-          credentials: 'include',
-          headers: hdrs,
-        });
-
-        if (!res.ok) {
-          const errJson = await res.json().catch(() => ({ error: res.statusText }));
-          setError(errJson.error || 'Failed to fetch FB comments');
-          setLoading(false);
-          return;
-        }
-
-        const json = await res.json();
-        const data: any[] = json.data ?? [];
-        setActiveTable('fb_comments');
-        setDiscoveredTables(['fb_comments']);
-        processData(data, 'fb_comments');
-      } catch (err: any) {
-        console.error('[ScraperFeed] Fetch error:', err);
-        setError(err.message || 'An unexpected error occurred');
-        showToast(err.message || 'An unexpected error occurred', 'error');
-        setLoading(false);
+      if (supaErr && import.meta.env.DEV) {
+        console.warn('[ScraperFeed] Direct Supabase fetch failed, using API fallback:', supaErr.message);
       }
-    };
 
-    fetchPosts();
+      if (!supaErr && Array.isArray(supaRows) && supaRows.length > 0) {
+        processData(supaRows, 'fb_comments');
+      } else {
+        // Fallback to backend API
+        const json = await apiRequest<{ data?: any[] }>(
+          '/api/auth/data/fb-comments?limit=500',
+          {
+            signal,
+            forceRefresh,
+            cacheTtlMs: 8000,
+          }
+        );
+
+        const data: any[] = json.data ?? [];
+        processData(data, 'fb_comments');
+      }
+    } catch (err: any) {
+      if (err.name === 'AbortError') {
+        if (import.meta.env.DEV) {
+          console.log('[ScraperFeed] Fetch aborted cleanly');
+        }
+        return;
+      }
+      console.warn('[ScraperFeed] Fetch warning:', err.message);
+      setError((prev) => (postsCountRef.current === 0 ? (err.message || 'An unexpected error occurred') : prev));
+      if (postsCountRef.current === 0) {
+        showToast(err.message || 'An unexpected error occurred', 'error');
+      }
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  const handleUpdateStatus = async (postId: string, newStatus: ScrapedPost["status"]) => {
-    const prevStatus = posts.find(p => p.id === postId)?.status;
+  useEffect(() => {
+    const controller = new AbortController();
+    fetchPosts(true, controller.signal);
+    return () => {
+      controller.abort();
+    };
+  }, [fetchPosts]);
 
+  // Realtime sync: refresh shortly after new/updated comments (scrapes, NLP
+  // completions, status changes). Manual refresh buttons remain available.
+  useEffect(() => {
+    const controller = new AbortController();
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+    const scheduleRefresh = () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        fetchPosts(false, controller.signal, true);
+      }, 1500);
+    };
+    const channel = supabase
+      .channel('rt:scraper-feed-list')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'fb_comments' }, scheduleRefresh)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'fb_comments' }, scheduleRefresh)
+      .subscribe((status) => {
+        if (status !== 'SUBSCRIBED' && import.meta.env.DEV) {
+          console.warn('[ScraperFeed] Realtime rt:scraper-feed-list: ' + status + '. Manual refresh still available.');
+        }
+      });
+    return () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      controller.abort();
+      supabase.removeChannel(channel);
+    };
+  }, [fetchPosts]);
+
+  const handleUpdateStatus = async (postId: string, newStatus: ScrapedPost["status"]) => {
+    const prevStatus = posts.find((p) => p.id === postId)?.status;
     // Optimistically update status locally
     setPosts((prev) =>
       prev.map((p) => (p.id === postId ? { ...p, status: newStatus } : p))
@@ -279,16 +537,18 @@ export default function ScraperFeed() {
       showToast(`Comment marked as ${newStatus.toLowerCase()}`, "success");
     } catch (err: any) {
       console.error("[ScraperFeed] Status update error:", err);
-      showToast(`Update failed: ${err.message || "Failed to update status"}`, "error");
-      // Revert on error
-      setPosts((prev) =>
-        prev.map((p) => (p.id === postId ? { ...p, status: prevStatus || p.status } : p))
-      );
+      if (prevStatus) {
+        setPosts((prev) =>
+          prev.map((p) => (p.id === postId ? { ...p, status: prevStatus } : p))
+        );
+      }
+      showToast(err?.message || `Failed to update status to ${newStatus.toLowerCase()}`, "error");
     }
   };
 
   const handleSelectPost = (id: string) => {
     setSelectedId(id);
+    markPostSeen(id);
     setMobileView('detail');
   };
 
@@ -309,17 +569,23 @@ export default function ScraperFeed() {
     setFilterStatus("All Status");
     setFromDate("");
     setToDate("");
+    setCurrentPage(1);
   };
 
   const availableBarangays = useMemo(() => {
-    const fromPosts = posts.map((p) => p.barangay).filter(Boolean);
-    return ["All Barangays", ...Array.from(new Set([...TALISAY_BARANGAYS, ...fromPosts])).sort()];
+    const fromPosts = posts
+      .map((p) => p.barangay)
+      .filter((b): b is string => Boolean(b && !['all barangays', 'unknown', 'none', 'unspecified', 'n/a'].includes(b.toLowerCase().trim())));
+    const sorted = Array.from(new Set([...TALISAY_BARANGAYS, ...fromPosts])).sort();
+    return ["All Barangays", "Unknown", ...sorted];
   }, [posts]);
 
   const availableTypes = useMemo(() => {
-    const base = ["Search & Rescue", "Medical", "Food & Water", "Infrastructure"];
     const fromPosts = posts.map((p) => p.type).filter(Boolean);
-    return ["All Types", ...Array.from(new Set([...base, ...fromPosts])).sort()];
+    const sorted = Array.from(new Set([...BASE_INCIDENT_TYPES, ...fromPosts]))
+      .filter((t): t is string => Boolean(t && t.toLowerCase() !== 'all types' && t.toLowerCase() !== 'unclassified' && t.toLowerCase() !== 'none' && t.toLowerCase() !== 'unknown'))
+      .sort();
+    return ["All Types", "None", ...sorted];
   }, [posts]);
 
   const getPostDateString = (p: ScrapedPost): string | null => {
@@ -341,11 +607,37 @@ export default function ScraperFeed() {
     return null;
   };
 
+  const incidentCount = useMemo(() => posts.filter((p) => isIncidentIntent(p.intent)).length, [posts]);
+  const rawCount = useMemo(() => posts.filter((p) => isGeneralLogIntent(p.intent)).length, [posts]);
+
   // Filter logic
   const filteredPosts = useMemo(() => {
     return posts.filter((p) => {
-      if (filterBarangay !== "All Barangays" && p.barangay?.toLowerCase() !== filterBarangay.toLowerCase()) return false;
-      if (filterType !== "All Types" && p.type?.toLowerCase() !== filterType.toLowerCase()) return false;
+      if (viewMode === "structured") {
+        if (!isIncidentIntent(p.intent)) return false;
+      } else {
+        if (!isGeneralLogIntent(p.intent)) return false;
+      }
+      if (filterBarangay !== "All Barangays") {
+        const normFilter = filterBarangay.toLowerCase().trim();
+        const postBarangay = (p.barangay || "").toLowerCase().trim();
+        if (normFilter === "unknown" || normFilter === "none") {
+          if (postBarangay && postBarangay !== "unknown" && postBarangay !== "none" && postBarangay !== "unspecified" && postBarangay !== "n/a") {
+            return false;
+          }
+        } else if (postBarangay !== normFilter) {
+          return false;
+        }
+      }
+      if (filterType !== "All Types") {
+        const normFilter = filterType.toLowerCase().trim();
+        const postType = (p.type || "unknown").toLowerCase().trim();
+        if (normFilter === "none" || normFilter === "unknown") {
+          if (postType !== "none" && postType !== "unclassified" && postType !== "unknown") return false;
+        } else if (postType !== normFilter) {
+          return false;
+        }
+      }
       if (filterUrgency !== "All Urgency" && p.urgency?.toLowerCase() !== filterUrgency.toLowerCase()) return false;
       if (filterStatus !== "All Status" && p.status?.toLowerCase() !== filterStatus.toLowerCase()) return false;
       if (fromDate) {
@@ -358,15 +650,40 @@ export default function ScraperFeed() {
       }
       return true;
     });
-  }, [posts, filterBarangay, filterType, filterUrgency, filterStatus, fromDate, toDate]);
+  }, [posts, viewMode, filterBarangay, filterType, filterUrgency, filterStatus, fromDate, toDate]);
 
-  const selectedPost = filteredPosts.find((p) => p.id === selectedId) || filteredPosts[0] || null;
+  const totalPages = Math.max(1, Math.ceil(filteredPosts.length / PAGE_SIZE));
+
+  const paginatedPosts = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return filteredPosts.slice(start, start + PAGE_SIZE);
+  }, [filteredPosts, currentPage]);
+
+  // Clamp page when filters shrink the result set (prevents stale empty pages)
+  useEffect(() => {
+    if (currentPage > totalPages) setCurrentPage(totalPages);
+  }, [currentPage, totalPages]);
+
+  const selectedPost = filteredPosts.find((p) => p.id === selectedId) || paginatedPosts[0] || null;
+
+  const markAllSeen = () => {
+    const allIds = new Set(filteredPosts.map((p) => p.id));
+    setSeenPostIds(allIds);
+    try {
+      localStorage.setItem('responde_seen_scraper_posts', JSON.stringify(Array.from(allIds)));
+    } catch {}
+  };
+
+  const unseenCount = useMemo(() => {
+    return filteredPosts.filter((p) => !seenPostIds.has(p.id) && p.status === 'New').length;
+  }, [filteredPosts, seenPostIds]);
 
   useEffect(() => {
     if (filteredPosts.length > 0) {
       const exists = filteredPosts.some((p) => p.id === selectedId);
       if (!exists) {
         setSelectedId(filteredPosts[0].id);
+        markPostSeen(filteredPosts[0].id);
       }
     } else {
       setSelectedId("");
@@ -391,32 +708,40 @@ export default function ScraperFeed() {
     return AVATAR_PALETTE[Math.abs(hash) % AVATAR_PALETTE.length];
   };
 
+  // ── Semantic Micro-Dot Status System (No Glaring Neon Blocks) ──
   const renderUrgencyBadge = (urgency: string) => {
     switch (urgency) {
+      case "Critical":
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/15 text-purple-700 dark:text-purple-300 border border-purple-500/30 tabular-nums">
+            <span className="w-1.5 h-1.5 rounded-full bg-purple-500 shrink-0" />
+            Critical
+          </span>
+        );
       case "High":
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20">
-            <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 tabular-nums">
+            <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse shrink-0" />
             High
           </span>
         );
       case "Moderate":
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 tabular-nums">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
             Moderate
           </span>
         );
       case "Low":
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200/50 dark:border-slate-700/50">
-            <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-slate-100/90 dark:bg-white/[0.06] text-slate-600 dark:text-slate-400 border border-slate-200/60 dark:border-white/[0.06] tabular-nums">
+            <span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" />
             Low
           </span>
         );
       default:
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200/50 dark:border-slate-700/50">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-slate-100/90 dark:bg-white/[0.06] text-slate-600 dark:text-slate-400 border border-slate-200/60 dark:border-white/[0.06] tabular-nums">
             {urgency}
           </span>
         );
@@ -427,35 +752,35 @@ export default function ScraperFeed() {
     switch (status) {
       case "New":
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-blue-500/10 text-[#0071E3] dark:text-blue-400 border border-blue-500/20">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#0071E3] animate-pulse" />
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-blue-500/10 text-[#0071E3] dark:text-sky-400 border border-blue-500/20 tabular-nums">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#0071E3] animate-pulse shrink-0" />
             New
           </span>
         );
       case "Verified":
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 tabular-nums">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
             Verified
           </span>
         );
       case "Flagged":
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20">
-            <span className="w-1.5 h-1.5 rounded-full bg-orange-500" />
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20 tabular-nums">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
             Flagged
           </span>
         );
       case "Resolved":
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200/50 dark:border-slate-700/50">
-            <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-slate-100/90 dark:bg-white/[0.06] text-slate-500 dark:text-slate-400 border border-slate-200/60 dark:border-white/[0.06] tabular-nums">
+            <span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" />
             Resolved
           </span>
         );
       default:
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200/50 dark:border-slate-700/50">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-slate-100/90 dark:bg-white/[0.06] text-slate-600 dark:text-slate-400 border border-slate-200/60 dark:border-white/[0.06] tabular-nums">
             {status}
           </span>
         );
@@ -464,15 +789,68 @@ export default function ScraperFeed() {
 
   const getSourceIcon = (source: string) => {
     switch (source) {
-      case "Facebook Page": return <ExternalLink className="w-3 h-3 text-blue-500" />;
-      case "Facebook Comment": return <MessageCircle className="w-3 h-3 text-[#0071E3]" />;
-      case "Group Post": return <Users className="w-3 h-3 text-emerald-500" />;
-      default: return <Globe className="w-3 h-3 text-slate-500" />;
+      case "Facebook Page": return <ExternalLink className="w-3 h-3 text-blue-500" strokeWidth={1.75} />;
+      case "Facebook Comment": return <MessageCircle className="w-3 h-3 text-[#0071E3]" strokeWidth={1.75} />;
+      case "Group Post": return <Users className="w-3 h-3 text-emerald-500" strokeWidth={1.75} />;
+      default: return <Globe className="w-3 h-3 text-slate-500" strokeWidth={1.75} />;
     }
   };
 
+  // Early return loading skeleton on initial cold load
+  if (loading && posts.length === 0) {
+    return <PageLoader variant="scraper" />;
+  }
+
+  // Early return error state if initial load failed and no cached posts
+  if (!loading && error && posts.length === 0) {
+    return (
+      <div className="scraper-soft flex flex-col flex-1 min-h-0 space-y-3 sm:space-y-3.5 w-full h-full relative">
+        <div className="flex-1 flex items-center justify-center p-4">
+          {error.includes("Too many requests") || error.includes("429") || error.includes("503") || error.toLowerCase().includes("unavailable") || error.toLowerCase().includes("timeout") ? (
+            <div className="flex flex-col items-center gap-3 text-amber-600 dark:text-amber-400 bg-amber-500/[0.06] dark:bg-amber-500/[0.10] border border-amber-500/20 rounded-2xl p-6 sm:p-8 max-w-md text-center shadow-sm">
+              <div className="w-11 h-11 rounded-2xl bg-amber-500/10 flex items-center justify-center text-amber-600 dark:text-amber-400 border border-amber-500/20 animate-pulse">
+                <RefreshCw className="w-5 h-5 animate-spin" strokeWidth={1.75} />
+              </div>
+              <p className="font-semibold text-sm text-slate-900 dark:text-slate-100">Server is warming up...</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                The scraper feed service is warming up or handling a temporary rate-limit delay. Stored comments will appear shortly.
+              </p>
+              <button
+                type="button"
+                onClick={() => fetchPosts(true, undefined, true)}
+                className="mt-2 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-[#0071E3] hover:bg-[#0077ED] text-white active:scale-95 transition-all cursor-pointer shadow-xs"
+              >
+                <RefreshCw className="w-3.5 h-3.5" strokeWidth={1.75} />
+                <span>Retry Connection</span>
+              </button>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center gap-3 text-rose-600 dark:text-rose-400 bg-rose-500/[0.06] dark:bg-rose-500/[0.10] border border-rose-500/20 rounded-2xl p-6 sm:p-8 max-w-md text-center shadow-sm">
+              <div className="w-11 h-11 rounded-2xl bg-rose-500/10 flex items-center justify-center text-rose-600 dark:text-rose-400 border border-rose-500/20">
+                <AlertTriangle className="w-5 h-5" strokeWidth={1.75} />
+              </div>
+              <p className="font-semibold text-sm text-slate-900 dark:text-slate-100">Failed to load scraped comments</p>
+              <p className="text-xs text-rose-500 dark:text-rose-400 font-mono">{error}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                The system experienced a temporary connection delay. Click retry below.
+              </p>
+              <button
+                type="button"
+                onClick={() => fetchPosts(true, undefined, true)}
+                className="mt-2 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white active:scale-95 transition-all cursor-pointer shadow-xs"
+              >
+                <RefreshCw className="w-3.5 h-3.5" strokeWidth={1.75} />
+                <span>Retry Now</span>
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-6 h-full flex flex-col relative">
+    <div className="scraper-soft flex flex-col flex-1 w-full lg:h-full lg:min-h-0 space-y-3 sm:space-y-3.5 relative">
       {/* Toast Notifications — Top Right */}
       <div className="fixed top-4 right-4 z-[100] flex flex-col gap-2 pointer-events-none">
         <AnimatePresence>
@@ -484,28 +862,32 @@ export default function ScraperFeed() {
         </AnimatePresence>
       </div>
 
-      {/* Skeleton — shown on first load, replaced by real content */}
-      {loading && <PageLoader variant="scraper" />}
-
-      {/* Error State */}
-      {!loading && error && (
-        <div className="flex-1 flex items-center justify-center">
-          <div className="flex flex-col items-center gap-3 text-red-500 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-6 max-w-md text-center">
-            <AlertTriangle className="w-8 h-8" />
-            <p className="font-semibold text-sm">Failed to load scraped comments</p>
-            <p className="text-xs text-red-400 font-mono">{error}</p>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              Check your Supabase credentials and RLS policies.
+      <StaggerContainer className="flex flex-col flex-1 space-y-3 sm:space-y-3.5 w-full lg:h-full lg:min-h-0">
+        {/* Stage 1: Top Page Header */}
+        <StaggerItem>
+      {/* ── Top Page Header (Unified Soft UI Design) ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 sm:w-10.5 sm:h-10.5 rounded-2xl bg-blue-500/10 dark:bg-blue-500/20 text-[#0071E3] dark:text-sky-400 flex items-center justify-center shrink-0 border border-blue-500/20 shadow-2xs">
+            <Globe className="w-5 h-5 sm:w-5.5 sm:h-5.5" strokeWidth={1.75} />
+          </div>
+          <div>
+            <h1 className="text-lg sm:text-[22px] font-semibold tracking-[-0.025em] leading-tight text-slate-900 dark:text-white">
+              Scraper Feed
+            </h1>
+            <p className="text-[11px] sm:text-xs font-normal tracking-[0.005em] text-slate-500/90 dark:text-slate-400/90 mt-0.5 leading-relaxed">
+              Social media ingestion <span className="text-slate-300 dark:text-slate-600 mx-1">·</span> Public monitoring &amp; NLP extraction
             </p>
           </div>
         </div>
-      )}
 
-      {/* Main Content */}
-      {!loading && !error && (
-        <>
-          {/* Filters Bar — Frosted Glass with Specular Edge, collapsible on mobile */}
-          <div className={`${mobileView === 'detail' ? 'hidden md:block' : 'block'} relative z-30 backdrop-blur-xl bg-white/80 dark:bg-[#111827]/80 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-[0_4px_24px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.25)] border-t border-t-white/80 dark:border-t-white/10 p-3 sm:p-4 transition-all`}>
+      </div>
+        </StaggerItem>
+
+        {/* Stage 2: Filters Bar */}
+        <StaggerItem>
+          {/* Filters Bar — Soft tactile elevation with responsive collapsible filter drawer */}
+          <div className={`${mobileView === 'detail' ? 'hidden md:block' : 'block'} relative z-30 backdrop-blur-xl bg-white/80 dark:bg-[#111827]/80 rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_1px_3px_rgba(15,23,42,0.04),0_8px_24px_rgba(15,23,42,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.3)] p-3 sm:p-4 transition-all`}>
             {/* Mobile Header Bar with Toggle & Active Filter Count (< md) */}
             <div className="flex items-center justify-between md:hidden mb-2.5">
               <button
@@ -513,8 +895,8 @@ export default function ScraperFeed() {
                 onClick={() => setMobileFiltersOpen(!mobileFiltersOpen)}
                 className="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-200 cursor-pointer select-none active:scale-[0.98] transition-transform"
               >
-                <div className="w-7 h-7 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center">
-                  <Filter className="w-3.5 h-3.5" />
+                <div className="w-7 h-7 rounded-lg bg-blue-500/10 text-[#0071E3] dark:text-sky-400 flex items-center justify-center border border-blue-500/20">
+                  <Filter className="w-3.5 h-3.5" strokeWidth={1.75} />
                 </div>
                 <span>Filter Comments</span>
                 {activeFilterCount > 0 && (
@@ -522,25 +904,26 @@ export default function ScraperFeed() {
                     {activeFilterCount}
                   </span>
                 )}
-                <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${mobileFiltersOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${mobileFiltersOpen ? 'rotate-180' : ''}`} strokeWidth={1.75} />
               </button>
               {hasActiveFilters && (
                 <button
                   type="button"
                   onClick={resetFilters}
-                  className="inline-flex items-center gap-1 text-xs font-semibold text-[#0071E3] dark:text-sky-400 hover:underline cursor-pointer"
+                  className="inline-flex items-center justify-center w-7 h-7 text-[#0071E3] hover:text-blue-700 dark:text-sky-400 bg-blue-500/10 hover:bg-blue-500/15 rounded-lg border border-blue-500/20 transition-all duration-150 active:scale-95 cursor-pointer shrink-0"
+                  title="Reset all filters"
+                  aria-label="Reset all filters"
                 >
-                  <RotateCcw className="w-3 h-3" />
-                  <span>Reset</span>
+                  <RotateCcw className="w-3.5 h-3.5" strokeWidth={1.75} />
                 </button>
               )}
             </div>
 
             {/* Filter Controls Row — collapsible on mobile, always visible on tablet & desktop */}
-            <div className={`${mobileFiltersOpen ? 'flex' : 'hidden'} md:flex flex-col md:flex-row md:flex-wrap items-stretch md:items-center justify-between gap-3 pt-2 md:pt-0 border-t md:border-t-0 border-slate-200/60 dark:border-slate-800/60`}>
+            <div className={`${mobileFiltersOpen ? 'flex' : 'hidden'} md:flex flex-col md:flex-row md:flex-wrap items-stretch md:items-center justify-between gap-3 pt-2 md:pt-0 border-t md:border-t-0 border-slate-200/60 dark:border-white/5`}>
               <div className="grid grid-cols-2 sm:grid-cols-4 md:flex md:flex-wrap items-center gap-2.5 sm:gap-3 w-full md:w-auto relative z-20">
-                <div className="hidden md:flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-100/80 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 text-xs font-semibold shrink-0 border border-slate-200/50 dark:border-slate-700/50">
-                  <Filter className="w-3.5 h-3.5 text-[#0071E3]" />
+                <div className="hidden md:flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-100/80 dark:bg-white/[0.04] text-slate-700 dark:text-slate-300 text-xs font-semibold shrink-0 border border-slate-200/50 dark:border-white/10">
+                  <Filter className="w-3.5 h-3.5 text-[#0071E3] dark:text-sky-400" strokeWidth={1.75} />
                   <span>Filters</span>
                 </div>
 
@@ -558,7 +941,7 @@ export default function ScraperFeed() {
 
                 <FilterDropdown
                   value={filterUrgency}
-                  options={["All Urgency", "High", "Moderate", "Low"]}
+                  options={["All Urgency", "Low", "Moderate", "High", "Critical"]}
                   onChange={(val) => { setFilterUrgency(val); setSelectedId(""); }}
                 />
 
@@ -586,46 +969,130 @@ export default function ScraperFeed() {
                   <button
                     type="button"
                     onClick={resetFilters}
-                    className="col-span-1 sm:col-span-2 md:col-span-auto inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-[#0071E3] hover:text-blue-700 dark:text-sky-400 bg-blue-500/10 hover:bg-blue-500/15 transition-all duration-150 active:scale-[0.97] cursor-pointer shrink-0 ml-auto sm:ml-0"
+                    className="relative inline-flex items-center justify-center w-[34px] h-[34px] sm:w-[36px] sm:h-[36px] text-[#0071E3] hover:text-blue-700 dark:text-sky-400 bg-blue-500/10 hover:bg-blue-500/15 rounded-xl transition-all duration-150 active:scale-[0.95] cursor-pointer shrink-0 ml-auto sm:ml-0 border border-blue-500/20 after:absolute after:-inset-1.5 after:content-['']"
                     title="Reset all filters"
+                    aria-label="Reset all filters"
                   >
-                    <RotateCcw className="w-3.5 h-3.5" />
-                    <span>Reset</span>
+                    <RotateCcw className="w-3.5 h-3.5" strokeWidth={1.75} />
                   </button>
                 )}
               </div>
             </div>
           </div>
 
+        </StaggerItem>
+
+        {/* Stage 3: Two Column Layout / Responsive Split-Pane */}
+        <StaggerItem className="flex-1 lg:min-h-0 flex flex-col">
           {/* Two Column Layout / Responsive Split-Pane */}
-          <div className="flex-1 flex flex-col md:grid md:grid-cols-12 gap-3 md:gap-4 lg:gap-6 min-h-0 md:h-[calc(100vh-14.5rem)]">
-            {/* LEFT: Post List — macOS Feed Sidebar Style */}
+          <div className="flex-1 flex flex-col md:grid md:grid-cols-12 gap-3 md:gap-4 lg:gap-6 lg:min-h-0 lg:h-full">
+            {/* LEFT: Post List — Soft Feed Sidebar */}
             <div
               className={`
                 ${mobileView === 'detail' ? 'hidden md:flex' : 'flex'}
-                md:col-span-5 lg:col-span-5 bg-white/85 dark:bg-[#111827]/85 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] flex-col overflow-hidden
-                h-[calc(100vh-17.5rem)] min-h-[440px] md:h-full md:min-h-0
+                md:col-span-5 lg:col-span-5 bg-white/85 dark:bg-[#111827]/85 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_1px_3px_rgba(15,23,42,0.04),0_8px_24px_rgba(15,23,42,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.3)] flex-col overflow-hidden
+                min-h-[460px] md:min-h-0 h-full
               `}
             >
-              <div className="px-4 sm:px-5 py-3 sm:py-3.5 border-b border-slate-200/60 dark:border-slate-800/60 flex items-center justify-between shrink-0 bg-white/60 dark:bg-[#111827]/60 backdrop-blur-md">
-                <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
-                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-blue-500/10 dark:bg-blue-500/20 text-[#0071E3] dark:text-blue-400 flex items-center justify-center shrink-0 border border-blue-500/15">
-                    <Radio className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                  </div>
-                  <h3 className="font-semibold text-slate-900 dark:text-white text-xs sm:text-base tracking-tight truncate">
-                    Scraper Comments
-                  </h3>
+              {/* Apple Segmented Switcher Header */}
+              <div className="px-3 sm:px-4 py-2.5 sm:py-3 border-b border-slate-200/60 dark:border-white/5 flex items-center justify-between shrink-0 bg-slate-50/40 dark:bg-white/[0.02] gap-2">
+                <div
+                  role="tablist"
+                  aria-label="Feed View Mode"
+                  className="inline-flex items-center p-1 bg-slate-100/90 dark:bg-slate-800/90 backdrop-blur-md rounded-xl border border-slate-200/70 dark:border-white/10 shadow-[inset_0_1px_2px_rgba(0,0,0,0.06)]"
+                >
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={viewMode === "structured"}
+                    onClick={() => handleViewModeChange("structured")}
+                    className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold tracking-tight transition-colors duration-150 select-none cursor-pointer active:scale-[0.98] ${
+                      viewMode === "structured"
+                        ? "text-[#0071E3] dark:text-sky-300"
+                        : "text-slate-500 hover:text-[#0071E3] dark:text-slate-400 dark:hover:text-sky-300 hover:bg-blue-50/50 dark:hover:bg-blue-950/30"
+                    }`}
+                  >
+                    {viewMode === "structured" && (
+                      <motion.div
+                        layoutId="activeScraperSidebarTab"
+                        transition={APPLE_SPRING}
+                        className="absolute inset-0 bg-white dark:bg-slate-700/90 border border-slate-200/80 dark:border-white/10 rounded-lg shadow-xs"
+                      />
+                    )}
+                    <span className="relative z-10 flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-[#0071E3] dark:text-sky-400" strokeWidth={1.75} />
+                      <span>Incidents</span>
+                      <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold tabular-nums ${
+                        viewMode === "structured"
+                          ? "bg-[#0071E3] text-white"
+                          : "bg-slate-200/80 dark:bg-slate-700 text-slate-600 dark:text-slate-300"
+                      }`}>
+                        {incidentCount}
+                      </span>
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={viewMode === "unstructured"}
+                    onClick={() => handleViewModeChange("unstructured")}
+                    className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold tracking-tight transition-colors duration-150 select-none cursor-pointer active:scale-[0.98] ${
+                      viewMode === "unstructured"
+                        ? "text-slate-900 dark:text-white"
+                        : "text-slate-500 hover:text-[#0071E3] dark:text-slate-400 dark:hover:text-sky-300 hover:bg-blue-50/50 dark:hover:bg-blue-950/30"
+                    }`}
+                  >
+                    {viewMode === "unstructured" && (
+                      <motion.div
+                        layoutId="activeScraperSidebarTab"
+                        transition={APPLE_SPRING}
+                        className="absolute inset-0 bg-white dark:bg-slate-700/90 border border-slate-200/80 dark:border-white/10 rounded-lg shadow-xs"
+                      />
+                    )}
+                    <span className="relative z-10 flex items-center gap-1.5">
+                      <Layers className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" strokeWidth={1.75} />
+                      <span>All Posts</span>
+                      <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold tabular-nums ${
+                        viewMode === "unstructured"
+                          ? "bg-slate-800 dark:bg-slate-200 text-white dark:text-slate-900"
+                          : "bg-slate-200/80 dark:bg-slate-700 text-slate-600 dark:text-slate-300"
+                      }`}>
+                        {rawCount}
+                      </span>
+                    </span>
+                  </button>
                 </div>
-                <span className="bg-blue-500/10 text-[#0071E3] dark:text-blue-400 border border-blue-500/20 text-[10px] sm:text-xs font-semibold rounded-full px-2 sm:px-2.5 py-0.5 tabular-nums shrink-0">
-                  {filteredPosts.length} comments
-                </span>
+
+                <div className="flex items-center gap-2">
+                  {unseenCount > 0 && (
+                    <button
+                      type="button"
+                      onClick={markAllSeen}
+                      className="text-[11px] font-semibold text-[#0071E3] dark:text-sky-400 hover:underline hover:text-blue-700 dark:hover:text-sky-300 transition-colors cursor-pointer"
+                    >
+                      Mark all read
+                    </button>
+                  )}
+                </div>
               </div>
 
-              <div className="flex-1 overflow-y-auto min-h-0 p-2 pb-10 space-y-1">
+              {/* Scrollable Post Cards List */}
+              <div
+                className="flex-1 overflow-y-auto min-h-0 p-2 sm:p-2.5 pb-3 md:pb-4 space-y-1.5 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800"
+                style={{
+                  maskImage: 'linear-gradient(to bottom, black calc(100% - 48px), transparent 100%)',
+                  WebkitMaskImage: 'linear-gradient(to bottom, black calc(100% - 48px), transparent 100%)',
+                }}
+              >
                 {filteredPosts.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-12 px-4 text-slate-400 dark:text-slate-500 text-sm gap-3">
-                    <Radio className="w-8 h-8 stroke-[1.5] text-slate-300 dark:text-slate-600" />
-                    <span className="font-medium text-slate-600 dark:text-slate-400">No scraped comments found.</span>
+                  <div className="flex flex-col items-center justify-center py-16 px-4 text-slate-400 dark:text-slate-500 text-xs gap-3">
+                    <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-white/[0.04] border border-slate-200/60 dark:border-white/10 flex items-center justify-center">
+                      <Radio className="w-6 h-6 stroke-[1.5] text-slate-400 dark:text-slate-500" />
+                    </div>
+                    <span className="font-medium text-slate-600 dark:text-slate-400 text-center">
+                      {viewMode === "structured" ? "No structured incidents match current filters." : "No raw comments found."}
+                    </span>
                     {hasActiveFilters && (
                       <button
                         type="button"
@@ -635,54 +1102,31 @@ export default function ScraperFeed() {
                         Clear filters
                       </button>
                     )}
-                    <div className="w-full text-xs bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800 text-left font-mono mt-2 space-y-2">
-                      <p className="font-semibold text-slate-700 dark:text-slate-300 border-b border-slate-100 dark:border-slate-800 pb-1.5 mb-1.5 uppercase tracking-wider text-[10px]">
-                        Database Query Diagnostics
-                      </p>
-                      <p>
-                        <span className="text-slate-500">Queried Table:</span>{" "}
-                        <span className="text-blue-500 font-semibold bg-blue-50 dark:bg-blue-900/20 px-1.5 py-0.5 rounded">
-                          "{activeTable}"
-                        </span>
-                      </p>
-                      {discoveredTables.length > 0 ? (
-                        <div>
-                          <span className="text-slate-500">All Database Tables:</span>
-                          <div className="flex flex-wrap gap-1 mt-1">
-                            {discoveredTables.map(t => (
-                              <span key={t} className="bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-slate-600 dark:text-slate-400">
-                                {t}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      ) : (
-                        <p className="text-slate-400 italic">No schema tables discovered. Make sure your Supabase anon key permits reading the Postgrest API schema.</p>
-                      )}
-                      <p className="text-[10px] text-slate-400 dark:text-slate-500 leading-normal pt-2 border-t border-slate-100 dark:border-slate-800">
-                        * Note: If the queried table exists but this screen is blank, the database table may have 0 rows.
-                      </p>
-                    </div>
                   </div>
                 ) : (
-                  <StaggerContainer className="space-y-1">
-                    {filteredPosts.map((post) => {
+                  <StaggerContainer className="space-y-1.5">
+                    {paginatedPosts.map((post) => {
                       const isSelected = selectedId === post.id;
+                      const isSeen = seenPostIds.has(post.id) || post.status !== 'New';
+
                       return (
                         <StaggerItem key={post.id} className="w-full">
                           <button
                             type="button"
                             onClick={() => handleSelectPost(post.id)}
-                            className={`w-full text-left p-2.5 sm:p-3 rounded-xl transition-all duration-150 relative group active:scale-[0.98] cursor-pointer ${isSelected
-                                ? "bg-blue-500/10 dark:bg-blue-500/20 shadow-xs border border-blue-500/25 dark:border-blue-500/30 text-slate-900 dark:text-white"
-                                : "hover:bg-slate-100/70 dark:hover:bg-slate-800/60 border border-transparent text-slate-700 dark:text-slate-300"
-                              }`}
+                            className={`w-full text-left p-2.5 sm:p-3 rounded-xl transition-all duration-200 relative group active:scale-[0.985] cursor-pointer ${
+                              isSelected
+                                ? "bg-blue-500/[0.12] dark:bg-blue-500/[0.22] shadow-[0_2px_12px_rgba(0,113,227,0.14)] border border-blue-500/40 dark:border-blue-400/50 text-slate-900 dark:text-white"
+                                : !isSeen
+                                ? "bg-blue-50/50 dark:bg-blue-950/25 border border-blue-200/70 dark:border-blue-900/50 hover:bg-blue-50/90 dark:hover:bg-blue-950/45 hover:border-blue-400/60 dark:hover:border-blue-400/50 hover:shadow-[0_4px_16px_rgba(0,113,227,0.12)] hover:-translate-y-0.5 text-slate-900 dark:text-white"
+                                : "hover:bg-blue-50/40 dark:hover:bg-blue-950/30 border border-transparent hover:border-blue-300/40 dark:hover:border-blue-500/30 hover:shadow-[0_2px_10px_rgba(0,113,227,0.08)] hover:-translate-y-0.5 text-slate-600 dark:text-slate-400 opacity-90"
+                            }`}
                           >
                             {/* Sliding active indicator bar */}
                             {isSelected && (
                               <motion.div
                                 layoutId="activePostIndicator"
-                                className="absolute left-1 top-2.5 bottom-2.5 w-1 bg-[#0071E3] rounded-full"
+                                className="absolute left-1 top-2.5 bottom-2.5 w-1 bg-[#0071E3] dark:bg-sky-400 shadow-[0_0_8px_rgba(0,113,227,0.6)] rounded-full"
                                 transition={APPLE_SPRING}
                               />
                             )}
@@ -691,21 +1135,49 @@ export default function ScraperFeed() {
                               <div
                                 className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full ${getAvatarColor(
                                   post.author
-                                )} flex items-center justify-center font-bold text-xs text-white shrink-0 shadow-sm ring-2 ring-white/80 dark:ring-slate-800`}
+                                )} flex items-center justify-center font-bold text-xs text-white shrink-0 shadow-xs ring-1 group-hover:scale-105 group-hover:ring-2 group-hover:ring-blue-400/70 dark:group-hover:ring-blue-400/70 transition-all duration-200 ${
+                                  !isSeen ? "ring-blue-400/80 dark:ring-blue-500/80" : "ring-black/5 dark:ring-white/10 opacity-80"
+                                }`}
                               >
                                 {post.avatar || (post.author ? post.author.charAt(0).toUpperCase() : "U")}
                               </div>
                               <div className="flex-1 min-w-0">
-                                <div className="flex items-center justify-between mb-0.5">
-                                  <span className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white truncate">
-                                    {post.author}
-                                  </span>
-                                  <span className="text-[10px] sm:text-[11px] font-medium text-slate-400 dark:text-slate-500 tabular-nums whitespace-nowrap ml-2">
-                                    {post.timestamp}
-                                  </span>
+                                <div className="flex items-start justify-between mb-0.5">
+                                  <div className="flex items-center gap-1.5 min-w-0 pt-0.5">
+                                    {!isSeen && (
+                                      <span
+                                        className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0 shadow-[0_0_8px_rgba(59,130,246,0.6)] animate-pulse"
+                                        title="New unread comment"
+                                      />
+                                    )}
+                                    <span
+                                      className={`text-xs sm:text-[13px] truncate tracking-tight transition-colors ${
+                                        !isSeen
+                                          ? "font-bold text-slate-900 dark:text-white"
+                                          : "font-semibold text-slate-700 dark:text-slate-300"
+                                      }`}
+                                    >
+                                      {post.author}
+                                    </span>
+                                  </div>
+                                  {(() => {
+                                    const { timeText, dateText } = getPostTimeAndDate(post.timestamp, post.createdAt);
+                                    return (
+                                      <div className="flex flex-col items-end shrink-0 ml-2">
+                                        <span className="text-[10px] sm:text-[11px] tabular-nums transition-colors duration-200 font-normal text-slate-400 dark:text-slate-500">
+                                          {timeText}
+                                        </span>
+                                        {dateText && (
+                                          <span className="text-[9px] sm:text-[10px] text-slate-400 dark:text-slate-500 font-medium tabular-nums mt-0.5 whitespace-nowrap">
+                                            {dateText}
+                                          </span>
+                                        )}
+                                      </div>
+                                    );
+                                  })()}
                                 </div>
-                                <div className="flex items-center gap-1.5 mb-1">
-                                  <span className="inline-flex items-center gap-1 text-[10px] font-medium text-slate-500 dark:text-slate-400 bg-slate-100/80 dark:bg-slate-800/80 px-1.5 sm:px-2 py-0.5 rounded-md border border-slate-200/40 dark:border-slate-700/40 truncate max-w-[120px] sm:max-w-none">
+                                <div className="flex items-center gap-1.5 mb-1.5 text-[11px] text-slate-400 dark:text-slate-500 font-medium">
+                                  <span className="inline-flex items-center gap-1 text-[10px] font-medium text-slate-500 dark:text-slate-400 bg-slate-100/90 dark:bg-white/[0.06] px-1.5 sm:px-2 py-0.5 rounded-md border border-slate-200/50 dark:border-white/[0.06] truncate max-w-[120px] sm:max-w-none">
                                     {getSourceIcon(post.source)}
                                     {post.source}
                                   </span>
@@ -714,16 +1186,32 @@ export default function ScraperFeed() {
                                     {post.barangay}
                                   </span>
                                 </div>
-                                <p className="text-xs text-slate-600 dark:text-slate-300 line-clamp-2 mb-2 leading-relaxed">
+                                <p
+                                  className={`text-xs line-clamp-2 mb-2 leading-relaxed transition-colors ${
+                                    !isSeen
+                                      ? "font-medium text-slate-900 dark:text-slate-100"
+                                      : "font-normal text-slate-500 dark:text-slate-400"
+                                  }`}
+                                >
                                   {post.rawText}
                                 </p>
-                                <div className="flex items-center gap-1.5 flex-wrap">
-                                  {renderUrgencyBadge(post.urgency)}
-                                  {renderStatusBadge(post.status)}
-                                  {post.confidence > 0 && (
-                                    <span className="inline-flex items-center gap-1 text-[10px] font-medium text-purple-600 dark:text-purple-400 bg-purple-500/10 border border-purple-500/20 px-2 py-0.5 rounded-full">
-                                      <Brain className="w-3 h-3" />
-                                      {post.confidence}%
+                                <div className="flex items-center justify-between gap-1.5 flex-wrap pt-0.5">
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    {renderUrgencyBadge(post.urgency)}
+                                    {renderStatusBadge(post.status)}
+                                  </div>
+                                  {post.intent && (
+                                    <span
+                                      className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold tabular-nums shrink-0 ${getIntentBadgeStyle(
+                                        post.intent
+                                      )}`}
+                                    >
+                                      <span
+                                        className={`w-1.5 h-1.5 rounded-full shrink-0 ${getIntentDotColor(
+                                          post.intent
+                                        )}`}
+                                      />
+                                      <span>{post.intent}</span>
                                     </span>
                                   )}
                                 </div>
@@ -736,14 +1224,46 @@ export default function ScraperFeed() {
                   </StaggerContainer>
                 )}
               </div>
+
+              {/* Pagination Controls Footer */}
+              {filteredPosts.length > PAGE_SIZE && (
+                <div className="px-3.5 py-2.5 border-t border-slate-200/60 dark:border-white/5 bg-slate-50/40 dark:bg-white/[0.02] flex items-center justify-between gap-2 shrink-0">
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 tabular-nums">
+                    {(currentPage - 1) * PAGE_SIZE + 1}–{Math.min(currentPage * PAGE_SIZE, filteredPosts.length)} of {filteredPosts.length}
+                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      disabled={currentPage <= 1}
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      className="relative p-1.5 rounded-lg border border-slate-200/70 dark:border-white/10 text-slate-600 dark:text-slate-300 disabled:opacity-30 disabled:pointer-events-none hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 transition-all cursor-pointer after:absolute after:-inset-2.5 after:absolute after:content-['']"
+                      title="Previous Page"
+                    >
+                      <ChevronLeft className="w-3.5 h-3.5" strokeWidth={1.75} />
+                    </button>
+                    <span className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 px-1.5 tabular-nums">
+                      {currentPage} / {totalPages}
+                    </span>
+                    <button
+                      type="button"
+                      disabled={currentPage >= totalPages}
+                      onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                      className="relative p-1.5 rounded-lg border border-slate-200/70 dark:border-white/10 text-slate-600 dark:text-slate-300 disabled:opacity-30 disabled:pointer-events-none hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 transition-all cursor-pointer after:absolute after:-inset-2.5 after:absolute after:content-['']"
+                      title="Next Page"
+                    >
+                      <ChevronRight className="w-3.5 h-3.5" strokeWidth={1.75} />
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
-            {/* RIGHT: Post Detail — macOS Inspector Style */}
+            {/* RIGHT: Post Detail — macOS Soft Inspector Style */}
             <div
               className={`
                 ${mobileView === 'list' ? 'hidden md:flex' : 'flex'}
-                md:col-span-7 lg:col-span-7 bg-white/90 dark:bg-[#111827]/90 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] flex-col overflow-hidden
-                h-[calc(100vh-12.5rem)] min-h-[480px] md:h-full md:min-h-0
+                md:col-span-7 lg:col-span-7 bg-white/90 dark:bg-[#111827]/90 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_1px_3px_rgba(15,23,42,0.04),0_8px_24px_rgba(15,23,42,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.3)] flex-col overflow-hidden
+                min-h-[480px] md:min-h-0 h-[calc(100vh-10rem)] md:h-full
               `}
             >
               <AnimatePresence mode="wait">
@@ -757,23 +1277,23 @@ export default function ScraperFeed() {
                     className="flex flex-col h-full"
                   >
                     {/* Header */}
-                    <div className="px-4 sm:px-6 py-3 sm:py-4.5 border-b border-slate-200/60 dark:border-slate-800/60 flex items-center justify-between shrink-0 bg-white/70 dark:bg-[#111827]/70 backdrop-blur-md gap-2">
+                    <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-200/60 dark:border-white/5 flex items-center justify-between shrink-0 bg-slate-50/40 dark:bg-white/[0.02] gap-2">
                       <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                         {/* Mobile Back Button (Apple iOS style < md) */}
                         <button
                           type="button"
                           onClick={() => setMobileView('list')}
-                          className="md:hidden flex items-center gap-0.5 text-[#0071E3] dark:text-blue-400 text-xs font-semibold px-2 py-1 -ml-1 rounded-lg hover:bg-blue-500/10 active:scale-95 transition-all shrink-0 cursor-pointer"
+                          className="relative md:hidden flex items-center gap-0.5 text-[#0071E3] dark:text-sky-400 text-xs font-semibold px-2 py-1 -ml-1 rounded-lg hover:bg-blue-500/10 active:scale-95 transition-all shrink-0 cursor-pointer after:absolute after:inset-x-0 after:-inset-y-2.5 after:content-['']"
                           aria-label="Back to scraper feed list"
                         >
-                          <ChevronLeft className="w-4 h-4" />
+                          <ChevronLeft className="w-4 h-4" strokeWidth={1.75} />
                           <span>Feed</span>
                         </button>
 
                         <div
-                          className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full ${getAvatarColor(
+                          className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full ${getAvatarColor(
                             selectedPost.author
-                          )} flex items-center justify-center font-bold text-xs text-white shrink-0 shadow-sm ring-2 ring-white/80 dark:ring-slate-800`}
+                          )} flex items-center justify-center font-bold text-xs text-white shrink-0 shadow-xs ring-1 ring-black/5 dark:ring-white/10`}
                         >
                           {selectedPost.avatar || (selectedPost.author ? selectedPost.author.charAt(0).toUpperCase() : "U")}
                         </div>
@@ -788,90 +1308,245 @@ export default function ScraperFeed() {
                             </span>
                             <span className="text-slate-300 dark:text-slate-600">•</span>
                             <span className="flex items-center gap-1 shrink-0">
-                              <Clock className="w-3 h-3 text-slate-400" />
-                              <span className="tabular-nums">{selectedPost.timestamp}</span>
+                              <Clock className="w-3 h-3 text-slate-400" strokeWidth={1.75} />
+                              <span className="tabular-nums">
+                                {(() => {
+                                  const { timeText, dateText } = getPostTimeAndDate(selectedPost.timestamp, selectedPost.createdAt);
+                                  return dateText ? `${dateText} • ${timeText}` : timeText;
+                                })()}
+                              </span>
                             </span>
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-                        {renderUrgencyBadge(selectedPost.urgency)}
-                        {renderStatusBadge(selectedPost.status)}
-                      </div>
                     </div>
 
                     {/* Body */}
-                    <div className="flex-1 overflow-y-auto min-h-0 p-4 sm:p-6 space-y-4 sm:space-y-5 bg-slate-50/40 dark:bg-[#0B0F17]/40">
+                    <div
+                      className="flex-1 overflow-y-auto min-h-0 p-4 sm:p-6 space-y-4 sm:space-y-5 bg-slate-50/40 dark:bg-[#0B0F17]/40 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800"
+                      style={{
+                        maskImage: 'linear-gradient(to bottom, black calc(100% - 48px), transparent 100%)',
+                        WebkitMaskImage: 'linear-gradient(to bottom, black calc(100% - 48px), transparent 100%)',
+                      }}
+                    >
                       <StaggerContainer className="space-y-4 sm:space-y-5">
-                        {/* Original Post Card */}
-                        <StaggerItem>
-                          <div>
-                            <h4 className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">
-                              Original Scraped Comment
-                            </h4>
-                            <div className="bg-white dark:bg-slate-800/80 rounded-2xl p-4 sm:p-5 border border-slate-200/70 dark:border-slate-700/70 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
-                              <p className="text-xs sm:text-sm text-slate-800 dark:text-slate-200 leading-relaxed italic break-words">
-                                &ldquo;{selectedPost.rawText}&rdquo;
-                              </p>
-                            </div>
-                          </div>
-                        </StaggerItem>
+                        {/* STRUCTURED VIEW: Highlight Extracted Entities First */}
+                        {viewMode === "structured" ? (
+                          <>
+                            {/* Extracted Entities Grid */}
+                            <StaggerItem>
+                              <div>
+                                <h4 className="text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
+                                  <Brain className="w-3.5 h-3.5 text-purple-500" strokeWidth={1.75} />
+                                  <span>Extracted Incident Details</span>
+                                </h4>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                  <div className="bg-white/90 dark:bg-[#111827]/90 rounded-2xl p-3.5 sm:p-4 border border-slate-200/80 dark:border-white/10 hover:border-blue-400/60 dark:hover:border-blue-500/50 hover:bg-blue-50/20 dark:hover:bg-blue-950/20 hover:shadow-[0_4px_16px_rgba(0,113,227,0.12)] hover:-translate-y-0.5 transition-all duration-200 group/loc">
+                                    <div className="flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
+                                      <div className="w-6 h-6 rounded-lg bg-blue-500/10 text-[#0071E3] dark:text-sky-400 flex items-center justify-center border border-blue-500/20 group-hover/loc:scale-105 transition-transform">
+                                        <MapPin className="w-3.5 h-3.5" strokeWidth={1.75} />
+                                      </div>
+                                      <span>Extracted Location</span>
+                                    </div>
+                                    <p className="text-sm font-bold text-slate-900 dark:text-white break-words mt-1">
+                                      {selectedPost.extractedEntities.location}
+                                    </p>
+                                  </div>
 
-                        {/* NLP Extraction */}
-                        <StaggerItem>
-                          <div>
-                            <div className="flex items-center gap-2 mb-2.5 sm:mb-3 flex-wrap">
-                              <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center border border-purple-500/20 shrink-0">
-                                <Brain className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                              </div>
-                              <h4 className="text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                                NLP AI Extraction
-                              </h4>
-                              {selectedPost.confidence > 0 && (
-                                <span className="text-[10px] sm:text-xs font-semibold text-purple-600 dark:text-purple-400 bg-purple-500/10 border border-purple-500/20 rounded-full px-2 sm:px-2.5 py-0.5 ml-auto">
-                                  Confidence: {selectedPost.confidence}%
-                                </span>
-                              )}
-                            </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-3.5">
-                              <div className="bg-white dark:bg-slate-800/80 rounded-xl p-3.5 sm:p-4 border border-slate-200/70 dark:border-slate-700/70 shadow-2xs">
-                                <div className="flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">
-                                  <div className="w-6 h-6 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
-                                    <MapPin className="w-3.5 h-3.5" />
+                                  <div className="bg-white/90 dark:bg-[#111827]/90 rounded-2xl p-3.5 sm:p-4 border border-slate-200/80 dark:border-white/10 hover:border-amber-400/60 dark:hover:border-amber-500/50 hover:bg-amber-50/20 dark:hover:bg-amber-950/20 hover:shadow-[0_4px_16px_rgba(245,158,11,0.12)] hover:-translate-y-0.5 transition-all duration-200 group/cat">
+                                    <div className="flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
+                                      <div className="w-6 h-6 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center border border-amber-500/20 group-hover/cat:scale-105 transition-transform">
+                                        <AlertTriangle className="w-3.5 h-3.5" strokeWidth={1.75} />
+                                      </div>
+                                      <span>Incident Category</span>
+                                    </div>
+                                    <p className="text-sm font-bold text-slate-900 dark:text-white break-words mt-1">
+                                      {selectedPost.type}
+                                    </p>
                                   </div>
-                                  <span>Detected Location</span>
+
+                                  {(() => {
+                                    const intentStyle = getIntentCardIconStyle(selectedPost.intent);
+                                    return (
+                                      <div className="bg-white/90 dark:bg-[#111827]/90 rounded-2xl p-3.5 sm:p-4 border border-slate-200/80 dark:border-white/10 hover:border-purple-400/60 dark:hover:border-purple-500/50 hover:bg-purple-50/20 dark:hover:bg-purple-950/20 hover:shadow-[0_4px_16px_rgba(168,85,247,0.12)] hover:-translate-y-0.5 transition-all duration-200 group/intent">
+                                        <div className="flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">
+                                          <div className={`w-6 h-6 rounded-lg ${intentStyle.container} ${intentStyle.icon} flex items-center justify-center border group-hover/intent:scale-105 transition-transform`}>
+                                            <Sparkles className="w-3.5 h-3.5" strokeWidth={1.75} />
+                                          </div>
+                                          <span>Detected Intent</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                          <span
+                                            className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold tabular-nums ${getIntentBadgeStyle(
+                                              selectedPost.intent
+                                            )}`}
+                                          >
+                                            <span
+                                              className={`w-1.5 h-1.5 rounded-full shrink-0 ${getIntentDotColor(
+                                                selectedPost.intent
+                                              )}`}
+                                            />
+                                            <span>{selectedPost.intent || 'Other'}</span>
+                                          </span>
+                                        </div>
+                                      </div>
+                                    );
+                                  })()}
+
+                                  {selectedPost.extractedEntities.contact && (
+                                    <div className="bg-white/90 dark:bg-[#111827]/90 rounded-2xl p-3.5 sm:p-4 border border-slate-200/80 dark:border-white/10 hover:border-emerald-400/60 dark:hover:border-emerald-500/50 hover:bg-emerald-50/20 dark:hover:bg-emerald-950/20 hover:shadow-[0_4px_16px_rgba(16,185,129,0.12)] hover:-translate-y-0.5 transition-all duration-200 group/contact">
+                                      <div className="flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
+                                        <div className="w-6 h-6 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-500/20 group-hover/contact:scale-105 transition-transform">
+                                          <Users className="w-3.5 h-3.5" strokeWidth={1.75} />
+                                        </div>
+                                        <span>Emergency Contact</span>
+                                      </div>
+                                      <p className="text-sm font-bold text-slate-900 dark:text-white font-mono break-words mt-1">
+                                        {selectedPost.extractedEntities.contact}
+                                      </p>
+                                    </div>
+                                  )}
+
+                                  {selectedPost.extractedEntities.peopleAffected ? (
+                                    <div className="bg-white/90 dark:bg-[#111827]/90 rounded-2xl p-3.5 sm:p-4 border border-slate-200/80 dark:border-white/10 hover:border-rose-400/60 dark:hover:border-rose-500/50 hover:bg-rose-50/20 dark:hover:bg-rose-950/20 hover:shadow-[0_4px_16px_rgba(244,63,94,0.12)] hover:-translate-y-0.5 transition-all duration-200 group/victims">
+                                      <div className="flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
+                                        <div className="w-6 h-6 rounded-lg bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center border border-rose-500/20 group-hover/victims:scale-105 transition-transform">
+                                          <Users className="w-3.5 h-3.5" strokeWidth={1.75} />
+                                        </div>
+                                        <span>Estimated Victims / Affected</span>
+                                      </div>
+                                      <p className="text-sm font-bold text-slate-900 dark:text-white break-words mt-1">
+                                        {selectedPost.extractedEntities.peopleAffected} persons
+                                      </p>
+                                    </div>
+                                  ) : null}
                                 </div>
-                                <p className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-slate-100 pl-8 break-words">
-                                  {selectedPost.extractedEntities.location}
-                                </p>
                               </div>
-                              <div className="bg-white dark:bg-slate-800/80 rounded-xl p-3.5 sm:p-4 border border-slate-200/70 dark:border-slate-700/70 shadow-2xs">
-                                <div className="flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">
-                                  <div className="w-6 h-6 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
-                                    <AlertTriangle className="w-3.5 h-3.5" />
+                            </StaggerItem>
+
+                            {/* Extracted Needs Pills */}
+                            {selectedPost.extractedEntities.needs && selectedPost.extractedEntities.needs.length > 0 && (
+                              <StaggerItem>
+                                <div>
+                                  <h4 className="text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
+                                    Urgent Resources &amp; Needs Detected
+                                  </h4>
+                                  <div className="flex flex-wrap gap-2">
+                                    {selectedPost.extractedEntities.needs.map((need, idx) => (
+                                      <span
+                                        key={idx}
+                                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-semibold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20"
+                                      >
+                                        <AlertTriangle className="w-3 h-3" strokeWidth={1.75} />
+                                        <span>{need}</span>
+                                      </span>
+                                    ))}
                                   </div>
-                                  <span>Incident Category</span>
                                 </div>
-                                <p className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-slate-100 pl-8 break-words">
-                                  {selectedPost.type}
-                                </p>
+                              </StaggerItem>
+                            )}
+
+                            {/* Original Source Quote */}
+                            <StaggerItem>
+                              <div>
+                                <h4 className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">
+                                  Raw Post Source Reference
+                                </h4>
+                                <div className="bg-white/90 dark:bg-[#111827]/90 rounded-2xl p-4 sm:p-5 border border-slate-200/80 dark:border-white/10 hover:border-blue-300/50 dark:hover:border-blue-500/40 hover:bg-blue-50/15 dark:hover:bg-blue-950/15 hover:shadow-xs transition-all duration-200">
+                                  <p className="text-xs sm:text-sm text-slate-800 dark:text-slate-200 leading-relaxed italic break-words">
+                                    &ldquo;{selectedPost.rawText}&rdquo;
+                                  </p>
+                                </div>
                               </div>
-                            </div>
-                          </div>
-                        </StaggerItem>
+                            </StaggerItem>
+                          </>
+                        ) : (
+                          /* RAW UNSTRUCTURED VIEW: Raw stream audit & technical details */
+                          <>
+                            {/* Raw Stream Post Box */}
+                            <StaggerItem>
+                              <div>
+                                <h4 className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">
+                                  Raw Unstructured Scraped Text
+                                </h4>
+                                <div className="bg-white/90 dark:bg-[#111827]/90 rounded-2xl p-4 sm:p-5 border border-slate-200/80 dark:border-white/10 hover:border-blue-300/50 dark:hover:border-blue-500/40 hover:bg-blue-50/15 dark:hover:bg-blue-950/15 hover:shadow-xs transition-all duration-200">
+                                  <p className="text-xs sm:text-sm text-slate-800 dark:text-slate-200 leading-relaxed font-sans break-words">
+                                    {selectedPost.rawText}
+                                  </p>
+                                </div>
+                              </div>
+                            </StaggerItem>
+
+                            {/* Raw Technical Payload Inspection */}
+                            <StaggerItem>
+                              <div>
+                                <h4 className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">
+                                  Raw Ingestion Metadata
+                                </h4>
+                                <div className="bg-slate-100/90 dark:bg-[#0B0F17]/90 rounded-2xl p-3.5 sm:p-4 border border-slate-200/70 dark:border-white/10 font-mono text-[11px] text-slate-700 dark:text-slate-300 space-y-1.5 overflow-x-auto">
+                                  <div className="flex justify-between py-1 border-b border-slate-200/50 dark:border-white/5">
+                                    <span className="text-slate-400 dark:text-slate-500">entry_id:</span>
+                                    <span className="font-semibold text-slate-900 dark:text-white">{selectedPost.id}</span>
+                                  </div>
+                                  <div className="flex justify-between py-1 border-b border-slate-200/50 dark:border-white/5">
+                                    <span className="text-slate-400 dark:text-slate-500">author:</span>
+                                    <span>{selectedPost.author}</span>
+                                  </div>
+                                  <div className="flex justify-between py-1 border-b border-slate-200/50 dark:border-white/5">
+                                    <span className="text-slate-400 dark:text-slate-500">source_platform:</span>
+                                    <span>{selectedPost.source}</span>
+                                  </div>
+                                  <div className="flex justify-between py-1 border-b border-slate-200/50 dark:border-white/5">
+                                    <span className="text-slate-400 dark:text-slate-500">barangay_parsed:</span>
+                                    <span>{selectedPost.barangay}</span>
+                                  </div>
+                                  <div className="flex justify-between py-1">
+                                    <span className="text-slate-400 dark:text-slate-500">status:</span>
+                                    <span>{selectedPost.status}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </StaggerItem>
+                          </>
+                        )}
                       </StaggerContainer>
                     </div>
 
                     {/* Action Bar */}
-                    <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-200/60 dark:border-slate-800/60 bg-white/60 dark:bg-[#111827]/60 backdrop-blur-md shrink-0 flex items-center justify-end">
-                      <button
-                        type="button"
-                        onClick={() => handleUpdateStatus(selectedPost.id, "Resolved")}
-                        className="px-3.5 sm:px-4 py-2 sm:py-2.5 bg-slate-100 hover:bg-slate-200/80 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200/60 dark:border-slate-700/60 text-xs font-semibold rounded-xl flex items-center gap-2 active:scale-[0.97] transition-all cursor-pointer"
-                      >
-                        <XCircle className="w-3.5 h-3.5" />
-                        <span>Dismiss</span>
-                      </button>
+                    <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-200/60 dark:border-white/5 bg-slate-50/40 dark:bg-white/[0.02] shrink-0 flex flex-wrap sm:flex-nowrap items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        {viewMode === "structured" && (
+                          <button
+                            type="button"
+                            onClick={() => togglePostIncidentOverride(selectedPost.id)}
+                            className="px-3 py-2 min-h-[38px] sm:min-h-[40px] bg-slate-100 hover:bg-slate-200/90 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold rounded-xl hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.97] transition-all duration-200 ease-out cursor-pointer border border-slate-200/70 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20 shadow-2xs select-none"
+                          >
+                            Demote to Noise
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        {selectedPost.status !== "Verified" && (
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateStatus(selectedPost.id, "Verified")}
+                            className="group px-3.5 sm:px-4 py-2 sm:py-2.5 min-h-[38px] sm:min-h-[40px] bg-[#0071E3] hover:bg-[#0077ED] text-white text-xs font-semibold rounded-xl flex items-center gap-2 shadow-xs hover:shadow-[0_4px_14px_rgba(0,113,227,0.35)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.97] transition-all duration-200 ease-out cursor-pointer select-none"
+                          >
+                            <CheckCircle2 className="w-3.5 h-3.5 transition-transform duration-200 ease-out group-hover:scale-110" strokeWidth={2} />
+                            <span>Verify Incident</span>
+                          </button>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={() => handleUpdateStatus(selectedPost.id, "Resolved")}
+                          className="group px-3.5 sm:px-4 py-2 sm:py-2.5 min-h-[38px] sm:min-h-[40px] bg-slate-100 hover:bg-rose-50/90 dark:bg-slate-800 dark:hover:bg-rose-950/30 text-slate-700 dark:text-slate-300 hover:text-rose-600 dark:hover:text-rose-400 border border-slate-200/60 dark:border-white/10 hover:border-rose-300/80 dark:hover:border-rose-700/50 hover:shadow-[0_4px_14px_rgba(244,63,94,0.18)] dark:hover:shadow-[0_4px_14px_rgba(244,63,94,0.25)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.97] text-xs font-semibold rounded-xl flex items-center gap-2 transition-all duration-200 ease-out cursor-pointer shadow-2xs select-none"
+                        >
+                          <XCircle className="w-3.5 h-3.5 transition-transform duration-200 ease-out group-hover:scale-110 group-hover:-rotate-12 text-slate-500 group-hover:text-rose-600 dark:text-slate-400 dark:group-hover:text-rose-400" strokeWidth={1.75} />
+                          <span>Dismiss / Resolve</span>
+                        </button>
+                      </div>
                     </div>
                   </motion.div>
                 ) : (
@@ -883,8 +1558,8 @@ export default function ScraperFeed() {
                     exit="exit"
                     className="flex-1 flex flex-col items-center justify-center p-8 text-center"
                   >
-                    <div className="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 flex items-center justify-center text-slate-400 dark:text-slate-500 mb-3 shadow-inner">
-                      <Radio className="w-8 h-8 stroke-[1.5]" />
+                    <div className="w-14 h-14 rounded-2xl bg-slate-100 dark:bg-white/[0.04] border border-slate-200/60 dark:border-white/10 flex items-center justify-center text-slate-400 dark:text-slate-500 mb-3 shadow-inner">
+                      <Radio className="w-7 h-7 stroke-[1.5]" />
                     </div>
                     <h4 className="font-semibold text-slate-800 dark:text-slate-200 text-base">
                       No Comment Selected
@@ -897,8 +1572,8 @@ export default function ScraperFeed() {
               </AnimatePresence>
             </div>
           </div>
-        </>
-      )}
+        </StaggerItem>
+      </StaggerContainer>
     </div>
   );
 }

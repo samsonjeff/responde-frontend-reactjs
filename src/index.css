@@ -66,3 +66,1059 @@ button:not(:disabled),
 .dropdown-scroll::-webkit-scrollbar-thumb:hover {
   background-color: rgba(156, 163, 175, 0.6);
 }
+
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   SOFT UI EVOLUTION SCOPED DESIGN TOKENS (Settings)
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.settings-soft {
+  --soft-surface: #FFFFFF;
+  --soft-surface-subtle: #F8FAFC;
+  --soft-surface-pressed: #F1F5F9;
+  --soft-border: rgba(15, 23, 42, 0.08);
+  --soft-border-subtle: rgba(15, 23, 42, 0.05);
+
+  --soft-text-main: #0F172A;
+  --soft-text-muted: #64748B;
+  --soft-text-subtle: #94A3B8;
+
+  --soft-accent: #2563EB;
+  --soft-accent-subtle: #EFF6FF;
+
+  --soft-shadow-card: 0 1px 3px rgba(15, 23, 42, 0.04), 0 4px 14px rgba(15, 23, 42, 0.03);
+  --soft-shadow-pressed: inset 0 1px 2px rgba(15, 23, 42, 0.06);
+
+  --ease-smooth: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-tactile: cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.dark .settings-soft {
+  --soft-surface: #111827;
+  --soft-surface-subtle: #0B0F19;
+  --soft-surface-pressed: #1E293B;
+  --soft-border: rgba(255, 255, 255, 0.08);
+  --soft-border-subtle: rgba(255, 255, 255, 0.04);
+
+  --soft-text-main: #F8FAFC;
+  --soft-text-muted: #94A3B8;
+  --soft-text-subtle: #64748B;
+
+  --soft-accent: #3B82F6;
+  --soft-accent-subtle: rgba(59, 130, 246, 0.12);
+
+  --soft-shadow-card: 0 1px 3px rgba(0, 0, 0, 0.3), 0 4px 14px rgba(0, 0, 0, 0.25);
+  --soft-shadow-pressed: inset 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   SOFT UI EVOLUTION SCOPED DESIGN TOKENS (Analytics)
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.analytics-soft {
+  --soft-surface: #FFFFFF;
+  --soft-surface-subtle: #F8FAFC;
+  --soft-surface-pressed: #F1F5F9;
+  --soft-border: rgba(15, 23, 42, 0.08);
+  --soft-border-subtle: rgba(15, 23, 42, 0.05);
+
+  --soft-text-main: #0F172A;
+  --soft-text-muted: #64748B;
+  --soft-text-subtle: #94A3B8;
+
+  --soft-accent: #2563EB;
+  --soft-accent-subtle: #EFF6FF;
+
+  --soft-shadow-card: 0 1px 3px rgba(15, 23, 42, 0.04), 0 4px 14px rgba(15, 23, 42, 0.03);
+  --soft-shadow-pressed: inset 0 1px 2px rgba(15, 23, 42, 0.06);
+
+  --ease-smooth: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-tactile: cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.dark .analytics-soft {
+  --soft-surface: #111827;
+  --soft-surface-subtle: #0B0F19;
+  --soft-surface-pressed: #1E293B;
+  --soft-border: rgba(255, 255, 255, 0.08);
+  --soft-border-subtle: rgba(255, 255, 255, 0.04);
+
+  --soft-text-main: #F8FAFC;
+  --soft-text-muted: #94A3B8;
+  --soft-text-subtle: #64748B;
+
+  --soft-accent: #3B82F6;
+  --soft-accent-subtle: rgba(59, 130, 246, 0.12);
+
+  --soft-shadow-card: 0 1px 3px rgba(0, 0, 0, 0.3), 0 4px 14px rgba(0, 0, 0, 0.25);
+  --soft-shadow-pressed: inset 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   SOFT UI EVOLUTION SCOPED DESIGN TOKENS (Geospatial)
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.geospatial-soft {
+  --soft-surface: #FFFFFF;
+  --soft-surface-subtle: #F8FAFC;
+  --soft-surface-pressed: #F1F5F9;
+  --soft-border: rgba(15, 23, 42, 0.08);
+  --soft-border-subtle: rgba(15, 23, 42, 0.05);
+
+  --soft-text-main: #0F172A;
+  --soft-text-muted: #64748B;
+  --soft-text-subtle: #94A3B8;
+
+  --soft-accent: #2563EB;
+  --soft-accent-subtle: #EFF6FF;
+
+  --soft-shadow-card: 0 1px 3px rgba(15, 23, 42, 0.04), 0 8px 24px rgba(15, 23, 42, 0.04);
+  --soft-shadow-pressed: inset 0 1px 2px rgba(15, 23, 42, 0.06);
+
+  --ease-smooth: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-tactile: cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.dark .geospatial-soft {
+  --soft-surface: #111827;
+  --soft-surface-subtle: #0B0F19;
+  --soft-surface-pressed: #1E293B;
+  --soft-border: rgba(255, 255, 255, 0.08);
+  --soft-border-subtle: rgba(255, 255, 255, 0.04);
+
+  --soft-text-main: #F8FAFC;
+  --soft-text-muted: #94A3B8;
+  --soft-text-subtle: #64748B;
+
+  --soft-accent: #3B82F6;
+  --soft-accent-subtle: rgba(59, 130, 246, 0.12);
+
+  --soft-shadow-card: 0 1px 3px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.28);
+  --soft-shadow-pressed: inset 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   SOFT UI EVOLUTION SCOPED DESIGN TOKENS (Scraper Feed)
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.scraper-soft {
+  --soft-surface: #FFFFFF;
+  --soft-surface-subtle: #F8FAFC;
+  --soft-surface-pressed: #F1F5F9;
+  --soft-border: rgba(15, 23, 42, 0.08);
+  --soft-border-subtle: rgba(15, 23, 42, 0.05);
+
+  --soft-text-main: #0F172A;
+  --soft-text-muted: #64748B;
+  --soft-text-subtle: #94A3B8;
+
+  --soft-accent: #2563EB;
+  --soft-accent-subtle: #EFF6FF;
+
+  --soft-shadow-card: 0 1px 3px rgba(15, 23, 42, 0.04), 0 8px 24px rgba(15, 23, 42, 0.03);
+  --soft-shadow-pressed: inset 0 1px 2px rgba(15, 23, 42, 0.06);
+
+  --ease-smooth: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-tactile: cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.dark .scraper-soft {
+  --soft-surface: #111827;
+  --soft-surface-subtle: #0B0F19;
+  --soft-surface-pressed: #1E293B;
+  --soft-border: rgba(255, 255, 255, 0.08);
+  --soft-border-subtle: rgba(255, 255, 255, 0.04);
+
+  --soft-text-main: #F8FAFC;
+  --soft-text-muted: #94A3B8;
+  --soft-text-subtle: #64748B;
+
+  --soft-accent: #3B82F6;
+  --soft-accent-subtle: rgba(59, 130, 246, 0.12);
+
+  --soft-shadow-card: 0 1px 3px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.28);
+  --soft-shadow-pressed: inset 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   SOFT UI EVOLUTION SCOPED DESIGN TOKENS (Messenger Bot Logs)
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.messenger-soft {
+  --soft-surface: #FFFFFF;
+  --soft-surface-subtle: #F8FAFC;
+  --soft-surface-pressed: #F1F5F9;
+  --soft-border: rgba(15, 23, 42, 0.08);
+  --soft-border-subtle: rgba(15, 23, 42, 0.05);
+
+  --soft-text-main: #0F172A;
+  --soft-text-muted: #64748B;
+  --soft-text-subtle: #94A3B8;
+
+  --soft-accent: #2563EB;
+  --soft-accent-subtle: #EFF6FF;
+
+  --soft-shadow-card: 0 1px 3px rgba(15, 23, 42, 0.04), 0 8px 24px rgba(15, 23, 42, 0.03);
+  --soft-shadow-pressed: inset 0 1px 2px rgba(15, 23, 42, 0.06);
+
+  --ease-smooth: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-tactile: cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.dark .messenger-soft {
+  --soft-surface: #111827;
+  --soft-surface-subtle: #0B0F19;
+  --soft-surface-pressed: #1E293B;
+  --soft-border: rgba(255, 255, 255, 0.08);
+  --soft-border-subtle: rgba(255, 255, 255, 0.04);
+
+  --soft-text-main: #F8FAFC;
+  --soft-text-muted: #94A3B8;
+  --soft-text-subtle: #64748B;
+
+  --soft-accent: #3B82F6;
+  --soft-accent-subtle: rgba(59, 130, 246, 0.12);
+
+  --soft-shadow-card: 0 1px 3px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.28);
+  --soft-shadow-pressed: inset 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   SOFT UI EVOLUTION SCOPED DESIGN TOKENS (Incident Reports)
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.incidents-soft {
+  --soft-surface: #FFFFFF;
+  --soft-surface-subtle: #F8FAFC;
+  --soft-surface-pressed: #F1F5F9;
+  --soft-border: rgba(15, 23, 42, 0.08);
+  --soft-border-subtle: rgba(15, 23, 42, 0.05);
+
+  --soft-text-main: #0F172A;
+  --soft-text-muted: #64748B;
+  --soft-text-subtle: #94A3B8;
+
+  --soft-accent: #2563EB;
+  --soft-accent-subtle: #EFF6FF;
+
+  --soft-shadow-card: 0 1px 3px rgba(15, 23, 42, 0.04), 0 8px 24px rgba(15, 23, 42, 0.03);
+  --soft-shadow-pressed: inset 0 1px 2px rgba(15, 23, 42, 0.06);
+
+  --ease-smooth: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-tactile: cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.dark .incidents-soft {
+  --soft-surface: #111827;
+  --soft-surface-subtle: #0B0F19;
+  --soft-surface-pressed: #1E293B;
+  --soft-border: rgba(255, 255, 255, 0.08);
+  --soft-border-subtle: rgba(255, 255, 255, 0.04);
+
+  --soft-text-main: #F8FAFC;
+  --soft-text-muted: #94A3B8;
+  --soft-text-subtle: #64748B;
+
+  --soft-accent: #3B82F6;
+  --soft-accent-subtle: rgba(59, 130, 246, 0.12);
+
+  --soft-shadow-card: 0 1px 3px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.28);
+  --soft-shadow-pressed: inset 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   SOFT UI EVOLUTION SCOPED DESIGN TOKENS (Dashboard)
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.dashboard-soft {
+  --soft-surface: #FFFFFF;
+  --soft-surface-subtle: #F8FAFC;
+  --soft-surface-pressed: #F1F5F9;
+  --soft-border: rgba(15, 23, 42, 0.08);
+  --soft-border-subtle: rgba(15, 23, 42, 0.05);
+
+  --soft-text-main: #0F172A;
+  --soft-text-muted: #64748B;
+  --soft-text-subtle: #94A3B8;
+
+  --soft-accent: #2563EB;
+  --soft-accent-subtle: #EFF6FF;
+
+  --soft-shadow-card: 0 1px 3px rgba(15, 23, 42, 0.04), 0 8px 24px rgba(15, 23, 42, 0.03);
+  --soft-shadow-pressed: inset 0 1px 2px rgba(15, 23, 42, 0.06);
+
+  --ease-smooth: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-tactile: cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.dark .dashboard-soft {
+  --soft-surface: #111827;
+  --soft-surface-subtle: #0B0F19;
+  --soft-surface-pressed: #1E293B;
+  --soft-border: rgba(255, 255, 255, 0.08);
+  --soft-border-subtle: rgba(255, 255, 255, 0.04);
+
+  --soft-text-main: #F8FAFC;
+  --soft-text-muted: #94A3B8;
+  --soft-text-subtle: #64748B;
+
+  --soft-accent: #3B82F6;
+  --soft-accent-subtle: rgba(59, 130, 246, 0.12);
+
+  --soft-shadow-card: 0 1px 3px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.28);
+  --soft-shadow-pressed: inset 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+
+/* MDRRMO Talisay Command Center Radar Pulse */
+@keyframes mdrrmo-radar-wave {
+  0% {
+    transform: scale(0.5);
+    opacity: 0.95;
+  }
+  55% {
+    transform: scale(1.9);
+    opacity: 0.35;
+  }
+  100% {
+    transform: scale(2.9);
+    opacity: 0;
+  }
+}
+
+@keyframes mdrrmo-beacon-glow {
+  0%, 100% {
+    filter: drop-shadow(0 0 8px rgba(14, 165, 233, 0.65));
+  }
+  50% {
+    filter: drop-shadow(0 0 18px rgba(56, 189, 248, 0.95));
+  }
+}
+
+.mdrrmo-radar-ring {
+  position: absolute;
+  inset: -16px;
+  border-radius: 9999px;
+  border: 1.5px solid rgba(56, 189, 248, 0.7);
+  pointer-events: none;
+  animation: mdrrmo-radar-wave 2.8s cubic-bezier(0.2, 0.8, 0.4, 1) infinite;
+  z-index: 10;
+}
+
+.mdrrmo-radar-ring-delayed {
+  position: absolute;
+  inset: -16px;
+  border-radius: 9999px;
+  border: 1.5px solid rgba(14, 165, 233, 0.55);
+  pointer-events: none;
+  animation: mdrrmo-radar-wave 2.8s cubic-bezier(0.2, 0.8, 0.4, 1) infinite;
+  animation-delay: 1.3s;
+  z-index: 10;
+}
+
+.mdrrmo-beacon-core {
+  animation: mdrrmo-beacon-glow 2.5s ease-in-out infinite;
+}
+
+/* Always keep MDRRMO marker on top of all pins, clusters & labels */
+.mdrrmo-marker-wrapper {
+  z-index: 999999 !important;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.maplibregl-marker:has(.mdrrmo-marker-wrapper) {
+  z-index: 999999 !important;
+}
+
+.mdrrmo-logo-emblem {
+  position: relative;
+  z-index: 30;
+  width: 44px;
+  height: 44px;
+  border-radius: 9999px;
+  background: #0b132b;
+  border: 2px solid #38bdf8;
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.8), 0 4px 12px rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  transition: transform 0.2s cubic-bezier(0.23, 1, 0.32, 1), box-shadow 0.2s ease;
+}
+
+.mdrrmo-marker-wrapper:hover .mdrrmo-logo-emblem {
+  transform: scale(1.12);
+  box-shadow: 0 0 24px rgba(56, 189, 248, 1), 0 6px 18px rgba(0, 0, 0, 0.55);
+  border-color: #7dd3fc;
+}
+
+.mdrrmo-logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 9999px;
+  display: block;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.mdrrmo-pin-pointer {
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 7px solid #38bdf8;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
+  margin-top: -1px;
+  z-index: 31;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   GEOSPATIAL BARANGAY MAP LABELS & GLOW EFFECTS
+   ───────────────────────────────────────────────────────────────────────────── */
+.barangay-map-label-wrapper {
+  pointer-events: auto;
+  cursor: pointer;
+  z-index: 50;
+  transform: translateZ(0);
+}
+
+.barangay-map-pill {
+  transition: all 0.22s cubic-bezier(0.23, 1, 0.32, 1);
+  will-change: transform, box-shadow, border-color, color;
+}
+
+.barangay-map-pill:hover,
+.barangay-map-pill.is-hovered {
+  border-color: #0071E3 !important;
+  color: #0071E3 !important;
+  background-color: rgba(255, 255, 255, 0.98) !important;
+  transform: scale(1.1) translateY(-2px);
+  box-shadow: 0 0 16px rgba(0, 113, 227, 0.55), 0 4px 12px rgba(0, 113, 227, 0.28) !important;
+  font-weight: 700 !important;
+}
+
+.dark .barangay-map-pill:hover,
+.dark .barangay-map-pill.is-hovered {
+  border-color: #38bdf8 !important;
+  color: #38bdf8 !important;
+  background-color: rgba(15, 23, 42, 0.96) !important;
+  box-shadow: 0 0 20px rgba(56, 189, 248, 0.75), 0 4px 14px rgba(0, 0, 0, 0.7) !important;
+}
+
+.dispatch-arc-popup .maplibregl-popup-content {
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(0, 113, 227, 0.35);
+  box-shadow: 0 8px 24px rgba(0, 113, 227, 0.2), 0 2px 6px rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+  padding: 6px 10px;
+}
+
+.dark .dispatch-arc-popup .maplibregl-popup-content {
+  background: rgba(15, 23, 42, 0.95);
+  border-color: rgba(56, 189, 248, 0.4);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), 0 0 16px rgba(56, 189, 248, 0.25);
+}
+
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   PROTOTYPE ANIMATIONS & HOVER STYLES (from video / prototype)
+   ───────────────────────────────────────────────────────────────────────────── */
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes floaty {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-7px);
+  }
+}
+
+.floaty {
+  animation: floaty 4s ease-in-out infinite;
+}
+
+.halo {
+  background: conic-gradient(from 0deg, #2563eb, #7dd3fc, #ffffff, #6366f1, #2563eb);
+  animation: spin 6s linear infinite;
+}
+
+/* Logo Interactive Hover Tilt */
+.glogo {
+  transition: transform 0.35s cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+
+.glogo:hover {
+  transform: rotate(-8deg) scale(1.1);
+}
+
+/* Sign In Button Shimmer & Lift */
+.btnfx {
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.25s ease, filter 0.2s ease;
+}
+
+.btnfx::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-120%);
+  pointer-events: none;
+  background: linear-gradient(100deg, transparent 30%, rgba(255, 255, 255, 0.55) 50%, transparent 70%);
+}
+
+.btnfx:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(37, 99, 235, 0.45);
+  filter: brightness(1.05);
+}
+
+.btnfx:hover::after {
+  transform: translateX(120%);
+  transition: transform 0.7s ease;
+}
+
+.btnfx:active {
+  transform: scale(0.97);
+}
+
+/* Google Sign In Lift & 360-degree SVG Spin */
+.lift {
+  transition: transform 0.25s ease, box-shadow 0.25s ease, background-color 0.25s ease;
+}
+
+.lift:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 28px rgba(20, 40, 100, 0.2);
+}
+
+.dark .lift:hover {
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.5);
+}
+
+#google svg,
+#login-google svg,
+.google-btn svg {
+  transition: transform 0.6s cubic-bezier(0.3, 1.4, 0.5, 1);
+}
+
+#google:hover svg,
+#login-google:hover svg,
+.google-btn:hover svg {
+  transform: rotate(360deg) scale(1.15);
+}
+
+/* Sidebar Brand Logo — Fluid Floating Lift & Pulse Halo */
+@keyframes sidebarLogoFloat {
+  0%, 100% {
+    transform: translateY(-2px) scale(1.08);
+  }
+  50% {
+    transform: translateY(-4.5px) scale(1.1);
+  }
+}
+
+.sidebar-logo {
+  transition: transform 0.32s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.28s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.sidebar-logo:hover {
+  animation: sidebarLogoFloat 1.8s ease-in-out infinite;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.28), 0 10px 24px rgba(37, 99, 235, 0.48);
+}
+
+/* Navigation Drawer Links — SVG-Part Mechanical Micro-Interactions (No Generic Zoom/Tilt) */
+@keyframes navDocLineScan {
+  0% {
+    transform: scaleX(0.2);
+    opacity: 0.45;
+  }
+  60% {
+    transform: scaleX(1.08);
+    opacity: 1;
+  }
+  100% {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+}
+
+@keyframes navChatPop {
+  0% {
+    transform: scale(1) translateY(0);
+  }
+  40% {
+    transform: scale(1.14, 0.92) translateY(1px);
+  }
+  75% {
+    transform: scale(0.96, 1.1) translateY(-2.5px);
+  }
+  100% {
+    transform: scale(1.05) translateY(-1px);
+  }
+}
+
+@keyframes navGlobeSpin3D {
+  0% {
+    transform: scaleX(1);
+  }
+  45% {
+    transform: scaleX(0.18);
+  }
+  100% {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes navAnalyticsBar1 {
+  0%, 100% { transform: scaleY(1); }
+  50% { transform: scaleY(1.85); }
+}
+
+@keyframes navAnalyticsBar2 {
+  0%, 100% { transform: scaleY(1); }
+  45% { transform: scaleY(0.55); }
+  80% { transform: scaleY(1.18); }
+}
+
+@keyframes navAnalyticsBar3 {
+  0%, 100% { transform: scaleY(1); }
+  55% { transform: scaleY(1.45); }
+}
+
+.navlink {
+  transition: transform 0.24s cubic-bezier(0.23, 1, 0.32, 1), background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.navlink svg {
+  overflow: visible;
+  transition: transform 0.3s cubic-bezier(0.23, 1, 0.32, 1), filter 0.24s ease;
+  transform-origin: center center;
+}
+
+.navlink:hover {
+  transform: translateX(3px);
+}
+
+.navlink:hover svg {
+  filter: drop-shadow(0 2px 6px rgba(37, 99, 235, 0.22));
+}
+
+.dark .navlink:hover svg {
+  filter: drop-shadow(0 2px 6px rgba(56, 189, 248, 0.28));
+}
+
+/* 1. Dashboard (LayoutDashboard) — 4 Bento grid tiles expand outward in 4 directions */
+.navlink[data-nav-item="/dashboard"] svg rect {
+  transition: transform 0.34s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.navlink[data-nav-item="/dashboard"]:hover svg rect:nth-child(1) {
+  transform: translate(-1.4px, -1.4px);
+}
+.navlink[data-nav-item="/dashboard"]:hover svg rect:nth-child(2) {
+  transform: translate(1.4px, -1.4px);
+  transition-delay: 25ms;
+}
+.navlink[data-nav-item="/dashboard"]:hover svg rect:nth-child(3) {
+  transform: translate(1.4px, 1.4px);
+  transition-delay: 50ms;
+}
+.navlink[data-nav-item="/dashboard"]:hover svg rect:nth-child(4) {
+  transform: translate(-1.4px, 1.4px);
+  transition-delay: 75ms;
+}
+
+/* 2. Incident Reports (FileText) — Page lifts slightly while inner text lines scan left-to-right */
+.navlink[data-nav-item="/incident-reports"] svg path {
+  transform-box: fill-box;
+  transform-origin: left center;
+  transition: transform 0.28s cubic-bezier(0.23, 1, 0.32, 1);
+}
+.navlink[data-nav-item="/incident-reports"]:hover svg {
+  transform: translateY(-1.5px);
+}
+.navlink[data-nav-item="/incident-reports"]:hover svg path:nth-child(3) {
+  animation: navDocLineScan 0.42s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+}
+.navlink[data-nav-item="/incident-reports"]:hover svg path:nth-child(4) {
+  animation: navDocLineScan 0.42s cubic-bezier(0.23, 1, 0.32, 1) 65ms forwards;
+}
+.navlink[data-nav-item="/incident-reports"]:hover svg path:nth-child(5) {
+  animation: navDocLineScan 0.42s cubic-bezier(0.23, 1, 0.32, 1) 130ms forwards;
+}
+
+/* 3. Messenger Logs (MessageSquare) — Elastic speech-bubble pop from bottom-left tail */
+.navlink[data-nav-item="/messenger-bot-logs"] svg {
+  transform-origin: 18% 88%;
+}
+.navlink[data-nav-item="/messenger-bot-logs"]:hover svg {
+  animation: navChatPop 0.48s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+}
+
+/* 4. Scraper Feed (Globe) — Inner meridian ellipse spins in 3D while equator pulses */
+.navlink[data-nav-item="/scraper-feed"] svg path {
+  transform-origin: center center;
+  transition: transform 0.35s cubic-bezier(0.23, 1, 0.32, 1);
+}
+.navlink[data-nav-item="/scraper-feed"]:hover svg path:nth-of-type(1) {
+  animation: navGlobeSpin3D 0.65s cubic-bezier(0.45, 0, 0.55, 1) 1;
+}
+
+/* 5. Geospatial Map (Map) — Accordion map unfolds flat as inner fold creases slide apart */
+.navlink[data-nav-item="/geospatial-map"] svg path {
+  transition: transform 0.34s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transform-origin: center center;
+}
+.navlink[data-nav-item="/geospatial-map"]:hover svg path:nth-child(1) {
+  transform: scaleX(1.12);
+}
+.navlink[data-nav-item="/geospatial-map"]:hover svg path:nth-child(2) {
+  transform: translateX(1.3px) translateY(0.8px);
+}
+.navlink[data-nav-item="/geospatial-map"]:hover svg path:nth-child(3) {
+  transform: translateX(-1.3px) translateY(-0.8px);
+}
+
+/* 6. Analytics (BarChart3) — X/Y axes stay anchored while the 3 vertical bars pump from baseline */
+.navlink[data-nav-item="/analytics"] svg path:nth-child(2),
+.navlink[data-nav-item="/analytics"] svg path:nth-child(3),
+.navlink[data-nav-item="/analytics"] svg path:nth-child(4) {
+  transform-box: fill-box;
+  transform-origin: center bottom;
+}
+.navlink[data-nav-item="/analytics"]:hover svg path:nth-child(4) {
+  animation: navAnalyticsBar1 0.55s cubic-bezier(0.23, 1, 0.32, 1) 1;
+}
+.navlink[data-nav-item="/analytics"]:hover svg path:nth-child(3) {
+  animation: navAnalyticsBar2 0.55s cubic-bezier(0.23, 1, 0.32, 1) 50ms 1;
+}
+.navlink[data-nav-item="/analytics"]:hover svg path:nth-child(2) {
+  animation: navAnalyticsBar3 0.55s cubic-bezier(0.23, 1, 0.32, 1) 100ms 1;
+}
+
+/* 7. Settings (Settings) — Mechanical gear rotation */
+.navlink[data-nav-item="/settings"]:hover svg {
+  transform: rotate(60deg) scale(1.08);
+}
+
+/* Sign Out Button — Door Frame Anchors Left While Arrow Glides Right Outward */
+.signout-btn {
+  transition: transform 0.24s cubic-bezier(0.23, 1, 0.32, 1), background-color 0.2s ease, color 0.2s ease;
+}
+
+.signout-btn svg {
+  overflow: visible;
+  transition: color 0.2s ease, filter 0.24s ease, transform 0.28s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+/* Path 3 is the Doorway Frame (M9 21H5...) */
+.signout-btn svg path:nth-child(3) {
+  transition: transform 0.32s cubic-bezier(0.23, 1, 0.32, 1), opacity 0.24s ease;
+}
+
+/* Path 1 (Arrowhead m16 17 5-5-5-5) & Path 2 (Shaft M21 12H9) */
+.signout-btn svg path:nth-child(1),
+.signout-btn svg path:nth-child(2) {
+  transition: transform 0.38s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.signout-btn:hover svg {
+  filter: drop-shadow(0 2px 8px rgba(239, 68, 68, 0.32));
+}
+
+.signout-btn:hover svg path:nth-child(3) {
+  transform: translateX(-2px);
+  opacity: 0.82;
+}
+
+.signout-btn:hover svg path:nth-child(2) {
+  transform: translateX(5.5px);
+}
+
+.signout-btn:hover svg path:nth-child(1) {
+  transform: translateX(6.5px);
+}
+
+/* Top Header Profile Avatar Hover — Smooth Lift, Halo Ring & Portrait Zoom */
+.profile-avatar-btn {
+  transition: transform 0.24s cubic-bezier(0.23, 1, 0.32, 1), box-shadow 0.24s cubic-bezier(0.23, 1, 0.32, 1), border-color 0.2s ease;
+}
+
+.profile-avatar-btn:hover {
+  transform: translateY(-1.5px) scale(1.05);
+  box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.16), 0 6px 16px rgba(0, 113, 227, 0.26);
+}
+
+.dark .profile-avatar-btn:hover {
+  box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.2), 0 6px 18px rgba(56, 189, 248, 0.3);
+}
+
+.profile-avatar-btn img {
+  transition: transform 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.profile-avatar-btn:hover img {
+  transform: scale(1.1);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   NOTIFICATION BELL HOVER & NEW ALERT ANIMATIONS
+   ───────────────────────────────────────────────────────────────────────────── */
+
+@keyframes bellHoverRing {
+  0%, 100% { transform: rotate(0deg) scale(1); }
+  15% { transform: rotate(18deg) scale(1.1); }
+  30% { transform: rotate(-16deg) scale(1.1); }
+  45% { transform: rotate(12deg) scale(1.08); }
+  60% { transform: rotate(-10deg) scale(1.06); }
+  75% { transform: rotate(6deg) scale(1.03); }
+  90% { transform: rotate(-3deg) scale(1.01); }
+}
+
+@keyframes bellNewAlertRing {
+  0%, 100% { transform: rotate(0deg) scale(1); }
+  8% { transform: rotate(22deg) scale(1.18); }
+  16% { transform: rotate(-20deg) scale(1.18); }
+  24% { transform: rotate(18deg) scale(1.15); }
+  32% { transform: rotate(-16deg) scale(1.15); }
+  40% { transform: rotate(14deg) scale(1.12); }
+  48% { transform: rotate(-12deg) scale(1.1); }
+  56% { transform: rotate(8deg) scale(1.06); }
+  64% { transform: rotate(-6deg) scale(1.04); }
+  72% { transform: rotate(4deg) scale(1.02); }
+  80% { transform: rotate(-2deg) scale(1); }
+}
+
+@keyframes bellUnreadIdle {
+  0%, 82%, 100% { transform: rotate(0deg); }
+  85% { transform: rotate(13deg); }
+  88% { transform: rotate(-11deg); }
+  91% { transform: rotate(8deg); }
+  94% { transform: rotate(-5deg); }
+  97% { transform: rotate(3deg); }
+}
+
+@keyframes bellSonarRipple {
+  0% {
+    transform: scale(0.85);
+    opacity: 0.75;
+  }
+  100% {
+    transform: scale(2.15);
+    opacity: 0;
+  }
+}
+
+@keyframes badgePopPulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.55);
+  }
+  50% {
+    transform: scale(1.14);
+    box-shadow: 0 0 0 6px rgba(239, 68, 68, 0);
+  }
+}
+
+.bell-btn svg {
+  transform-origin: 50% 12%;
+  transition: transform 0.25s cubic-bezier(0.3, 1.4, 0.5, 1), color 0.2s ease, filter 0.2s ease;
+}
+
+.bell-btn:hover svg {
+  animation: bellHoverRing 0.65s cubic-bezier(0.36, 0.07, 0.19, 0.97) 1 forwards;
+  color: #2563EB;
+  filter: drop-shadow(0 2px 8px rgba(37, 99, 235, 0.35));
+}
+
+.dark .bell-btn:hover svg {
+  color: #38BDF8;
+  filter: drop-shadow(0 2px 8px rgba(56, 189, 248, 0.4));
+}
+
+.bell-btn.bell-has-unread:not(:hover) svg {
+  animation: none;
+}
+
+.bell-btn.bell-new-alert svg {
+  animation: bellNewAlertRing 0.8s cubic-bezier(0.36, 0.07, 0.19, 0.97) 1 forwards;
+  color: #EF4444;
+  filter: drop-shadow(0 0 10px rgba(239, 68, 68, 0.55));
+}
+
+.bell-sonar-ring {
+  position: absolute;
+  inset: 2px;
+  border-radius: 0.75rem;
+  border: 2px solid rgba(239, 68, 68, 0.65);
+  pointer-events: none;
+  animation: bellSonarRipple 0.9s cubic-bezier(0.16, 1, 0.3, 1) 1 forwards;
+}
+
+.bell-badge-pulse {
+  animation: badgePopPulse 1.8s ease-in-out infinite;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   REPORTS BY TYPE: MINIMALIST 2D BARS WITH SMOOTH TOP WATER WAVE & HOVER
+   ───────────────────────────────────────────────────────────────────────────── */
+
+@keyframes waterWaveDriftFront {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes waterWaveDriftBack {
+  0% {
+    transform: translateX(-50%);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+@keyframes barRise2D {
+  0% {
+    transform: scaleY(0);
+  }
+  100% {
+    transform: scaleY(1);
+  }
+}
+
+.minimal-2d-bar-group {
+  cursor: pointer;
+  transition: opacity 0.25s ease, filter 0.25s ease, transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+  transform-box: fill-box;
+  transform-origin: center bottom;
+}
+
+.minimal-2d-bar-group:hover {
+  transform: translateY(-2px) scaleX(1.03);
+  filter: brightness(1.08) drop-shadow(0 4px 10px var(--bar-hover-shadow, rgba(100, 116, 139, 0.3)));
+}
+
+.minimal-2d-bar-riser {
+  transform-box: fill-box;
+  transform-origin: center bottom;
+  animation: barRise2D 1.2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.minimal-wave-front {
+  animation: waterWaveDriftFront 4.2s linear infinite;
+}
+
+.minimal-wave-back {
+  animation: waterWaveDriftBack 5.6s linear infinite;
+}
+
+/* Blue focus outline on Recharts chart container instead of default browser black */
+.recharts-wrapper:focus,
+.recharts-wrapper:focus-visible,
+.recharts-surface:focus,
+.recharts-surface:focus-visible {
+  outline: 1.5px solid #3B82F6 !important;
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+.recharts-layer:focus,
+.recharts-bar-rectangle:focus,
+.minimal-2d-bar-group:focus {
+  outline: none !important;
+}
+
+
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   APPLE-GRADE SKELETON SHIMMER SYSTEM
+   ───────────────────────────────────────────────────────────────────────────── */
+
+@keyframes skeleton-shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.skeleton-bone {
+  position: relative;
+  overflow: hidden;
+  background-color: rgba(226, 232, 240, 0.75);
+}
+
+.dark .skeleton-bone {
+  background-color: rgba(30, 41, 59, 0.75);
+}
+
+.skeleton-bone::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  transform: translateX(-100%);
+  background-image: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0,
+    rgba(255, 255, 255, 0.45) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  animation: skeleton-shimmer 1.8s infinite cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+}
+
+.dark .skeleton-bone::after {
+  background-image: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0,
+    rgba(255, 255, 255, 0.08) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+}
+
+/* -- Geospatial map: keep zoom controls clear of the mobile bottom sheet --
+   (locate button occupies top-left; legend occupies top-right) */
+.geospatial-soft .maplibregl-ctrl-group button {
+  position: relative;
+  width: 32px;
+  height: 32px;
+}
+.geospatial-soft .maplibregl-ctrl-group button::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+}
+@media (max-width: 639px) {
+  .geospatial-soft .maplibregl-ctrl-bottom-right {
+    top: 64px;
+    bottom: auto;
+    right: auto;
+    left: 12px;
+  }
+}

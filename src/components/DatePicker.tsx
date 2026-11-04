@@ -128,7 +128,7 @@ export default function DatePicker({ value, onChange, placeholder = 'Select date
           key={day}
           type="button"
           onClick={() => handleDateClick(day)}
-          className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full text-xs sm:text-sm flex items-center justify-center transition-colors
+          className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full text-xs sm:text-sm flex items-center justify-center transition-colors
             ${isSelected
               ? 'bg-blue-600 dark:bg-blue-500 text-white font-medium shadow-sm'
               : isToday
@@ -159,9 +159,9 @@ export default function DatePicker({ value, onChange, placeholder = 'Select date
       <button
         type="button"
         onClick={handleOpen}
-        className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-1.5 sm:py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-xs sm:text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 transition-colors w-full sm:min-w-[150px] sm:w-auto cursor-pointer"
+        className="group flex items-center gap-1.5 sm:gap-2 px-3 py-1.5 sm:px-3 sm:py-2 bg-white/90 dark:bg-slate-800/80 backdrop-blur-md border border-slate-200/80 dark:border-white/10 rounded-xl text-xs font-medium text-slate-700 dark:text-slate-200 hover:border-blue-400/80 dark:hover:border-blue-500/60 hover:bg-slate-50/90 dark:hover:bg-slate-700/80 hover:text-slate-900 dark:hover:text-white shadow-[0_1px_3px_rgba(0,0,0,0.03),inset_0_1px_1px_rgba(255,255,255,0.9)] dark:shadow-[0_1px_3px_rgba(0,0,0,0.3)] hover:shadow-[0_4px_14px_rgba(0,113,227,0.14)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 w-full sm:w-auto min-w-0 sm:min-w-32.5 cursor-pointer"
       >
-        <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400 dark:text-slate-400 shrink-0" />
+        <Calendar className="w-3.5 h-3.5 text-slate-400 dark:text-slate-400 group-hover:text-[#0071E3] dark:group-hover:text-sky-400 transition-colors duration-150 shrink-0" />
         <span className={`truncate ${value ? 'text-slate-800 dark:text-slate-100 font-medium' : 'text-slate-400 dark:text-slate-400'}`}>
           {value ? formatDisplay(value) : placeholder}
         </span>
@@ -189,7 +189,7 @@ export default function DatePicker({ value, onChange, placeholder = 'Select date
       </button>
 
       {isOpen && (
-        <div className="absolute top-full mt-2 left-0 sm:left-auto sm:right-0 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xl dark:shadow-2xl dark:shadow-black/50 p-3 sm:p-5 w-[280px] sm:w-[340px] max-w-[calc(100vw-2rem)] z-50">
+        <div className="absolute top-full mt-2 left-0 sm:left-auto sm:right-0 bg-white/95 dark:bg-[#1C1C1E]/95 backdrop-blur-2xl rounded-3xl border border-slate-200/80 dark:border-white/10 shadow-[0_16px_40px_rgba(0,0,0,0.14)] p-4 sm:p-5 w-[280px] sm:w-[340px] max-w-[calc(100vw-2rem)] z-50">
           {/* Header */}
           <div className="flex items-center justify-between mb-4 sm:mb-5">
             <div className="flex items-center gap-1">
@@ -197,18 +197,18 @@ export default function DatePicker({ value, onChange, placeholder = 'Select date
                 type="button"
                 onClick={handlePrevMonth}
                 aria-label="Previous month"
-                className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200 rounded-lg transition-colors cursor-pointer"
+                className="relative p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200 rounded-lg transition-colors cursor-pointer after:absolute after:-inset-2.5 after:absolute after:content-['']"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
-              <span className="text-sm font-semibold text-slate-800 dark:text-slate-100 min-w-20 sm:min-w-22.5 text-center">
+              <span className="text-sm font-semibold text-slate-800 dark:text-slate-100 min-w-[80px] sm:min-w-[90px] text-center">
                 {months[viewDate.getMonth()]}
               </span>
               <button
                 type="button"
                 onClick={handleNextMonth}
                 aria-label="Next month"
-                className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200 rounded-lg transition-colors cursor-pointer"
+                className="relative p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200 rounded-lg transition-colors cursor-pointer after:absolute after:-inset-2.5 after:absolute after:content-['']"
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
@@ -216,7 +216,7 @@ export default function DatePicker({ value, onChange, placeholder = 'Select date
             <select
               value={viewDate.getFullYear()}
               onChange={(e) => setViewDate(new Date(parseInt(e.target.value), viewDate.getMonth(), 1))}
-              className="px-2 sm:px-3 py-1.5 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium cursor-pointer"
+              className="px-2.5 sm:px-3 py-1.5 bg-slate-100/70 dark:bg-white/[0.06] border border-slate-200/70 dark:border-white/10 rounded-xl text-xs sm:text-sm text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium cursor-pointer"
             >
               {years.map(y => (
                 <option key={y} value={y} className="bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200">
@@ -253,14 +253,14 @@ export default function DatePicker({ value, onChange, placeholder = 'Select date
               <button
                 type="button"
                 onClick={handleCancel}
-                className="px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-700/80 border border-slate-200 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+                className="px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-200 bg-white/80 dark:bg-slate-800/80 border border-slate-200/80 dark:border-white/10 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={handleApply}
-                className="px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500 rounded-lg transition-colors shadow-sm cursor-pointer"
+                className="px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium text-white bg-[#0071E3] hover:bg-[#0077ED] rounded-xl transition-colors shadow-sm cursor-pointer"
               >
                 Apply
               </button>

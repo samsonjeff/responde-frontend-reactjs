@@ -428,11 +428,12 @@ export default function Nav() {
             aria-label={isMenuOpen ? 'Close menu' : 'Open menu'}
             onClick={() => setIsMenuOpen(!isMenuOpen)}
             className="
-              md:hidden p-2 rounded-full
+              relative md:hidden p-2 rounded-full
               text-white/75 hover:text-white
               hover:bg-white/10 active:scale-90
               transition-all duration-150
               focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-400
+              after:absolute after:-inset-1.5 after:content-['']
             "
           >
             {isMenuOpen ? (

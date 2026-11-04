@@ -1,1134 +1,1068 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useMemo, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  X, ArrowRight, ExternalLink, MapPin, Clock, User,
-  AlertCircle, CheckCircle, HelpCircle, AlertTriangle,
-  MessageSquare, Radio, Sparkles, Bot, ChevronRight, ChevronLeft,
-  Brain,
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Cell,
+  CartesianGrid,
+} from 'recharts';
+import {
+  LayoutDashboard, AlertTriangle, Brain, RotateCcw,
+  ArrowRight, X,
+  MapPin, Clock, BarChart3, ListFilter, CheckCircle2, ShieldCheck
 } from 'lucide-react';
-import { StaggerContainer, StaggerItem } from '../components/Stagger';
-import { useTheme } from '../components/ThemeContent';
-import MapContainer from '../components/MapContainer';
+import { useAuth } from '../context/AuthContext';
 import { useReports } from '../context/ReportsContext';
-import { useBotConversations, type BotConversation } from '../context/BotConversationsContext';
-import type { MapLayerState } from '../types/geospatial';
+import { formatReportCode, getTypeHexColor, formatReportUrgency } from '../services/incidentService';
+import type { Report } from '../services/incidentService';
+import ReportReviewModal from '../components/ReportReviewModal';
 import PageLoader from '../components/PageLoader';
-import { BarangayBarChart } from '../components/BarangayBarChart';
+import AnimatedNumber from '../components/AnimatedNumber';
+import { StaggerContainer, StaggerItem } from '../components/Stagger';
 
-// ── Types ──
-interface ScraperItem {
-  id: string; text: string; barangay: string; type: string;
-  urgency: 'High' | 'Moderate' | 'Low'; source: string; time: string;
-  status: 'Pending Review' | 'Verified' | 'False Alarm';
-  reporter: string; confidence: number;
-}
+const APPLE_SPRING = { type: 'spring', stiffness: 340, damping: 34, mass: 0.8 } as const;
 
-
-// ── Toast Type ──
-interface Toast {
-  id: number;
-  message: string;
-  type: 'success' | 'error' | 'info';
-}
-
-// ── Apple Design Physics ──
-const APPLE_SPRING = { type: 'spring', stiffness: 400, damping: 32 } as const;
-
-// ── Exact Avatar Palette & Name Map from MessengerBotLogs ──
-const AVATAR_PALETTE = [
-  "bg-[#1877F2]", // Sedrick Opulencia (Blue)
-  "bg-[#E53935]", // Maria Delos Santos (Red)
-  "bg-[#00897B]", // Joshua Reyes (Teal)
-  "bg-[#1E88E5]", // Angeline Cruz (Blue)
-  "bg-[#039BE5]", // Ferdinand Lim (Sky Blue)
-  "bg-[#E53935]", // Divina Aquino (Red)
-  "bg-[#43A047]", // 7th (Green)
-  "bg-[#5E35B1]", // Purple
-  "bg-[#FB8C00]", // Orange
-];
-
-const NAME_COLOR_MAP: Record<string, string> = {
-  "Sedrick Opulencia": "bg-[#1877F2]",
-  "Maria Delos Santos": "bg-[#E53935]",
-  "Joshua Reyes": "bg-[#00897B]",
-  "Angeline Cruz": "bg-[#1E88E5]",
-  "Ferdinand Lim": "bg-[#039BE5]",
-  "Divina Aquino": "bg-[#E53935]",
-  "Kenneth Bautista": "bg-[#43A047]",
-};
-
-function getAvatarColor(name: string, index?: number): string {
-  if (name && NAME_COLOR_MAP[name]) {
-    return NAME_COLOR_MAP[name];
+function formatDashboardTime(timeStr?: string, createdAt?: string): string {
+  if (createdAt) {
+    try {
+      const d = new Date(createdAt);
+      if (!isNaN(d.getTime())) {
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        const hours = String(d.getHours()).padStart(2, '0');
+        const minutes = String(d.getMinutes()).padStart(2, '0');
+        return `${month}/${day} ${hours}:${minutes}`;
+      }
+    } catch {}
   }
-  if (typeof index === "number" && index >= 0) {
-    return AVATAR_PALETTE[index % AVATAR_PALETTE.length];
+  return timeStr || '—';
+}
+
+
+function normalizeTypeLabel(t?: string | null): string {
+  const raw = (t || 'Unknown').trim();
+  const lower = raw.toLowerCase();
+  return !raw || lower === 'none' || lower === 'unclassified' || lower === 'unknown' ? 'Unknown' : raw;
+}
+
+const risenChartKeys = new Set<string>();
+
+function MinimalWaveBar(props: any) {
+  const { x, y, width, height, payload, selectedType, routeKey = 'default' } = props;
+  if (x == null || y == null || width == null || height == null || height <= 0 || !payload) {
+    return null;
   }
-  let hash = 0;
-  for (let i = 0; i < (name || "").length; i++) {
-    hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  return AVATAR_PALETTE[Math.abs(hash) % AVATAR_PALETTE.length];
-}
 
-function getInitials(name: string): string {
-  if (!name) return "U";
-  const parts = name.trim().split(/\s+/);
-  if (parts.length >= 2) {
-    return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
-  }
-  return name.slice(0, 2).toUpperCase();
-}
+  const entryName: string = payload.name || payload.type || 'General';
+  const color = payload.color || getTypeHexColor(entryName);
+  const isDimmed = selectedType && selectedType.toLowerCase() !== entryName.toLowerCase();
 
-function getLastMessage(convo: BotConversation): string {
-  if (!convo.messages || convo.messages.length === 0) return "No messages yet";
-  const userMsg = [...convo.messages].reverse().find((m) => m.sender === "user");
-  return userMsg ? userMsg.text : convo.messages[convo.messages.length - 1].text;
-}
+  const w = Math.max(width, 8);
+  const h = Math.max(height, 4);
+  const r = Math.min(5, w / 2, h / 2);
+  const bottomY = y + h;
 
-function formatDisplayTime(timeStr: string): string {
-  if (!timeStr) return "";
-  if (timeStr.includes(" ")) {
-    const parts = timeStr.split(" ");
-    return parts[parts.length - 1];
-  }
-  return timeStr;
-}
+  // Fluid water wave amplitude (clearly visible liquid motion, gracefully restrained)
+  const amp = Math.min(3.8, Math.max(1.8, Math.min(h * 0.1, w * 0.11)));
+  const waveY = y + amp + 1;
 
-// ── Helpers ──
-function formatTimestamp(ts: string | null): string {
-  if (!ts) return '';
-  const d = new Date(ts);
-  if (isNaN(d.getTime())) return String(ts);
-  return `${d.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' })} ${d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}`;
-}
+  const clipId = `minimal-bar-clip-${entryName.replace(/[^a-zA-Z0-9]/g, '')}`;
+  const shouldRise = !risenChartKeys.has(routeKey);
 
-function inferType(incidentType: string, text: string): string {
-  const t = (incidentType || '').toLowerCase();
-  const txt = (text || '').toLowerCase();
-  if (t === 'casualty' || t === 'medical' || txt.includes('sugat') || txt.includes('ospital') || txt.includes('ambulansya') || txt.includes('medic')) return 'Medical';
-  if (t === 'evacuation' || txt.includes('evacuate') || txt.includes('stranded') || txt.includes('nakaipit') || txt.includes('rescue')) return 'Search & Rescue';
-  if (t === 'flood' || t === 'landslide' || t === 'earthquake' || t === 'fire' || txt.includes('gumuhong') || txt.includes('bumagsak') || txt.includes('putol') || txt.includes('poste') || txt.includes('kuryente')) return 'Infrastructure';
-  if (txt.includes('food') || txt.includes('tubig') || txt.includes('relief') || txt.includes('gatas') || txt.includes('gamot') || txt.includes('supply')) return 'Food & Water';
-  return 'Medical';
-}
+  // Rounded-top rectangle path matching the original minimalist 2D bar
+  const clipRectPath = `
+    M ${x},${bottomY}
+    L ${x},${y + r}
+    Q ${x},${y} ${x + r},${y}
+    L ${x + w - r},${y}
+    Q ${x + w},${y} ${x + w},${y + r}
+    L ${x + w},${bottomY}
+    Z
+  `;
 
-function inferUrgency(incidentType: string, text: string): ScraperItem['urgency'] {
-  const t = (incidentType || '').toLowerCase();
-  const txt = (text || '').toLowerCase();
-  const high = ['emergency', 'casualty', 'fire', 'now', 'asap', 'naipit', 'natabunan', 'patay', 'matanda', 'bata', 'nawawala'];
-  const mod = ['flood', 'evacuation', 'landslide', 'earthquake', 'baha', 'gumuhong', 'tumumba', 'putol'];
-  if (high.some(k => t.includes(k) || txt.includes(k))) return 'High';
-  if (mod.some(k => t.includes(k) || txt.includes(k))) return 'Moderate';
-  return 'Low';
-}
-
-// ── Toast Item Component (Apple Notification Banner) ──
-function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: number) => void }) {
-  useEffect(() => {
-    const timer = setTimeout(() => onDismiss(toast.id), 3500);
-    return () => clearTimeout(timer);
-  }, [toast.id, onDismiss]);
-
-  const icon = toast.type === 'success'
-    ? <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
-    : toast.type === 'error'
-      ? <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
-      : <Sparkles className="w-4 h-4 text-[#0071E3] shrink-0" />;
+  // Two-cycle seamless sine wave along the top edge (width = 2 * w so translating by -w loops with 0 jump)
+  const buildWavePath = (yLine: number, waveAmp: number) => `
+    M ${x},${yLine}
+    Q ${x + w * 0.25},${yLine - waveAmp} ${x + w * 0.5},${yLine}
+    T ${x + w},${yLine}
+    Q ${x + w * 1.25},${yLine - waveAmp} ${x + w * 1.5},${yLine}
+    T ${x + w * 2},${yLine}
+    L ${x + w * 2},${bottomY + 2}
+    L ${x},${bottomY + 2}
+    Z
+  `;
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: -16, scale: 0.95 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: -10, scale: 0.95 }}
-      transition={APPLE_SPRING}
-      className="flex items-center gap-3 px-4 py-3 rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_12px_40px_rgba(0,0,0,0.12)] bg-white/90 dark:bg-[#182234]/90 backdrop-blur-2xl min-w-[280px] max-w-[380px]"
+    <g
+      className="minimal-2d-bar-group"
+      style={
+        {
+          opacity: isDimmed ? 0.35 : 1,
+          '--bar-hover-shadow': `${color}55`,
+        } as React.CSSProperties
+      }
     >
-      {icon}
-      <span className="text-xs font-semibold text-slate-800 dark:text-slate-100 flex-1">{toast.message}</span>
-      <button
-        onClick={() => onDismiss(toast.id)}
-        className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700/50"
+      <defs>
+        <clipPath id={clipId}>
+          <path d={clipRectPath} />
+        </clipPath>
+      </defs>
+
+      <g
+        clipPath={`url(#${clipId})`}
+        className={shouldRise ? 'minimal-2d-bar-riser' : undefined}
+        onAnimationEnd={(e) => {
+          risenChartKeys.add(routeKey);
+          e.currentTarget.classList.remove('minimal-2d-bar-riser');
+        }}
       >
-        <X className="w-3.5 h-3.5" />
-      </button>
-    </motion.div>
+        {/* Secondary counter-flowing water wave (creates clear visual depth and fluid undulation) */}
+        <path d={buildWavePath(waveY - amp * 0.4, amp * 0.85)} fill={color} fillOpacity={0.42}>
+          <animateTransform
+            attributeName="transform"
+            type="translate"
+            from={`${-w} 0`}
+            to="0 0"
+            dur="3.4s"
+            repeatCount="indefinite"
+          />
+        </path>
+
+        {/* Primary flowing wave surface */}
+        <path d={buildWavePath(waveY, amp)} fill={color} fillOpacity={1}>
+          <animateTransform
+            attributeName="transform"
+            type="translate"
+            from="0 0"
+            to={`${-w} 0`}
+            dur="2.4s"
+            repeatCount="indefinite"
+          />
+        </path>
+      </g>
+    </g>
+  );
+}
+
+interface TooltipPayloadItem {
+  name: string;
+  count: number;
+  percentage: number;
+  critical: number;
+  high: number;
+  mod: number;
+  low: number;
+  topBrgy: string;
+  color: string;
+}
+
+interface TypeTooltipProps {
+  active?: boolean;
+  payload?: Array<{ payload: TooltipPayloadItem }>;
+}
+
+function TypeTooltip({ active, payload }: TypeTooltipProps) {
+  if (!active || !payload?.length) return null;
+  const item = payload[0]?.payload;
+  if (!item) return null;
+
+  return (
+    <div className="backdrop-blur-xl bg-white/95 dark:bg-[#111827]/95 border border-slate-200/80 dark:border-white/15 px-3.5 py-2.5 rounded-xl shadow-xl text-xs space-y-1.5 z-50">
+      <div className="flex items-center justify-between gap-3">
+        <span className="font-bold text-slate-900 dark:text-white text-sm">{item.name}</span>
+        <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 tabular-nums">{item.percentage}%</span>
+      </div>
+      <div className="pt-1 border-t border-slate-100 dark:border-slate-800 space-y-1">
+        <div className="flex items-center justify-between gap-4">
+          <span className="text-slate-500 dark:text-slate-400">Total reports:</span>
+          <span className="font-bold text-slate-900 dark:text-white tabular-nums">{item.count}</span>
+        </div>
+        <div className="flex items-center justify-between gap-4 text-[11px]">
+          <span className="text-slate-500 dark:text-slate-400">Urgency:</span>
+          <span className="font-semibold tabular-nums text-slate-700 dark:text-slate-300">
+            <span className="text-purple-600 dark:text-purple-400 font-semibold">{item.critical || 0} Crit</span> · <span className="text-rose-500">{item.high} High</span> · <span className="text-amber-500">{item.mod} Mod</span> · <span className="text-[#22c55e] dark:text-green-400">{item.low} Low</span>
+          </span>
+        </div>
+      </div>
+    </div>
   );
 }
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const { theme } = useTheme();
-  const { reports } = useReports();
+  const { user } = useAuth();
+  const location = useLocation();
+  const { reports, loading: reportsLoading, error: reportsError, refreshReports, contextUpdateReport } = useReports();
+  const [filterUrgency, setFilterUrgency] = useState<'All' | 'Critical' | 'High' | 'Mod' | 'Low'>('All');
+  const [selectedType, setSelectedType] = useState<string | null>(null);
+  const [reviewingReport, setReviewingReport] = useState<Report | null>(null);
 
-  // Global Bot Conversations Context (synchronized with MessengerBotLogs & localStorage)
-  const {
-    conversations: botConversations,
-    updateConversationStatus: setContextStatus,
-    incompleteCount,
-  } = useBotConversations();
-
-  const [scraperItems, setScraperItems] = useState<ScraperItem[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  // Modal states
-  const [activeConv, setActiveConv] = useState<BotConversation | null>(null);
-  const [selectedConvId, setSelectedConvId] = useState<string>('conv_1');
-  const [activeScraper, setActiveScraper] = useState<ScraperItem | null>(null);
-  const [showMobileList, setShowMobileList] = useState(false);
-
-  // Toast State
-  const [toasts, setToasts] = useState<Toast[]>([]);
-  const [toastIdCounter, setToastIdCounter] = useState(0);
-  const showToast = (message: string, type: Toast['type'] = 'info') => {
-    const id = toastIdCounter + 1;
-    setToastIdCounter(id);
-    setToasts((prev) => [...prev, { id, message, type }]);
-  };
-  const dismissToast = (id: number) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
-  };
-
-  // Ref to prevent Strict Mode duplicate toasts
-  const hasShownInitialToast = useRef(false);
-
-  const updateBotConversationStatus = (id: string, newStatus: 'Incomplete' | 'Complete', silent = false) => {
-    setContextStatus(id, newStatus);
-    if (!silent) {
-      const target = botConversations.find((c) => c.id === id);
-      const name = target?.name || 'Conversation';
-      showToast(
-        `Marked ${name} as ${newStatus}`,
-        newStatus === 'Complete' ? 'success' : 'info'
-      );
+  // Opens the shared review modal and stays on the dashboard tab (no navigation).
+  const openDashboardReview = (target: Report) => {
+    if (target.status === 'pending') {
+      contextUpdateReport(target.id, { status: 'under_review' });
     }
+    setReviewingReport(target);
   };
+  const [viewMode, setViewMode] = useState<'chart' | 'bars'>('chart');
 
-  // Fetch Scraper posts (uses authenticated backend API with fallback to Supabase direct client)
+  const userGreeting = useMemo(() => {
+    const fullName = user?.full_name?.trim();
+    if (fullName) {
+      const firstName = fullName.split(/\s+/)[0];
+      return `Hello, ${firstName}`;
+    }
+    const username = user?.username?.trim();
+    if (username) {
+      return `Hello, ${username}`;
+    }
+    return 'Welcome back';
+  }, [user]);
+
   useEffect(() => {
-    let isMounted = true;
+    if (reports.length > 0 && !risenChartKeys.has(location.key)) {
+      const timer = setTimeout(() => {
+        risenChartKeys.add(location.key);
+      }, 1250);
+      return () => clearTimeout(timer);
+    }
+  }, [reports.length, location.key]);
 
-    const fetchData = async () => {
-      setLoading(true);
+  // ── Stat metrics derived directly from reports (0 extra network calls) ──
+  const totalIncidents = reports.length;
 
-      const API_BASE = import.meta.env.DEV ? '' : (import.meta.env.VITE_API_URL ?? '');
-      const storedToken = (() => { try { return localStorage.getItem('responde_session_token'); } catch { return null; } })();
-      const hdrs: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (storedToken) hdrs['Authorization'] = `Bearer ${storedToken}`;
-
-      let rows: any[] = [];
-      let fetchError: string | null = null;
-
-      try {
-        const res = await fetch(`${API_BASE}/api/auth/data/fb-comments?limit=100`, {
-          credentials: 'include',
-          headers: hdrs,
-        });
-
-        if (res.ok) {
-          const json = await res.json();
-          rows = json.data ?? (Array.isArray(json) ? json : []);
-        } else {
-          throw new Error(res.statusText || 'API non-200');
-        }
-      } catch (apiErr: any) {
-        console.warn('[Dashboard] Failed to fetch FB comments from backend:', apiErr?.message);
-        fetchError = apiErr?.message || 'Failed to load comments';
-      }
-
-      if (!isMounted) return;
-
-      // Sort newest first
-      const sorted = (rows || []).sort((a, b) => {
-        const timeA = new Date(a.created_at || a.timestamp || 0).getTime();
-        const timeB = new Date(b.created_at || b.timestamp || 0).getTime();
-        return timeB - timeA;
-      });
-
-      // Process Scraper Posts
-      const mappedScraper: ScraperItem[] = [];
-      for (const row of sorted) {
-        const text = row.comment_text || row.commentText || row.text || row.raw_text || row.rawText || row.message || row.content || '';
-        const idVal = row.id || row.comment_id || row.post_id || Math.random().toString();
-        const userName = row.user_name || row.username || row.author || 'Unknown';
-        const barangay = row.barangay || row.location || 'Unknown';
-        const rawDate = row.created_at || row.timestamp || (row.comment_date ? `${row.comment_date}T${row.comment_time || '00:00:00'}` : null);
-        const confidence = typeof row.confidence === 'number' ? row.confidence : 0;
-        const status = row.status || 'Pending Review';
-
-        mappedScraper.push({
-          id: String(idVal),
-          text,
-          barangay,
-          type: inferType(row.incident_type || row.type, text),
-          urgency: inferUrgency(row.incident_type || row.type, text),
-          source: row.source || 'Facebook Comment',
-          time: formatTimestamp(rawDate),
-          status,
-          reporter: userName,
-          confidence,
-        });
-      }
-
-      setScraperItems(mappedScraper);
-      setLoading(false);
-
-      if (!hasShownInitialToast.current && mappedScraper.length > 0) {
-        hasShownInitialToast.current = true;
-        showToast(`${mappedScraper.length} scraped comments loaded`, 'success');
-      }
-
-      if (fetchError && mappedScraper.length === 0) {
-        console.warn('[Dashboard] Could not fetch scraper data:', fetchError);
-      }
-    };
-
-    fetchData();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  // Stats
-  const totalIncidents = botConversations.length + scraperItems.length;
-  const nlpProcessCount = useMemo(() => {
-    // Total text units processed through the NLP inference pipeline (social comments + bot messages)
-    const botUserMsgs = botConversations.reduce((acc, c) => {
-      const userCount = c.messages ? c.messages.filter(m => m.sender === 'user').length : 1;
-      return acc + (userCount || 1);
-    }, 0);
-    return scraperItems.length + botUserMsgs;
-  }, [scraperItems.length, botConversations]);
-
-  // Dashboard Map Data
-  const URGENCY_WEIGHTS: Record<string, number> = { High: 3, Moderate: 2, Low: 1 };
-
-  const dashboardMapLayers: MapLayerState = { choropleth: true, pins: true, boundaries: true };
-
-  const dashboardBarangayCounts = useMemo(() => {
-    const maxUrgency: Record<string, number> = {};
-    reports
-      .filter((r) => r.status === 'verified' || r.status === 'under_review')
-      .forEach((r) => {
-        const weight = URGENCY_WEIGHTS[r.urgency] || 1;
-        maxUrgency[r.barangay] = Math.max(maxUrgency[r.barangay] || 0, weight);
-      });
-    return maxUrgency;
-  }, [reports]);
-
-  const dashboardPinReports = useMemo(() => {
+  const underReviewCount = useMemo(() => {
     return reports.filter((r) => {
-      if (r.status !== 'verified' && r.status !== 'under_review') return false;
-      if (!r.coordinates || !r.coordinates.includes(',')) return false;
-      const parts = r.coordinates.split(',').map((s) => parseFloat(s.trim()));
-      return parts.length === 2 && !isNaN(parts[0]) && parts[0] >= 14.075;
-    });
+      const s = (r.status || '').toLowerCase();
+      return s === 'under_review' || s === 'pending';
+    }).length;
   }, [reports]);
 
-  const openConversation = (conv: BotConversation) => {
-    setSelectedConvId(conv.id);
-    setActiveConv(conv);
-    setShowMobileList(false);
-  };
+  const verifiedCount = useMemo(() => {
+    return reports.filter((r) => (r.status || '').toLowerCase() === 'verified').length;
+  }, [reports]);
 
-  const handleModalSelectConv = (id: string) => {
-    setSelectedConvId(id);
-    setShowMobileList(false);
-  };
+  const highUrgencyCount = useMemo(() => {
+    return reports.filter((r) => {
+      const urg = formatReportUrgency(r.urgency);
+      return urg === 'High' || urg === 'Critical';
+    }).length;
+  }, [reports]);
 
-  const selectedConversation = botConversations.find(c => c.id === selectedConvId) || botConversations[0] || activeConv;
+  // Reports by Type Breakdown with Detailed Metrics
+  const typeSummary = useMemo(() => {
+    if (reports.length === 0) return [];
+    const counts: Record<string, { count: number; critical: number; high: number; mod: number; low: number; brgys: Record<string, number> }> = {};
 
-  const modalSelectedIndex = selectedConversation
-    ? botConversations.findIndex((c) => c.id === selectedConversation.id)
-    : -1;
+    reports.forEach((r) => {
+      const raw = (r.type || 'Unknown').trim();
+      const norm =
+        !raw || raw.toLowerCase() === 'none' || raw.toLowerCase() === 'unclassified' || raw.toLowerCase() === 'unknown'
+          ? 'Unknown'
+          : raw;
 
-  const modalSelectedColor = selectedConversation
-    ? getAvatarColor(selectedConversation.name, modalSelectedIndex !== -1 ? modalSelectedIndex : undefined)
-    : "bg-[#1877F2]";
+      if (!counts[norm]) {
+        counts[norm] = { count: 0, critical: 0, high: 0, mod: 0, low: 0, brgys: {} };
+      }
+      counts[norm].count += 1;
+      const urg = formatReportUrgency(r.urgency);
+      if (urg === 'Critical') counts[norm].critical += 1;
+      else if (urg === 'High') counts[norm].high += 1;
+      else if (urg === 'Moderate') counts[norm].mod += 1;
+      else counts[norm].low += 1;
 
-  const modalSelectedInitials = selectedConversation
-    ? getInitials(selectedConversation.name)
-    : "U";
+      const brgy = r.barangay || 'Unknown';
+      counts[norm].brgys[brgy] = (counts[norm].brgys[brgy] || 0) + 1;
+    });
 
-  const getUrgencyColor = (urgency: string) => {
-    switch (urgency) {
-      case 'High': return 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20';
-      case 'Moderate': return 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20';
-      case 'Low': return 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20';
-      default: return 'bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/20';
+    const total = reports.length;
+    return Object.entries(counts)
+      .map(([type, data]) => {
+        const topBrgy = Object.entries(data.brgys).sort((a, b) => b[1] - a[1])[0]?.[0] || 'Unknown';
+        return {
+          name: type,
+          type,
+          count: data.count,
+          percentage: Math.round((data.count / total) * 100),
+          critical: data.critical,
+          high: data.high,
+          mod: data.mod,
+          low: data.low,
+          topBrgy,
+          color: getTypeHexColor(type),
+        };
+      })
+      .sort((a, b) => b.count - a.count);
+  }, [reports]);
+
+
+  // Selected Incident Type Details for Interactive Inspection
+  const selectedTypeDetails = useMemo(() => {
+    if (!selectedType) return null;
+    const matching = reports.filter((r) => {
+      const raw = (r.type || 'Unknown').trim();
+      const norm = !raw || raw.toLowerCase() === 'none' || raw.toLowerCase() === 'unclassified' || raw.toLowerCase() === 'unknown' ? 'Unknown' : raw;
+      return norm.toLowerCase() === selectedType.toLowerCase();
+    });
+
+    const total = matching.length;
+    const critical = matching.filter((r) => formatReportUrgency(r.urgency) === 'Critical').length;
+    const high = matching.filter((r) => formatReportUrgency(r.urgency) === 'High').length;
+    const mod = matching.filter((r) => formatReportUrgency(r.urgency) === 'Moderate').length;
+    const low = matching.filter((r) => formatReportUrgency(r.urgency) === 'Low').length;
+
+    const verified = matching.filter((r) => r.status === 'verified').length;
+    const underReview = matching.filter((r) => r.status === 'under_review' || r.status === 'pending').length;
+    const resolved = matching.filter((r) => r.status === 'resolved').length;
+
+    // Top barangay
+    const brgyCounts: Record<string, number> = {};
+    matching.forEach((r) => {
+      const b = r.barangay || 'Unknown';
+      brgyCounts[b] = (brgyCounts[b] || 0) + 1;
+    });
+    const topBarangay = Object.entries(brgyCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || 'Unknown';
+
+    // Latest report time
+    const sortedTime = [...matching].sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+    const latestReport = sortedTime[0];
+
+    return {
+      type: selectedType,
+      total,
+      percentage: reports.length ? Math.round((total / reports.length) * 100) : 0,
+      critical,
+      high,
+      mod,
+      low,
+      verified,
+      underReview,
+      resolved,
+      topBarangay,
+      latestTime: latestReport ? formatDashboardTime(latestReport.time, latestReport.createdAt) : '—',
+      color: getTypeHexColor(selectedType),
+    };
+  }, [reports, selectedType]);
+
+  // Filtered Latest Reports for Table
+  const displayReports = useMemo(() => {
+    let list = [...reports];
+    list.sort((a, b) => {
+      const tA = new Date(a.createdAt || 0).getTime();
+      const tB = new Date(b.createdAt || 0).getTime();
+      return tB - tA;
+    });
+
+    // Triage queue: only reports awaiting officer review belong here.
+    // Verified / resolved / rejected reports live on their own pages and tabs.
+    list = list.filter((r) => r.status === 'under_review' || r.status === 'pending');
+
+    if (filterUrgency === 'Critical') {
+      list = list.filter((r) => formatReportUrgency(r.urgency) === 'Critical');
+    } else if (filterUrgency === 'High') {
+      list = list.filter((r) => formatReportUrgency(r.urgency) === 'High');
+    } else if (filterUrgency === 'Mod') {
+      list = list.filter((r) => formatReportUrgency(r.urgency) === 'Moderate');
+    } else if (filterUrgency === 'Low') {
+      list = list.filter((r) => formatReportUrgency(r.urgency) === 'Low');
+    }
+
+    if (selectedType) {
+      list = list.filter((r) => {
+        const raw = (r.type || 'Unknown').trim();
+        const norm = !raw || raw.toLowerCase() === 'none' || raw.toLowerCase() === 'unclassified' || raw.toLowerCase() === 'unknown' ? 'Unknown' : raw;
+        return norm.toLowerCase() === selectedType.toLowerCase();
+      });
+    }
+
+    return list.slice(0, 8);
+  }, [reports, filterUrgency, selectedType]);
+
+  const getUrgencyBadge = (urgency: string) => {
+    switch ((urgency || '').toLowerCase()) {
+      case 'critical':
+        return (
+          <span className="inline-flex items-center justify-center gap-1.5 w-[84px] py-0.5 rounded-full text-xs font-semibold bg-purple-500/15 text-purple-700 dark:text-purple-300 border border-purple-500/30">
+            <span className="w-1.5 h-1.5 rounded-full bg-purple-600 shrink-0" />
+            <span>Critical</span>
+          </span>
+        );
+      case 'high':
+      case 'High':
+        return (
+          <span className="inline-flex items-center justify-center gap-1.5 w-[84px] py-0.5 rounded-full text-xs font-semibold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
+            <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
+            <span>High</span>
+          </span>
+        );
+      case 'moderate':
+      case 'mod':
+        return (
+          <span className="inline-flex items-center justify-center gap-1.5 w-[84px] py-0.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+            <span>Moderate</span>
+          </span>
+        );
+      case 'low':
+      default:
+        return (
+          <span className="inline-flex items-center justify-center gap-1.5 w-[84px] py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+            <span>Low</span>
+          </span>
+        );
     }
   };
 
-  const getTypeColor = (type: string) => {
-    switch (type) {
-      case 'Search & Rescue': return 'text-orange-600 dark:text-orange-400';
-      case 'Medical': return 'text-emerald-600 dark:text-emerald-400';
-      case 'Food & Water': return 'text-blue-600 dark:text-blue-400';
-      case 'Infrastructure': return 'text-purple-600 dark:text-purple-400';
-      default: return 'text-slate-600 dark:text-slate-400';
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
+  const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'Verified': return <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />;
-      case 'False Alarm': return <AlertCircle className="w-3.5 h-3.5 text-amber-500" />;
-      default: return <HelpCircle className="w-3.5 h-3.5 text-blue-500" />;
+      case 'under_review':
+      case 'pending':
+        return (
+          <span className="inline-flex items-center justify-center gap-1.5 w-[104px] py-0.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0 animate-pulse" />
+            <span>Under Review</span>
+          </span>
+        );
+      case 'verified':
+        return (
+          <span className="inline-flex items-center justify-center gap-1.5 w-[104px] py-0.5 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/25">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+            <span>Verified</span>
+          </span>
+        );
+      case 'resolved':
+        return (
+          <span className="inline-flex items-center justify-center gap-1.5 w-[104px] py-0.5 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />
+            <span>Resolved</span>
+          </span>
+        );
+      case 'rejected':
+        return (
+          <span className="inline-flex items-center justify-center gap-1.5 w-[104px] py-0.5 rounded-full text-xs font-semibold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
+            <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
+            <span>Rejected</span>
+          </span>
+        );
+      default:
+        return (
+          <span className="inline-flex items-center justify-center gap-1.5 w-[104px] py-0.5 rounded-full text-xs font-semibold bg-slate-500/10 text-slate-600 dark:text-slate-300 border border-slate-500/20">
+            <span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" />
+            <span>{status}</span>
+          </span>
+        );
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Verified': return 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20';
-      case 'False Alarm': return 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20';
-      default: return 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20';
-    }
-  };
+  if (reportsError && reports.length === 0 && !reportsLoading) {
+    return (
+      <div className="dashboard-soft flex flex-col flex-1 w-full items-center justify-center min-h-[50vh] p-4">
+        <div className="flex flex-col items-center gap-3 text-center bg-rose-500/[0.06] dark:bg-rose-500/[0.10] border border-rose-500/20 rounded-2xl p-6 sm:p-8 max-w-md shadow-sm">
+          <div className="w-11 h-11 rounded-2xl bg-rose-500/10 flex items-center justify-center text-rose-600 dark:text-rose-400 border border-rose-500/20">
+            <AlertTriangle className="w-5 h-5" strokeWidth={1.75} />
+          </div>
+          <p className="font-semibold text-sm text-slate-900 dark:text-slate-100">Failed to load dashboard</p>
+          <p className="text-xs text-rose-500 dark:text-rose-400 font-mono">{reportsError}</p>
+          <button type="button" onClick={() => refreshReports(true)} className="mt-2 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white active:scale-95 transition-all cursor-pointer shadow-xs">
+            <RotateCcw className="w-3.5 h-3.5" strokeWidth={1.75} />
+            <span>Retry Now</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
 
-  if (loading) return <PageLoader variant="dashboard" />;
+  if (reportsLoading && reports.length === 0) {
+    return <PageLoader variant="dashboard" />;
+  }
 
   return (
-    <>
-      {/* Toast Notifications — Top Right */}
-      <div className="fixed top-4 right-4 z-[100] flex flex-col gap-2 pointer-events-none">
-        <AnimatePresence>
-          {toasts.map((toast) => (
-            <div key={toast.id} className="pointer-events-auto">
-              <ToastItem toast={toast} onDismiss={dismissToast} />
-            </div>
-          ))}
-        </AnimatePresence>
-      </div>
-
-      <StaggerContainer className="grid grid-cols-12 gap-4 sm:gap-5 lg:gap-6 pb-6 md:pb-8 w-full">
-
-        {/* ── 1. Row 1: 4 Stat Cards (2x2 on mobile, 4-col on tablet and desktop) ── */}
-        <StaggerItem className="col-span-12">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-            {/* Total Incidents */}
-            <div className="bg-white/80 dark:bg-[#111827]/80 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)] p-3.5 sm:p-4 md:p-5 flex items-center justify-between group transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md min-w-0">
-              <div className="space-y-1 min-w-0">
-                <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 truncate">Total Incidents</p>
-                <p className="text-xl sm:text-2xl md:text-3xl font-semibold tracking-tight tabular-nums text-slate-900 dark:text-white">{totalIncidents}</p>
-                <div className="flex items-center gap-1 text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 font-medium truncate">
-                  <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse shrink-0" />
-                  <span className="truncate">Active pipeline</span>
-                </div>
-              </div>
-              <div className="w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-xl sm:rounded-2xl bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 shadow-[0_0_16px_rgba(244,63,94,0.15)] flex items-center justify-center shrink-0">
-                <AlertTriangle className="w-4.5 h-4.5 sm:w-5 sm:h-5 md:w-6 md:h-6" />
-              </div>
-            </div>
-
-            {/* Bot Conversations */}
-            <div className="bg-white/80 dark:bg-[#111827]/80 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)] p-3.5 sm:p-4 md:p-5 flex items-center justify-between group transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md min-w-0">
-              <div className="space-y-1 min-w-0">
-                <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 truncate">Bot Conversations</p>
-                <p className="text-xl sm:text-2xl md:text-3xl font-semibold tracking-tight tabular-nums text-slate-900 dark:text-white">{botConversations.length}</p>
-                <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] font-medium truncate">
-                  {incompleteCount > 0 ? (
-                    <>
-                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse shrink-0" />
-                      <span className="text-amber-600 dark:text-amber-400 font-semibold truncate">{incompleteCount} incomplete</span>
-                    </>
-                  ) : (
-                    <>
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-                      <span className="text-emerald-600 dark:text-emerald-400 truncate">All complete</span>
-                    </>
-                  )}
-                </div>
-              </div>
-              <div className="w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-xl sm:rounded-2xl bg-[#0071E3]/10 text-[#0071E3] dark:text-sky-400 border border-[#0071E3]/20 shadow-[0_0_16px_rgba(0,113,227,0.15)] flex items-center justify-center shrink-0">
-                <MessageSquare className="w-4.5 h-4.5 sm:w-5 sm:h-5 md:w-6 md:h-6" />
-              </div>
-            </div>
-
-            {/* Scraped Comments */}
-            <div className="bg-white/80 dark:bg-[#111827]/80 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)] p-3.5 sm:p-4 md:p-5 flex items-center justify-between group transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md min-w-0">
-              <div className="space-y-1 min-w-0">
-                <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 truncate">Scraped Comments</p>
-                <p className="text-xl sm:text-2xl md:text-3xl font-semibold tracking-tight tabular-nums text-slate-900 dark:text-white">{scraperItems.length}</p>
-                <div className="flex items-center gap-1 text-[10px] sm:text-[11px] text-amber-600 dark:text-amber-400 font-medium truncate">
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
-                  <span className="truncate">Social streams</span>
-                </div>
-              </div>
-              <div className="w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-xl sm:rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shadow-[0_0_16px_rgba(245,158,11,0.15)] flex items-center justify-center shrink-0">
-                <Radio className="w-4.5 h-4.5 sm:w-5 sm:h-5 md:w-6 md:h-6" />
-              </div>
-            </div>
-
-            {/* NLP Process Count */}
-            <div className="bg-white/80 dark:bg-[#111827]/80 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)] p-3.5 sm:p-4 md:p-5 flex items-center justify-between group transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md min-w-0">
-              <div className="space-y-1 min-w-0">
-                <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 truncate">NLP Process Count</p>
-                <p className="text-xl sm:text-2xl md:text-3xl font-semibold tracking-tight tabular-nums text-slate-900 dark:text-white">{nlpProcessCount}</p>
-                <div className="flex items-center gap-1 text-[10px] sm:text-[11px] text-purple-600 dark:text-purple-400 font-medium truncate">
-                  <span className="w-1.5 h-1.5 rounded-full bg-purple-500 shrink-0" />
-                  <span className="truncate">Automated triage</span>
-                </div>
-              </div>
-              <div className="w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-xl sm:rounded-2xl bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 shadow-[0_0_16px_rgba(168,85,247,0.15)] flex items-center justify-center shrink-0">
-                <Brain className="w-4.5 h-4.5 sm:w-5 sm:h-5 md:w-6 md:h-6" />
-              </div>
-            </div>
+    <div className="dashboard-soft flex flex-col flex-1 w-full lg:h-full lg:min-h-0 relative">
+      <StaggerContainer className="flex flex-col flex-1 space-y-4 sm:space-y-5 w-full lg:h-full lg:min-h-0">
+        {/* ── Top Header Bar (Matching IncidentReports, Analytics, Settings) ── */}
+        <StaggerItem>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 sm:w-10.5 sm:h-10.5 rounded-2xl bg-blue-500/10 dark:bg-blue-500/20 text-[#0071E3] dark:text-sky-400 border border-blue-500/20 flex items-center justify-center shrink-0 shadow-2xs">
+            <LayoutDashboard className="w-5 h-5" strokeWidth={1.75} />
+          </div>
+          <div>
+            <h1 className="text-lg sm:text-[22px] font-semibold tracking-[-0.025em] leading-tight text-slate-900 dark:text-white">
+              {userGreeting}
+            </h1>
+            <p className="text-[11px] sm:text-xs font-normal tracking-[0.005em] text-slate-500/90 dark:text-slate-400/90 mt-0.5 leading-relaxed">
+              Command center overview <span className="text-slate-300 dark:text-slate-600 mx-1">·</span> Real-time metrics &amp; incident triage
+            </p>
+          </div>
+        </div>
           </div>
         </StaggerItem>
 
-        {/* ── 2. Row 2: Messenger Bot Activities (Col 4 on tablet/desktop) & Bar Chart (Col 8 on tablet/desktop) ── */}
-        <StaggerItem className="col-span-12 md:col-span-4 lg:col-span-4 h-[360px] sm:h-[420px] md:h-[480px] lg:h-[480px] flex flex-col">
-          {/* Messenger Bot Activities — Apple System Card */}
-          <div className="bg-white/85 dark:bg-[#111827]/85 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)] flex-1 flex flex-col min-h-0 overflow-hidden relative">
-            {/* Header Row */}
-            <div className="px-3.5 sm:px-5 py-3 sm:py-3.5 border-b border-slate-200/60 dark:border-white/5 flex items-center justify-between shrink-0 bg-slate-50/40 dark:bg-white/[0.02] gap-2">
-              <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
-                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-[#0071E3]/10 dark:bg-[#0071E3]/20 text-[#0071E3] dark:text-sky-400 flex items-center justify-center shrink-0 border border-[#0071E3]/20 shadow-2xs">
-                  <MessageSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                </div>
-                <h3 className="font-semibold text-slate-900 dark:text-white text-xs sm:text-sm tracking-tight truncate">
-                  Messenger Bot Activities
-                </h3>
-              </div>
-              <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-                {incompleteCount > 0 && (
-                  <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20 tabular-nums">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                    {incompleteCount} incomplete
-                  </span>
-                )}
-                <span className="inline-flex items-center px-2 sm:px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-medium bg-slate-100/90 dark:bg-white/[0.06] text-slate-600 dark:text-slate-400 border border-slate-200/60 dark:border-white/[0.06] tabular-nums">
-                  {botConversations.length} total
-                </span>
-                <button
-                  onClick={() => navigate('/messenger-bot-logs')}
-                  className="inline-flex items-center gap-1 text-xs font-semibold text-[#0071E3] hover:text-[#0077ED] transition-colors ml-0.5 active:scale-[0.97] shrink-0 whitespace-nowrap"
-                >
-                  <span className="hidden sm:inline">View Logs</span>
-                  <span className="sm:hidden">Logs</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </button>
-              </div>
+        {/* ── 1. Row 1: 4 Raised Stat Cards (Derived directly from reports) ── */}
+        <StaggerItem>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-3 md:gap-4 shrink-0">
+        {/* Total Incidents */}
+        <div className="relative overflow-hidden bg-white/80 dark:bg-[#111827]/80 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)] p-3.5 sm:p-4 md:p-5 flex items-center justify-between group transition-[transform,box-shadow,border-color,background-color] duration-250 ease-[cubic-bezier(0.23,1,0.32,1)] hover:-translate-y-1 hover:bg-white/95 dark:hover:bg-[#151e31]/95 hover:border-rose-500/35 dark:hover:border-rose-500/40 hover:shadow-[0_12px_28px_-6px_rgba(244,63,94,0.15),0_4px_12px_-2px_rgba(15,23,42,0.05)] dark:hover:shadow-[0_12px_30px_-6px_rgba(244,63,94,0.22)] min-w-0">
+          <div className="pointer-events-none absolute -right-10 -top-10 w-44 h-44 rounded-full bg-[radial-gradient(circle,rgba(244,63,94,0.16)_0%,rgba(244,63,94,0.05)_45%,transparent_70%)] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[2.5px] bg-gradient-to-r from-transparent via-rose-500/70 to-transparent scale-x-0 group-hover:scale-x-100 transition-transform duration-300 ease-[cubic-bezier(0.23,1,0.32,1)]" />
+          <div className="relative z-10 space-y-1 min-w-0">
+            <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors duration-200 truncate">
+              Total Incidents
+            </p>
+            <p className="text-lg sm:text-2xl md:text-3xl font-semibold tracking-tight tabular-nums text-slate-900 dark:text-white">
+              <AnimatedNumber key={`total-${location.key}`} value={totalIncidents} duration={2} />
+            </p>
+            <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 group-hover:text-rose-600 dark:group-hover:text-rose-400 transition-colors duration-200 font-medium min-w-0">
+              <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse shrink-0 group-hover:shadow-[0_0_8px_rgba(244,63,94,0.85)] transition-shadow duration-200" />
+              <span className="truncate">Active pipeline</span>
             </div>
+          </div>
+          <div className="relative z-10 w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-xl sm:rounded-2xl bg-rose-500/10 group-hover:bg-rose-500/18 text-rose-600 dark:text-rose-400 border border-rose-500/20 group-hover:border-rose-500/35 shadow-[0_0_16px_rgba(244,63,94,0.15)] group-hover:shadow-[0_0_24px_rgba(244,63,94,0.3)] group-hover:scale-108 transition-[transform,background-color,border-color,box-shadow] duration-250 ease-[cubic-bezier(0.23,1,0.32,1)] flex items-center justify-center shrink-0">
+            <AlertTriangle className="w-4.5 h-4.5 sm:w-5 sm:h-5 md:w-6 md:h-6 transition-transform duration-250 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:-translate-y-0.5 group-hover:scale-105" strokeWidth={1.75} />
+          </div>
+        </div>
 
-            {/* Scrollable Conversation List with Apple-grade Edge Fade */}
-            <div
-              className="flex-1 overflow-y-auto min-h-0 p-2 sm:p-2.5 pb-8 space-y-1.5 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800"
-              style={{
-                maskImage: 'linear-gradient(to bottom, black calc(100% - 56px), transparent 100%)',
-                WebkitMaskImage: 'linear-gradient(to bottom, black calc(100% - 56px), transparent 100%)',
-              }}
-            >
-              {botConversations.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-16 text-slate-400 dark:text-slate-500 text-xs gap-2">
-                  <MessageSquare className="w-8 h-8 stroke-[1.5] text-slate-300 dark:text-slate-600" />
-                  <span>No conversations yet.</span>
-                </div>
+        {/* Under Review */}
+        <div className="relative overflow-hidden bg-white/80 dark:bg-[#111827]/80 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)] p-3.5 sm:p-4 md:p-5 flex items-center justify-between group transition-[transform,box-shadow,border-color,background-color] duration-250 ease-[cubic-bezier(0.23,1,0.32,1)] hover:-translate-y-1 hover:bg-white/95 dark:hover:bg-[#151e31]/95 hover:border-amber-500/35 dark:hover:border-amber-500/40 hover:shadow-[0_12px_28px_-6px_rgba(245,158,11,0.15),0_4px_12px_-2px_rgba(15,23,42,0.05)] dark:hover:shadow-[0_12px_30px_-6px_rgba(245,158,11,0.22)] min-w-0">
+          <div className="pointer-events-none absolute -right-10 -top-10 w-44 h-44 rounded-full bg-[radial-gradient(circle,rgba(245,158,11,0.16)_0%,rgba(245,158,11,0.05)_45%,transparent_70%)] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[2.5px] bg-gradient-to-r from-transparent via-amber-500/70 to-transparent scale-x-0 group-hover:scale-x-100 transition-transform duration-300 ease-[cubic-bezier(0.23,1,0.32,1)]" />
+          <div className="relative z-10 space-y-1 min-w-0">
+            <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors duration-200 truncate">
+              Under Review
+            </p>
+            <p className="text-lg sm:text-2xl md:text-3xl font-semibold tracking-tight tabular-nums text-slate-900 dark:text-white">
+              <AnimatedNumber key={`review-${location.key}`} value={underReviewCount} duration={2} />
+            </p>
+            <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] font-medium min-w-0">
+              {underReviewCount > 0 ? (
+                <>
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse shrink-0 group-hover:shadow-[0_0_8px_rgba(245,158,11,0.85)] transition-shadow duration-200" />
+                  <span className="text-amber-600 dark:text-amber-400 font-semibold truncate">
+                    Needs triage
+                  </span>
+                </>
               ) : (
-                botConversations.map((convo, index) => {
-                  const isIncomplete = convo.status === "Incomplete";
-                  const avatarColor = getAvatarColor(convo.name, index);
-                  const initials = getInitials(convo.name);
-                  return (
-                    <button
-                      key={convo.id}
-                      type="button"
-                      onClick={() => openConversation(convo)}
-                      className={`w-full flex items-center gap-2.5 sm:gap-3 p-2.5 sm:p-3 rounded-xl transition-all duration-150 text-left relative group active:scale-[0.985] ${isIncomplete
-                          ? "bg-amber-500/[0.04] dark:bg-amber-500/[0.08] hover:bg-amber-500/[0.08] dark:hover:bg-amber-500/[0.13] border border-amber-500/20 dark:border-amber-500/30"
-                          : "hover:bg-slate-100/70 dark:hover:bg-white/[0.04] border border-transparent hover:border-slate-200/50 dark:hover:border-white/[0.05]"
-                        }`}
-                    >
-                      {/* Circular Avatar with soft depth */}
-                      <div className="relative shrink-0">
-                        <div
-                          className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full ${avatarColor} flex items-center justify-center font-semibold text-xs text-white shadow-xs ring-1 ring-black/5 dark:ring-white/15`}
-                        >
-                          {initials}
-                        </div>
-                      </div>
-
-                      {/* Content */}
-                      <div className="flex-1 min-w-0 pr-1">
-                        <div className="flex items-center justify-between gap-1.5">
-                          <h4 className="text-[12px] sm:text-[13px] font-semibold tracking-tight text-slate-900 dark:text-white truncate">
-                            {convo.name}
-                          </h4>
-                          <span
-                            className={`text-[10px] sm:text-[11px] tabular-nums font-medium shrink-0 ${isIncomplete
-                                ? "text-amber-600 dark:text-amber-400 font-semibold"
-                                : "text-slate-400 dark:text-slate-500"
-                              }`}
-                          >
-                            {formatDisplayTime(convo.time)}
-                          </span>
-                        </div>
-                        <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5 leading-snug">
-                          {getLastMessage(convo)}
-                        </p>
-                        <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
-                          <span className="inline-flex items-center text-[10px] font-medium bg-slate-100/90 dark:bg-white/[0.06] text-slate-600 dark:text-slate-400 rounded-md px-1.5 sm:px-2 py-0.5 border border-slate-200/50 dark:border-white/[0.06] truncate max-w-[140px] sm:max-w-none">
-                            {convo.type} · {convo.barangay}
-                          </span>
-                          <span
-                            className={`inline-flex items-center gap-1 text-[10px] font-medium rounded-md px-1.5 sm:px-2 py-0.5 border ${isIncomplete
-                                ? "bg-amber-500/10 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/20 font-semibold"
-                                : "bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/20"
-                              }`}
-                          >
-                            <span
-                              className={`w-1.5 h-1.5 rounded-full ${isIncomplete ? "bg-amber-500 animate-pulse" : "bg-emerald-500"
-                                }`}
-                            />
-                            {convo.status}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Right Chevron */}
-                      <ChevronRight className="w-3.5 h-3.5 text-slate-300 dark:text-slate-600 group-hover:text-slate-500 dark:group-hover:text-slate-400 group-hover:translate-x-0.5 transition-all duration-150 shrink-0" />
-                    </button>
-                  );
-                })
+                <>
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                  <span className="text-emerald-600 dark:text-emerald-400 truncate">
+                    All caught up
+                  </span>
+                </>
               )}
             </div>
           </div>
-        </StaggerItem>
+          <div className="relative z-10 w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-xl sm:rounded-2xl bg-amber-500/10 group-hover:bg-amber-500/18 text-amber-600 dark:text-amber-400 border border-amber-500/20 group-hover:border-amber-500/35 shadow-[0_0_16px_rgba(245,158,11,0.15)] group-hover:shadow-[0_0_24px_rgba(245,158,11,0.3)] group-hover:scale-108 transition-[transform,background-color,border-color,box-shadow] duration-250 ease-[cubic-bezier(0.23,1,0.32,1)] flex items-center justify-center shrink-0">
+            <Clock className="w-4.5 h-4.5 sm:w-5 sm:h-5 md:w-6 md:h-6 transition-transform duration-250 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:scale-110" strokeWidth={1.75} />
+          </div>
+        </div>
 
-        {/* Right Incident Frequency Bar Chart — Fully responsive across all devices */}
-        <StaggerItem className="col-span-12 md:col-span-8 lg:col-span-8 h-[360px] sm:h-[420px] md:h-[480px] lg:h-[480px] flex flex-col">
-          <BarangayBarChart interactive={false} className="h-full flex-1" />
-        </StaggerItem>
-
-        {/* ── 3. Row 3: Talisay Geospatial Map & Scraper Activities (Full width on tablet, 7/5 on desktop) ── */}
-        {/* Talisay Geospatial Map — Expanded size across mobile, tablet, and desktop */}
-        <StaggerItem className="col-span-12 md:col-span-12 lg:col-span-7 h-[380px] sm:h-[440px] md:h-[520px] lg:h-[640px] bg-white/85 dark:bg-[#111827]/85 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)] p-3 sm:p-4 flex flex-col min-h-0 overflow-hidden">
-          {/* Header Row */}
-          <div className="flex items-center justify-between pb-3 shrink-0 gap-2">
-            <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
-              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-[#0071E3]/10 dark:bg-[#0071E3]/20 text-[#0071E3] dark:text-sky-400 flex items-center justify-center shrink-0 border border-[#0071E3]/20 shadow-2xs">
-                <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#0071E3] dark:text-sky-400" />
-              </div>
-              <h3 className="font-semibold text-xs sm:text-sm text-slate-900 dark:text-white tracking-tight truncate">Talisay Geospatial Map</h3>
-              <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 tabular-nums shrink-0">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                Live Monitor
-              </span>
+        {/* Verified Incidents */}
+        <div className="relative overflow-hidden bg-white/80 dark:bg-[#111827]/80 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)] p-3.5 sm:p-4 md:p-5 flex items-center justify-between group transition-[transform,box-shadow,border-color,background-color] duration-250 ease-[cubic-bezier(0.23,1,0.32,1)] hover:-translate-y-1 hover:bg-white/95 dark:hover:bg-[#151e31]/95 hover:border-emerald-500/35 dark:hover:border-emerald-500/40 hover:shadow-[0_12px_28px_-6px_rgba(16,185,129,0.15),0_4px_12px_-2px_rgba(15,23,42,0.05)] dark:hover:shadow-[0_12px_30px_-6px_rgba(16,185,129,0.22)] min-w-0">
+          <div className="pointer-events-none absolute -right-10 -top-10 w-44 h-44 rounded-full bg-[radial-gradient(circle,rgba(16,185,129,0.16)_0%,rgba(16,185,129,0.05)_45%,transparent_70%)] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[2.5px] bg-gradient-to-r from-transparent via-emerald-500/70 to-transparent scale-x-0 group-hover:scale-x-100 transition-transform duration-300 ease-[cubic-bezier(0.23,1,0.32,1)]" />
+          <div className="relative z-10 space-y-1 min-w-0">
+            <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors duration-200 truncate">
+              Verified Incidents
+            </p>
+            <p className="text-lg sm:text-2xl md:text-3xl font-semibold tracking-tight tabular-nums text-slate-900 dark:text-white">
+              <AnimatedNumber key={`verified-${location.key}`} value={verifiedCount} duration={2} />
+            </p>
+            <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] text-emerald-600 dark:text-emerald-400 font-medium min-w-0">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0 group-hover:shadow-[0_0_8px_rgba(16,185,129,0.85)] transition-shadow duration-200" />
+              <span className="truncate">Confirmed on site</span>
             </div>
+          </div>
+          <div className="relative z-10 w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-xl sm:rounded-2xl bg-emerald-500/10 group-hover:bg-emerald-500/18 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 group-hover:border-emerald-500/35 shadow-[0_0_16px_rgba(16,185,129,0.15)] group-hover:shadow-[0_0_24px_rgba(16,185,129,0.3)] group-hover:scale-108 transition-[transform,background-color,border-color,box-shadow] duration-250 ease-[cubic-bezier(0.23,1,0.32,1)] flex items-center justify-center shrink-0">
+            <CheckCircle2 className="w-4.5 h-4.5 sm:w-5 sm:h-5 md:w-6 md:h-6 transition-transform duration-250 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:scale-110" strokeWidth={1.75} />
+          </div>
+        </div>
+
+        {/* High Urgency */}
+        <div className="relative overflow-hidden bg-white/80 dark:bg-[#111827]/80 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)] p-3.5 sm:p-4 md:p-5 flex items-center justify-between group transition-[transform,box-shadow,border-color,background-color] duration-250 ease-[cubic-bezier(0.23,1,0.32,1)] hover:-translate-y-1 hover:bg-white/95 dark:hover:bg-[#151e31]/95 hover:border-purple-500/35 dark:hover:border-purple-500/40 hover:shadow-[0_12px_28px_-6px_rgba(168,85,247,0.15),0_4px_12px_-2px_rgba(15,23,42,0.05)] dark:hover:shadow-[0_12px_30px_-6px_rgba(168,85,247,0.22)] min-w-0">
+          <div className="pointer-events-none absolute -right-10 -top-10 w-44 h-44 rounded-full bg-[radial-gradient(circle,rgba(168,85,247,0.16)_0%,rgba(168,85,247,0.05)_45%,transparent_70%)] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[2.5px] bg-gradient-to-r from-transparent via-purple-500/70 to-transparent scale-x-0 group-hover:scale-x-100 transition-transform duration-300 ease-[cubic-bezier(0.23,1,0.32,1)]" />
+          <div className="relative z-10 space-y-1 min-w-0">
+            <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors duration-200 truncate">
+              High Urgency
+            </p>
+            <p className="text-lg sm:text-2xl md:text-3xl font-semibold tracking-tight tabular-nums text-slate-900 dark:text-white">
+              <AnimatedNumber key={`high-${location.key}`} value={highUrgencyCount} duration={2} />
+            </p>
+            <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] text-purple-600 dark:text-purple-400 font-medium min-w-0">
+              <span className="w-1.5 h-1.5 rounded-full bg-purple-500 shrink-0 group-hover:shadow-[0_0_8px_rgba(168,85,247,0.85)] transition-shadow duration-200" />
+              <span className="truncate">Critical priority</span>
+            </div>
+          </div>
+          <div className="relative z-10 w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-xl sm:rounded-2xl bg-purple-500/10 group-hover:bg-purple-500/18 text-purple-600 dark:text-purple-400 border border-purple-500/20 group-hover:border-purple-500/35 shadow-[0_0_16px_rgba(168,85,247,0.15)] group-hover:shadow-[0_0_24px_rgba(168,85,247,0.3)] group-hover:scale-108 transition-[transform,background-color,border-color,box-shadow] duration-250 ease-[cubic-bezier(0.23,1,0.32,1)] flex items-center justify-center shrink-0">
+            <Brain className="w-4.5 h-4.5 sm:w-5 sm:h-5 md:w-6 md:h-6 transition-transform duration-250 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:scale-110" strokeWidth={1.75} />
+          </div>
+        </div>
+          </div>
+        </StaggerItem>
+
+        {/* ── 2. Main 2-Column Section: Latest Reports Table (Left) & Reports by Type with Interactive Bar Chart (Right) ── */}
+        <StaggerItem className="w-full flex flex-col flex-1 lg:min-h-0">
+          <div className="grid grid-cols-12 gap-4 sm:gap-5 lg:gap-6 flex-1 lg:min-h-0 w-full items-stretch">
+        {/* Left Column: Latest Reports Table (Col 8) */}
+        <div className="order-2 md:order-1 col-span-12 lg:col-span-8 bg-white/90 dark:bg-[#111827]/90 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.04)] flex flex-col overflow-hidden lg:h-full">
+          {/* Header Row */}
+          <div className="p-4 sm:p-5 border-b border-slate-200/70 dark:border-white/10 flex flex-wrap items-center justify-between gap-3 shrink-0">
+            <div className="flex items-center gap-2.5">
+              <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white tracking-tight">
+                Latest reports
+              </h2>
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-xs font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                Under review only
+              </span>
+              {selectedType && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-xs font-semibold bg-[#0071E3]/10 text-[#0071E3] dark:text-sky-400 border border-[#0071E3]/20">
+                  <span>Type: {selectedType}</span>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedType(null)}
+                    className="hover:opacity-75 transition-opacity cursor-pointer p-0.5"
+                    title="Clear type filter"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              )}
+            </div>
+
+            {/* Segmented Urgency Filter: [All] [Critical] [High] [Mod] [Low] */}
+            <div className="inline-flex items-center p-1 bg-slate-100 dark:bg-slate-800/90 rounded-xl border border-slate-200/60 dark:border-white/5 gap-1 shadow-inner">
+              {(['All', 'Critical', 'High', 'Mod', 'Low'] as const).map((opt) => (
+                <button
+                  key={opt}
+                  type="button"
+                  onClick={() => setFilterUrgency(opt)}
+                  className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                    filterUrgency === opt
+                      ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs font-bold'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  {opt}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Mobile Card List (< sm) */}
+          <div className="sm:hidden divide-y divide-slate-100 dark:divide-white/5 overflow-y-auto flex-1 min-h-0">
+            {displayReports.length === 0 ? (
+              <div className="p-6 text-center text-slate-400 dark:text-slate-500 text-xs">
+                No reports found for the selected filter.
+              </div>
+            ) : (
+              displayReports.map((report) => {
+                const isTypeMatch = selectedType && normalizeTypeLabel(report.type).toLowerCase() === selectedType.toLowerCase();
+                return (
+                  <div
+                    key={report.id}
+                    className={`p-3.5 space-y-2.5 transition-colors ${
+                      isTypeMatch ? 'bg-blue-50/50 dark:bg-blue-900/15' : ''
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="font-mono text-[11px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200/50 dark:border-white/5 truncate">
+                          {formatReportCode(report.id, report.source)}
+                        </span>
+                        <span className="font-medium text-slate-900 dark:text-slate-100 text-xs truncate">
+                          {report.barangay || 'Unknown'}
+                        </span>
+                      </div>
+                      <span className="text-[11px] text-slate-400 dark:text-slate-500 font-mono tabular-nums shrink-0">
+                        {formatDashboardTime(report.time, report.createdAt)}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {getUrgencyBadge(report.urgency)}
+                        {getStatusBadge(report.status)}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openDashboardReview(report);
+                        }}
+                        className="px-2.5 py-1 text-xs font-semibold text-[#0071E3] dark:text-sky-400 bg-blue-500/10 hover:bg-blue-500/15 border border-blue-500/20 rounded-lg transition-all active:scale-[0.96] shadow-2xs cursor-pointer inline-flex items-center gap-1 shrink-0"
+                      >
+                        <ShieldCheck className="w-3.5 h-3.5" />
+                        <span>Review</span>
+                      </button>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          {/* Desktop Table View (>= sm) */}
+          <div
+            className="hidden sm:block overflow-x-auto overflow-y-auto w-full flex-1 min-h-0 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700"
+            style={{
+              maskImage: 'linear-gradient(to bottom, black calc(100% - 36px), transparent 100%)',
+              WebkitMaskImage: 'linear-gradient(to bottom, black calc(100% - 36px), transparent 100%)',
+            }}
+          >
+            <table className="w-full min-w-[640px] text-sm text-left border-separate border-spacing-0">
+              <thead className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200/60 dark:border-white/5 sticky top-0 z-30 shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
+                <tr>
+                  <th className="px-4 py-3 text-[11px] uppercase tracking-wider font-semibold text-slate-400 dark:text-slate-500 whitespace-nowrap">ID</th>
+                  <th className="px-4 py-3 text-[11px] uppercase tracking-wider font-semibold text-slate-400 dark:text-slate-500">Barangay</th>
+                  <th className="px-4 py-3 text-[11px] uppercase tracking-wider font-semibold text-slate-400 dark:text-slate-500">Urgency</th>
+                  <th className="px-4 py-3 text-[11px] uppercase tracking-wider font-semibold text-slate-400 dark:text-slate-500">Status</th>
+                  <th className="px-4 py-3 text-[11px] uppercase tracking-wider font-semibold text-slate-400 dark:text-slate-500">Time</th>
+                  <th className="px-3.5 py-3 w-28 min-w-[110px] text-[11px] uppercase tracking-wider font-semibold text-slate-400 dark:text-slate-500 text-left whitespace-nowrap sticky top-0 right-0 z-40 bg-slate-50 dark:bg-slate-800 border-b border-slate-200/60 dark:border-white/5 shadow-[-8px_0_12px_-4px_rgba(0,0,0,0.07)] dark:shadow-[-8px_0_12px_-4px_rgba(0,0,0,0.35)]">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-white/5">
+                {displayReports.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-4 py-12 text-center text-slate-400 dark:text-slate-500 text-xs">
+                      No reports found for the selected filter.
+                    </td>
+                  </tr>
+                ) : (
+                  displayReports.map((report) => {
+                    const isTypeMatch = selectedType && normalizeTypeLabel(report.type).toLowerCase() === selectedType.toLowerCase();
+                    return (
+                      <tr
+                        key={report.id}
+                        className={`transition-colors duration-150 ${
+                          isTypeMatch
+                            ? 'bg-blue-50/60 dark:bg-blue-900/20'
+                            : 'hover:bg-slate-50/70 dark:hover:bg-slate-800/30'
+                        }`}
+                      >
+                        <td className="px-4 py-3.5 whitespace-nowrap">
+                          <span
+                            className="font-mono text-xs font-semibold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200/50 dark:border-white/5 transition-all duration-150 truncate inline-block shadow-2xs"
+                            title={`ID: ${report.id}`}
+                          >
+                            {formatReportCode(report.id, report.source)}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3.5 whitespace-nowrap font-medium text-slate-900 dark:text-slate-100 text-xs sm:text-sm ">
+                          {report.barangay || 'Unknown'}
+                        </td>
+                        <td className="px-4 py-3.5 whitespace-nowrap">
+                          {getUrgencyBadge(report.urgency)}
+                        </td>
+                        <td className="px-4 py-3.5 whitespace-nowrap">
+                          {getStatusBadge(report.status)}
+                        </td>
+                        <td className="px-4 py-3.5 whitespace-nowrap text-xs text-slate-500 dark:text-slate-400 font-mono tabular-nums">
+                          {formatDashboardTime(report.time, report.createdAt)}
+                        </td>
+                        <td className="px-3.5 py-3.5 w-28 min-w-[110px] text-left whitespace-nowrap sticky right-0 z-10 bg-white dark:bg-[#111827] group-hover:bg-slate-50 dark:group-hover:bg-slate-800 transition-colors border-b border-slate-100 dark:border-white/5 shadow-[-8px_0_12px_-4px_rgba(0,0,0,0.07)] dark:shadow-[-8px_0_12px_-4px_rgba(0,0,0,0.35)]" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            type="button"
+                            onClick={() => openDashboardReview(report)}
+                            className="group/btn px-3.5 py-1.5 text-xs font-bold text-[#0071E3] dark:text-sky-300 bg-[#0071E3]/18 hover:bg-[#0071E3]/28 active:bg-[#0071E3]/38 dark:bg-[#0071E3]/25 dark:hover:bg-[#0071E3]/38 border border-[#0071E3]/45 hover:border-[#0071E3]/75 dark:border-sky-400/40 rounded-xl transition-all duration-200 inline-flex items-center justify-center gap-1.5 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.96] shadow-[0_2px_10px_rgba(0,113,227,0.22)] hover:shadow-[0_4px_16px_rgba(0,113,227,0.35)] backdrop-blur-sm cursor-pointer"
+                          >
+                            <ShieldCheck className="w-3.5 h-3.5 transition-transform duration-200 group-hover/btn:scale-110" strokeWidth={1.75} />
+                            <span>Review</span>
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+                {displayReports.length > 0 && (
+                  <tr aria-hidden="true" className="h-4 pointer-events-none border-none">
+                    <td colSpan={6} className="p-0 border-0" />
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Footer with View All Link */}
+          <div className="p-3.5 sm:p-4 border-t border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-slate-900/40 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 shrink-0">
+            <span>
+              Showing {displayReports.length} of {underReviewCount} under review
+            </span>
             <button
-              onClick={() => navigate('/geospatial-map')}
-              className="inline-flex items-center gap-1 text-xs font-semibold text-[#0071E3] hover:text-[#0077ED] transition-colors active:scale-[0.97] shrink-0 whitespace-nowrap"
+              type="button"
+              onClick={() => navigate('/incident-reports')}
+              className="group/all inline-flex items-center gap-1.5 px-2.5 py-1 -mr-2 rounded-lg font-semibold text-[#0071E3] hover:text-[#0077ED] dark:text-sky-400 dark:hover:text-sky-300 hover:bg-blue-50/70 dark:hover:bg-blue-950/30 transition-all duration-150 cursor-pointer"
             >
-              <span className="hidden sm:inline">View Full Map</span>
-              <span className="sm:hidden">Full Map</span>
-              <ArrowRight className="w-3.5 h-3.5" />
+              <span>View all incident reports</span>
+              <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover/all:translate-x-1" />
             </button>
           </div>
+        </div>
 
-          {/* Framed Placeholder Map Canvas Box */}
-          <div className="relative flex-1 min-h-0 w-full rounded-2xl overflow-hidden border border-slate-200/80 dark:border-white/10 shadow-inner bg-slate-100 dark:bg-[#0B0F17]">
-            <MapContainer
-              theme={theme}
-              layers={dashboardMapLayers}
-              barangayCounts={dashboardBarangayCounts}
-              pinReports={dashboardPinReports}
-              onSelectFeature={() => { }}
-            />
-
-            {/* Floating Apple-grade Severity Capsule inside map */}
-            <div className="absolute bottom-2 sm:bottom-3 left-2 sm:left-3 z-10 pointer-events-none max-w-[calc(100%-16px)]">
-              <div className="inline-flex items-center gap-2 sm:gap-3 px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-slate-200/80 dark:border-white/10 shadow-md text-[10px] sm:text-xs text-slate-600 dark:text-slate-300 pointer-events-auto">
-                <span className="hidden sm:inline text-[10px] uppercase tracking-wider font-semibold text-slate-400">Severity:</span>
-                <div className="flex items-center gap-1 sm:gap-1.5">
-                  <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-emerald-500 ring-2 ring-emerald-500/20" />
-                  <span className="text-[10px] sm:text-[11px] font-medium">Low</span>
-                </div>
-                <div className="flex items-center gap-1 sm:gap-1.5">
-                  <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-amber-500 ring-2 ring-amber-500/20" />
-                  <span className="text-[10px] sm:text-[11px] font-medium">Moderate</span>
-                </div>
-                <div className="flex items-center gap-1 sm:gap-1.5">
-                  <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-red-500 ring-2 ring-red-500/20 animate-pulse" />
-                  <span className="text-[10px] sm:text-[11px] font-medium">High</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </StaggerItem>
-
-        {/* Scraper Activities — Full width on mobile/tablet, 5-col on desktop */}
-        <StaggerItem className="col-span-12 md:col-span-12 lg:col-span-5 h-[360px] sm:h-[420px] md:h-[480px] lg:h-[640px] flex flex-col">
-          <div className="bg-white/80 dark:bg-[#111827]/80 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)] flex-1 flex flex-col min-h-0 overflow-hidden relative">
-            <div className="px-3.5 sm:px-5 py-3 sm:py-3.5 border-b border-slate-200/60 dark:border-white/5 flex items-center justify-between bg-slate-50/40 dark:bg-white/[0.02] shrink-0 gap-2">
-              <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
-                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-amber-500/10 dark:bg-amber-500/20 text-amber-500 flex items-center justify-center shrink-0 border border-amber-500/20 shadow-2xs">
-                  <Radio className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500" />
-                </div>
-                <h3 className="font-semibold text-xs sm:text-sm text-slate-900 dark:text-slate-100 tracking-tight truncate">Scraper Activities</h3>
-                <span className="text-[10px] sm:text-[11px] px-2 sm:px-2.5 py-0.5 rounded-full bg-slate-100/90 dark:bg-white/[0.06] text-slate-600 dark:text-slate-400 font-medium tabular-nums border border-slate-200/60 dark:border-white/[0.06] shrink-0">
-                  {scraperItems.length}
-                </span>
-              </div>
-              <button
-                onClick={() => navigate('/scraper-feed')}
-                className="inline-flex items-center gap-1 text-xs font-semibold text-[#0071E3] hover:text-[#0077ED] transition-colors active:scale-[0.97] shrink-0 whitespace-nowrap"
-              >
-                <span className="hidden sm:inline">View Feed</span>
-                <span className="sm:hidden">Feed</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
-            <div
-              className="p-2.5 sm:p-3 pb-8 space-y-2 overflow-y-auto flex-1 min-h-0 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800"
-              style={{
-                maskImage: 'linear-gradient(to bottom, black calc(100% - 56px), transparent 100%)',
-                WebkitMaskImage: 'linear-gradient(to bottom, black calc(100% - 56px), transparent 100%)',
-              }}
-            >
-              {scraperItems.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-16 text-slate-400 dark:text-slate-500 text-xs gap-2">
-                  <Radio className="w-8 h-8 stroke-[1.5] text-slate-300 dark:text-slate-600" />
-                  <span>No scraped comments yet.</span>
-                </div>
-              ) : (
-                scraperItems.map((item) => (
+        {/* Right Column: Reports by Type with Interactive Bar Chart (Col 4) */}
+        <div className="order-1 md:order-2 col-span-12 lg:col-span-4 bg-white/90 dark:bg-[#111827]/90 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.04)] p-4 sm:p-5 flex flex-col lg:h-full justify-between">
+          {/* Header Row with View Mode Switcher and Clear Filter Pill */}
+          <div className="flex items-center justify-between pb-3.5 border-b border-slate-200/70 dark:border-white/10 shrink-0 gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white tracking-tight truncate">
+                Reports by type
+              </h2>
+              {selectedType && (
+                <div className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-[#0071E3]/10 text-[#0071E3] dark:text-sky-400 border border-[#0071E3]/20 text-xs font-semibold shrink-0">
+                  <span className="truncate max-w-[90px]">{selectedType}</span>
                   <button
-                    key={item.id}
-                    onClick={() => setActiveScraper(item)}
-                    className="w-full block text-left p-3 sm:p-3.5 bg-slate-50/70 dark:bg-white/[0.03] rounded-xl border border-slate-200/60 dark:border-white/[0.06] hover:bg-slate-100/80 dark:hover:bg-white/[0.06] hover:shadow-xs transition-all duration-150 group active:scale-[0.985]"
+                    type="button"
+                    onClick={() => setSelectedType(null)}
+                    className="hover:opacity-75 transition-opacity cursor-pointer p-0.5"
+                    title="Clear filter"
                   >
-                    <div className="flex items-start justify-between gap-2">
-                      <p className="text-xs text-slate-700 dark:text-slate-200 line-clamp-2 leading-relaxed flex-1 font-normal">
-                        &ldquo;{item.text}&rdquo;
-                      </p>
-                      <ExternalLink className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity mt-0.5" />
-                    </div>
-                    <div className="flex items-center gap-1.5 sm:gap-2 mt-2.5 flex-wrap">
-                      <span className={`text-[10px] px-2 py-0.5 rounded-md font-medium border flex items-center gap-1 ${getStatusColor(item.status)}`}>
-                        {getStatusIcon(item.status)}{item.status}
-                      </span>
-                      <span className={`text-[10px] sm:text-[11px] font-semibold ${getTypeColor(item.type)}`}>{item.type}</span>
-                      <span className="text-[10px] text-slate-400 dark:text-slate-500 ml-auto tabular-nums font-medium">{item.time}</span>
-                    </div>
+                    <X className="w-3 h-3" />
                   </button>
-                ))
+                </div>
               )}
             </div>
+
+            <div className="flex items-center gap-1.5 shrink-0">
+              {/* Chart vs List view mode toggle */}
+              <div className="inline-flex items-center p-0.5 bg-slate-100 dark:bg-slate-800/90 rounded-lg border border-slate-200/60 dark:border-white/5">
+                <button
+                  type="button"
+                  onClick={() => setViewMode('chart')}
+                  className={`p-1 rounded-md transition-all cursor-pointer ${
+                    viewMode === 'chart'
+                      ? 'bg-white dark:bg-slate-700 text-[#0071E3] dark:text-sky-400 shadow-2xs'
+                      : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
+                  }`}
+                  title="Bar chart view"
+                >
+                  <BarChart3 className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewMode('bars')}
+                  className={`p-1 rounded-md transition-all cursor-pointer ${
+                    viewMode === 'bars'
+                      ? 'bg-white dark:bg-slate-700 text-[#0071E3] dark:text-sky-400 shadow-2xs'
+                      : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
+                  }`}
+                  title="Progress bars view"
+                >
+                  <ListFilter className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              <span className="text-xs font-semibold text-slate-400 dark:text-slate-500 tabular-nums">
+                <AnimatedNumber key={`type-total-${location.key}`} value={reports.length} duration={2} /> total
+              </span>
+            </div>
           </div>
-        </StaggerItem>
 
-      </StaggerContainer>
-
-      {/* ════════════════════════════════════════
-          CONVERSATION MODAL — Exact Match with MessengerBotLogs Chat Layout
-         ════════════════════════════════════════ */}
-      <AnimatePresence>
-        {activeConv && selectedConversation && (
-          <motion.div
-            key="conv-modal-backdrop"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/50 dark:bg-black/70 backdrop-blur-xl"
-            onClick={() => setActiveConv(null)}
-          >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 16 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 16 }}
-              transition={APPLE_SPRING}
-              className="bg-white/95 dark:bg-[#111827]/95 backdrop-blur-2xl rounded-2xl sm:rounded-3xl border border-white/40 dark:border-white/10 shadow-[0_24px_70px_rgba(0,0,0,0.25)] w-full max-w-4xl h-[90vh] sm:h-[80vh] flex overflow-hidden"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Left: Conversation List — adaptive drawer on mobile, static split column on tablet/desktop */}
-              <div className={`${showMobileList ? 'flex' : 'hidden'} md:flex w-full md:w-72 lg:w-80 border-r border-slate-200/60 dark:border-slate-800/60 flex-col shrink-0 h-full bg-slate-50/40 dark:bg-[#111827]/40`}>
-                <div className="px-4 sm:px-5 py-3.5 sm:py-4 border-b border-slate-200/60 dark:border-slate-800/60 flex items-center justify-between shrink-0">
-                  <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-lg bg-blue-500/10 dark:bg-blue-500/20 text-[#0071E3] dark:text-blue-400 flex items-center justify-center shrink-0 border border-blue-500/15">
-                      <MessageSquare className="w-3.5 h-3.5" />
-                    </div>
-                    <h3 className="font-semibold text-sm text-slate-900 dark:text-white tracking-tight">Conversations</h3>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-1.5">
-                      {incompleteCount > 0 && (
-                        <span className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 text-[11px] font-semibold rounded-full px-2 py-0.5 tabular-nums flex items-center gap-1">
-                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                          {incompleteCount}
-                        </span>
-                      )}
-                      <span className="bg-blue-500/10 text-[#0071E3] dark:text-blue-400 border border-blue-500/20 text-[11px] font-semibold rounded-full px-2 py-0.5 tabular-nums">
-                        {botConversations.length}
+          {/* Interactive Chart or Progress Bars */}
+          {typeSummary.length === 0 ? (
+            <p className="text-xs text-slate-400 dark:text-slate-500 py-12 text-center">
+              No incident types reported yet.
+            </p>
+          ) : viewMode === 'chart' ? (
+            /* ── Recharts Bar Chart (Same functionality as Analytics page) ── */
+            <div className="w-full flex flex-col pt-2">
+              <p className="text-[11px] text-slate-400 dark:text-slate-500">
+                Click any bar to highlight incident and inspect details
+              </p>
+              <div className="w-full h-48 sm:h-52 min-h-[190px] relative mt-1">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={typeSummary}
+                    margin={{ top: 12, right: 12, left: 8, bottom: 30 }}
+                    onClick={(state: any) => {
+                      if (state && state.activePayload && state.activePayload.length > 0) {
+                        const clickedType = state.activePayload[0].payload.name;
+                        setSelectedType((prev) => (prev === clickedType ? null : clickedType));
+                      }
+                    }}
+                  >
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      vertical={false}
+                      stroke="currentColor"
+                      className="text-slate-200/50 dark:text-slate-800/60"
+                    />
+                    <XAxis
+                      dataKey="name"
+                      tick={{ fontSize: 9.5, fill: '#94a3b8' }}
+                      axisLine={{ stroke: '#94a3b8', strokeOpacity: 0.2 }}
+                      tickLine={false}
+                      interval={0}
+                      angle={-25}
+                      textAnchor="end"
+                      height={36}
+                    />
+                    <YAxis
+                      allowDecimals={false}
+                      tick={{ fontSize: 9.5, fill: '#94a3b8' }}
+                      axisLine={false}
+                      tickLine={false}
+                      width={24}
+                    />
+                    <Tooltip content={<TypeTooltip />} cursor={{ fill: 'rgba(0,113,227,0.06)' }} />
+                    <Bar
+                      dataKey="count"
+                      cursor="pointer"
+                      isAnimationActive={false}
+                      shape={<MinimalWaveBar selectedType={selectedType} routeKey={location.key} />}
+                    >
+                      {typeSummary.map((entry) => (
+                        <Cell
+                          key={entry.name}
+                          fill={entry.color}
+                        />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          ) : (
+            /* ── Progress Bars List View (Minimalist 2D) ── */
+            <div className="mt-4 space-y-3">
+              {typeSummary.map((item, index) => {
+                const isSelected = selectedType && selectedType.toLowerCase() === item.type.toLowerCase();
+                return (
+                  <button
+                    key={`${item.type}-${location.key}`}
+                    type="button"
+                    onClick={() => setSelectedType((prev) => (prev === item.type ? null : item.type))}
+                    className={`group w-full text-left p-2.5 rounded-xl transition-all duration-200 cursor-pointer border hover:-translate-y-0.5 ${
+                      isSelected
+                        ? 'bg-blue-50/70 dark:bg-blue-900/20 border-blue-500/30 shadow-2xs'
+                        : 'border-transparent hover:bg-slate-50/80 dark:hover:bg-slate-800/50'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between text-xs sm:text-sm">
+                      <span className="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                        <span
+                          className="w-2.5 h-2.5 rounded-full shrink-0"
+                          style={{ backgroundColor: item.color }}
+                        />
+                        {item.type}
+                      </span>
+                      <span className="font-bold text-slate-600 dark:text-slate-400 tabular-nums text-xs">
+                        <AnimatedNumber key={`pct-${item.type}-${location.key}`} value={item.percentage} duration={2} />% (
+                        <AnimatedNumber key={`cnt-${item.type}-${location.key}`} value={item.count} duration={2} />)
                       </span>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => setShowMobileList(false)}
-                      className="md:hidden p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg"
-                      title="Return to message"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
+
+                    {/* Clean Minimalist 2D Horizontal Bar */}
+                    <div className="w-full h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden mt-1.5">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${Math.max(item.percentage, 3)}%` }}
+                        transition={{
+                          duration: 0.95,
+                          delay: Math.min(index * 0.04, 0.28),
+                          ease: [0.25, 1, 0.5, 1],
+                        }}
+                        className="h-full rounded-full transition-[filter] duration-200 group-hover:brightness-110"
+                        style={{ backgroundColor: item.color }}
+                      />
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {/* ── Highlighted Incident Information Panel ── */}
+          <AnimatePresence mode="wait">
+            {selectedTypeDetails ? (
+              <motion.div
+                key={selectedTypeDetails.type}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={APPLE_SPRING}
+                className="mt-4 p-3.5 sm:p-4 rounded-xl bg-slate-50/90 dark:bg-slate-800/60 border border-slate-200/70 dark:border-white/10 space-y-3"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className="w-2.5 h-2.5 rounded-full shrink-0"
+                      style={{ backgroundColor: selectedTypeDetails.color }}
+                    />
+                    <h3 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
+                      {selectedTypeDetails.type} Overview
+                    </h3>
                   </div>
-                </div>
-                <div
-                  className="flex-1 overflow-y-auto min-h-0 p-2 pb-10 space-y-1 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800"
-                  style={{
-                    maskImage: 'linear-gradient(to bottom, black calc(100% - 56px), transparent 100%)',
-                    WebkitMaskImage: 'linear-gradient(to bottom, black calc(100% - 56px), transparent 100%)',
-                  }}
-                >
-                  {botConversations.map((convo, index) => {
-                    const isSelected = selectedConvId === convo.id;
-                    const isIncomplete = convo.status === "Incomplete";
-                    const avatarColor = getAvatarColor(convo.name, index);
-                    const initials = getInitials(convo.name);
-                    return (
-                      <button
-                        key={convo.id}
-                        type="button"
-                        onClick={() => handleModalSelectConv(convo.id)}
-                        className={`w-full flex items-center gap-3 p-2.5 rounded-xl transition-all duration-150 text-left relative group active:scale-[0.98] ${isSelected
-                          ? "bg-blue-500/10 dark:bg-blue-500/20 shadow-xs border border-blue-500/25 dark:border-blue-500/30 text-slate-900 dark:text-white"
-                          : isIncomplete
-                            ? "bg-amber-500/[0.04] dark:bg-amber-500/[0.08] hover:bg-amber-500/[0.08] dark:hover:bg-amber-500/[0.14] border border-amber-500/15 dark:border-amber-500/20 text-slate-950 dark:text-white"
-                            : "hover:bg-slate-100/70 dark:hover:bg-slate-800/60 border border-transparent text-slate-700 dark:text-slate-300"
-                          }`}
-                      >
-                        {isSelected && (
-                          <motion.div
-                            layoutId="modalActiveConvoIndicator"
-                            className="absolute left-1 top-2.5 bottom-2.5 w-1 bg-[#0071E3] rounded-full"
-                            transition={APPLE_SPRING}
-                          />
-                        )}
-                        <div className="relative shrink-0">
-                          <div
-                            className={`w-9 h-9 rounded-full ${avatarColor} flex items-center justify-center font-bold text-xs text-white shadow-sm ring-2 ring-white/80 dark:ring-slate-800`}
-                          >
-                            {initials}
-                          </div>
-                          {isIncomplete && (
-                            <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-amber-500 border-2 border-white dark:border-slate-800 rounded-full shadow-xs" />
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between">
-                            <h4
-                              className={`text-xs truncate transition-all duration-200 ${isIncomplete
-                                ? "font-bold text-slate-950 dark:text-white"
-                                : isSelected
-                                  ? "font-semibold text-slate-900 dark:text-white"
-                                  : "font-medium text-slate-700 dark:text-slate-300"
-                                }`}
-                            >
-                              {convo.name}
-                            </h4>
-                            <div className="flex items-center gap-1 shrink-0 ml-1">
-                              <span
-                                className={`text-[10px] tabular-nums transition-colors duration-200 ${isIncomplete
-                                  ? "font-semibold text-amber-600 dark:text-amber-400"
-                                  : "font-normal text-slate-400 dark:text-slate-500"
-                                  }`}
-                              >
-                                {formatDisplayTime(convo.time)}
-                              </span>
-                              {isIncomplete && (
-                                <span className="w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_6px_rgba(245,158,11,0.5)] shrink-0" />
-                              )}
-                            </div>
-                          </div>
-                          <p
-                            className={`text-[11px] truncate mt-0.5 leading-snug transition-all duration-200 ${isIncomplete
-                              ? "font-semibold text-slate-900 dark:text-slate-100"
-                              : "font-normal text-slate-500 dark:text-slate-400"
-                              }`}
-                          >
-                            {getLastMessage(convo)}
-                          </p>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Right: Chat View — Exact MessengerBotLogs Message Detail */}
-              <div className={`${showMobileList ? 'hidden' : 'flex'} md:flex flex-1 flex-col min-w-0 overflow-hidden`}>
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={selectedConvId}
-                    initial={{ opacity: 0, x: 12 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -12 }}
-                    transition={APPLE_SPRING}
-                    className="flex-1 flex flex-col min-w-0 h-full"
-                  >
-                    {/* Header */}
-                    <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-200/60 dark:border-slate-800/60 flex items-center justify-between shrink-0 bg-white/70 dark:bg-[#111827]/70 backdrop-blur-md gap-2">
-                      <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-                        {/* Mobile back to list button */}
-                        <button
-                          type="button"
-                          onClick={() => setShowMobileList(true)}
-                          className="md:hidden inline-flex items-center gap-0.5 text-xs font-semibold text-[#0071E3] hover:text-[#0077ED] py-1 px-1.5 -ml-1 rounded-lg hover:bg-[#0071E3]/10 transition-colors shrink-0"
-                          title="View all conversations"
-                        >
-                          <ChevronLeft className="w-4 h-4" />
-                          <span>List</span>
-                        </button>
-                        <div
-                          className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full ${modalSelectedColor} flex items-center justify-center font-bold text-xs text-white shrink-0 shadow-sm ring-2 ring-white/80 dark:ring-slate-800`}
-                        >
-                          {modalSelectedInitials}
-                        </div>
-                        <div className="min-w-0">
-                          <h3 className="font-semibold text-slate-900 dark:text-white text-xs sm:text-base tracking-tight truncate">
-                            {selectedConversation.name}
-                          </h3>
-                          <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 sm:gap-1.5 mt-0.5 truncate">
-                            <span className="truncate">{selectedConversation.barangay}</span>
-                            <span className="text-slate-300 dark:text-slate-600 shrink-0">•</span>
-                            <span className="truncate">{selectedConversation.type}</span>
-                            <span className="hidden sm:inline text-slate-300 dark:text-slate-600 shrink-0">•</span>
-                            <span className="hidden sm:inline font-mono text-[11px] text-slate-400 dark:text-slate-500 shrink-0">PSID: {selectedConversation.psid}</span>
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
-                        {/* Apple Segmented 1-Click Status Switcher Capsule */}
-                        <div
-                          role="group"
-                          aria-label="Conversation Status"
-                          className="inline-flex items-center p-0.5 sm:p-1 bg-slate-100/90 dark:bg-slate-800/90 backdrop-blur-md rounded-full border border-slate-200/70 dark:border-white/10 shadow-[inset_0_1px_2px_rgba(0,0,0,0.06)]"
-                        >
-                          {/* Incomplete Option */}
-                          <button
-                            type="button"
-                            onClick={() => updateBotConversationStatus(selectedConversation.id, 'Incomplete')}
-                            className={`relative flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 rounded-full text-[11px] sm:text-xs font-semibold tracking-tight transition-colors duration-200 select-none active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 ${selectedConversation.status === 'Incomplete'
-                              ? 'text-amber-600 dark:text-amber-400'
-                              : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
-                              }`}
-                            title="Mark conversation as Incomplete"
-                          >
-                            {selectedConversation.status === 'Incomplete' && (
-                              <motion.div
-                                layoutId="modalActiveStatusCapsule"
-                                transition={APPLE_SPRING}
-                                className="absolute inset-0 bg-white dark:bg-slate-700/90 rounded-full shadow-[0_1px_4px_rgba(0,0,0,0.1),0_1px_2px_rgba(0,0,0,0.06)] border border-black/[0.04] dark:border-white/10"
-                              />
-                            )}
-                            <span className="relative z-10 w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                            <span className="relative z-10">Incomplete</span>
-                          </button>
-
-                          {/* Complete Option */}
-                          <button
-                            type="button"
-                            onClick={() => updateBotConversationStatus(selectedConversation.id, 'Complete')}
-                            className={`relative flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 rounded-full text-[11px] sm:text-xs font-semibold tracking-tight transition-colors duration-200 select-none active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${selectedConversation.status === 'Complete'
-                              ? 'text-emerald-700 dark:text-emerald-300'
-                              : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
-                              }`}
-                            title="Mark conversation as Complete"
-                          >
-                            {selectedConversation.status === 'Complete' && (
-                              <motion.div
-                                layoutId="modalActiveStatusCapsule"
-                                transition={APPLE_SPRING}
-                                className="absolute inset-0 bg-white dark:bg-slate-700/90 rounded-full shadow-[0_1px_4px_rgba(0,0,0,0.1),0_1px_2px_rgba(0,0,0,0.06)] border border-black/[0.04] dark:border-white/10"
-                              />
-                            )}
-                            <CheckCircle className="relative z-10 w-3.5 h-3.5 text-emerald-500" />
-                            <span className="relative z-10">Complete</span>
-                          </button>
-                        </div>
-
-                        <button
-                          onClick={() => setActiveConv(null)}
-                          className="p-1 sm:p-1.5 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors active:scale-90"
-                          title="Close dialog"
-                        >
-                          <X className="w-5 h-5" />
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Messages — Apple Messages Thread */}
-                    <div
-                      className="flex-1 overflow-y-auto min-h-0 p-3.5 sm:p-6 pb-12 bg-slate-50/40 dark:bg-[#0B0F17]/40 space-y-3 sm:space-y-4 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800"
-                      style={{
-                        maskImage: 'linear-gradient(to bottom, black calc(100% - 48px), transparent 100%)',
-                        WebkitMaskImage: 'linear-gradient(to bottom, black calc(100% - 48px), transparent 100%)',
-                      }}
-                    >
-                      {selectedConversation.messages.map((msg, idx) =>
-                        msg.sender === "bot" ? (
-                          <div key={idx} className="flex items-end gap-2 justify-end">
-                            <div className="flex flex-col items-end max-w-[85%] sm:max-w-[74%]">
-                              <div className="bg-[#0071E3] text-white rounded-[18px] sm:rounded-[20px] rounded-br-[4px] px-3.5 sm:px-4 py-2 sm:py-2.5 shadow-[0_2px_10px_rgba(0,113,227,0.22)]">
-                                <p className="text-xs sm:text-sm leading-relaxed whitespace-pre-wrap">{msg.text}</p>
-                              </div>
-                              <span className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 mr-1 font-medium flex items-center gap-1">
-                                <Bot className="w-3 h-3 text-[#0071E3]" />
-                                Responde Bot
-                              </span>
-                            </div>
-                            <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-blue-100 dark:bg-blue-950 flex items-center justify-center text-[10px] sm:text-[11px] font-bold text-[#0071E3] dark:text-blue-400 shrink-0 mb-4 ring-1 ring-blue-500/20 shadow-2xs">
-                              <Bot className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#0071E3]" />
-                            </div>
-                          </div>
-                        ) : (
-                          <div key={idx} className="flex items-end gap-2 justify-start">
-                            <div
-                              className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full ${modalSelectedColor} flex items-center justify-center text-[10px] font-bold text-white shrink-0 mb-4 shadow-xs ring-1 ring-black/5`}
-                            >
-                              {modalSelectedInitials}
-                            </div>
-                            <div className="flex flex-col items-start max-w-[85%] sm:max-w-[74%]">
-                              <div className="bg-white dark:bg-slate-800 border border-slate-200/70 dark:border-slate-700/70 text-slate-800 dark:text-slate-100 rounded-[18px] sm:rounded-[20px] rounded-bl-[4px] px-3.5 sm:px-4 py-2 sm:py-2.5 shadow-[0_2px_10px_rgba(0,0,0,0.03)]">
-                                <p className="text-xs sm:text-sm leading-relaxed whitespace-pre-wrap">{msg.text}</p>
-                              </div>
-                              <span className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 ml-1 font-medium">
-                                {selectedConversation.name}
-                              </span>
-                            </div>
-                          </div>
-                        )
-                      )}
-                    </div>
-
-                    {/* Footer */}
-                    <div className="p-3.5 sm:p-4 border-t border-slate-200/60 dark:border-slate-800/60 bg-white/80 dark:bg-[#111827]/80 flex justify-end">
-                      <button
-                        onClick={() => { setActiveConv(null); showToast('Navigating to Messenger Bot Logs', 'info'); navigate('/messenger-bot-logs'); }}
-                        className="w-full sm:w-auto justify-center flex items-center gap-2 px-4 py-2.5 bg-[#0071E3] hover:bg-[#0077ED] text-white text-xs font-semibold rounded-xl transition-all shadow-[0_2px_8px_rgba(0,113,227,0.25)] active:scale-[0.97]"
-                      >
-                        Open in Messenger Bot Logs<ArrowRight className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </motion.div>
-                </AnimatePresence>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* ════════════════════════════════════════
-          SCRAPER MODAL — Apple Inspector Sheet
-         ════════════════════════════════════════ */}
-      <AnimatePresence>
-        {activeScraper && (
-          <motion.div
-            key="scraper-modal-backdrop"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/50 dark:bg-black/70 backdrop-blur-xl"
-            onClick={() => setActiveScraper(null)}
-          >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 16 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 16 }}
-              transition={APPLE_SPRING}
-              className="bg-white/95 dark:bg-[#111827]/95 backdrop-blur-2xl rounded-2xl sm:rounded-3xl border border-white/40 dark:border-white/10 shadow-[0_24px_70px_rgba(0,0,0,0.25)] w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Header */}
-              <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 sm:py-4 border-b border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-slate-900/30">
-                <div className="flex items-center gap-2 sm:gap-3">
-                  <span className="font-mono text-xs font-semibold text-slate-400 dark:text-slate-500">#{activeScraper.id.slice(-10)}</span>
-                  <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium border ${getUrgencyColor(activeScraper.urgency)}`}>
-                    {activeScraper.urgency} Priority
+                  <span className="text-[11px] font-semibold text-[#0071E3] dark:text-sky-400 tabular-nums">
+                    {selectedTypeDetails.total} incident{selectedTypeDetails.total > 1 ? 's' : ''} ({selectedTypeDetails.percentage}%)
                   </span>
                 </div>
-                <button
-                  onClick={() => setActiveScraper(null)}
-                  className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors active:scale-90"
-                >
-                  <X className="w-5 h-5" />
-                </button>
+
+                {/* Urgency & Status Metrics Grid */}
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div className="p-2.5 rounded-lg bg-white/80 dark:bg-slate-900/60 border border-slate-200/50 dark:border-white/5 space-y-1">
+                    <span className="text-[10px] font-semibold uppercase text-slate-400 dark:text-slate-500 tracking-wider block">
+                      Urgency Levels
+                    </span>
+                    <div className="flex items-center gap-1.5 flex-wrap text-[11px] font-medium">
+                      <span className="text-purple-600 dark:text-purple-400 font-semibold">{selectedTypeDetails.critical} Crit</span>
+                      <span className="text-slate-300 dark:text-slate-600">·</span>
+                      <span className="text-rose-600 dark:text-rose-400 font-semibold">{selectedTypeDetails.high} High</span>
+                      <span className="text-slate-300 dark:text-slate-600">·</span>
+                      <span className="text-amber-600 dark:text-amber-400">{selectedTypeDetails.mod} Mod</span>
+                      <span className="text-slate-300 dark:text-slate-600">·</span>
+                      <span className="text-green-600 dark:text-green-400">{selectedTypeDetails.low} Low</span>
+                    </div>
+                  </div>
+
+                  <div className="p-2.5 rounded-lg bg-white/80 dark:bg-slate-900/60 border border-slate-200/50 dark:border-white/5 space-y-1">
+                    <span className="text-[10px] font-semibold uppercase text-slate-400 dark:text-slate-500 tracking-wider block">
+                      Status Flow
+                    </span>
+                    <div className="flex items-center gap-1.5 flex-wrap text-[11px] font-medium">
+                      <span className="text-amber-600 dark:text-amber-400 font-semibold">{selectedTypeDetails.underReview} Review</span>
+                      <span className="text-slate-300 dark:text-slate-600">·</span>
+                      <span className="text-emerald-600 dark:text-emerald-400">{selectedTypeDetails.verified} Ver</span>
+                      <span className="text-slate-300 dark:text-slate-600">·</span>
+                      <span className="text-blue-600 dark:text-blue-400">{selectedTypeDetails.resolved} Res</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Location and Latest Timestamp */}
+                <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 pt-1 border-t border-slate-200/50 dark:border-white/5">
+                  <div className="flex items-center gap-1.5 truncate max-w-[170px]" title={`Top location: ${selectedTypeDetails.topBarangay}`}>
+                    <MapPin className="w-3.5 h-3.5 text-[#0071E3] shrink-0" />
+                    <span className="truncate">Top: <strong className="text-slate-800 dark:text-slate-200 font-semibold">{selectedTypeDetails.topBarangay}</strong></span>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                    <span className="tabular-nums font-mono text-[11px]">{selectedTypeDetails.latestTime}</span>
+                  </div>
+                </div>
+              </motion.div>
+            ) : (
+              <div className="mt-3 pt-3 border-t border-slate-100 dark:border-white/5 flex items-center justify-between text-[11px] text-slate-400 dark:text-slate-500">
+                <span>Select an incident type to inspect distribution</span>
+                <span className="font-medium text-slate-500 dark:text-slate-400">{typeSummary.length} categories</span>
               </div>
-
-              {/* Body */}
-              <div className="px-4 sm:px-6 py-4 sm:py-5 space-y-4 sm:space-y-5 overflow-y-auto flex-1">
-                <div>
-                  <h3 className={`text-base sm:text-lg font-bold tracking-tight ${getTypeColor(activeScraper.type)}`}>{activeScraper.type}</h3>
-                  <p className="text-slate-500 dark:text-slate-400 text-xs mt-0.5 font-medium">{activeScraper.barangay}, Talisay</p>
-                </div>
-
-                <div className="bg-slate-50/80 dark:bg-slate-800/40 rounded-2xl p-3.5 sm:p-4 border border-slate-100 dark:border-white/5">
-                  <p className="text-slate-700 dark:text-slate-200 text-xs leading-relaxed italic">&ldquo;{activeScraper.text}&rdquo;</p>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
-                  <div className="p-3 rounded-xl bg-slate-50/60 dark:bg-slate-800/30 border border-slate-100 dark:border-white/5">
-                    <div className="flex items-center gap-1.5 text-slate-400 dark:text-slate-500 text-[10px] uppercase font-semibold tracking-wider">
-                      <User className="w-3.5 h-3.5" />
-                      <span>Original Commenter</span>
-                    </div>
-                    <p className="text-xs font-semibold text-slate-800 dark:text-slate-200 mt-1 truncate">{activeScraper.reporter}</p>
-                  </div>
-                  <div className="p-3 rounded-xl bg-slate-50/60 dark:bg-slate-800/30 border border-slate-100 dark:border-white/5">
-                    <div className="flex items-center gap-1.5 text-slate-400 dark:text-slate-500 text-[10px] uppercase font-semibold tracking-wider">
-                      <Clock className="w-3.5 h-3.5" />
-                      <span>Scraped At</span>
-                    </div>
-                    <p className="text-xs font-medium text-slate-800 dark:text-slate-200 mt-1 tabular-nums truncate">{activeScraper.time}</p>
-                  </div>
-                  <div className="p-3 rounded-xl bg-slate-50/60 dark:bg-slate-800/30 border border-slate-100 dark:border-white/5">
-                    <div className="flex items-center gap-1.5 text-slate-400 dark:text-slate-500 text-[10px] uppercase font-semibold tracking-wider">
-                      <MapPin className="w-3.5 h-3.5" />
-                      <span>Source</span>
-                    </div>
-                    <p className="text-xs font-medium text-slate-800 dark:text-slate-200 mt-1 truncate">{activeScraper.source}</p>
-                  </div>
-                  <div className="p-3 rounded-xl bg-slate-50/60 dark:bg-slate-800/30 border border-slate-100 dark:border-white/5">
-                    <div className="flex items-center gap-1.5 text-slate-400 dark:text-slate-500 text-[10px] uppercase font-semibold tracking-wider">
-                      <AlertCircle className="w-3.5 h-3.5" />
-                      <span>NLP Confidence</span>
-                    </div>
-                    <p className="text-xs font-semibold text-slate-800 dark:text-slate-200 mt-1 tabular-nums">
-                      {activeScraper.confidence > 0 ? `${(activeScraper.confidence * 100).toFixed(0)}%` : 'N/A'}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 pt-1">
-                  <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Status:</span>
-                  <span className={`inline-flex items-center gap-1 text-xs px-2.5 py-0.5 rounded-full font-medium border ${getStatusColor(activeScraper.status)}`}>
-                    {getStatusIcon(activeScraper.status)}{activeScraper.status}
-                  </span>
-                </div>
-              </div>
-
-              {/* Footer */}
-              <div className="flex items-center justify-end gap-2 px-4 sm:px-6 py-3.5 sm:py-4 border-t border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-slate-900/30">
-                <button
-                  onClick={() => setActiveScraper(null)}
-                  className="px-3.5 sm:px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors active:scale-95"
-                >
-                  Close
-                </button>
-                <button
-                  onClick={() => { setActiveScraper(null); showToast('Navigating to Scraper Feed', 'info'); navigate('/scraper-feed'); }}
-                  className="flex items-center gap-1.5 px-3.5 sm:px-4 py-2 text-xs font-semibold text-white bg-[#0071E3] hover:bg-[#0077ED] rounded-xl transition-all shadow-[0_2px_8px_rgba(0,113,227,0.25)] active:scale-[0.97]"
-                >
-                  Go to Scraper Feed<ArrowRight className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </>
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
+        </StaggerItem>
+      </StaggerContainer>
+      {reviewingReport && (
+        <ReportReviewModal
+          key={reviewingReport.id}
+          report={reviewingReport}
+          onClose={() => setReviewingReport(null)}
+        />
+      )}
+    </div>
   );
 }

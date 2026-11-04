@@ -198,7 +198,7 @@ export default function Register() {
               <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.985 }}>
                 <Link
                   to="/login"
-                  className="block w-full py-3 px-4 bg-gradient-to-r from-blue-700 to-blue-800 hover:from-blue-600 hover:to-blue-700 text-white font-semibold rounded-xl transition-all shadow-md shadow-blue-700/20 text-sm"
+                  className="btnfx block w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-500 hover:to-blue-700 text-white font-semibold rounded-2xl shadow-lg shadow-blue-900/30 transition-all text-xs sm:text-sm cursor-pointer"
                 >
                   Go to Login
                 </Link>
@@ -232,33 +232,35 @@ export default function Register() {
               initial="hidden"
               animate="visible"
               exit="exit"
-              className="max-w-md w-full bg-white/95 backdrop-blur-md rounded-2xl sm:rounded-3xl shadow-[0_25px_80px_rgba(0,0,0,0.55),0_0_50px_rgba(0,113,227,0.12)] border border-white/30 overflow-hidden"
+              className="max-w-md w-full bg-white/95 backdrop-blur-md rounded-2xl sm:rounded-3xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3),0_0_30px_rgba(0,0,0,0.1)] border border-white/60 overflow-hidden"
             >
             {/* Header */}
-            <div className="bg-gradient-to-r from-blue-900 via-blue-800 to-blue-700 p-6 sm:p-7 text-white text-center">
+            <div className="flex flex-col items-center text-center p-6 sm:p-7 pb-2 sm:pb-3">
               <Link
                 to="/"
                 title="Return to Landing Page"
-                className="group inline-flex flex-col items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60 rounded-2xl p-1 transition-all"
+                className="group flex flex-col items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 rounded-3xl p-1 transition-all"
               >
-                <motion.div
-                  variants={iconSpringVariants}
-                  whileHover={{ scale: 1.06 }}
-                  whileTap={{ scale: 0.94 }}
-                  className="w-14 h-14 rounded-full overflow-hidden shadow-lg ring-2 ring-white/30 group-hover:ring-white/60 transition-all duration-200 bg-white flex items-center justify-center mx-auto mb-2.5"
-                >
-                  <img
-                    src="/Responde_Logo.png"
-                    alt="RESPONDE Logo"
-                    className="w-full h-full object-cover"
-                  />
-                </motion.div>
-                <h1 className="text-xl sm:text-2xl font-bold tracking-wide group-hover:text-blue-100 transition-colors">
-                  Personnel Registration
+                <div className="floaty relative mx-auto h-20 w-20 sm:h-24 sm:w-24 mb-2.5">
+                  <div className="absolute -inset-4 rounded-full bg-blue-500/40 blur-2xl pointer-events-none" />
+                  <div className="halo absolute -inset-1.5 rounded-full pointer-events-none" />
+                  <div className="glogo relative h-full w-full overflow-hidden rounded-full shadow-[0_14px_34px_rgba(37,99,235,.45)] flex items-center justify-center">
+                    <img
+                      src="/Responde_Logo.png"
+                      alt="Talisay MDRRMO Seal"
+                      className="h-full w-full rounded-full object-cover select-none"
+                    />
+                  </div>
+                </div>
+                <h1 className="font-display text-2xl sm:text-3xl font-extrabold text-blue-700 tracking-[0.14em] group-hover:text-blue-600 transition-colors">
+                  RESPONDE
                 </h1>
               </Link>
-              <p className="text-blue-100 text-xs sm:text-sm mt-1 max-w-xs mx-auto">
-                Talisay MDRRMO Command Center Invitation
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-blue-600 mt-1">
+                Talisay MDRRMO Command Center
+              </p>
+              <p className="text-slate-500 text-xs sm:text-sm mt-1 max-w-xs">
+                Personnel Invitation &amp; Registration
               </p>
             </div>
 
@@ -267,7 +269,7 @@ export default function Register() {
               variants={formStaggerVariants}
               initial="hidden"
               animate="visible"
-              className="p-6 sm:p-8"
+              className="p-5 sm:p-7 pt-2 sm:pt-3"
             >
               <AnimatePresence mode="wait">
                 {errorMessage && (
@@ -299,7 +301,7 @@ export default function Register() {
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="e.g. officer@mdrrmo.gov.ph"
                       required
-                      className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-800 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                      className="w-full pl-9 pr-4 py-2 sm:py-2.5 bg-slate-50/80 border border-slate-300 hover:border-slate-400 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-xs sm:text-sm min-h-[38px] sm:min-h-[40px]"
                     />
                   </div>
                 </motion.div>
@@ -317,7 +319,7 @@ export default function Register() {
                       onChange={(e) => setFullName(e.target.value)}
                       placeholder="Juan Dela Cruz"
                       required
-                      className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-800 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                      className="w-full pl-9 pr-4 py-2 sm:py-2.5 bg-slate-50/80 border border-slate-300 hover:border-slate-400 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-xs sm:text-sm min-h-[38px] sm:min-h-[40px]"
                     />
                   </div>
                 </motion.div>
@@ -356,7 +358,7 @@ export default function Register() {
                       placeholder="At least 6 characters"
                       required
                       minLength={6}
-                      className="w-full pl-9 pr-10 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-800 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                      className="w-full pl-9 pr-10 py-2 sm:py-2.5 bg-slate-50/80 border border-slate-300 hover:border-slate-400 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-xs sm:text-sm min-h-[38px] sm:min-h-[40px]"
                     />
                     <motion.button
                       type="button"
@@ -383,7 +385,7 @@ export default function Register() {
                       placeholder="Re-type your password"
                       required
                       minLength={6}
-                      className="w-full pl-9 pr-10 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-800 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                      className="w-full pl-9 pr-10 py-2 sm:py-2.5 bg-slate-50/80 border border-slate-300 hover:border-slate-400 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-xs sm:text-sm min-h-[38px] sm:min-h-[40px]"
                     />
                     <motion.button
                       type="button"
@@ -398,12 +400,10 @@ export default function Register() {
 
                 {/* Submit button */}
                 <motion.div variants={formItemVariants}>
-                  <motion.button
+                  <button
                     type="submit"
                     disabled={isSubmitting}
-                    whileHover={!isSubmitting ? { scale: 1.01 } : undefined}
-                    whileTap={!isSubmitting ? { scale: 0.985 } : undefined}
-                    className="w-full py-3 px-4 mt-3 bg-gradient-to-r from-blue-700 to-blue-900 hover:from-blue-600 hover:to-blue-800 text-white font-semibold rounded-xl shadow-lg shadow-blue-700/20 flex items-center justify-center gap-2 text-xs sm:text-sm transition-all disabled:opacity-50 cursor-pointer"
+                    className="btnfx w-full py-2.5 sm:py-3.5 px-4 mt-3 bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-500 hover:to-blue-700 text-white font-semibold rounded-2xl shadow-lg shadow-blue-900/30 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all disabled:opacity-50 text-xs sm:text-sm min-h-[42px] cursor-pointer flex items-center justify-center gap-2"
                   >
                     {isSubmitting ? (
                       <>
@@ -416,19 +416,24 @@ export default function Register() {
                         <ArrowRight className="w-4 h-4" />
                       </>
                     )}
-                  </motion.button>
+                  </button>
                 </motion.div>
               </form>
 
               {/* Footer */}
               <motion.div
                 variants={formItemVariants}
-                className="mt-4 pt-3 border-t border-slate-100 text-center text-xs text-slate-400"
+                className="mt-3.5 sm:mt-4 pt-2.5 sm:pt-3 border-t border-slate-100 text-center"
               >
-                Already have an account?{' '}
-                <Link to="/login" className="text-blue-600 hover:underline font-medium">
-                  Sign In
-                </Link>
+                <p className="text-xs text-slate-500">
+                  Already have an account?{' '}
+                  <Link to="/login" className="text-blue-600 hover:text-blue-800 hover:underline font-semibold transition-colors">
+                    Sign In
+                  </Link>
+                </p>
+                <p className="text-[10px] sm:text-[11px] text-slate-400 mt-1.5">
+                  Authorized Personnel Only • Talisay, Batangas
+                </p>
               </motion.div>
             </motion.div>
           </motion.div>

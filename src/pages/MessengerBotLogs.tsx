@@ -1,14 +1,335 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { motion, AnimatePresence, type Variants } from "framer-motion";
-import { Filter, AlertCircle, X, CheckCircle2, RefreshCw, MessageSquare, ChevronRight, ChevronLeft, ChevronDown, Bot, RotateCcw } from "lucide-react";
+import {
+  Filter, AlertCircle, X, CheckCircle2, RefreshCw, MessageSquare,
+  ChevronRight, ChevronLeft, Bot, RotateCcw,
+  Layers, AlertTriangle, TriangleAlert, ArrowUp, ArrowDown
+} from "lucide-react";
 import DatePicker from "../components/DatePicker";
 import FilterDropdown from "../components/DropDown";
-import { StaggerContainer, StaggerItem } from "../components/Stagger";
 import PageLoader from "../components/PageLoader";
+import { StaggerContainer, StaggerItem } from "../components/Stagger";
+import { useSearchParams } from "react-router-dom";
 import { useBotConversations, type BotConversation as Conversation } from "../context/BotConversationsContext";
 import { TALISAY_BARANGAYS } from "../data/talisay-barangays";
+import { extractDisplayTime, formatPhilippineTimeOnly, formatPhilippineDateOnly } from "../utils/dateUtils";
+import { BASE_INCIDENT_TYPES, formatReportUrgency } from "../services/incidentService";
+import { useDebounce } from "../hooks/useDebounce";
+import { isIncidentIntent } from "../utils/intentUtils";
 
+// Canonical incident type choices matching Responde Talisay taxonomy
+export const INCIDENT_TYPE_CHOICES = [
+  "General",
+  "Flood",
+  "Volcanic Eruption",
+  "Typhoon",
+  "Landslide",
+  "Fire",
+  "Earthquake",
+] as const;
 
+// -- NLP Analysis for Messenger Conversations --
+export interface ConvoNLPAnalysis {
+  isIncident: boolean;
+  confidence: number;
+  nlpCategory: "Incident" | "Inquiry / Chatter";
+  incidentType: string;
+  urgency: "Critical" | "High" | "Moderate" | "Low";
+  nlpReason: string;
+  actionableNeeds: string[];
+  extractedLocation: string;
+  distressMessageIdx: number;
+  distressMessageIndices: number[];
+}
+
+export type AnalyzedConversation = Conversation & {
+  nlp: ConvoNLPAnalysis;
+};
+
+export const DISTRESS_KEYWORDS = [
+  // Trapped / physical danger / structural damage
+  "trapped", "trap", "na-trapped", "natrap", "na-trap", "naipit", "ipit", "stuck",
+  "bumagsak", "bagsak", "nabagsakan", "guho", "pagguho", "gumuho", "landslide",
+  "natabunan", "tabunan", "tinabunan", "lubog", "lumubog", "palubog", "naanod", "anod",
+  "nasira", "wasak", "bubong",
+
+  // Casualties & Life-threatening states
+  "patay", "mamatay", "mamamatay", "namatay", "dying", "buhay", "delikado", "peligro",
+  "bata", "matanda", "buntis", "sangol", "sanggol", "anak", "lola", "lolo",
+
+  // Medical emergencies & Injuries
+  "sugat", "nasugatan", "duguan", "dugo", "nabalian", "bali", "ambulance", "ambulansya",
+  "hospital", "ospital", "doktor", "first aid", "gamot", "oxygen", "dextrose", "hika",
+
+  // Urgent help, rescue & evacuation
+  "saklolo", "rescue", "ire-rescue", "iligtas", "tulong", "tulungan", "tulung", "tulung po",
+  "emergency", "saklolohan", "sos", "help", "need help", "kailangan ng tulong",
+  "evacuate", "lumikas", "evacuation", "likas", "evacuate now",
+
+  // Disaster types
+  "sunog", "apoy", "nasusunog", "nasunog", "fire",
+  "baha", "binaha", "flood", "tubig baha", "tumaas ang tubig", "inabot ng baha",
+  "lindol", "lumindol", "yanig", "earthquake", "quake",
+  "bulkan", "volcano", "volcanic", "ashfall", "abo", "putok ng bulkan",
+  "bagyo", "hangin", "typhoon", "storm",
+  "critical"
+];
+
+// Multi-word emergency phrases with high distress intent
+const DISTRESS_PHRASES = [
+  "kailangan ng tulong", "need help", "need rescue", "kailangan ng rescue",
+  "evacuate now", "tumaas ang tubig", "inabot ng baha", "inanod ng baha",
+  "putok ng bulkan", "tulung po", "tulong po", "saklolo po", "tulungan nyo kami",
+  "tulungan niyo kami", "tulungan kami", "rescue us", "please help",
+  "hindi makalabas", "di makalabas", "lubog sa baha", "lubog ang bahay",
+  "nasusunog ang", "may sunog", "gumuho ang", "nagcollapse",
+  "na-trap", "na-trapped", "bata pong inanod", "may bata pong", "may namatay"
+];
+
+// Single keywords evaluated with whole-word token boundaries (prevents "simbahan" matching "baha")
+const DISTRESS_SINGLE_WORDS = new Set([
+  // Trapped / danger
+  "trapped", "trap", "natrap", "naipit", "ipit", "stuck",
+  "bumagsak", "bagsak", "nabagsakan", "guho", "pagguho", "gumuho", "landslide",
+  "natabunan", "tabunan", "tinabunan", "lubog", "lumubog", "palubog", "naanod", "inanod", "anod",
+  "nasira", "wasak",
+
+  // Casualties / life threatening
+  "patay", "mamatay", "mamamatay", "namatay", "dying", "delikado", "peligro",
+
+  // Medical / injuries
+  "sugat", "nasugatan", "duguan", "dugo", "nabalian", "ambulance", "ambulansya",
+  "ospital", "hospital", "hika",
+
+  // Help / rescue / evacuation
+  "saklolo", "rescue", "iligtas", "tulong", "tulungan", "tulung",
+  "emergency", "saklolohan", "sos", "evacuate", "lumikas", "evacuation", "likas",
+
+  // Disasters
+  "sunog", "nasusunog", "nasunog",
+  "binaha", "bumaha", "baha",
+  "lindol", "lumindol",
+  "ashfall"
+]);
+
+const ROUTINE_GREETING_RE = /^(magandang\s+(umaga|hapon|gabi|araw)|good\s+(morning|afternoon|evening|day)|hello|hi(\s+po)?|hey|kamusta(\s+po)?)[!.,\s]*$/i;
+const ROUTINE_CONFIRM_RE = /^(tama(\s+po)?|opo|oopo|oo\s+po|yes(\s+po)?|sige(\s+po)?|ok(\s+po)?|okay(\s+po)?|noted(\s+po)?|salamat(\s+po)?|maraming\s+salamat(\s+po)?|thank\s+you(\s+po)?|thanks(\s+po)?|cge(\s+po)?|k(\s+po)?)[!.,\s]*$/i;
+const ROUTINE_PHONE_RE = /^(ang\s+)?(contact\s+number|number|cp|cellphone|telepono)(\s+ko\s+po|\s+ko|\s+po)?(\s+ay)?\s*[:\-\s]?\s*(\+?63|0)?[0-9\s\-]{7,15}[!.,\s]*$/i;
+const ROUTINE_LANDMARK_RE = /^(malapit\s+po\s+ito\s+dito|malapit\s+po\s+sa|malapit\s+sa|dito\s+po\s+sa|dito\s+sa|sa\s+may|sa\s+tapat\s+ng|tapat\s+ng|katabi\s+ng|tabi\s+ng|likod\s+ng|harap\s+ng|landmark\s*[:\-])/i;
+const ROUTINE_INQUIRY_RE = /^(may|meron|ano|saan|paano|kelan|kailan|sino|kamusta|kumusta|bukas|pwede|pede)\b.*\b(po\s+ba|ba\s+po|ba|\?)/i;
+
+const LIFE_SAFETY_CRITICAL = [
+  "rescue", "saklolo", "tulong", "trapped", "trap", "lubog", "inanod", "naanod",
+  "naipit", "nasusunog", "sunog", "apoy", "patay", "mamatay", "mamamatay", "sugat", "dugo",
+  "ambulance", "ambulansya", "emergency", "delikado", "peligro", "gumuho", "guho"
+];
+
+export function checkMessageHasDistress(text?: string): boolean {
+  if (!text || typeof text !== "string") return false;
+  const t = text.trim().toLowerCase();
+  if (!t) return false;
+
+  // 1. Disqualify routine greetings
+  if (ROUTINE_GREETING_RE.test(t)) return false;
+
+  // 2. Disqualify routine confirmations / acknowledgments
+  if (ROUTINE_CONFIRM_RE.test(t)) return false;
+
+  // 3. Disqualify pure contact or phone number replies
+  if (ROUTINE_PHONE_RE.test(t)) return false;
+  const digitsOnly = t.replace(/[^0-9]/g, "");
+  if (
+    digitsOnly.length >= 7 &&
+    t.replace(/[\d\s+\-().,:;]|(contact|number|cp|cellphone|telepono|ang|ko|po|ay)/gi, "").length === 0
+  ) {
+    return false;
+  }
+
+  // Check if message has explicit life-safety distress keywords
+  const hasLifeSafety = LIFE_SAFETY_CRITICAL.some((kw) => {
+    const rx = new RegExp(`\\b${kw}\\b`, "i");
+    return rx.test(t);
+  });
+
+  // 4. Disqualify routine landmark descriptions if no urgent life-safety words
+  if (ROUTINE_LANDMARK_RE.test(t) && !hasLifeSafety) {
+    return false;
+  }
+
+  // 5. Disqualify informational inquiries / questions if no urgent life-safety words
+  if (ROUTINE_INQUIRY_RE.test(t) && !hasLifeSafety) {
+    return false;
+  }
+
+  // 6. Match high-confidence multi-word distress phrases
+  if (DISTRESS_PHRASES.some((phrase) => t.includes(phrase))) {
+    return true;
+  }
+
+  // 7. Token boundary matching for single words (avoids "simbahan" matching "baha")
+  const tokens = t.replace(/[^a-z0-9áéíóúñ\-\s]/g, " ").split(/\s+/).filter(Boolean);
+  for (const token of tokens) {
+    if (DISTRESS_SINGLE_WORDS.has(token)) return true;
+    if (token.startsWith("na-") || token.startsWith("nag-") || token.startsWith("pag-") || token.startsWith("i-") || token.startsWith("ma-")) {
+      const stem = token.replace(/^(na|nag|pag|i|ma|ipag)-/, "");
+      if (DISTRESS_SINGLE_WORDS.has(stem)) return true;
+    }
+    if (token.endsWith("ng") && DISTRESS_SINGLE_WORDS.has(token.slice(0, -2))) return true;
+  }
+
+  return false;
+}
+
+export function analyzeConvoNLP(convo: Conversation): ConvoNLPAnalysis {
+  const userMessages = (convo.messages || []).filter((m) => m.sender === "user");
+  const allUserText = userMessages
+    .map((m) => m.text)
+    .join(" ")
+    .toLowerCase();
+
+  const typeLower = (convo.type || "").toLowerCase().trim();
+  const intentLower = (convo.intent || "").toLowerCase().trim();
+  const urgencyLower = (convo.urgency || "").toLowerCase().trim();
+
+  // Find genuine emergency distress messages
+  const genuineDistressIndices: number[] = [];
+  (convo.messages || []).forEach((m, idx) => {
+    if (m.sender === "user" && checkMessageHasDistress(m.text)) {
+      genuineDistressIndices.push(idx);
+    }
+  });
+  const hasAnyDistressMessage = genuineDistressIndices.length > 0;
+
+  const isExplicitNoiseIntent =
+    intentLower === "casual or greeting" ||
+    intentLower === "status inquiry" ||
+    intentLower === "feedback or thanks" ||
+    intentLower === "other" ||
+    intentLower === "inquiry" ||
+    intentLower === "chatter";
+
+  const isExplicitIncidentIntent =
+    intentLower.includes("emergency") ||
+    intentLower.includes("incident") ||
+    intentLower.includes("resource") ||
+    intentLower.includes("distress") ||
+    isIncidentIntent(convo.intent);
+
+  const isExplicitIncidentType =
+    typeLower !== "" &&
+    typeLower !== "none" &&
+    typeLower !== "general" &&
+    typeLower !== "all types" &&
+    typeLower !== "unclassified" &&
+    typeLower !== "unknown" &&
+    typeLower !== "n/a";
+
+  const isIncident =
+    (hasAnyDistressMessage || isExplicitIncidentIntent || (isExplicitIncidentType && !isExplicitNoiseIntent)) &&
+    !(isExplicitNoiseIntent && !hasAnyDistressMessage);
+
+  // Strictly populate distressMessageIndices ONLY for confirmed incidents
+  const distressMessageIndices: number[] = isIncident ? genuineDistressIndices : [];
+  const distressMessageIdx = distressMessageIndices.length > 0 ? distressMessageIndices[0] : -1;
+
+  const criticalKeywords = [
+    "critical", "trapped", "dying", "saklolo", "buhay", "delikado",
+    "lubog", "nasusunog", "evacuate now", "bumagsak", "natabunan", "patay", "mamatay", "mamamatay",
+    "guho", "pagguho", "naipit", "naanod", "nabalian"
+  ];
+  const highKeywords = [
+    "saklolo", "rescue", "nasira", "bubong", "ambulance", "sugat",
+    "emergency", "pagguho", "landslide", "tulong", "naipit", "naanod", "nabalian", "sunog", "apoy",
+    "trapped", "bumagsak", "natabunan", "patay", "mamatay"
+  ];
+  const moderateKeywords = [
+    "tubig", "supply", "puno", "kalsada", "daan", "poste", "interruption",
+    "first aid", "gamot", "food", "pagkain", "evacuate", "lumikas"
+  ];
+
+  const hasCritical =
+    urgencyLower.includes("critical") ||
+    (hasAnyDistressMessage && criticalKeywords.some((k) => allUserText.includes(k)));
+  const hasHigh =
+    urgencyLower.includes("high") ||
+    (hasAnyDistressMessage && highKeywords.some((k) => allUserText.includes(k)));
+  const hasModerate =
+    urgencyLower.includes("moderate") ||
+    urgencyLower.includes("mod") ||
+    (hasAnyDistressMessage && moderateKeywords.some((k) => allUserText.includes(k)));
+
+  const actionableNeeds: string[] = [];
+  if (isIncident) {
+    if (allUserText.includes("ambulance") || allUserText.includes("sugat") || allUserText.includes("dugo")) actionableNeeds.push("Ambulance & Paramedics");
+    if (allUserText.includes("first aid") || allUserText.includes("gamot")) actionableNeeds.push("First Aid Supplies");
+    if (allUserText.includes("rescue") || allUserText.includes("boat") || allUserText.includes("anod") || allUserText.includes("lubog")) actionableNeeds.push("Rescue Boat Unit");
+    if (allUserText.includes("bubong") || allUserText.includes("wasak")) actionableNeeds.push("Shelter Repair Kit");
+    if (allUserText.includes("puno") || allUserText.includes("kalsada") || allUserText.includes("daan")) actionableNeeds.push("Road Clearing Crew");
+    if (allUserText.includes("tubig") || allUserText.includes("inumin")) actionableNeeds.push("Potable Drinking Water");
+    if (allUserText.includes("pagguho") || allUserText.includes("landslide") || allUserText.includes("guho")) actionableNeeds.push("Evacuation Assistance");
+    if (actionableNeeds.length === 0 && (hasHigh || hasModerate || hasCritical)) {
+      actionableNeeds.push("On-Site Verification");
+    }
+  }
+
+  let incidentType = "Unknown";
+  if (!isIncident) {
+    incidentType = "Unknown";
+  } else if (isExplicitIncidentType) {
+    const matched = INCIDENT_TYPE_CHOICES.find((c) => c.toLowerCase() === convo.type.toLowerCase());
+    incidentType = matched || convo.type;
+  } else if (allUserText.includes("bulkan") || allUserText.includes("volcan") || allUserText.includes("ash") || allUserText.includes("abo") || typeLower.includes("volcan")) {
+    incidentType = "Volcanic Eruption";
+  } else if (allUserText.includes("baha") || allUserText.includes("flood") || allUserText.includes("lubog") || allUserText.includes("anod") || typeLower.includes("flood")) {
+    incidentType = "Flood";
+  } else if (allUserText.includes("bagyo") || allUserText.includes("typhoon") || allUserText.includes("hangin") || typeLower.includes("typhoon")) {
+    incidentType = "Typhoon";
+  } else if (allUserText.includes("landslide") || allUserText.includes("pagguho") || allUserText.includes("guho") || typeLower.includes("landslide")) {
+    incidentType = "Landslide";
+  } else if (allUserText.includes("sunog") || allUserText.includes("apoy") || allUserText.includes("fire") || typeLower.includes("fire")) {
+    incidentType = "Fire";
+  } else if (allUserText.includes("lindol") || allUserText.includes("earthquake") || allUserText.includes("yanig") || typeLower.includes("earthquake") || typeLower.includes("quake")) {
+    incidentType = "Earthquake";
+  } else {
+    incidentType = "General";
+  }
+
+  const urgency: "Critical" | "High" | "Moderate" | "Low" = !isIncident
+    ? "Low"
+    : hasCritical
+      ? "Critical"
+      : convo.urgency && convo.urgency.toLowerCase() !== "low"
+        ? (formatReportUrgency(convo.urgency) as "Critical" | "High" | "Moderate" | "Low")
+        : hasHigh
+          ? "High"
+          : hasModerate
+            ? "Moderate"
+            : "Low";
+
+  const confidence = isIncident ? (hasCritical ? 98 : hasHigh ? 96 : 89) : 15;
+
+  let nlpReason = "";
+  if (isIncident) {
+    nlpReason = hasHigh || hasCritical
+      ? "Distress intent detected: critical emergency event requiring immediate dispatch of rescue or medical responders."
+      : "Community hazard or relief request detected requiring municipal response.";
+  } else {
+    nlpReason = "Routine informational inquiry / FAQ chat exchange without actionable emergency incident.";
+  }
+
+  return {
+    isIncident,
+    confidence,
+    nlpCategory: isIncident ? "Incident" : "Inquiry / Chatter",
+    incidentType,
+    urgency,
+    nlpReason,
+    actionableNeeds,
+    extractedLocation: convo.barangay || "Talisay",
+    distressMessageIdx,
+    distressMessageIndices,
+  };
+}
 
 // -- Helpers for Avatar and Message Previews --
 const AVATAR_PALETTE = [
@@ -62,13 +383,57 @@ function getLastMessage(convo: Conversation): string {
   return userMsg ? userMsg.text : convo.messages[convo.messages.length - 1].text;
 }
 
-function formatDisplayTime(timeStr: string): string {
-  if (!timeStr) return "";
-  if (timeStr.includes(" ")) {
-    const parts = timeStr.split(" ");
-    return parts[parts.length - 1];
+function getConvoTimeAndDate(timeStr?: string, createdAt?: string): { timeText: string; dateText: string } {
+  const source = createdAt || timeStr;
+  if (!source) return { timeText: '', dateText: '' };
+
+  const d = new Date(source);
+  if (!isNaN(d.getTime())) {
+    return {
+      timeText: formatPhilippineTimeOnly(d),
+      dateText: formatPhilippineDateOnly(d),
+    };
   }
-  return timeStr;
+
+  const m = source.match(/^(\d{1,2})\/(\d{1,2})\s+(.+)$/);
+  if (m) {
+    const year = new Date().getFullYear();
+    const parsed = new Date(year, parseInt(m[1], 10) - 1, parseInt(m[2], 10));
+    const dateFormatted = !isNaN(parsed.getTime()) ? formatPhilippineDateOnly(parsed) : `${m[1]}/${m[2]}`;
+    return {
+      timeText: m[3].trim(),
+      dateText: dateFormatted,
+    };
+  }
+
+  const timeMatch = source.match(/(\d{1,2}:\d{2}(?::\d{2})?\s*[AP]M)$/i);
+  if (timeMatch) {
+    const timeText = timeMatch[1];
+    const datePart = source.replace(timeText, '').trim();
+    return {
+      timeText,
+      dateText: datePart || formatPhilippineDateOnly(new Date()),
+    };
+  }
+
+  return { timeText: source, dateText: '' };
+}
+
+
+function formatMsgTime(timestamp?: string, convoTime?: string): string {
+  if (timestamp) {
+    const formatted = formatPhilippineTimeOnly(timestamp);
+    if (formatted) return formatted;
+    const extracted = extractDisplayTime(timestamp);
+    if (extracted) return extracted;
+  }
+  if (convoTime) {
+    const extracted = extractDisplayTime(convoTime);
+    if (extracted) return extracted;
+    const formatted = formatPhilippineTimeOnly(convoTime);
+    if (formatted) return formatted;
+  }
+  return '3:07 AM';
 }
 
 // -- Toast Type --
@@ -82,21 +447,16 @@ interface Toast {
 const APPLE_SPRING = { type: "spring", stiffness: 400, damping: 32 } as const;
 
 const contentVariants: Variants = {
-  hidden: { opacity: 0, x: 12, scale: 0.99 },
+  hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    x: 0,
-    scale: 1,
-    transition: APPLE_SPRING,
+    transition: { duration: 0.15, ease: "easeOut" },
   },
   exit: {
     opacity: 0,
-    x: -8,
-    scale: 0.99,
-    transition: { duration: 0.15, ease: "easeOut" },
+    transition: { duration: 0.1, ease: "easeIn" },
   },
 };
-
 
 // -- Apple Notification Toast Component --
 function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: number) => void }) {
@@ -108,22 +468,22 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: number)
   const icon = toast.type === "success"
     ? <CheckCircle2 className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />
     : toast.type === "error"
-      ? <AlertCircle className="w-4 h-4 text-red-500 dark:text-red-400" />
-      : <RefreshCw className="w-4 h-4 text-[#0071E3] dark:text-blue-400" />;
+      ? <AlertCircle className="w-4 h-4 text-rose-500 dark:text-rose-400" />
+      : <RefreshCw className="w-4 h-4 text-[#0071E3] dark:text-sky-400" strokeWidth={1.75} />;
 
   const badgeBg = toast.type === "success"
-    ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 border border-emerald-500/20"
+    ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
     : toast.type === "error"
-      ? "bg-red-50 dark:bg-red-950/40 text-red-600 border border-red-500/20"
-      : "bg-blue-50 dark:bg-blue-950/40 text-[#0071E3] border border-blue-500/20";
+      ? "bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20"
+      : "bg-blue-500/10 text-[#0071E3] dark:text-sky-400 border border-blue-500/20";
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: -20, scale: 0.94 }}
+      initial={{ opacity: 0, y: -16, scale: 0.95 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: -16, scale: 0.94 }}
-      transition={{ type: "spring", stiffness: 420, damping: 30 }}
-      className="flex items-center gap-3 px-4 py-3 rounded-2xl backdrop-blur-2xl bg-white/90 dark:bg-[#1C2433]/90 border border-slate-200/80 dark:border-white/10 shadow-[0_12px_40px_rgba(0,0,0,0.12)] border-t border-t-white/80 dark:border-t-white/20 min-w-[300px] max-w-[400px]"
+      exit={{ opacity: 0, y: -10, scale: 0.95 }}
+      transition={APPLE_SPRING}
+      className="flex items-center gap-3 px-4 py-3 rounded-2xl backdrop-blur-2xl bg-white/95 dark:bg-[#111827]/95 border border-slate-200/80 dark:border-white/10 shadow-[0_12px_40px_rgba(0,0,0,0.12)] min-w-[260px] sm:min-w-[300px] max-w-[calc(100vw-2rem)]"
     >
       <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${badgeBg}`}>
         {icon}
@@ -133,7 +493,7 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: number)
       </span>
       <button
         onClick={() => onDismiss(toast.id)}
-        className="w-6 h-6 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-[0.92] transition-all"
+        className="relative w-6 h-6 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-[0.92] transition-all cursor-pointer after:absolute after:-inset-2.5 after:content-['']"
       >
         <X className="w-3.5 h-3.5" />
       </button>
@@ -147,24 +507,151 @@ export default function MessengerBotLogs() {
     updateConversationStatus: setContextStatus,
     loading,
     error,
+    refetchConversations,
   } = useBotConversations();
 
-  const [selectedId, setSelectedId] = useState<string>("conv_1");
+  // Structured (NLP Incident Reports only) vs Unstructured (Raw Chat Logs)
+  const [viewMode, setViewMode] = useState<"structured" | "unstructured">(() => {
+    try {
+      return (localStorage.getItem("responde_messenger_view_mode") as any) || "structured";
+    } catch {
+      return "structured";
+    }
+  });
+
+  const handleViewModeChange = (mode: "structured" | "unstructured") => {
+    setViewMode(mode);
+    try {
+      localStorage.setItem("responde_messenger_view_mode", mode);
+    } catch { }
+  };
+
+  const [selectedId, setSelectedId] = useState<string>("");
   const [mobileView, setMobileView] = useState<'list' | 'chat'>('list');
-  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [filterBarangay, setFilterBarangay] = useState("All Barangays");
   const [filterType, setFilterType] = useState("All Types");
+  const [filterUrgency, setFilterUrgency] = useState("All Urgency");
   const [filterStatus, setFilterStatus] = useState("All Status");
-  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Keep first conversation selected once loaded
+  // Pagination state (20 conversations per page)
+  const PAGE_SIZE = 20;
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // 300ms debounce on filter inputs to eliminate rapid filter stutter
+  const debouncedBarangay = useDebounce(filterBarangay, 300);
+  const debouncedType = useDebounce(filterType, 300);
+  const debouncedUrgency = useDebounce(filterUrgency, 300);
+  const debouncedStatus = useDebounce(filterStatus, 300);
+  const debouncedFromDate = useDebounce(fromDate, 300);
+  const debouncedToDate = useDebounce(toDate, 300);
+
+  // Reset to first page when any debounced filter changes
   useEffect(() => {
-    if (conversations.length > 0 && !selectedId) {
-      setSelectedId(conversations[0].id);
+    setCurrentPage(1);
+  }, [debouncedBarangay, debouncedType, debouncedUrgency, debouncedStatus, debouncedFromDate, debouncedToDate, viewMode]);
+  const chatScrollRef = useRef<HTMLDivElement>(null);
+  const [highlightedDistressIdx, setHighlightedDistressIdx] = useState<number | null>(null);
+  const preferredDirectionRef = useRef<'up' | 'down'>('up');
+  const [distressNav, setDistressNav] = useState<{
+    show: boolean;
+    direction: 'up' | 'down';
+    targetIdx: number;
+    total: number;
+    currentNumber: number;
+    hasAbove: boolean;
+    hasBelow: boolean;
+    prevTargetIdx: number;
+    nextTargetIdx: number;
+    firstDistressIdx: number;
+    canScrollUp: boolean;
+  }>({
+    show: false,
+    direction: 'up',
+    targetIdx: -1,
+    total: 0,
+    currentNumber: 0,
+    hasAbove: false,
+    hasBelow: false,
+    prevTargetIdx: -1,
+    nextTargetIdx: -1,
+    firstDistressIdx: -1,
+    canScrollUp: false,
+  });
+
+  // Track seen conversations (persisted in localStorage)
+  const [seenConvoIds, setSeenConvoIds] = useState<Set<string>>(() => {
+    try {
+      const raw = localStorage.getItem('responde_seen_messenger_convos');
+      return raw ? new Set(JSON.parse(raw)) : new Set<string>();
+    } catch {
+      return new Set<string>();
     }
-  }, [conversations, selectedId]);
+  });
+
+  const markConvoSeen = (id: string) => {
+    if (!id) return;
+    setSeenConvoIds((prev) => {
+      if (prev.has(id)) return prev;
+      const next = new Set(prev);
+      next.add(id);
+      try {
+        localStorage.setItem('responde_seen_messenger_convos', JSON.stringify(Array.from(next)));
+      } catch { }
+      return next;
+    });
+  };
+
+  const markAllSeen = () => {
+    const allIds = new Set(conversations.map((c) => c.id));
+    setSeenConvoIds(allIds);
+    try {
+      localStorage.setItem('responde_seen_messenger_convos', JSON.stringify(Array.from(allIds)));
+    } catch { }
+  };
+
+  // Attach NLP analysis to conversations
+  const analyzedConversations: AnalyzedConversation[] = useMemo(() => {
+    return conversations.map((c) => {
+      const baseNLP = analyzeConvoNLP(c);
+      return {
+        ...c,
+        nlp: baseNLP,
+      };
+    });
+  }, [conversations]);
+
+  const incidentCount = useMemo(() => analyzedConversations.filter(c => c.hasEmergencyReport).length, [analyzedConversations]);
+  const rawCount = useMemo(() => analyzedConversations.filter(c => !c.hasEmergencyReport).length, [analyzedConversations]);
+
+  const unseenCount = useMemo(() => {
+    return analyzedConversations.filter((c) => {
+      if (viewMode === "structured" && !c.hasEmergencyReport) return false;
+      return !seenConvoIds.has(c.id);
+    }).length;
+  }, [analyzedConversations, viewMode, seenConvoIds]);
+
+  const handleSelectConversation = (id: string) => {
+    setSelectedId(id);
+    markConvoSeen(id);
+    setMobileView('chat');
+  };
+
+  const handleCloseConversation = useCallback(() => {
+    setSelectedId("");
+    setMobileView('list');
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && selectedId) {
+        handleCloseConversation();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedId, handleCloseConversation]);
 
   // -- Toast State --
   const [toasts, setToasts] = useState<Toast[]>([]);
@@ -190,14 +677,10 @@ export default function MessengerBotLogs() {
     }
   };
 
-  const handleSelectConversation = (id: string) => {
-    setSelectedId(id);
-    setMobileView('chat');
-  };
-
   const activeFilterCount =
     (filterBarangay !== "All Barangays" ? 1 : 0) +
     (filterType !== "All Types" ? 1 : 0) +
+    (filterUrgency !== "All Urgency" ? 1 : 0) +
     (filterStatus !== "All Status" ? 1 : 0) +
     (fromDate ? 1 : 0) +
     (toDate ? 1 : 0);
@@ -205,22 +688,31 @@ export default function MessengerBotLogs() {
   const hasActiveFilters = activeFilterCount > 0;
 
   const availableBarangays = useMemo(() => {
-    const fromConversations = conversations.map((c) => c.barangay).filter(Boolean);
-    return Array.from(new Set([...TALISAY_BARANGAYS, ...fromConversations])).sort();
+    const fromConversations = conversations
+      .map((c) => c.barangay)
+      .filter((b): b is string => Boolean(b && !['all barangays', 'none', 'unknown', 'general', 'unspecified', 'n/a', 'null'].includes(b.toLowerCase().trim())));
+    const sorted = Array.from(new Set([...TALISAY_BARANGAYS, ...fromConversations])).sort();
+    return ["All Barangays", "None", ...sorted];
   }, [conversations]);
 
   const availableTypes = useMemo(() => {
-    const list = Array.from(new Set(conversations.map((c) => c.type).filter(Boolean))).sort();
-    return list.length > 0 ? list : ["Medical", "Search & Rescue", "Food & Water", "Infrastructure"];
-  }, [conversations]);
+    const fromConversations = conversations.map((c) => c.type).filter(Boolean);
+    const fromNLP = analyzedConversations.map((c) => c.nlp?.incidentType).filter(Boolean);
+    const sorted = Array.from(new Set([...BASE_INCIDENT_TYPES, ...fromConversations, ...fromNLP]))
+      .filter((t): t is string => Boolean(t && t.toLowerCase() !== 'all types' && t.toLowerCase() !== 'unclassified' && t.toLowerCase() !== 'none' && t.toLowerCase() !== 'unknown'))
+      .sort();
+    return ["All Types", "None", ...sorted];
+  }, [conversations, analyzedConversations]);
 
   const resetFilters = () => {
     setFilterBarangay("All Barangays");
     setFilterType("All Types");
+    setFilterUrgency("All Urgency");
     setFilterStatus("All Status");
     setFromDate("");
     setToDate("");
     setSelectedId("");
+    setCurrentPage(1);
   };
 
   const getConvoDateString = (c: Conversation): string | null => {
@@ -228,7 +720,7 @@ export default function MessengerBotLogs() {
       try {
         const d = new Date(c.createdAt);
         if (!isNaN(d.getTime())) return d.toISOString().split('T')[0];
-      } catch {}
+      } catch { }
     }
     if (c.messages && c.messages.length > 0) {
       for (let i = c.messages.length - 1; i >= 0; i--) {
@@ -237,7 +729,7 @@ export default function MessengerBotLogs() {
           try {
             const d = new Date(ts);
             if (!isNaN(d.getTime())) return d.toISOString().split('T')[0];
-          } catch {}
+          } catch { }
         }
       }
     }
@@ -258,47 +750,118 @@ export default function MessengerBotLogs() {
   };
 
   const filteredConversations = useMemo(() => {
-    return conversations.filter((c) => {
-      if (filterBarangay !== "All Barangays" && c.barangay?.toLowerCase() !== filterBarangay.toLowerCase()) {
+    const normFilterBarangay = debouncedBarangay.toLowerCase().trim();
+    const normFilterType = debouncedType.toLowerCase().trim();
+    const isFilteringNoneBarangay = normFilterBarangay === "none" || normFilterBarangay === "unknown";
+    const isFilteringNoneType = normFilterType === "none" || normFilterType === "unknown";
+    const isFilteringNone = isFilteringNoneBarangay || isFilteringNoneType;
+
+    return analyzedConversations.filter((c) => {
+      // In structured mode, only show incidents unless actively filtering for unclassified/Unknown
+      if (viewMode === "structured" && !isFilteringNone && !c.hasEmergencyReport) return false;
+      if (viewMode === "unstructured" && c.hasEmergencyReport) return false;
+
+      // 1. Barangay filter
+      if (debouncedBarangay !== "All Barangays") {
+        const cBarangay = (c.barangay || "").toLowerCase().trim();
+        const isNoneBarangay = !cBarangay || cBarangay === "none" || cBarangay === "unknown" || cBarangay === "unspecified" || cBarangay === "n/a" || cBarangay === "null" || cBarangay === "general";
+        if (isFilteringNoneBarangay) {
+          if (!isNoneBarangay) return false;
+        } else if (cBarangay !== normFilterBarangay) {
+          return false;
+        }
+      }
+
+      // 2. Type filter
+      if (debouncedType !== "All Types") {
+        const cType = (c.type || "").toLowerCase().trim();
+        const nlpType = (c.nlp?.incidentType || "").toLowerCase().trim();
+        const resolvedType = (cType && cType !== "none" && cType !== "unclassified" && cType !== "null" && cType !== "unknown")
+          ? cType
+          : (nlpType && nlpType !== "none" && nlpType !== "unclassified" && nlpType !== "null" && nlpType !== "unknown" ? nlpType : "unknown");
+
+        const isNoneType = resolvedType === "unknown";
+
+        if (isFilteringNoneType) {
+          if (!isNoneType) return false;
+        } else {
+          if (isNoneType) return false;
+          if (resolvedType !== normFilterType && cType !== normFilterType && nlpType !== normFilterType) {
+            return false;
+          }
+        }
+      }
+
+      // 3. Urgency filter
+      if (debouncedUrgency !== "All Urgency") {
+        const u = (c.nlp?.urgency || c.urgency || "").toLowerCase();
+        const du = debouncedUrgency.toLowerCase();
+        if (du === "critical" && u !== "critical") return false;
+        if (du === "high" && u !== "high") return false;
+        if (du === "moderate" && u !== "moderate" && u !== "mod" && u !== "medium") return false;
+        if (du === "low" && u !== "low") return false;
+      }
+
+      // 4. Status filter
+      if (debouncedStatus !== "All Status" && c.status?.toLowerCase() !== debouncedStatus.toLowerCase()) {
         return false;
       }
-      if (filterType !== "All Types" && c.type?.toLowerCase() !== filterType.toLowerCase()) {
-        return false;
-      }
-      if (filterStatus !== "All Status" && c.status?.toLowerCase() !== filterStatus.toLowerCase()) {
-        return false;
-      }
-      if (fromDate) {
+
+      // 5. Date filter
+      if (debouncedFromDate) {
         const dStr = getConvoDateString(c);
-        if (dStr && dStr < fromDate) return false;
+        if (dStr && dStr < debouncedFromDate) return false;
       }
-      if (toDate) {
+      if (debouncedToDate) {
         const dStr = getConvoDateString(c);
-        if (dStr && dStr > toDate) return false;
+        if (dStr && dStr > debouncedToDate) return false;
       }
       return true;
     });
-  }, [conversations, filterBarangay, filterType, filterStatus, fromDate, toDate]);
+  }, [analyzedConversations, viewMode, debouncedBarangay, debouncedType, debouncedUrgency, debouncedStatus, debouncedFromDate, debouncedToDate]);
 
-  const selectedConversation =
-    filteredConversations.find((c) => c.id === selectedId) || filteredConversations[0] || null;
+  const totalPages = Math.max(1, Math.ceil(filteredConversations.length / PAGE_SIZE));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
 
-  // Sync selectedId with first filtered item when active filter excludes previous selection
+  const paginatedConversations = useMemo(() => {
+    const start = (safeCurrentPage - 1) * PAGE_SIZE;
+    return filteredConversations.slice(start, start + PAGE_SIZE);
+  }, [filteredConversations, safeCurrentPage]);
+
+  // (stale pages are prevented by safeCurrentPage above)
+
+  const selectedConversation = selectedId
+    ? filteredConversations.find((c) => c.id === selectedId) || null
+    : null;
+
+  // Deep-link ?focus= (e.g. from GlobalSearch): select the conversation once loaded
+  const [searchParams, setSearchParams] = useSearchParams();
   useEffect(() => {
-    if (filteredConversations.length > 0) {
+    const focusId = searchParams.get('focus');
+    if (!focusId) return undefined;
+    const timer = setTimeout(() => {
+      const target = conversations.find((c) => c.id === focusId);
+      if (!target) return; // keep param; retry when conversations arrive
+      setSearchParams({}, { replace: true });
+      handleSelectConversation(target.id);
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [searchParams, conversations, setSearchParams]);
+
+  // Sync selectedId when active filter excludes previous selection
+  useEffect(() => {
+    if (selectedId && filteredConversations.length > 0) {
       const exists = filteredConversations.some((c) => c.id === selectedId);
       if (!exists) {
-        setSelectedId(filteredConversations[0].id);
+        setSelectedId("");
       }
-    } else {
-      setSelectedId("");
     }
   }, [filteredConversations, selectedId]);
 
-  // Auto-scroll chat to bottom when conversation or message count changes
+  // Auto-scroll chat to bottom strictly within the message panel (never scroll parent containers)
   useEffect(() => {
-    if (selectedConversation) {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (chatScrollRef.current) {
+      chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
     }
   }, [selectedConversation?.id, selectedConversation?.messages?.length]);
 
@@ -314,8 +877,338 @@ export default function MessengerBotLogs() {
     ? getInitials(selectedConversation.name)
     : "U";
 
+  // Semantic Urgency Badge (Matches Scraper styling)
+  const renderUrgencyBadge = (urgency?: string) => {
+    switch ((urgency || "").toLowerCase()) {
+      case "critical":
+        return (
+          <span className="inline-flex items-center justify-center gap-1.5 w-[84px] py-0.5 rounded-full text-xs font-semibold bg-purple-500/15 text-purple-700 dark:text-purple-300 border border-purple-500/30 tabular-nums">
+            <span className="w-1.5 h-1.5 rounded-full bg-purple-600 shrink-0" />
+            <span>Critical</span>
+          </span>
+        );
+      case "high":
+        return (
+          <span className="inline-flex items-center justify-center gap-1.5 w-[84px] py-0.5 rounded-full text-xs font-semibold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 tabular-nums">
+            <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
+            <span>High</span>
+          </span>
+        );
+      case "moderate":
+        return (
+          <span className="inline-flex items-center justify-center gap-1.5 w-[84px] py-0.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 tabular-nums">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+            <span>Moderate</span>
+          </span>
+        );
+      case "low":
+        return (
+          <span className="inline-flex items-center justify-center gap-1.5 w-[84px] py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 tabular-nums">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+            <span>Low</span>
+          </span>
+        );
+      default:
+        return null;
+    }
+  };
+
+  // Skeleton — shown only on initial cold load before any conversations exist
+  if (loading && conversations.length === 0) {
+    return <PageLoader variant="messenger" />;
+  }
+
+  // Error state only if zero conversations exist to show
+  if (!loading && error && conversations.length === 0) {
+    return (
+      <div className="messenger-soft flex flex-col flex-1 w-full lg:h-full lg:min-h-0 space-y-3 sm:space-y-3.5 relative">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-blue-500/10 dark:bg-blue-500/20 text-[#0071E3] dark:text-sky-400 flex items-center justify-center shrink-0 border border-blue-500/20 shadow-xs">
+              <MessageSquare className="w-5 h-5 sm:w-5.5 sm:h-5.5" strokeWidth={1.75} />
+            </div>
+            <div>
+              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+                Messenger Bot Logs
+              </h1>
+              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+                Resident intake chat logs, automated triage dialogues, and emergency extraction timeline
+              </p>
+            </div>
+          </div>
+        </div>
+        <div className="flex-1 flex items-center justify-center p-4">
+          <div className="flex flex-col items-center gap-3 text-rose-600 dark:text-rose-400 bg-rose-500/[0.06] dark:bg-rose-500/[0.10] border border-rose-500/20 rounded-2xl p-6 sm:p-8 max-w-md text-center shadow-sm">
+            <div className="w-11 h-11 rounded-2xl bg-rose-500/10 flex items-center justify-center text-rose-600 dark:text-rose-400 border border-rose-500/20">
+              <AlertCircle className="w-5 h-5" strokeWidth={1.75} />
+            </div>
+            <p className="font-semibold text-sm text-slate-900 dark:text-slate-100">Failed to load conversations</p>
+            <p className="text-xs text-rose-500 dark:text-rose-400 font-mono">{error}</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Please check your network connection or try refreshing the page.
+            </p>
+            <button
+              type="button"
+              onClick={() => refetchConversations && refetchConversations()}
+              className="mt-2 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white active:scale-95 transition-all cursor-pointer shadow-xs"
+            >
+              <RefreshCw className="w-3.5 h-3.5" strokeWidth={1.75} />
+              <span>Retry Now</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+
+  const updateDistressNav = useCallback(() => {
+    const container = chatScrollRef.current;
+    if (!container || !selectedConversation?.nlp?.isIncident) {
+      setDistressNav((prev) => (prev.show ? { ...prev, show: false } : prev));
+      return;
+    }
+
+    const indices = selectedConversation.nlp.distressMessageIndices || [];
+    if (indices.length === 0) {
+      setDistressNav((prev) => (prev.show ? { ...prev, show: false } : prev));
+      return;
+    }
+
+    const containerRect = container.getBoundingClientRect();
+    const containerCenter = (containerRect.top + containerRect.bottom) / 2;
+
+    const elements = indices
+      .map((idx, order) => {
+        const el = container.querySelector<HTMLElement>(`[data-distress-idx="${idx}"]`);
+        if (!el) return null;
+        const elRect = el.getBoundingClientRect();
+        const elCenter = (elRect.top + elRect.bottom) / 2;
+        const offsetFromCenter = elCenter - containerCenter;
+
+        const isAbove = elRect.bottom < containerRect.top + 36;
+        const isBelow = elRect.top > containerRect.bottom - 36;
+        const isVisible = !isAbove && !isBelow;
+        const isCentered = isVisible && Math.abs(offsetFromCenter) < 130;
+
+        return {
+          idx,
+          order: order + 1,
+          offsetFromCenter,
+          isAbove,
+          isBelow,
+          isVisible,
+          isCentered,
+        };
+      })
+      .filter(Boolean) as Array<{
+        idx: number;
+        order: number;
+        offsetFromCenter: number;
+        isAbove: boolean;
+        isBelow: boolean;
+        isVisible: boolean;
+        isCentered: boolean;
+      }>;
+
+    if (elements.length === 0) {
+      setDistressNav((prev) => (prev.show ? { ...prev, show: false } : prev));
+      return;
+    }
+
+    const visibleElements = elements.filter((e) => e.isVisible);
+    const currentDistress = visibleElements.sort(
+      (a, b) => Math.abs(a.offsetFromCenter) - Math.abs(b.offsetFromCenter)
+    )[0];
+
+    const itemsAbove = elements.filter((e) => e.isAbove);
+    const itemsBelow = elements.filter((e) => e.isBelow);
+
+    const nearestAbove = itemsAbove.length > 0 ? itemsAbove[itemsAbove.length - 1] : null;
+    const nearestBelow = itemsBelow.length > 0 ? itemsBelow[0] : null;
+
+    let targetIdx = -1;
+    let direction: 'up' | 'down' = 'up';
+    let currentNumber = 1;
+
+    if (currentDistress) {
+      currentNumber = currentDistress.order;
+      const currIndexInList = elements.findIndex((e) => e.idx === currentDistress.idx);
+      const prevInList = currIndexInList > 0 ? elements[currIndexInList - 1] : null;
+      const nextInList = currIndexInList < elements.length - 1 ? elements[currIndexInList + 1] : null;
+
+      if (preferredDirectionRef.current === 'down' && nextInList) {
+        direction = 'down';
+        targetIdx = nextInList.idx;
+      } else if (prevInList) {
+        direction = 'up';
+        targetIdx = prevInList.idx;
+      } else if (nextInList) {
+        direction = 'down';
+        targetIdx = nextInList.idx;
+      } else {
+        targetIdx = currentDistress.idx;
+      }
+    } else {
+      if (itemsAbove.length > 0) {
+        direction = 'up';
+        targetIdx = nearestAbove!.idx;
+        currentNumber = nearestAbove!.order;
+      } else if (itemsBelow.length > 0) {
+        direction = 'down';
+        targetIdx = nearestBelow!.idx;
+        currentNumber = nearestBelow!.order;
+      }
+    }
+
+    const currentOrder = currentDistress
+      ? currentDistress.order
+      : direction === 'up'
+        ? nearestAbove
+          ? nearestAbove.order + 1
+          : 1
+        : nearestBelow
+          ? nearestBelow.order - 1
+          : 1;
+
+    const hasAbove = elements.some((e) => e.order < currentOrder || e.isAbove);
+    const hasBelow = elements.some((e) => e.order > currentOrder || e.isBelow);
+
+    const prevTarget = nearestAbove
+      ? nearestAbove.idx
+      : currentDistress && elements.findIndex((e) => e.idx === currentDistress.idx) > 0
+        ? elements[elements.findIndex((e) => e.idx === currentDistress.idx) - 1].idx
+        : -1;
+
+    const nextTarget = nearestBelow
+      ? nearestBelow.idx
+      : currentDistress && elements.findIndex((e) => e.idx === currentDistress.idx) < elements.length - 1
+        ? elements[elements.findIndex((e) => e.idx === currentDistress.idx) + 1].idx
+        : -1;
+
+    const canScrollUp = (container.scrollTop > 15) || hasAbove;
+    const firstDistressIdx = indices.length > 0 ? indices[0] : -1;
+
+    setDistressNav({
+      show: true,
+      direction,
+      targetIdx,
+      total: indices.length,
+      currentNumber: Math.min(Math.max(1, currentNumber), indices.length),
+      hasAbove,
+      hasBelow,
+      prevTargetIdx: prevTarget,
+      nextTargetIdx: nextTarget,
+      firstDistressIdx,
+      canScrollUp,
+    });
+  }, [selectedConversation]);
+
+  // Re-check distress positions when selected conversation changes or on resize
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      updateDistressNav();
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [selectedConversation?.id, updateDistressNav]);
+
+  const jumpToMessageIndex = useCallback(
+    (targetIdx: number) => {
+      const container = chatScrollRef.current;
+      if (!container || targetIdx === -1) return;
+      const targetEl = container.querySelector<HTMLElement>(`[data-distress-idx="${targetIdx}"]`);
+      if (targetEl) {
+        targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setHighlightedDistressIdx(targetIdx);
+        setTimeout(() => {
+          setHighlightedDistressIdx((prev) => (prev === targetIdx ? null : prev));
+        }, 2500);
+        setTimeout(() => {
+          updateDistressNav();
+        }, 200);
+        setTimeout(() => {
+          updateDistressNav();
+        }, 500);
+      }
+    },
+    [updateDistressNav]
+  );
+
+  const canGoUp = useMemo(() => {
+    if (distressNav.total <= 1) {
+      return distressNav.direction === 'up' || distressNav.hasAbove;
+    }
+    return distressNav.currentNumber > 1;
+  }, [distressNav.total, distressNav.direction, distressNav.hasAbove, distressNav.currentNumber]);
+
+  const canGoDown = useMemo(() => {
+    if (distressNav.total <= 1) {
+      return distressNav.direction === 'down' || distressNav.hasBelow;
+    }
+    return distressNav.currentNumber < distressNav.total;
+  }, [distressNav.total, distressNav.direction, distressNav.hasBelow, distressNav.currentNumber]);
+
+  // Step strictly distress by distress (1/N -> 2/N -> 3/N -> ...) so NO distress word is missed!
+  const handleJumpDirection = useCallback(
+    (dir: 'up' | 'down') => {
+      preferredDirectionRef.current = dir;
+      const container = chatScrollRef.current;
+      if (!container) return;
+
+      const indices = selectedConversation?.nlp?.distressMessageIndices || [];
+      if (indices.length === 0) return;
+
+      if (indices.length === 1) {
+        // Single distress message: jump directly to it
+        jumpToMessageIndex(indices[0]);
+        return;
+      }
+
+      const currentOrder = distressNav.currentNumber; // 1-based order
+
+      if (dir === 'down') {
+        if (currentOrder < indices.length) {
+          // Advance strictly to the next distress message
+          const nextIdx = indices[currentOrder];
+          jumpToMessageIndex(nextIdx);
+        } else {
+          // At the last distress message: STOP THERE! Keep last distress message in view.
+          jumpToMessageIndex(indices[indices.length - 1]);
+        }
+      } else {
+        // dir === 'up'
+        if (currentOrder > 1) {
+          // Step strictly back to the previous distress message
+          const prevIdx = indices[currentOrder - 2];
+          jumpToMessageIndex(prevIdx);
+        } else {
+          // At the first distress message: STOP THERE! Keep first distress message in view.
+          jumpToMessageIndex(indices[0]);
+        }
+      }
+    },
+    [selectedConversation, distressNav.currentNumber, jumpToMessageIndex]
+  );
+
+  const handleJumpToDistress = useCallback(() => {
+    const indices = selectedConversation?.nlp?.distressMessageIndices || [];
+    if (indices.length === 0) return;
+
+    if (indices.length === 1) {
+      jumpToMessageIndex(indices[0]);
+      return;
+    }
+
+    if (distressNav.currentNumber < indices.length) {
+      handleJumpDirection('down');
+    } else {
+      // Reached the bottom distress: stop there!
+      jumpToMessageIndex(indices[indices.length - 1]);
+    }
+  }, [selectedConversation, distressNav.currentNumber, jumpToMessageIndex, handleJumpDirection]);
+
   return (
-    <div className="flex-1 flex flex-col gap-4 sm:gap-6 min-h-0 relative">
+    <div className="messenger-soft flex flex-col flex-1 min-h-0 space-y-3 sm:space-y-3.5 w-full h-full relative">
       {/* Toast Notifications — Top Right */}
       <div className="fixed top-4 right-4 z-[100] flex flex-col gap-2 pointer-events-none">
         <AnimatePresence>
@@ -327,86 +1220,79 @@ export default function MessengerBotLogs() {
         </AnimatePresence>
       </div>
 
-      {/* Skeleton — shown on first load, replaced by real content */}
-      {loading && <PageLoader variant="messenger" />}
-
-      {/* Error state */}
-      {!loading && error && (
-        <div className="flex-1 flex items-center justify-center p-4">
-          <div className="flex flex-col items-center gap-3 text-red-500 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-2xl p-6 max-w-md text-center">
-            <AlertCircle className="w-8 h-8" />
-            <p className="font-semibold text-sm">Failed to load conversations</p>
-            <p className="text-xs text-red-400 font-mono">{error}</p>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              Check your browser console and verify your Supabase credentials in <code>.env</code>.
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* Main Content */}
-      {!loading && !error && (
-        <div className="flex-1 flex flex-col gap-4 lg:gap-5 min-h-0">
-          {/* Header & Filter Controls Bar — hidden on mobile chat view so chat gets 100% height */}
-          <div
-            className={`
-              ${mobileView === 'chat' ? 'hidden lg:flex' : 'flex'}
-              relative z-30 bg-white/85 dark:bg-[#111827]/85 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-[0_4px_20px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.2)] border-t border-t-white/80 dark:border-t-white/10 p-3.5 sm:p-4 flex-col gap-3 transition-all duration-200 shrink-0
-            `}
-          >
-            {/* Mobile Header Toggle (< md) */}
-            <div className="flex md:hidden items-center justify-between w-full">
-              <button
-                type="button"
-                onClick={() => setMobileFiltersOpen(!mobileFiltersOpen)}
-                className="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-200 cursor-pointer select-none active:scale-[0.98] transition-transform"
-              >
-                <div className="w-7 h-7 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center">
-                  <Filter className="w-3.5 h-3.5" />
-                </div>
-                <span>Filter Conversations</span>
-                {activeFilterCount > 0 && (
-                  <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-[#0071E3] text-white tabular-nums">
-                    {activeFilterCount}
-                  </span>
-                )}
-                <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${mobileFiltersOpen ? 'rotate-180' : ''}`} />
-              </button>
-              {hasActiveFilters && (
-                <button
-                  type="button"
-                  onClick={resetFilters}
-                  className="inline-flex items-center gap-1 text-xs font-semibold text-[#0071E3] dark:text-sky-400 hover:underline cursor-pointer"
-                >
-                  <RotateCcw className="w-3 h-3" />
-                  <span>Reset</span>
-                </button>
-              )}
+      <StaggerContainer className="flex flex-col flex-1 space-y-3 sm:space-y-3.5 w-full lg:h-full lg:min-h-0">
+        {/* ── Top Page Header (Unified Soft UI Design) ── */}
+        <StaggerItem>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-blue-500/10 dark:bg-blue-500/20 text-[#0071E3] dark:text-sky-400 flex items-center justify-center shrink-0 border border-blue-500/20 shadow-xs">
+                <MessageSquare className="w-5 h-5 sm:w-5.5 sm:h-5.5" strokeWidth={1.75} />
+              </div>
+              <div>
+                <h1 className="text-lg sm:text-[22px] font-semibold tracking-[-0.025em] leading-tight text-slate-900 dark:text-white">
+                  Messenger Bot Logs
+                </h1>
+                <p className="text-[11px] sm:text-xs font-normal tracking-[0.005em] text-slate-500/90 dark:text-slate-400/90 mt-0.5 leading-relaxed">
+                  Resident intake dialogues <span className="text-slate-300 dark:text-slate-600 mx-1">·</span> Automated triage &amp; extraction timeline
+                </p>
+              </div>
             </div>
 
-            {/* Filter Controls Row — 2-column compact grid on mobile, flex row on tablet & desktop */}
-            <div className={`${mobileFiltersOpen ? 'flex' : 'hidden'} md:flex flex-col md:flex-row md:flex-wrap items-stretch md:items-center justify-between gap-2.5 sm:gap-3 pt-2 md:pt-0 border-t md:border-t-0 border-slate-200/60 dark:border-slate-800/60`}>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:flex md:flex-wrap items-center gap-2.5 sm:gap-3 w-full md:w-auto relative z-20">
-                <div className="hidden md:flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-100/80 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 text-xs font-semibold shrink-0 border border-slate-200/50 dark:border-slate-700/50">
-                  <Filter className="w-3.5 h-3.5 text-[#0071E3]" />
-                  <span>Filters</span>
+          </div>
+        </StaggerItem>
+
+        {/* Header & Filter Controls Bar — hidden on mobile chat view so chat gets 100% height */}
+        <StaggerItem className="relative z-40">
+          <div
+            className={`
+              ${mobileView === 'chat' ? 'hidden md:flex' : 'flex'}
+              relative z-40 bg-white/80 dark:bg-[#111827]/80 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_1px_3px_rgba(15,23,42,0.04)] p-3 sm:p-3.5 flex-col gap-3 transition-all duration-200 shrink-0
+            `}
+          >
+            {/* Filter Controls Row with Grouped Inset Containers */}
+            <div className="flex flex-col md:flex-row md:flex-wrap lg:flex-nowrap items-stretch md:items-center justify-between gap-2.5 sm:gap-3 overflow-visible pb-1 md:pb-0 relative z-40">
+              {/* Left Filter Scope Container */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 md:inline-flex md:items-center gap-2 sm:gap-2.5 md:gap-2 md:p-1.5 md:px-2 bg-slate-100/70 dark:bg-white/[0.05] backdrop-blur-xl rounded-2xl border border-slate-200/70 dark:border-white/10 shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] w-full md:w-auto shrink-0 relative z-40">
+                <div className="col-span-2 sm:col-span-auto flex items-center gap-1.5 px-2.5 py-1.5 text-[#0071E3] dark:text-sky-400 cursor-default select-none shrink-0">
+                  <Filter className="w-3.5 h-3.5 transition-transform duration-300 group-hover/filters:scale-110 text-[#0071E3] dark:text-sky-400" strokeWidth={1.8} />
+                  <span className="text-[10px] font-bold uppercase tracking-wider">Filters</span>
+                  {activeFilterCount > 0 && (
+                    <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-[#0071E3] text-white tabular-nums">
+                      {activeFilterCount}
+                    </span>
+                  )}
                 </div>
-                <div className="col-span-1 md:col-span-auto">
+
+                <div className="col-span-1 md:col-span-auto min-w-0 md:min-w-[130px] w-full md:w-auto">
                   <FilterDropdown
+                    labelPrefix="Barangay"
                     value={filterBarangay}
-                    options={["All Barangays", ...availableBarangays]}
+                    options={availableBarangays}
                     onChange={(val) => { setFilterBarangay(val); setSelectedId(""); }}
                   />
                 </div>
-                <div className="col-span-1 md:col-span-auto">
+
+                <div className="col-span-1 md:col-span-auto min-w-0 md:min-w-[120px] w-full md:w-auto">
                   <FilterDropdown
+                    labelPrefix="Type"
                     value={filterType}
-                    options={["All Types", ...availableTypes]}
+                    options={availableTypes}
                     onChange={(val) => { setFilterType(val); setSelectedId(""); }}
                   />
                 </div>
-                <div className="col-span-2 sm:col-span-1 md:col-span-auto">
+
+                <div className="col-span-1 md:col-span-auto min-w-0 md:min-w-[120px] w-full md:w-auto">
                   <FilterDropdown
+                    labelPrefix="Urgency"
+                    value={filterUrgency}
+                    options={["All Urgency", "Critical", "High", "Moderate", "Low"]}
+                    onChange={(val) => { setFilterUrgency(val); setSelectedId(""); }}
+                  />
+                </div>
+
+                <div className="col-span-1 md:col-span-auto min-w-0 md:min-w-[120px] w-full md:w-auto">
+                  <FilterDropdown
+                    labelPrefix="Status"
                     value={filterStatus}
                     options={["All Status", "Incomplete", "Complete"]}
                     onChange={(val) => { setFilterStatus(val); setSelectedId(""); }}
@@ -414,61 +1300,150 @@ export default function MessengerBotLogs() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-2 md:flex md:flex-wrap items-center gap-2.5 sm:gap-3 md:ml-auto w-full md:w-auto relative z-10">
-                <div className="flex items-center gap-2 flex-1 sm:flex-initial min-w-[130px]">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 whitespace-nowrap">From:</span>
-                  <div className="flex-1 sm:w-36">
+              {/* Right Date Scope Container + Preserved Reset Option */}
+              <div className="col-span-2 md:col-span-auto flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-2.5 md:ml-auto w-full md:w-auto shrink-0">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:inline-flex md:items-center gap-1.5 sm:gap-2 md:gap-2 md:p-1.5 md:bg-slate-100/70 md:dark:bg-white/[0.05] md:backdrop-blur-xl md:rounded-2xl md:border md:border-slate-200/70 md:dark:border-white/10 md:shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] md:px-2.5 w-full md:w-auto shrink-0">
+                  <div className="flex items-center gap-1.5 flex-1 sm:flex-initial min-w-0 sm:min-w-[125px] w-full sm:w-auto">
+                    <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 whitespace-nowrap pl-0.5">
+                      From:
+                    </span>
                     <DatePicker value={fromDate} onChange={setFromDate} placeholder="Select Date" />
                   </div>
-                </div>
-                <div className="flex items-center gap-2 flex-1 sm:flex-initial min-w-[130px]">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 whitespace-nowrap">To:</span>
-                  <div className="flex-1 sm:w-36">
+                  <div className="flex items-center gap-1.5 flex-1 sm:flex-initial min-w-0 sm:min-w-[125px] w-full sm:w-auto">
+                    <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 whitespace-nowrap">
+                      To:
+                    </span>
                     <DatePicker value={toDate} onChange={setToDate} placeholder="Select Date" />
                   </div>
                 </div>
+
                 {hasActiveFilters && (
                   <button
                     type="button"
                     onClick={resetFilters}
-                    className="col-span-2 md:col-span-auto inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-[#0071E3] hover:text-blue-700 dark:text-sky-400 bg-blue-500/10 hover:bg-blue-500/15 transition-all duration-150 active:scale-[0.97] cursor-pointer shrink-0 ml-auto sm:ml-0"
+                    className="relative inline-flex items-center justify-center w-[34px] h-[34px] sm:w-[36px] sm:h-[36px] text-[#0071E3] hover:text-blue-700 dark:text-sky-400 bg-blue-500/10 hover:bg-blue-500/15 rounded-xl transition-all duration-150 active:scale-[0.95] cursor-pointer shrink-0 border border-blue-500/20 after:absolute after:-inset-1.5 after:content-['']"
                     title="Reset all filters"
+                    aria-label="Reset all filters"
                   >
-                    <RotateCcw className="w-3.5 h-3.5" />
-                    <span>Reset</span>
+                    <RotateCcw className="w-3.5 h-3.5" strokeWidth={1.75} />
                   </button>
                 )}
               </div>
             </div>
           </div>
+        </StaggerItem>
 
-          <div className="flex-1 flex flex-col md:grid md:grid-cols-12 gap-3 md:gap-4 lg:gap-6 min-h-0 md:h-[calc(100vh-14.5rem)]">
-            {/* LEFT: Conversation List — macOS Messages Sidebar Style */}
+        {/* Two Column Layout / Responsive Split-Pane */}
+        <StaggerItem className="flex-1 lg:min-h-0 flex flex-col">
+          <div className="flex-1 flex flex-col md:flex-row gap-3 md:gap-4 lg:gap-6 lg:min-h-0 lg:h-full overflow-hidden">
+            {/* LEFT: Conversation List — Soft Messages Sidebar */}
             <div
               className={`
-                ${mobileView === 'chat' ? 'hidden md:flex' : 'flex'}
-                md:col-span-5 lg:col-span-5 bg-white/85 dark:bg-[#111827]/85 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] flex-col overflow-hidden
-                h-[calc(100vh-17.5rem)] min-h-[440px] md:h-full md:min-h-0
+                ${mobileView === 'chat' && selectedConversation ? 'hidden md:flex' : 'flex'}
+                ${selectedConversation ? 'md:w-[42%] lg:w-[38%] shrink-0' : 'md:w-full flex-1'}
+                bg-white/85 dark:bg-[#111827]/85 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_1px_3px_rgba(15,23,42,0.04),0_8px_24px_rgba(15,23,42,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.3)] flex-col overflow-hidden
+                min-h-[460px] md:min-h-0 h-[calc(100vh-12rem)] md:h-full
+                transition-[width] duration-300 ease-in-out
               `}
             >
-              {/* Header Row */}
-              <div className="px-4 sm:px-5 py-3 sm:py-3.5 border-b border-slate-200/60 dark:border-slate-800/60 flex items-center justify-between shrink-0 bg-white/60 dark:bg-[#111827]/60 backdrop-blur-md">
-                <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
-                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-blue-500/10 dark:bg-blue-500/20 text-[#0071E3] dark:text-blue-400 flex items-center justify-center shrink-0 border border-blue-500/15">
-                    <MessageSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                  </div>
-                  <h3 className="font-semibold text-slate-900 dark:text-white text-xs sm:text-base tracking-tight truncate">
-                    Messenger Bot Activities
-                  </h3>
+              {/* Apple Segmented Stream Switcher Header */}
+              <div className="px-3 sm:px-4 py-2.5 sm:py-3 border-b border-slate-200/60 dark:border-white/5 flex items-center justify-between shrink-0 bg-slate-50/40 dark:bg-white/[0.02] gap-2">
+                <div
+                  role="tablist"
+                  aria-label="View Mode"
+                  className="inline-flex items-center p-1 bg-slate-100/90 dark:bg-slate-800/90 backdrop-blur-md rounded-xl border border-slate-200/70 dark:border-white/10 shadow-[inset_0_1px_2px_rgba(0,0,0,0.06)]"
+                >
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={viewMode === "structured"}
+                    onClick={() => handleViewModeChange("structured")}
+                    className={`group relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold tracking-tight transition-all duration-200 select-none cursor-pointer active:scale-[0.98] ${viewMode === "structured"
+                        ? "text-[#0071E3] dark:text-sky-400 font-bold"
+                        : "text-slate-500 hover:text-[#0071E3] dark:text-slate-400 dark:hover:text-sky-300 hover:bg-blue-50/50 dark:hover:bg-blue-950/30"
+                      }`}
+                  >
+                    {viewMode === "structured" && (
+                      <motion.div
+                        layoutId="activeMessengerSidebarTab"
+                        transition={APPLE_SPRING}
+                        className="absolute inset-0 bg-white dark:bg-slate-700/90 border border-slate-200/80 dark:border-white/10 rounded-lg shadow-xs"
+                      />
+                    )}
+                    <span className="relative z-10 flex items-center gap-1.5">
+                      <AlertTriangle
+                        className={`w-3.5 h-3.5 transition-all duration-200 ease-out group-hover:scale-115 ${viewMode === "structured"
+                            ? "text-[#0071E3] dark:text-sky-400"
+                            : "text-slate-400 dark:text-slate-500 group-hover:text-[#0071E3] dark:group-hover:text-sky-300"
+                          }`}
+                        strokeWidth={2}
+                      />
+                      <span className="transition-colors duration-150">Incidents</span>
+                      <span
+                        className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold tabular-nums transition-all duration-200 group-hover:scale-105 ${viewMode === "structured"
+                            ? "bg-[#0071E3] text-white shadow-xs"
+                            : "bg-slate-200/80 dark:bg-slate-700 text-slate-600 dark:text-slate-300 group-hover:bg-blue-100 dark:group-hover:bg-blue-900/40 group-hover:text-[#0071E3] dark:group-hover:text-sky-300"
+                          }`}
+                      >
+                        {incidentCount}
+                      </span>
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={viewMode === "unstructured"}
+                    onClick={() => handleViewModeChange("unstructured")}
+                    className={`group relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold tracking-tight transition-all duration-200 select-none cursor-pointer active:scale-[0.98] ${viewMode === "unstructured"
+                        ? "text-[#0071E3] dark:text-sky-400 font-bold"
+                        : "text-slate-500 hover:text-[#0071E3] dark:text-slate-400 dark:hover:text-sky-300 hover:bg-blue-50/50 dark:hover:bg-blue-950/30"
+                      }`}
+                  >
+                    {viewMode === "unstructured" && (
+                      <motion.div
+                        layoutId="activeMessengerSidebarTab"
+                        transition={APPLE_SPRING}
+                        className="absolute inset-0 bg-white dark:bg-slate-700/90 border border-slate-200/80 dark:border-white/10 rounded-lg shadow-xs"
+                      />
+                    )}
+                    <span className="relative z-10 flex items-center gap-1.5">
+                      <Layers
+                        className={`w-3.5 h-3.5 transition-all duration-200 ease-out group-hover:scale-115 ${viewMode === "unstructured"
+                            ? "text-[#0071E3] dark:text-sky-400"
+                            : "text-slate-400 dark:text-slate-500 group-hover:text-[#0071E3] dark:group-hover:text-sky-300"
+                          }`}
+                        strokeWidth={1.75}
+                      />
+                      <span className="transition-colors duration-150">All Logs</span>
+                      <span
+                        className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold tabular-nums transition-all duration-200 group-hover:scale-105 ${viewMode === "unstructured"
+                            ? "bg-[#0071E3] text-white shadow-xs"
+                            : "bg-slate-200/80 dark:bg-slate-700 text-slate-600 dark:text-slate-300 group-hover:bg-blue-100 dark:group-hover:bg-blue-900/40 group-hover:text-[#0071E3] dark:group-hover:text-sky-300"
+                          }`}
+                      >
+                        {rawCount}
+                      </span>
+                    </span>
+                  </button>
                 </div>
-                <span className="bg-blue-500/10 text-[#0071E3] dark:text-blue-400 border border-blue-500/20 text-[10px] sm:text-xs font-semibold rounded-full px-2 sm:px-2.5 py-0.5 tabular-nums shrink-0">
-                  {filteredConversations.length} active
-                </span>
+
+                <div className="flex items-center gap-2">
+                  {unseenCount > 0 && (
+                    <button
+                      type="button"
+                      onClick={markAllSeen}
+                      className="text-[11px] font-semibold text-[#0071E3] dark:text-sky-400 hover:underline hover:text-blue-700 dark:hover:text-sky-300 transition-colors cursor-pointer"
+                    >
+                      Mark all read
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* Scrollable Conversation List with Apple-grade Edge Fade */}
               <div
-                className="flex-1 overflow-y-auto min-h-0 p-2 pb-10 space-y-1 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800"
+                className="flex-1 overflow-y-auto min-h-0 p-2 sm:p-2.5 pb-8 space-y-1.5 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800"
                 style={{
                   maskImage: 'linear-gradient(to bottom, black calc(100% - 56px), transparent 100%)',
                   WebkitMaskImage: 'linear-gradient(to bottom, black calc(100% - 56px), transparent 100%)',
@@ -476,8 +1451,10 @@ export default function MessengerBotLogs() {
               >
                 {filteredConversations.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-16 sm:py-20 text-slate-400 dark:text-slate-500 text-xs sm:text-sm gap-2">
-                    <MessageSquare className="w-8 h-8 stroke-[1.5] text-slate-300 dark:text-slate-600" />
-                    <span>No conversations found.</span>
+                    <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-white/[0.04] border border-slate-200/60 dark:border-white/10 flex items-center justify-center">
+                      <MessageSquare className="w-6 h-6 stroke-[1.5] text-slate-400 dark:text-slate-500" />
+                    </div>
+                    <span>{viewMode === "structured" ? "No emergency incident reports match filters." : "No conversations found."}</span>
                     {hasActiveFilters && (
                       <button
                         type="button"
@@ -489,88 +1466,92 @@ export default function MessengerBotLogs() {
                     )}
                   </div>
                 ) : (
-                  <StaggerContainer className="space-y-1">
-                    {filteredConversations.map((convo, index) => {
-                      const isSelected = selectedId === convo.id;
+                  <div className="space-y-1.5">
+                    {paginatedConversations.map((convo, index) => {
+                      const isSelected = selectedConversation?.id === convo.id;
+                      const isSeen = seenConvoIds.has(convo.id);
                       const isIncomplete = convo.status === "Incomplete";
                       return (
-                        <StaggerItem key={convo.id} className="w-full">
+                        <div key={convo.id} className="w-full">
                           <button
                             type="button"
                             onClick={() => handleSelectConversation(convo.id)}
-                            className={`w-full flex items-center gap-2.5 sm:gap-3.5 p-2.5 sm:p-3 rounded-xl transition-all duration-150 text-left relative group active:scale-[0.985] cursor-pointer ${isSelected
-                              ? "bg-blue-500/10 dark:bg-blue-500/20 shadow-xs border border-blue-500/25 dark:border-blue-500/30 text-slate-900 dark:text-white"
-                              : isIncomplete
-                                ? "bg-slate-50 dark:bg-slate-800/40 hover:bg-slate-100/80 dark:hover:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/60 text-slate-900 dark:text-slate-100"
-                                : "hover:bg-slate-100/70 dark:hover:bg-slate-800/60 border border-transparent text-slate-700 dark:text-slate-300"
+                            className={`w-full flex items-center gap-2.5 sm:gap-3.5 p-2.5 sm:p-3 rounded-xl transition-all duration-200 text-left relative group active:scale-[0.985] cursor-pointer ${isSelected
+                                ? "bg-blue-500/[0.12] dark:bg-blue-500/[0.22] shadow-[0_2px_12px_rgba(0,113,227,0.14)] border border-blue-500/40 dark:border-blue-400/50 text-slate-900 dark:text-white"
+                                : !isSeen
+                                  ? "bg-blue-50/50 dark:bg-blue-950/25 border border-blue-200/70 dark:border-blue-900/50 hover:bg-blue-50/90 dark:hover:bg-blue-950/45 hover:border-blue-400/60 dark:hover:border-blue-400/50 hover:shadow-[0_4px_16px_rgba(0,113,227,0.12)] hover:-translate-y-0.5 text-slate-900 dark:text-white"
+                                  : "hover:bg-blue-50/40 dark:hover:bg-blue-950/30 border border-transparent hover:border-blue-300/40 dark:hover:border-blue-500/30 hover:shadow-[0_2px_10px_rgba(0,113,227,0.08)] hover:-translate-y-0.5 text-slate-600 dark:text-slate-400 opacity-90"
                               }`}
                           >
                             {/* Active pill accent bar */}
                             {isSelected && (
                               <motion.div
                                 layoutId="activeConvoIndicator"
-                                className="absolute left-1 top-2.5 bottom-2.5 w-1 bg-[#0071E3] rounded-full"
+                                className="absolute left-1 top-2.5 bottom-2.5 w-1 bg-[#0071E3] dark:bg-sky-400 shadow-[0_0_8px_rgba(0,113,227,0.6)] rounded-full"
                                 transition={APPLE_SPRING}
                               />
                             )}
 
-                            {/* Circular Avatar with status badge */}
+                            {/* Circular Avatar with soft ring */}
                             <div className="relative shrink-0">
                               <div
-                                className={`w-9 h-9 sm:w-11 sm:h-11 rounded-full ${getAvatarColor(
+                                className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full ${getAvatarColor(
                                   convo.name,
                                   index
-                                )} flex items-center justify-center font-bold text-xs text-white shadow-sm ring-2 ring-white/80 dark:ring-slate-800`}
+                                )} flex items-center justify-center font-bold text-xs text-white shadow-xs ring-1 group-hover:scale-105 group-hover:ring-2 group-hover:ring-blue-400/70 dark:group-hover:ring-blue-400/70 transition-all duration-200 ${!isSeen ? "ring-blue-400/80 dark:ring-blue-500/80" : "ring-black/5 dark:ring-white/10 opacity-80"
+                                  }`}
                               >
                                 {getInitials(convo.name)}
                               </div>
-                              <AnimatePresence>
-                                {isIncomplete && (
-                                  <motion.span
-                                    initial={{ scale: 0, opacity: 0 }}
-                                    animate={{ scale: 1, opacity: 1 }}
-                                    exit={{ scale: 0, opacity: 0 }}
-                                    transition={APPLE_SPRING}
-                                    className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 sm:w-3 sm:h-3 bg-[#0071E3] border-2 border-white dark:border-slate-800 rounded-full shadow-xs"
-                                  />
-                                )}
-                              </AnimatePresence>
+
                             </div>
 
                             {/* Content */}
                             <div className="flex-1 min-w-0 pr-1">
-                              <h4
-                                className={`text-xs sm:text-sm tracking-tight truncate transition-all duration-200 ${isIncomplete
-                                  ? "font-semibold text-slate-900 dark:text-white"
-                                  : isSelected
-                                    ? "font-semibold text-slate-900 dark:text-white"
-                                    : "font-medium text-slate-700 dark:text-slate-300"
-                                  }`}
-                              >
-                                {convo.name}
-                              </h4>
+                              <div className="flex items-center gap-1.5 mb-0.5">
+                                <h4
+                                  className={`text-xs sm:text-[13px] tracking-tight truncate transition-colors group-hover:text-[#0071E3] dark:group-hover:text-sky-400 ${!isSeen
+                                      ? "font-bold text-slate-900 dark:text-white"
+                                      : "font-semibold text-slate-700 dark:text-slate-300"
+                                    }`}
+                                >
+                                  {convo.name}
+                                </h4>
+                              </div>
                               <p
-                                className={`text-[11px] sm:text-xs truncate mt-0.5 leading-snug transition-all duration-200 ${isIncomplete
-                                  ? "font-medium text-slate-600 dark:text-slate-300"
-                                  : "font-normal text-slate-500 dark:text-slate-400"
+                                className={`text-[11px] sm:text-xs truncate mt-0.5 leading-snug transition-colors ${!isSeen
+                                    ? "font-medium text-slate-800 dark:text-slate-200"
+                                    : "font-normal text-slate-500 dark:text-slate-400"
                                   }`}
                               >
                                 {getLastMessage(convo)}
                               </p>
-                              <div className="mt-1 flex items-center gap-1 sm:gap-1.5 flex-wrap">
-                                <span className="inline-flex items-center text-[9px] sm:text-[10px] font-medium bg-slate-100/90 dark:bg-slate-800/90 text-slate-600 dark:text-slate-400 rounded-md px-1.5 sm:px-2 py-0.5 border border-slate-200/50 dark:border-slate-700/50 truncate max-w-[130px] sm:max-w-none">
-                                  {convo.type} · {convo.barangay}
+                              <div className="flex items-center gap-1.5 mb-1 text-[11px] text-slate-400 dark:text-slate-500 font-medium">
+                                <span className="truncate max-w-[140px] sm:max-w-none flex items-center gap-1">
+                                  <span>{(() => {
+                                    const t = (convo.type && convo.type.toLowerCase() !== "none" && convo.type.toLowerCase() !== "unknown" && convo.type.toLowerCase() !== "unclassified")
+                                      ? convo.type
+                                      : (convo.nlp?.incidentType && convo.nlp.incidentType.toLowerCase() !== "none" && convo.nlp.incidentType.toLowerCase() !== "unknown" ? convo.nlp.incidentType : "Unknown");
+                                    return t;
+                                  })()}</span>
+                                  <span className="text-slate-300 dark:text-slate-600">•</span>
+                                  <span className={convo.barangay === "Unknown" || convo.barangay === "None" ? "italic text-slate-400" : ""}>{convo.barangay && convo.barangay !== "None" ? convo.barangay : "Unknown"}</span>
                                 </span>
+                              </div>
+
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                {renderUrgencyBadge(convo.nlp?.urgency)}
+
                                 <span
-                                  className={`inline-flex items-center gap-1.5 text-[9px] sm:text-[10px] font-medium rounded-md px-1.5 sm:px-2 py-0.5 border transition-colors duration-200 ${isIncomplete
-                                    ? "bg-slate-100/90 dark:bg-slate-800/90 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700/70"
-                                    : "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border-emerald-200/50 dark:border-emerald-800/50"
+                                  className={`inline-flex items-center gap-1 text-[10px] font-semibold rounded-full px-2 py-0.5 border transition-colors duration-200 ${isIncomplete
+                                      ? "bg-amber-500/10 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/20"
+                                      : "bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/20"
                                     }`}
                                 >
                                   <span
                                     className={`w-1.5 h-1.5 rounded-full ${isIncomplete
-                                      ? "bg-[#0071E3] animate-pulse"
-                                      : "bg-emerald-500"
+                                        ? "bg-amber-500 animate-pulse"
+                                        : "bg-emerald-500"
                                       }`}
                                   />
                                   {convo.status}
@@ -579,50 +1560,99 @@ export default function MessengerBotLogs() {
                             </div>
 
                             {/* Timestamp & Right Chevron with Incomplete Dot */}
-                            <div className="flex flex-col items-end justify-between self-stretch shrink-0 py-0.5 pl-1">
-                              <div className="flex items-center gap-1">
-                                <span
-                                  className={`text-[10px] sm:text-[11px] tabular-nums transition-colors duration-200 ${isIncomplete
-                                    ? "font-medium text-slate-600 dark:text-slate-400"
-                                    : "font-normal text-slate-400 dark:text-slate-500"
-                                    }`}
-                                >
-                                  {formatDisplayTime(convo.time)}
-                                </span>
-                                <AnimatePresence>
-                                  {isIncomplete && (
-                                    <motion.span
-                                      initial={{ scale: 0, opacity: 0 }}
-                                      animate={{ scale: 1, opacity: 1 }}
-                                      exit={{ scale: 0, opacity: 0 }}
-                                      transition={APPLE_SPRING}
-                                      className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-[#0071E3] shadow-[0_0_8px_rgba(0,113,227,0.45)] shrink-0"
-                                      title="Incomplete conversation"
-                                    />
-                                  )}
-                                </AnimatePresence>
-                              </div>
-                              <ChevronRight className="w-3.5 h-3.5 text-slate-300 dark:text-slate-600 group-hover:text-slate-500 dark:group-hover:text-slate-400 group-hover:translate-x-0.5 transition-all duration-150" />
-                            </div>
+                            {(() => {
+                              const { timeText, dateText } = getConvoTimeAndDate(convo.time, convo.createdAt);
+                              return (
+                                <div className="flex flex-col items-end justify-between self-stretch shrink-0 py-0.5 pl-1">
+                                  <div className="flex flex-col items-end">
+                                    <div className="flex items-center gap-1">
+                                      <span
+                                        className={`text-[10px] sm:text-[11px] tabular-nums transition-colors duration-200 ${!isSeen
+                                            ? "font-semibold text-blue-600 dark:text-blue-400"
+                                            : "font-normal text-slate-400 dark:text-slate-500"
+                                          }`}
+                                      >
+                                        {timeText}
+                                      </span>
+                                      <AnimatePresence>
+                                        {isIncomplete && (
+                                          <motion.span
+                                            initial={{ scale: 0, opacity: 0 }}
+                                            animate={{ scale: 1, opacity: 1 }}
+                                            exit={{ scale: 0, opacity: 0 }}
+                                            transition={APPLE_SPRING}
+                                            className="w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.45)] shrink-0"
+                                            title="Incomplete conversation"
+                                          />
+                                        )}
+                                      </AnimatePresence>
+                                    </div>
+                                    {dateText && (
+                                      <span className="text-[9px] sm:text-[10px] text-slate-400 dark:text-slate-500 font-medium tabular-nums mt-0.5 whitespace-nowrap">
+                                        {dateText}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <ChevronRight className="w-3.5 h-3.5 text-slate-300 dark:text-slate-600 group-hover:text-slate-500 dark:group-hover:text-slate-400 group-hover:translate-x-0.5 transition-all duration-150 mt-auto" />
+                                </div>
+                              );
+                            })()}
                           </button>
-                        </StaggerItem>
+                        </div>
                       );
                     })}
-                  </StaggerContainer>
+                  </div>
                 )}
               </div>
+
+              {/* Pagination Controls Footer */}
+              {filteredConversations.length > PAGE_SIZE && (
+                <div className="px-3.5 py-2.5 border-t border-slate-200/60 dark:border-white/5 bg-slate-50/40 dark:bg-white/[0.02] flex items-center justify-between shrink-0">
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 tabular-nums">
+                    Showing {(safeCurrentPage - 1) * PAGE_SIZE + 1}–{Math.min(safeCurrentPage * PAGE_SIZE, filteredConversations.length)} of {filteredConversations.length}
+                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      disabled={safeCurrentPage <= 1}
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      className="relative p-1.5 rounded-lg border border-blue-500/25 dark:border-blue-400/25 bg-blue-500/10 dark:bg-blue-500/20 text-[#0071E3] dark:text-sky-400 disabled:opacity-30 disabled:pointer-events-none hover:bg-[#0071E3] hover:text-white dark:hover:bg-[#0071E3] dark:hover:text-white active:scale-95 transition-all cursor-pointer shadow-2xs after:absolute after:-inset-2.5 after:absolute after:content-['']"
+                      title="Previous Page"
+                    >
+                      <ChevronLeft className="w-3.5 h-3.5" strokeWidth={1.75} />
+                    </button>
+                    <span className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 px-1.5 tabular-nums">
+                      {safeCurrentPage} / {totalPages}
+                    </span>
+                    <button
+                      type="button"
+                      disabled={safeCurrentPage >= totalPages}
+                      onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                      className="relative p-1.5 rounded-lg border border-blue-500/25 dark:border-blue-400/25 bg-blue-500/10 dark:bg-blue-500/20 text-[#0071E3] dark:text-sky-400 disabled:opacity-30 disabled:pointer-events-none hover:bg-[#0071E3] hover:text-white dark:hover:bg-[#0071E3] dark:hover:text-white active:scale-95 transition-all cursor-pointer shadow-2xs after:absolute after:-inset-2.5 after:absolute after:content-['']"
+                      title="Next Page"
+                    >
+                      <ChevronRight className="w-3.5 h-3.5" strokeWidth={1.75} />
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
-            {/* RIGHT: Message Detail — Apple Messages Style */}
-            <div
-              className={`
-                ${mobileView === 'list' ? 'hidden md:flex' : 'flex'}
-                md:col-span-7 lg:col-span-7 bg-white/90 dark:bg-[#111827]/90 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] flex-col overflow-hidden
-                h-[calc(100vh-12.5rem)] min-h-[480px] md:h-full md:min-h-0
-              `}
-            >
-              <AnimatePresence mode="wait">
-                {selectedConversation ? (
+            {/* RIGHT: Message Detail — macOS Soft Messages Style */}
+            <AnimatePresence>
+              {selectedConversation && (
+                <motion.div
+                  key="convo-detail-panel"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                  transition={{ duration: 0.25, ease: "easeInOut" }}
+                  className={`
+                    ${mobileView === 'list' ? 'hidden md:flex' : 'flex'}
+                    flex-1 min-w-0 bg-white/90 dark:bg-[#111827]/90 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_1px_3px_rgba(15,23,42,0.04),0_8px_24px_rgba(15,23,42,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.3)] flex-col overflow-hidden
+                    min-h-[480px] md:min-h-0 h-[calc(100vh-12rem)] md:h-full
+                  `}
+                >
                   <motion.div
                     key={selectedConversation.id}
                     variants={contentVariants}
@@ -632,21 +1662,21 @@ export default function MessengerBotLogs() {
                     className="flex flex-col h-full min-h-0"
                   >
                     {/* Header */}
-                    <div className="px-3.5 sm:px-6 py-3 sm:py-3.5 border-b border-slate-200/60 dark:border-slate-800/60 flex items-center justify-between shrink-0 bg-white/70 dark:bg-[#111827]/70 backdrop-blur-md gap-2">
+                    <div className="px-3.5 sm:px-6 py-3 sm:py-3.5 border-b border-slate-200/60 dark:border-white/5 flex items-center justify-between shrink-0 bg-slate-50/40 dark:bg-white/[0.02] gap-2">
                       <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
                         {/* Mobile Back Button to Conversation List (< md) */}
                         <button
                           type="button"
-                          onClick={() => setMobileView('list')}
-                          className="md:hidden inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold text-[#0071E3] dark:text-sky-400 bg-[#0071E3]/10 dark:bg-sky-400/10 hover:bg-[#0071E3]/15 active:scale-95 transition-all shrink-0 cursor-pointer"
+                          onClick={handleCloseConversation}
+                          className="relative md:hidden inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold text-[#0071E3] dark:text-sky-400 bg-blue-500/10 hover:bg-blue-500/15 active:scale-95 transition-all shrink-0 cursor-pointer after:absolute after:inset-x-0 after:-inset-y-2 after:content-['']"
                           aria-label="Back to conversations list"
                         >
-                          <ChevronLeft className="w-4 h-4 -ml-1" />
+                          <ChevronLeft className="w-4 h-4 -ml-1" strokeWidth={1.75} />
                           <span>Chats</span>
                         </button>
 
                         <div
-                          className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full ${selectedColor} flex items-center justify-center font-bold text-[11px] sm:text-xs text-white shrink-0 shadow-sm ring-2 ring-white/80 dark:ring-slate-800`}
+                          className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full ${selectedColor} flex items-center justify-center font-bold text-[11px] sm:text-xs text-white shrink-0 shadow-xs ring-1 ring-black/5 dark:ring-white/10`}
                         >
                           {selectedInitials}
                         </div>
@@ -655,64 +1685,95 @@ export default function MessengerBotLogs() {
                             {selectedConversation.name}
                           </h3>
                           <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 sm:gap-1.5 mt-0.5 truncate">
-                            <span className="truncate">{selectedConversation.barangay}</span>
+                            <span className="truncate">{selectedConversation.barangay && selectedConversation.barangay !== "None" ? selectedConversation.barangay : "Unknown"}</span>
                             <span className="text-slate-300 dark:text-slate-600 shrink-0">•</span>
-                            <span className="truncate">{selectedConversation.type}</span>
-                            <span className="hidden md:inline text-slate-300 dark:text-slate-600 shrink-0">•</span>
-                            <span className="hidden md:inline font-mono text-[10px] sm:text-[11px] text-slate-400 dark:text-slate-500 shrink-0">PSID: {selectedConversation.psid}</span>
+                            <span className="truncate">{(() => {
+                              const t = (selectedConversation.type && selectedConversation.type.toLowerCase() !== "none" && selectedConversation.type.toLowerCase() !== "unknown" && selectedConversation.type.toLowerCase() !== "unclassified")
+                                ? selectedConversation.type
+                                : (selectedConversation.nlp?.incidentType && selectedConversation.nlp.incidentType.toLowerCase() !== "none" && selectedConversation.nlp.incidentType.toLowerCase() !== "unknown" ? selectedConversation.nlp.incidentType : "Unknown");
+                              return t;
+                            })()}</span>
+
                           </p>
                         </div>
                       </div>
 
                       {/* Apple Segmented 1-Click Status Switcher Capsule */}
-                      <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-                        <div
-                          role="group"
-                          aria-label="Conversation Status"
-                          className="inline-flex items-center p-0.5 sm:p-1 bg-slate-100/90 dark:bg-slate-800/90 backdrop-blur-md rounded-full border border-slate-200/70 dark:border-white/10 shadow-[inset_0_1px_2px_rgba(0,0,0,0.06)]"
-                        >
-                          {/* Incomplete Option */}
-                          <button
-                            type="button"
-                            onClick={() => updateConversationStatus(selectedConversation.id, "Incomplete")}
-                            className={`relative flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 rounded-full text-[11px] sm:text-xs font-semibold tracking-tight transition-colors duration-200 select-none active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071E3] cursor-pointer ${selectedConversation.status === "Incomplete"
-                              ? "text-slate-800 dark:text-slate-100"
-                              : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
-                              }`}
-                            title="Mark conversation as Incomplete"
+                      <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+                        <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+                          <span className="hidden sm:inline-flex items-center text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 select-none">
+                            Status
+                          </span>
+                          <div
+                            role="group"
+                            aria-label="Conversation Status"
+                            className="inline-flex items-center p-0.5 sm:p-1 bg-slate-100/90 dark:bg-slate-800/80 backdrop-blur-md rounded-full border border-slate-200/70 dark:border-white/10 shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]"
                           >
-                            {selectedConversation.status === "Incomplete" && (
-                              <motion.div
-                                layoutId="activeStatusCapsule"
-                                transition={APPLE_SPRING}
-                                className="absolute inset-0 bg-white dark:bg-slate-700/90 rounded-full shadow-[0_1px_4px_rgba(0,0,0,0.1),0_1px_2px_rgba(0,0,0,0.06)] border border-black/[0.04] dark:border-white/10"
+                            {/* Incomplete Option */}
+                            <button
+                              type="button"
+                              onClick={() => updateConversationStatus(selectedConversation.id, "Incomplete")}
+                              className={`relative flex items-center gap-1.5 px-3 sm:px-3.5 py-1 sm:py-1.5 rounded-full text-xs tracking-tight transition-all duration-200 select-none active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 cursor-pointer ${selectedConversation.status === "Incomplete"
+                                  ? "text-amber-700 dark:text-amber-300 font-bold"
+                                  : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-black/[0.03] dark:hover:bg-white/[0.04] font-medium"
+                                }`}
+                              title="Mark conversation as Incomplete"
+                            >
+                              {selectedConversation.status === "Incomplete" && (
+                                <motion.div
+                                  layoutId="activeStatusCapsule"
+                                  transition={APPLE_SPRING}
+                                  className="absolute inset-0 bg-amber-500/18 dark:bg-amber-500/25 border border-amber-500/40 dark:border-amber-400/40 rounded-full shadow-[0_2px_8px_rgba(245,158,11,0.18)] backdrop-blur-md"
+                                />
+                              )}
+                              <span
+                                className={`relative z-10 w-2 h-2 rounded-full transition-colors ${selectedConversation.status === "Incomplete"
+                                    ? "bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.6)] animate-pulse"
+                                    : "bg-amber-500/60"
+                                  }`}
                               />
-                            )}
-                            <span className="relative z-10 w-1.5 h-1.5 rounded-full bg-[#0071E3] animate-pulse" />
-                            <span className="relative z-10 hidden xs:inline">Incomplete</span>
-                            <span className="relative z-10 xs:hidden">Inc.</span>
-                          </button>
+                              <span className="relative z-10">Incomplete</span>
+                            </button>
 
-                          {/* Complete Option */}
+                            {/* Complete Option */}
+                            <button
+                              type="button"
+                              onClick={() => updateConversationStatus(selectedConversation.id, "Complete")}
+                              className={`relative flex items-center gap-1.5 px-3 sm:px-3.5 py-1 sm:py-1.5 rounded-full text-xs tracking-tight transition-all duration-200 select-none active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 cursor-pointer ${selectedConversation.status === "Complete"
+                                  ? "text-emerald-700 dark:text-emerald-300 font-bold"
+                                  : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-black/[0.03] dark:hover:bg-white/[0.04] font-medium"
+                                }`}
+                              title="Mark conversation as Complete"
+                            >
+                              {selectedConversation.status === "Complete" && (
+                                <motion.div
+                                  layoutId="activeStatusCapsule"
+                                  transition={APPLE_SPRING}
+                                  className="absolute inset-0 bg-emerald-500/18 dark:bg-emerald-500/25 border border-emerald-500/40 dark:border-emerald-400/40 rounded-full shadow-[0_2px_8px_rgba(16,185,129,0.18)] backdrop-blur-md"
+                                />
+                              )}
+                              <CheckCircle2
+                                className={`relative z-10 w-3.5 h-3.5 transition-colors ${selectedConversation.status === "Complete"
+                                    ? "text-emerald-600 dark:text-emerald-400"
+                                    : "text-emerald-500/60"
+                                  }`}
+                                strokeWidth={2.25}
+                              />
+                              <span className="relative z-10">Complete</span>
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Close Conversation Button */}
+                        <div className="flex items-center shrink-0 ml-1 sm:ml-2 pl-1 sm:pl-2 border-l border-slate-200/60 dark:border-white/10">
                           <button
                             type="button"
-                            onClick={() => updateConversationStatus(selectedConversation.id, "Complete")}
-                            className={`relative flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 rounded-full text-[11px] sm:text-xs font-semibold tracking-tight transition-colors duration-200 select-none active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 cursor-pointer ${selectedConversation.status === "Complete"
-                              ? "text-emerald-700 dark:text-emerald-300"
-                              : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
-                              }`}
-                            title="Mark conversation as Complete"
+                            onClick={handleCloseConversation}
+                            className="relative w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl text-slate-400 hover:text-rose-600 dark:text-slate-500 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-all duration-150 flex items-center justify-center active:scale-95 cursor-pointer after:absolute after:-inset-2 after:content-['']"
+                            title="Close conversation (Esc)"
+                            aria-label="Close conversation"
                           >
-                            {selectedConversation.status === "Complete" && (
-                              <motion.div
-                                layoutId="activeStatusCapsule"
-                                transition={APPLE_SPRING}
-                                className="absolute inset-0 bg-white dark:bg-slate-700/90 rounded-full shadow-[0_1px_4px_rgba(0,0,0,0.1),0_1px_2px_rgba(0,0,0,0.06)] border border-black/[0.04] dark:border-white/10"
-                              />
-                            )}
-                            <CheckCircle2 className="relative z-10 w-3 h-3 sm:w-3.5 sm:h-3.5 text-emerald-500" />
-                            <span className="relative z-10 hidden xs:inline">Complete</span>
-                            <span className="relative z-10 xs:hidden">Done</span>
+                            <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" strokeWidth={2} />
                           </button>
                         </div>
                       </div>
@@ -720,88 +1781,162 @@ export default function MessengerBotLogs() {
 
                     {/* Messages — Apple Messages Thread with Edge Fade */}
                     <div
-                      className="flex-1 overflow-y-auto min-h-0 p-3 sm:p-6 pb-12 bg-slate-50/40 dark:bg-[#0B0F17]/40 space-y-3 sm:space-y-4 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800"
+                      ref={chatScrollRef}
+                      onScroll={updateDistressNav}
+                      className="flex-1 overflow-y-auto min-h-0 p-3 sm:p-6 pb-16 bg-slate-50/50 dark:bg-[#0B0F17]/50 space-y-3 sm:space-y-4 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800"
                       style={{
                         maskImage: 'linear-gradient(to bottom, black calc(100% - 48px), transparent 100%)',
                         WebkitMaskImage: 'linear-gradient(to bottom, black calc(100% - 48px), transparent 100%)',
                       }}
                     >
-                      <StaggerContainer className="space-y-3 sm:space-y-4">
-                        {(selectedConversation.messages ?? []).map((msg, idx) =>
-                          msg.sender === "bot" ? (
-                            <StaggerItem key={idx}>
+                      <div className="space-y-3 sm:space-y-4">
+                        {(selectedConversation.messages ?? []).map((msg, idx) => {
+                          const msgTime = formatMsgTime(msg.timestamp, selectedConversation.time);
+                          const isDistress =
+                            Boolean(selectedConversation.nlp?.isIncident) &&
+                            msg.sender === "user" &&
+                            (checkMessageHasDistress(msg.text) ||
+                              Boolean(selectedConversation.nlp?.distressMessageIndices?.includes(idx)));
+
+                          return msg.sender === "bot" ? (
+                            <div key={idx}>
                               <div className="flex items-end gap-1.5 sm:gap-2 justify-end">
-                                <div className="flex flex-col items-end max-w-[85%] sm:max-w-[74%]">
-                                  <div className="bg-[#0071E3] text-white rounded-[18px] sm:rounded-[20px] rounded-br-[4px] px-3.5 sm:px-4 py-2 sm:py-2.5 shadow-[0_2px_10px_rgba(0,113,227,0.22)]">
-                                    <p className="text-xs sm:text-sm leading-relaxed whitespace-pre-wrap break-words">{msg.text}</p>
+                                <div className="flex flex-col items-end max-w-[85%] sm:max-w-[74%] min-w-0">
+                                  <div className="bg-[#0071E3] text-white rounded-[18px] sm:rounded-[20px] rounded-br-[4px] px-3.5 sm:px-4 py-2 sm:py-2.5 shadow-[0_2px_10px_rgba(0,113,227,0.22)] transition-all">
+                                    <p className="text-xs sm:text-sm leading-relaxed whitespace-pre-wrap break-words [overflow-wrap:anywhere] [word-break:break-word] font-normal">{msg.text}</p>
                                   </div>
-                                  <span className="text-[9px] sm:text-[10px] text-slate-400 dark:text-slate-500 mt-1 mr-1 font-medium flex items-center gap-1">
-                                    <Bot className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-[#0071E3]" />
-                                    Responde Bot
+                                  <span className="text-[9px] sm:text-[10px] text-slate-400 dark:text-slate-500 font-medium flex items-center gap-1.5 mt-1 mr-1">
+                                    <Bot className="w-3 h-3 text-[#0071E3] dark:text-sky-400 shrink-0" strokeWidth={1.75} />
+                                    <span>Responde Bot</span>
+                                    {msgTime && (
+                                      <>
+                                        <span className="text-slate-300 dark:text-slate-600">•</span>
+                                        <span className="tabular-nums">{msgTime}</span>
+                                      </>
+                                    )}
                                   </span>
                                 </div>
-                                <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-blue-100 dark:bg-blue-950 flex items-center justify-center text-[10px] sm:text-[11px] font-bold text-[#0071E3] dark:text-blue-400 shrink-0 mb-3 sm:mb-4 ring-1 ring-blue-500/20 shadow-2xs">
-                                  <Bot className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#0071E3]" />
+                                <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-blue-100 dark:bg-blue-950/80 flex items-center justify-center text-[10px] sm:text-[11px] font-bold text-[#0071E3] dark:text-blue-400 shrink-0 mb-3 sm:mb-4 ring-1 ring-blue-500/20 shadow-2xs">
+                                  <Bot className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#0071E3]" strokeWidth={1.75} />
                                 </div>
                               </div>
-                            </StaggerItem>
+                            </div>
                           ) : (
-                            <StaggerItem key={idx}>
+                            <div
+                              key={idx}
+                              data-distress-idx={isDistress ? idx : undefined}
+                              className="relative"
+                            >
                               <div className="flex items-end gap-1.5 sm:gap-2 justify-start">
                                 <div
-                                  className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full ${selectedColor} flex items-center justify-center text-[9px] sm:text-[10px] font-bold text-white shrink-0 mb-3 sm:mb-4 shadow-xs ring-1 ring-black/5`}
+                                  className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full ${selectedColor} flex items-center justify-center text-[10px] sm:text-[11px] font-bold text-white shrink-0 mb-3 sm:mb-4 shadow-xs ring-1 ring-black/5`}
                                 >
                                   {selectedInitials}
                                 </div>
-                                <div className="flex flex-col items-start max-w-[85%] sm:max-w-[74%]">
-                                  <div className="bg-white dark:bg-slate-800 border border-slate-200/70 dark:border-slate-700/70 text-slate-800 dark:text-slate-100 rounded-[18px] sm:rounded-[20px] rounded-bl-[4px] px-3.5 sm:px-4 py-2 sm:py-2.5 shadow-[0_2px_10px_rgba(0,0,0,0.03)]">
-                                    <p className="text-xs sm:text-sm leading-relaxed whitespace-pre-wrap break-words">{msg.text}</p>
+                                <div className="flex flex-col items-start max-w-[85%] sm:max-w-[74%] min-w-0">
+                                  {/* Emergency Distress Tag on User Message */}
+                                  {isDistress && (
+                                    <span className="inline-flex items-center gap-1 text-[9px] font-bold text-rose-600 dark:text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-md px-1.5 py-0.5 mb-1">
+                                      <TriangleAlert className="w-2.5 h-2.5" strokeWidth={1.75} />
+                                      <span>Distress Intent Extracted</span>
+                                    </span>
+                                  )}
+                                  <div className={`bg-white/90 dark:bg-[#111827]/90 text-slate-800 dark:text-slate-100 rounded-[18px] sm:rounded-[20px] rounded-bl-[4px] px-3.5 sm:px-4 py-2 sm:py-2.5 shadow-[0_1px_3px_rgba(15,23,42,0.03)] border transition-all duration-200 ${highlightedDistressIdx === idx
+                                      ? "border-rose-500/80 ring-2 ring-rose-500/50 shadow-[0_0_18px_rgba(244,63,94,0.35)] scale-[1.01]"
+                                      : "border-slate-200/80 dark:border-white/10"
+                                    }`}>
+                                    <p className="text-xs sm:text-sm leading-relaxed whitespace-pre-wrap break-words [overflow-wrap:anywhere] [word-break:break-word] font-normal">{msg.text}</p>
                                   </div>
-                                  <span className="text-[9px] sm:text-[10px] text-slate-400 dark:text-slate-500 mt-1 ml-1 font-medium">
-                                    {selectedConversation.name}
+                                  <span className="text-[9px] sm:text-[10px] text-slate-400 dark:text-slate-500 mt-1 ml-1 font-medium flex items-center gap-1">
+                                    <span>{selectedConversation.name}</span>
+                                    {msgTime && (
+                                      <>
+                                        <span className="text-slate-300 dark:text-slate-600">•</span>
+                                        <span className="tabular-nums">{msgTime}</span>
+                                      </>
+                                    )}
                                   </span>
                                 </div>
                               </div>
-                            </StaggerItem>
-                          )
-                        )}
-                        <div ref={messagesEndRef} />
-                      </StaggerContainer>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
+
+                    {/* Floating Jump to Distress Signal Pill Button */}
+                    <AnimatePresence>
+                      {distressNav.show && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 14, scale: 0.94 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: 10, scale: 0.94 }}
+                          transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+                          className="absolute bottom-3 left-1/2 -translate-x-1/2 z-30 pointer-events-auto"
+                        >
+                          <div className="group flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/95 dark:bg-[#1e293b]/95 backdrop-blur-xl border border-rose-500/30 dark:border-rose-500/40 shadow-[0_8px_24px_rgba(244,63,94,0.18)] dark:shadow-[0_8px_24px_rgba(244,63,94,0.28)] text-xs font-semibold select-none">
+                            {/* Scroll up / Previous distress signal */}
+                            {distressNav.total > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => handleJumpDirection('up')}
+                                disabled={!canGoUp}
+                                className={`flex items-center justify-center w-5 h-5 rounded-full transition-all cursor-pointer ${canGoUp
+                                    ? 'text-rose-600 dark:text-rose-400 hover:bg-rose-500/15 active:scale-90'
+                                    : 'text-rose-300/40 dark:text-rose-500/30 cursor-not-allowed opacity-35'
+                                  }`}
+                                title={canGoUp ? 'Previous distress signal' : 'At topmost distress signal'}
+                                aria-label="Previous distress signal"
+                              >
+                                <ArrowUp className="w-3.5 h-3.5" strokeWidth={2.2} />
+                              </button>
+                            )}
+
+                            {/* Main action pill */}
+                            <button
+                              type="button"
+                              onClick={handleJumpToDistress}
+                              className="flex items-center gap-1.5 text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300 active:scale-95 transition-all cursor-pointer"
+                              title="Jump to distress signal"
+                            >
+                              {distressNav.total <= 1 && (
+                                <ArrowUp className="w-3.5 h-3.5 text-rose-500 shrink-0" strokeWidth={2.2} />
+                              )}
+                              <span>Go to Distress</span>
+                              {distressNav.total > 1 && (
+                                <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-rose-500/15 text-rose-700 dark:text-rose-300 tabular-nums ml-0.5">
+                                  {distressNav.currentNumber}/{distressNav.total}
+                                </span>
+                              )}
+                            </button>
+
+                            {/* Scroll down to next distress signal */}
+                            {distressNav.total > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => handleJumpDirection('down')}
+                                disabled={!canGoDown}
+                                className={`flex items-center justify-center w-5 h-5 rounded-full transition-all cursor-pointer ${canGoDown
+                                    ? 'text-rose-600 dark:text-rose-400 hover:bg-rose-500/15 active:scale-90'
+                                    : 'text-rose-300/40 dark:text-rose-500/30 cursor-not-allowed opacity-35'
+                                  }`}
+                                title={canGoDown ? 'Next distress signal' : 'At bottommost distress signal'}
+                                aria-label="Next distress signal"
+                              >
+                                <ArrowDown className="w-3.5 h-3.5" strokeWidth={2.2} />
+                              </button>
+                            )}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </motion.div>
-                ) : (
-                  <motion.div
-                    key="empty"
-                    variants={contentVariants}
-                    initial="hidden"
-                    animate="visible"
-                    exit="exit"
-                    className="h-full flex-1 flex flex-col items-center justify-center p-8 text-center"
-                  >
-                    <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 flex items-center justify-center text-slate-400 dark:text-slate-500 mb-3 shadow-inner">
-                      <MessageSquare className="w-7 h-7 sm:w-8 sm:h-8 stroke-[1.5]" />
-                    </div>
-                    <h4 className="font-semibold text-slate-800 dark:text-slate-200 text-sm sm:text-base">
-                      No Conversation Selected
-                    </h4>
-                    <p className="text-xs text-slate-400 dark:text-slate-500 max-w-[260px] mt-1">
-                      Select an active conversation from the list to inspect logs and AI bot exchanges.
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => setMobileView('list')}
-                      className="lg:hidden mt-4 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold text-white bg-[#0071E3] hover:bg-[#0077ED] transition-colors"
-                    >
-                      <ChevronLeft className="w-4 h-4" />
-                      <span>View Conversations</span>
-                    </button>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
-        </div>
-      )}
+        </StaggerItem>
+      </StaggerContainer>
     </div>
   );
 }

@@ -37,6 +37,7 @@ export interface MapLayerState {
     choropleth: boolean;
     pins: boolean;
     boundaries: boolean;
+    dispatchArcs?: boolean;
 }
 
 export interface MapTheme {
@@ -47,4 +48,5 @@ export interface MapTheme {
 export type SelectedFeature =
     | { type: 'barangay'; id: number; name: string }
     | { type: 'incident'; id: string }
+    | { type: 'mdrrmo' }
     | null;

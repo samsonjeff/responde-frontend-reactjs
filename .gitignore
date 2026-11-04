@@ -23,3 +23,6 @@ dist-ssr
 *.sln
 *.sw?
 .env
+
+# Staged backend migration (belongs in responde-core-api, not this repo)
+20261103_add_conversations_fb_comments_to_realtime.sql

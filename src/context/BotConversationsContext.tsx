@@ -1,5 +1,10 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
+import { supabase } from '../lib/supabaseClient';
 import { TALISAY_BARANGAYS } from '../data/talisay-barangays';
+import { formatTimestampPHT } from '../utils/dateUtils';
+import { apiRequest } from '../services/apiClient';
+import { isIncidentIntent, isEmergencyReportIntent, normalizeIntent } from '../utils/intentUtils';
+import { formatReportType, formatReportUrgency } from '../services/incidentService';
 
 // ── Types ──
 export interface BotMessage {
@@ -14,6 +19,9 @@ export interface BotConversation {
   name: string;
   barangay: string;
   type: string;
+  urgency?: string;
+  intent?: string;
+  hasEmergencyReport: boolean;
   status: 'Incomplete' | 'Complete';
   time: string;
   createdAt?: string;
@@ -30,7 +38,7 @@ function titleCase(str: string): string {
 }
 
 function normalizeBarangayName(name: string): string {
-  if (!name) return 'General';
+  if (!name) return 'Unknown';
   const trimmed = name.trim();
   const matched = TALISAY_BARANGAYS.find(
     (b) => b.toLowerCase() === trimmed.toLowerCase()
@@ -44,208 +52,13 @@ function normalizeBarangayName(name: string): string {
   return titleCase(trimmed);
 }
 
-export const initialBotConversations: BotConversation[] = [
-  {
-    id: "conv_1",
-    psid: "1001",
-    name: "Sedrick Opulencia",
-    barangay: "Tumaway",
-    type: "General",
-    status: "Complete",
-    time: "12:41",
-    createdAt: "2026-10-11T12:41:00.000Z",
-    messages: [
-      { sender: "user", text: "May baha po ba sa Tumaway ngayon?" },
-      { sender: "bot", text: "Magandang araw! Sa kasalukuyan, may bahagyang pagbaha sa mababang bahagi ng Tumaway dulot ng malakas na ulan. Pinapayuhan ang lahat na mag-ingat." },
-    ],
-  },
-  {
-    id: "conv_2",
-    psid: "1002",
-    name: "Maria Delos Santos",
-    barangay: "Banga",
-    type: "Emergency",
-    status: "Complete",
-    time: "12:36",
-    createdAt: "2026-10-11T12:36:00.000Z",
-    messages: [
-      { sender: "user", text: "Nasira ang aming bubong sa lakas ng hangin" },
-      { sender: "bot", text: "Nai-record na po ang inyong ulat. Ipinadala na po ito sa Talisay MDRRMO Emergency Response Team para sa agarang tulong." },
-    ],
-  },
-  {
-    id: "conv_3",
-    psid: "1003",
-    name: "Joshua Reyes",
-    barangay: "Leynes",
-    type: "Medical",
-    status: "Complete",
-    time: "12:30",
-    createdAt: "2026-10-11T12:30:00.000Z",
-    messages: [
-      { sender: "user", text: "Kailangan po ng ambulance dito sa Leynes" },
-      { sender: "bot", text: "Agad po naming ipinarating sa pinakamalapit na health center at rescue unit. Pakibantayan po ang inyong telepono para sa tawag ng responders." },
-    ],
-  },
-  {
-    id: "conv_4",
-    psid: "1004",
-    name: "Angeline Cruz",
-    barangay: "Sampaloc",
-    type: "General",
-    status: "Incomplete",
-    time: "12:22",
-    createdAt: "2026-10-11T12:22:00.000Z",
-    messages: [
-      { sender: "user", text: "Saan po ang evacuation center dito sa Sampaloc?" },
-      { sender: "bot", text: "Ang pinakamalapit na evacuation center para sa Sampaloc ay matatagpuan sa Sampaloc Elementary School Gymnasium." },
-    ],
-  },
-  {
-    id: "conv_5",
-    psid: "1005",
-    name: "Ferdinand Lim",
-    barangay: "Santa Maria",
-    type: "General",
-    status: "Complete",
-    time: "12:15",
-    createdAt: "2026-10-11T12:15:00.000Z",
-    messages: [
-      { sender: "user", text: "May kuryente po ba sa Santa Maria ngayon?" },
-      { sender: "bot", text: "Kasalukuyan pong may power interruption sa ilang bahagi ng Brgy. Santa Maria dahil sa natumbang linya ng kuryente. Inaayos na po ito ng BATELEC." },
-    ],
-  },
-  {
-    id: "conv_6",
-    psid: "1006",
-    name: "Divina Aquino",
-    barangay: "Quiling",
-    type: "Emergency",
-    status: "Incomplete",
-    time: "12:09",
-    createdAt: "2026-10-11T12:09:00.000Z",
-    messages: [
-      { sender: "user", text: "Tulong po sa Quiling, may gumuguho na bahagi ng bundok" },
-      { sender: "bot", text: "Naiulat na po ang landslide alert sa Incident Commander. Mangyaring lumikas agad sa mas ligtas na lugar." },
-    ],
-  },
-  {
-    id: "conv_7",
-    psid: "1007",
-    name: "Kenneth Bautista",
-    barangay: "Poblacion Barangay 1",
-    type: "Medical",
-    status: "Complete",
-    time: "11:58",
-    createdAt: "2026-10-11T11:58:00.000Z",
-    messages: [
-      { sender: "user", text: "Humingi po kami ng first aid supplies para sa evacuation center sa Poblacion." },
-      { sender: "bot", text: "Natanggap na po ang request para sa medical supplies sa Poblacion Barangay 1 Evacuation Center." },
-    ],
-  },
-  {
-    id: "conv_8",
-    psid: "1008",
-    name: "Rowena Alcantara",
-    barangay: "Aya",
-    type: "Food & Water",
-    status: "Incomplete",
-    time: "11:45",
-    createdAt: "2026-10-11T11:45:00.000Z",
-    messages: [
-      { sender: "user", text: "Kailangan po ng malinis na inuming tubig sa Aya." },
-      { sender: "bot", text: "Naitala na po ang inyong kahilingan para sa relief goods at inuming tubig sa Brgy. Aya." },
-    ],
-  },
-  {
-    id: "conv_9",
-    psid: "1009",
-    name: "Joel Hernandez",
-    barangay: "Balas",
-    type: "Search & Rescue",
-    status: "Complete",
-    time: "11:32",
-    createdAt: "2026-10-11T11:32:00.000Z",
-    messages: [
-      { sender: "user", text: "Naanod po ang bangka malapit sa Balas Wharf, ligtas naman po ang mangingisda." },
-      { sender: "bot", text: "Salamat sa impormasyon. Naipaalam na po sa MDRRMO Coast Guard Unit." },
-    ],
-  },
-  {
-    id: "conv_10",
-    psid: "1010",
-    name: "Patricia Lim",
-    barangay: "Caloocan",
-    type: "Infrastructure",
-    status: "Incomplete",
-    time: "11:15",
-    createdAt: "2026-10-11T11:15:00.000Z",
-    messages: [
-      { sender: "user", text: "May natumbang puno sa kalsada ng Caloocan, hindi makadaan ang mga sasakyan." },
-      { sender: "bot", text: "Ipinadala na po ang clearing team ng engineering department upang hawanin ang daan sa Caloocan." },
-    ],
-  },
-  {
-    id: "conv_11",
-    psid: "1011",
-    name: "Vicente Laurel",
-    barangay: "Miranda",
-    type: "Emergency",
-    status: "Complete",
-    time: "11:00",
-    createdAt: "2026-10-11T11:00:00.000Z",
-    messages: [
-      { sender: "user", text: "May pagguho ng lupa sa gilid ng burol sa Miranda Ridge." },
-      { sender: "bot", text: "Pumunta na po ang rescue team upang gabayan ang evacuation sa Miranda Ridge." },
-    ],
-  },
-  {
-    id: "conv_12",
-    psid: "1012",
-    name: "Marlon De Silva",
-    barangay: "Buco",
-    type: "Food & Water",
-    status: "Complete",
-    time: "10:45",
-    createdAt: "2026-10-11T10:45:00.000Z",
-    messages: [
-      { sender: "user", text: "Nawalan po ng supply ng tubig sa Buco Outpost." },
-      { sender: "bot", text: "Na-dispatch na po ang water tanker patungo sa Buco Outpost." },
-    ],
-  },
-  {
-    id: "conv_13",
-    psid: "1013",
-    name: "Rommel Catapang",
-    barangay: "San Guillermo",
-    type: "Search & Rescue",
-    status: "Incomplete",
-    time: "10:20",
-    createdAt: "2026-10-11T10:20:00.000Z",
-    messages: [
-      { sender: "user", text: "May mga magsasaka pong naipit sa umapaw na sapa sa San Guillermo." },
-      { sender: "bot", text: "Ipinapadala na po ang rescue boat team sa San Guillermo farmlands." },
-    ],
-  },
-  {
-    id: "conv_14",
-    psid: "1014",
-    name: "Lourdes Reyes",
-    barangay: "Tranca",
-    type: "Medical",
-    status: "Complete",
-    time: "10:05",
-    createdAt: "2026-10-11T10:05:00.000Z",
-    messages: [
-      { sender: "user", text: "Kailangan po ng maintenance medicine para sa mga senior sa evacuation ng Tranca." },
-      { sender: "bot", text: "Naihatid na po sa Municipal Health Office ang listahan ng gamot para sa Tranca." },
-    ],
-  },
-];
+export const initialBotConversations: BotConversation[] = [];
 
 const STORAGE_KEY = 'responde_bot_status_overrides_v2';
-const INACTIVITY_GAP_MS = 60 * 60 * 1000;
-const POLL_INTERVAL_MS = 30_000;
+const BOT_CONVERSATIONS_CACHE_KEY = 'responde_cached_bot_conversations_v2';
+const INACTIVITY_GAP_MS = 30 * 60 * 1000;
+const POLL_INTERVAL_MS = 60_000; // 60s standard poll interval to reduce server pressure
+const BACKOFF_INTERVAL_MS = 120_000; // 2 min backoff when rate-limited
 
 const getInitialOverrides = (): Record<string, 'Incomplete' | 'Complete'> => {
   try {
@@ -274,6 +87,18 @@ export function BotConversationsProvider({ children }: { children: ReactNode }) 
 
   const [conversations, setConversations] = useState<BotConversation[]>(() => {
     const overrides = getInitialOverrides();
+    try {
+      const cached = sessionStorage.getItem(BOT_CONVERSATIONS_CACHE_KEY);
+      if (cached) {
+        const parsed = JSON.parse(cached) as BotConversation[];
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.map((c) => ({
+            ...c,
+            status: overrides[c.id] || c.status,
+          }));
+        }
+      }
+    } catch {}
     return initialBotConversations.map((c) => ({
       ...c,
       status: overrides[c.id] || c.status,
@@ -282,7 +107,14 @@ export function BotConversationsProvider({ children }: { children: ReactNode }) 
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const conversationsRef = useRef(conversations);
+  conversationsRef.current = conversations;
 
+  // Local-only operator workflow state (persisted per-browser in localStorage).
+  // This is intentionally NOT the database triage status: BotConversation ids are
+  // session keys (`${psid}_${time}`), not backend `conv-{id}` rows, and the backend
+  // exposes no PATCH endpoint for conversations.status. Persisting across devices
+  // requires a new backend route (e.g. PATCH /api/auth/data/conversations/:id/status).
   const updateConversationStatus = useCallback((id: string, newStatus: 'Incomplete' | 'Complete') => {
     setStatusOverrides((prev) => {
       const updated = { ...prev, [id]: newStatus };
@@ -300,41 +132,44 @@ export function BotConversationsProvider({ children }: { children: ReactNode }) 
     );
   }, []);
 
-  const fetchConversations = useCallback(async (isFirst = false) => {
+  const fetchConversations = useCallback(async (isFirst = false, signal?: AbortSignal, forceRefresh = false) => {
     if (isFirst) setLoading(true);
-    setError(null);
-
-    // Use authenticated backend API instead of direct Supabase anon access
-    const API_BASE = import.meta.env.DEV ? '' : (import.meta.env.VITE_API_URL ?? '');
-    const storedToken = (() => { try { return localStorage.getItem('responde_session_token'); } catch { return null; } })();
-    const hdrs: Record<string, string> = { 'Content-Type': 'application/json' };
-    if (storedToken) hdrs['Authorization'] = `Bearer ${storedToken}`;
 
     let data: any[] | null = null;
     try {
-      const res = await fetch(`${API_BASE}/api/auth/data/conversations?limit=500`, {
-        credentials: 'include',
-        headers: hdrs,
-      });
-      if (res.ok) {
-        const json = await res.json();
-        data = json.data ?? [];
+      // 1. Fetch directly from Supabase conversations table
+      const convQuery = supabase
+        .from('conversations')
+        .select('id, conversation_id, sender_psid, sender_name, user_message, ai_reply, reply_status, provider, timestamp, barangay, incident_type, intent, urgency, needs_review, location_status, status, ml_status')
+        .order('timestamp', { ascending: false })
+        .limit(500);
+      const { data: supaRows, error: supaErr } = await (signal ? convQuery.abortSignal(signal) : convQuery);
+
+      if (supaErr && import.meta.env.DEV) {
+        console.warn('[BotConversationsContext] Direct Supabase fetch failed, using API fallback:', supaErr.message);
+      }
+
+      if (!supaErr && Array.isArray(supaRows) && supaRows.length > 0) {
+        data = [...supaRows].reverse();
+        setError(null);
       } else {
-        const errJson = await res.json().catch(() => ({ error: res.statusText }));
-        console.error('[BotConversationsContext] API error:', errJson.error);
-        setError(errJson.error || 'Failed to fetch conversations');
-        if (isFirst) setLoading(false);
-        return;
+        // Fallback to backend API
+        const json = await apiRequest<{ data?: any[] }>(
+          '/api/auth/data/conversations?limit=500',
+          {
+            signal,
+            forceRefresh,
+            cacheTtlMs: 8000,
+          }
+        );
+        data = (json.data ?? []).sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+        setError(null);
       }
     } catch (netErr: any) {
-      console.error('[BotConversationsContext] Network error:', netErr.message);
-      setError(netErr.message || 'Network error');
-      if (isFirst) setLoading(false);
-      return;
-    }
-
-    const sbError = null; // kept for type compatibility below
-    if (sbError) {
+      if (netErr.name === 'AbortError') return;
+      console.warn('[BotConversationsContext] Fetch warning:', netErr.message);
+      // Only set error state if we have no conversations yet to prevent screen-blanking
+      setError((prev) => (conversationsRef.current.length === 0 ? (netErr.message || 'Failed to fetch conversations') : prev));
       if (isFirst) setLoading(false);
       return;
     }
@@ -346,6 +181,10 @@ export function BotConversationsProvider({ children }: { children: ReactNode }) 
       lastTime: number;
       barangay: string;
       type: string;
+      urgency: string;
+      intent: string;
+      hasIncidentIntent: boolean;
+      hasEmergencyReport: boolean;
       needsReview: boolean;
       messages: BotMessage[];
     };
@@ -359,6 +198,18 @@ export function BotConversationsProvider({ children }: { children: ReactNode }) 
       }
     }
 
+    function isRealType(t?: string | null): boolean {
+      if (!t) return false;
+      const l = t.trim().toLowerCase();
+      return !['none', 'null', 'undefined', 'unclassified', 'unknown', 'n/a'].includes(l);
+    }
+
+    function isRealBarangay(b?: string | null): boolean {
+      if (!b) return false;
+      const l = b.trim().toLowerCase();
+      return !['unknown', 'none', 'null', 'unspecified', 'n/a', 'general'].includes(l);
+    }
+
     const sessions: Session[] = [];
     const psidToLastIdx = new Map<string, number>();
 
@@ -370,7 +221,12 @@ export function BotConversationsProvider({ children }: { children: ReactNode }) 
       const rowBarangay = row.barangay && String(row.barangay).trim() ? String(row.barangay).trim() : '';
       const rowType = row.incident_type && String(row.incident_type).trim()
         ? String(row.incident_type).trim()
-        : (row.intent && String(row.intent).trim() ? String(row.intent).trim() : '');
+        : '';
+      const rowIntent = row.intent && String(row.intent).trim() ? String(row.intent).trim() : 'OTHER';
+      const isRowIncident = isIncidentIntent(rowIntent);
+      const isRowEmergency = isEmergencyReportIntent(rowIntent);
+      const rowUrgency = row.urgency && String(row.urgency).trim() ? String(row.urgency).trim() : 'Low';
+
       const rowNeedsReview = Boolean(
         row.needs_review === true ||
         row.location_status === 'not_found' ||
@@ -384,8 +240,12 @@ export function BotConversationsProvider({ children }: { children: ReactNode }) 
           psid,
           senderName: resolvedName,
           lastTime: rowTime,
-          barangay: rowBarangay,
-          type: rowType,
+          barangay: isRealBarangay(rowBarangay) ? rowBarangay : '',
+          type: isRealType(rowType) ? rowType : '',
+          urgency: rowUrgency,
+          intent: rowIntent,
+          hasIncidentIntent: isRowIncident,
+          hasEmergencyReport: isRowEmergency,
           needsReview: rowNeedsReview,
           messages: [],
         };
@@ -397,11 +257,23 @@ export function BotConversationsProvider({ children }: { children: ReactNode }) 
         if (session.senderName === 'Unknown User' && resolvedName !== 'Unknown User') {
           session.senderName = resolvedName;
         }
-        if (!session.barangay && rowBarangay) {
-          session.barangay = rowBarangay;
+        if (isRowIncident) {
+          session.hasIncidentIntent = true;
+          if (isRowEmergency) session.hasEmergencyReport = true;
+          session.intent = rowIntent;
+          if (rowUrgency) session.urgency = rowUrgency;
+        } else if (!session.hasIncidentIntent && rowIntent) {
+          session.intent = rowIntent;
         }
-        if (!session.type && rowType) {
-          session.type = rowType;
+        if (isRealBarangay(rowBarangay)) {
+          if (!isRealBarangay(session.barangay) || isRowIncident) {
+            session.barangay = rowBarangay;
+          }
+        }
+        if (isRealType(rowType)) {
+          if (!isRealType(session.type) || isRowIncident) {
+            session.type = rowType;
+          }
         }
         if (rowNeedsReview) {
           session.needsReview = true;
@@ -409,22 +281,20 @@ export function BotConversationsProvider({ children }: { children: ReactNode }) 
       }
 
       if (row.user_message) session.messages.push({ sender: 'user', text: row.user_message, timestamp: row.timestamp });
-      if (row.ai_reply) session.messages.push({ sender: 'bot', text: row.ai_reply, timestamp: row.timestamp });
+      if (row.ai_reply) {
+        session.messages.push({ sender: 'bot', text: row.ai_reply, timestamp: row.timestamp });
+      } else if (row.reply_status === 'pending') {
+        session.messages.push({ sender: 'bot', text: '(Replying...)', timestamp: row.timestamp });
+      } else if (row.reply_status === 'failed') {
+        session.messages.push({ sender: 'bot', text: '[Failed to send reply]', timestamp: row.timestamp });
+      }
     }
 
     if (sessions.length > 0) {
       const mapped: BotConversation[] = sessions
         .sort((a, b) => b.lastTime - a.lastTime)
         .map((session) => {
-          const lastDate = new Date(session.lastTime);
-          const timeFormatted = `${lastDate.toLocaleDateString('en-US', {
-            month: 'numeric',
-            day: 'numeric',
-          })} ${lastDate.toLocaleTimeString('en-US', {
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: false,
-          })}`;
+          const timeFormatted = formatTimestampPHT(session.lastTime);
 
           const override = statusOverridesRef.current[session.id];
           const calculatedStatus = session.needsReview || !session.barangay ? 'Incomplete' : 'Complete';
@@ -436,8 +306,11 @@ export function BotConversationsProvider({ children }: { children: ReactNode }) 
               session.senderName !== 'Unknown User'
                 ? session.senderName
                 : `PSID: ${session.psid.slice(-6)}`,
-            barangay: session.barangay ? normalizeBarangayName(session.barangay) : 'General',
-            type: session.type ? titleCase(session.type) : 'Emergency',
+            barangay: isRealBarangay(session.barangay) ? normalizeBarangayName(session.barangay) : 'Unknown',
+            type: isRealType(session.type) ? formatReportType(session.type) : 'Unknown',
+            urgency: session.urgency ? formatReportUrgency(session.urgency) : 'Low',
+            intent: normalizeIntent(session.intent),
+            hasEmergencyReport: session.hasEmergencyReport,
             status: override || calculatedStatus,
             time: timeFormatted,
             createdAt: new Date(session.lastTime).toISOString(),
@@ -445,25 +318,85 @@ export function BotConversationsProvider({ children }: { children: ReactNode }) 
           };
         });
 
+      try {
+        sessionStorage.setItem(BOT_CONVERSATIONS_CACHE_KEY, JSON.stringify(mapped));
+      } catch {}
+
       setConversations(mapped);
     } else {
-      // Keep sample conversations merged with latest overrides
-      const overrides = statusOverridesRef.current;
-      setConversations(
-        initialBotConversations.map((c) => ({
-          ...c,
-          status: overrides[c.id] || c.status,
-        }))
-      );
+      setConversations([]);
     }
 
     if (isFirst) setLoading(false);
   }, []);
 
   useEffect(() => {
-    fetchConversations(true);
-    const interval = setInterval(() => fetchConversations(false), POLL_INTERVAL_MS);
-    return () => clearInterval(interval);
+    const controller = new AbortController();
+    fetchConversations(conversationsRef.current.length === 0, controller.signal);
+
+    let pollTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const schedulePoll = (delay: number) => {
+      if (pollTimer) clearTimeout(pollTimer);
+      pollTimer = setTimeout(async () => {
+        // Pause polling when browser tab is hidden to save rate limit and bandwidth
+        if (document.visibilityState !== 'visible') {
+          schedulePoll(POLL_INTERVAL_MS);
+          return;
+        }
+
+        try {
+          await fetchConversations(false, controller.signal);
+          schedulePoll(POLL_INTERVAL_MS);
+        } catch (err: any) {
+          const isRateLimit = err?.status === 429 || err?.isRateLimit;
+          schedulePoll(isRateLimit ? BACKOFF_INTERVAL_MS : POLL_INTERVAL_MS);
+        }
+      }, delay);
+    };
+
+    schedulePoll(POLL_INTERVAL_MS);
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        fetchConversations(false, controller.signal);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      controller.abort();
+      if (pollTimer) clearTimeout(pollTimer);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, [fetchConversations]);
+
+  // Realtime sync: refresh shortly after inserts/updates (new messages, NLP
+  // completions, reply deliveries). The 60s poll above stays as fallback.
+  useEffect(() => {
+    const controller = new AbortController();
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+    const scheduleRefresh = () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        fetchConversations(false, controller.signal, true);
+      }, 1500);
+    };
+    const channel = supabase
+      .channel('rt:bot-conversations-list')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'conversations' }, scheduleRefresh)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'conversations' }, scheduleRefresh)
+      .subscribe((status) => {
+        if (status !== 'SUBSCRIBED' && import.meta.env.DEV) {
+          console.warn('[BotConversationsContext] Realtime rt:bot-conversations-list: ' + status + '. Polling fallback active.');
+        }
+      });
+    return () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      controller.abort();
+      supabase.removeChannel(channel);
+    };
   }, [fetchConversations]);
 
   const incompleteCount = conversations.filter((c) => c.status === 'Incomplete').length;
